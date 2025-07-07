@@ -1,0 +1,26 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "compilerOptions": {
+    // ... other existing options
+    "baseUrl": ".",
+    "paths": {
+      // CHANGE THIS LINE:
+      // "@/*": ["./src/*"]  <-- This is what you currently have
+      // TO THIS:
+      "@/components/*": [
+        "./src/components/*"
+      ], // This maps `@/components` to `src/components`
+      "@/lib/*": [
+        "./src/lib/*"
+      ]
+    }
+  }
+}

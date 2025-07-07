@@ -1,0 +1,33 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "npm install",
+    "start": "node index"
+  },
+  "author": "ayush_gairola",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^1.5.1",
+    "@langchain/community": "^0.3.46",
+    "@pinecone-database/pinecone": "^6.1.1",
+    "@supabase/supabase-js": "^2.50.2",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "langchain": "^0.3.28",
+    "multer": "^2.0.1",
+    "pdf-parse": "^1.1.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.3"
+  }
+}
