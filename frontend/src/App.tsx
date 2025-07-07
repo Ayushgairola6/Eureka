@@ -21,7 +21,7 @@ const App = () => {
     const VerifyLoginState = async () => {
       try {
         const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
-        const response = await axios.get("http://localhost:1000/api/verify/userstate", {
+        const response = await axios.get("https://eureka-7ks7.onrender.com/api/verify/userstate", {
           withCredentials: true,
           headers: {
             "Authorization": `Bearer ${token}`

@@ -48,7 +48,7 @@ const Register = () => {
         }
 
         try {
-            const response = await axios.post("http://localhost:1000/api/user/register", UserInformation, {
+            const response = await axios.post("https://eureka-7ks7.onrender.com/api/user/register", UserInformation, {
                 withCredentials: true,
                 headers: {
                     "Authorization": `Bearer ${"token"}`
