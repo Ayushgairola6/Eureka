@@ -152,7 +152,7 @@ export const FindMatchingResponse = async (req, res) => {
             fields: ['text', 'metadata'],
         });
 
-        console.log(response.result.hits, 'found results')
+        // console.log(response.result.hits, 'found results')
         response.result.hits.forEach((e) => {
             if (e) {
                 FoundData.push(e.fields.text);
