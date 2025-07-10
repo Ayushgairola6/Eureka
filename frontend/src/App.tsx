@@ -11,6 +11,8 @@ import Feedback from './pages/FeedbackPage'
 import "./App.css"
 import axios from 'axios';
 import { useStore } from './store/zustandHandler.ts'
+import EmailVerificationForm from './pages/EmailVerificationForm.tsx';
+import ResetPassword from './pages/ResetPassword.tsx';
 
 const App = () => {
 
@@ -48,6 +50,8 @@ const App = () => {
         <Route element={<Login />} path="/Login" />
         <Route element={<Register />} path="/Register" />
         <Route element={<Feedback />} path="/Feedback" />
+        <Route element={<EmailVerificationForm/>}  path="/ResetPassword"/>
+        <Route element={<ResetPassword/>}  path="/temp"/>
 
       </Routes>
       <Footer></Footer>

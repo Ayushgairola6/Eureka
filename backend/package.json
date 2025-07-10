@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.2",
     "langchain": "^0.3.28",
     "multer": "^2.0.1",
+    "nodemailer": "^7.0.5",
     "pdf-parse": "^1.1.1",
     "uuid": "^11.1.0"
   },

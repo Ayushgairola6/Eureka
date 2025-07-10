@@ -7,12 +7,13 @@ import {
   FiMail,
   FiSend
 } from 'react-icons/fi';
+import {motion} from 'framer-motion';
+
 const Footer = () => {
   return (<>
     <footer className="relative bg-gray-50 border-t border-gray-200 overflow-hidden z-[1]">
       {/* Gradient background elements */}
-      <div className="z-[0] absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-br from-indigo-600/10 to-blue-800/10 blur-2xl "></div>
-      <div className="absolute top-1/2 right-0 w-32 h-32 rounded-full bg-purple-600/10 blur-3xl z-0"></div>
+      <div className="z-[-1] absolute top-0 left-0 w-full h-full bg-gradient-to-br from-sky-600/20 to-red-600/20 blur-3xl "></div>
 
       <div className="max-w-7xl mx-auto px-6 py-16 relative ">
         {/* Main footer content */}
@@ -20,7 +21,7 @@ const Footer = () => {
           {/* Brand column */}
           <div className="space-y-6">
             <div className="flex items-center">
-              <span className="text-2xl bai-jamjuree-bold bg-clip-text text-transparent bg-gradient-to-r from-black to-purple-600">
+              <span className="text-2xl bai-jamjuree-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
                 EUREKA
               </span>
             </div>
@@ -28,15 +29,15 @@ const Footer = () => {
               The open-source knowledge engine powered by AI and community wisdom.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-500 hover:text-purple-600 transition-colors">
+              <motion.a whileTap={{scale:1.05}} href="#" className="text-gray-500 p-2 bg-gray-200 rounded-full hover:text-purple-600 transition-colors">
                 <FiGithub className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-gray-500 hover:text-blue-600 transition-colors">
+              </motion.a>
+              <motion.a whileTap={{scale:1.05}} href="#" className="text-gray-500 p-2 bg-gray-200 rounded-full hover:text-blue-600 transition-colors">
                 <FiTwitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-gray-500 hover:text-red-600 transition-colors">
+              </motion.a>
+              <motion.a whileTap={{scale:1.05}} href="#" className="text-gray-500 p-2 bg-gray-200 rounded-full hover:text-red-600 transition-colors">
                 <FiYoutube className="w-5 h-5" />
-              </a>
+              </motion.a>
             </div>
           </div>
 

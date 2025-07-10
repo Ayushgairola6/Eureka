@@ -8,7 +8,7 @@ dotenv.config();
 const app = express();
 import cors from 'cors';
 import './controllers/supabaseHandler.js'
-import multer from 'multer';
+
 // import formData from 'express-form-data';
 app.use(cors({
   origin: ['http://localhost:5173','https://eureka-six-eta.vercel.app'],

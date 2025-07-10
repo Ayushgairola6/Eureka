@@ -72,12 +72,7 @@ export const FileUploadHandle = async (req, res) => {
             // Option 1: documentId-chunkIndex (simple)
             const chunkId = `${documentId}-${i}`;
 
-            //  metadata: {
-            //                     category:category,
-            //                     date_of_contribution:Date.UTC().toString(),
-            //                     document_id: documentId,
-            //                     chunk_index: i
-            //                 }
+            
             // pushing the chunk data in formatted way to store in the db
             recordsToUpsert.push({
                 id: chunkId,
@@ -134,7 +129,7 @@ async function splitTextIntoChunks(documentText) {
 export const FindMatchingResponse = async (req, res) => {
     try {
         const { question, category } = req.body;
-        if (!question || typeof question !== "string" || !category || category === "") {
+        if (!question || typeof question !== "string" || !category || typeof category !=='string') {
             return res.status(400).json({ message: "Invalid question type !" })
 
         }

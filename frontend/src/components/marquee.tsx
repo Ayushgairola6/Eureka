@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { IoInformationOutline,IoSpeedometerOutline  } from "react-icons/io5";
+import { IoInformationOutline, IoSpeedometerOutline } from "react-icons/io5";
 import { PiTargetDuotone } from "react-icons/pi";
 import { GoVerified } from "react-icons/go";
 import { IoPeopleSharp } from "react-icons/io5";
@@ -8,7 +8,7 @@ const Marquee = () => {
 
 
     return (<>
-        <motion.div className="flex items-center justify-center py-2 px-2 overflow-x-hidden gap-20 space-grotesk uppercase bg-gradient-to-br from-lime-600/20 to-blue-600/10 z-[2] font-bold">
+        <motion.div className="flex items-center justify-center py-2 px-2 overflow-x-hidden gap-20 space-grotesk uppercase bg-gray-100 text-gray-500  z-[2] font-bold ">
             <motion.div
                 initial={{ x: "50%" }}
                 animate={{ x: "-100%" }}
@@ -19,33 +19,39 @@ const Marquee = () => {
                 }}
                 className="flex gap-5"
             >
-                <div className="text-xl md:text-2xl rounded-lg    px-3 text-nowrap flex items-center justify-center gap-3">
-                    <ul>Information</ul>
+                <div className="text-2xl md:text-2xl rounded-lg    px-3 text-nowrap flex items-center justify-center gap-3">
                     <IoInformationOutline />
+
+                    <ul>Information</ul>
                 </div>
                 <div className="text-xl md:text-2xl rounded-lg    px-3 text-nowrap flex items-center justify-center gap-3">
-                    <ul>Faster</ul>
                     <IoSpeedometerOutline />
 
+                    <ul>Faster</ul>
+
                 </div>
                 <div className="text-xl md:text-2xl rounded-lg    px-3 text-nowrap flex items-center justify-center gap-3">
+                    <PiTargetDuotone />
+
                     <ul>Accurate</ul>
-                    <PiTargetDuotone/>
 
                 </div>
                 <div className="text-xl md:text-2xl rounded-lg    px-3 text-nowrap flex items-center justify-center gap-3">
+                    <GoVerified />
+
                     <ul>Verified</ul>
-                    <GoVerified/>
 
                 </div>
                 <div className="text-xl md:text-2xl rounded-lg    px-3 text-nowrap flex items-center justify-center gap-3">
-                    <ul>Collaborated</ul>
                     <IoPeopleSharp />
 
+                    <ul>Collaborated</ul>
+
                 </div>
                 <div className="text-xl md:text-2xl rounded-lg    px-3 text-nowrap flex items-center justify-center gap-3">
-                    <ul>Open Source</ul>
                     <IoLogoGithub />
+
+                    <ul>Open Source</ul>
 
                 </div>
             </motion.div>

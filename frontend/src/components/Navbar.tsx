@@ -17,9 +17,9 @@ const Navbar: React.FC<NavbarProps> = ({ currTab, setCurrTab }) => {
     const { scrollYProgress } = useScroll();
     const LoggedIn = useStore((state) => state.isLoggedIn)
     return (<>
-        <nav className="relative  py-1 px-6 flex items-center justify-between z-[1] overflow-x-hidden">
+        <nav className="relative  py-1 px-6 flex items-center justify-between z-[] overflow-x-hidden">
             {/* top scroll indicator */}
-            <motion.div style={{ scaleX: scrollYProgress }} className='bg-lime-400 w-full fixed h-2 origin-left top-0 left-0 z-[9]' ></motion.div>
+            <motion.div style={{ scaleX: scrollYProgress }} className='bg-indigo-500 w-full fixed py-1 origin-left top-0 left-0 z-[99]' ></motion.div>
 
             {/* navlinks */}
             <Link to="/" className="font-mono text-2xl md:text-3xl  relative text-transparent bg-clip-text bg-gradient-to-r from-black to-gray-700 font-bold CustPoint">EUe

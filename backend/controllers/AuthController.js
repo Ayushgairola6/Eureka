@@ -1,9 +1,19 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+// import jwt from 'jsonwebtoken';
 import { supabase } from './supabaseHandler.js';
 import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
 dotenv.config();
 
+// nodemailer transporter
+const transporter = nodemailer.createTransport({
+    host: 'smtp.sendgrid.net',
+    port: 587,
+    auth: {
+        user: 'apikey', // Literally write 'apikey'
+        pass: process.env.SENDGRID_API_KEY, // Replace with your API key
+    },
+});
 
 
 export const HandleUserRegistration = async (req, res) => {
@@ -36,7 +46,12 @@ export const HandleUserRegistration = async (req, res) => {
             return res.status(400).json({ message: "Erorr while creating an account !" });
         }
 
-
+        const mailOptions = {
+            from: 'your@verified-domain.com', // Must be verified in SendGrid
+            to: 'user@example.com',
+            subject: 'Email Verification',
+            html: '<h1>Welcome to Eureka </h1><p>Click <a href="https://your-site.com/verify?token=abc123">here</a> to verify.</p>',
+        };
 
         return res.json({ message: "Account created successfully !" })
     } catch (error) {

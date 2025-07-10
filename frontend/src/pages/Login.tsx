@@ -92,9 +92,10 @@ const Login = () => {
                     <input ref={Email} className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk" type="text" placeholder="Your email address" />
                 </span>
                 <span className="flex flex-col gap-2">
-                    <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="username"><MdPassword /> Password</label>
+                    <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="password"><MdPassword /> Password</label>
                     <input ref={Password} spellCheck className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk" type="text" placeholder="Choose a strong password" />
                 </span>
+                <Link to='/ResetPassword' className="bai-jamjuree-semibold text-xs text-end text-gray-500 hover:text-sky-600 transition-colors duration-300">Do not remember your password ?</Link>
                 <span className="flex items-center justfify-center py-4 flex-col gap-2">
                     {isPending === 'idle' ? <motion.button whileHover={{ boxShadow: "2px 2px 2px black", transform: "translateY(-3px)" }} onClick={HandleUserLogin} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px blue" }} transition={{ duration: 0.2 }} className="bg-black py-2 px-3 rounded-lg space-grotesk text-white w-full CustPoint flex items-center justify-center gap-2">Login <CiLogin /></motion.button> : <motion.ul className='py-2 px-3 bg-gray-700 text-white space-grotesk w-full rounded-lg animate-pulse text-center flex items-center justify-center gap-2'>Please wait <IoIosHourglass className="animate-spin" /></motion.ul>}
                     <motion.button whileHover={{ boxShadow: "2px 2px 2px black", transform: "translateY(-3px)" }} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px black" }} transition={{ duration: 0.2 }} className="bg-gray-400 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint ">Continue with Google <FaGoogle /></motion.button>

@@ -48,7 +48,7 @@ function Interface() {
 
     try {
       const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
-      const response = await axios.post('https://eureka-7ks7.onrender.com/api/upload-pdf', formData, {
+      const response = await axios.post('http://localhost:1000/api/upload-pdf', formData, {
         withCredentials: true,
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -87,7 +87,7 @@ function Interface() {
     setLoading(true);
     setAnswer('');
     try {
-      const response = await axios.post('https://eureka-7ks7.onrender.com/api/ask-pdf', { question: question, category }, {
+      const response = await axios.post('http://localhost:1000/api/ask-pdf', { question: question, category }, {
         withCredentials: true,
         headers: {
           "Authorization": `Bearer ${token}`
@@ -118,7 +118,7 @@ function Interface() {
       {/* draggable question mark */}
 
       {/* the dropdown */}
-      <div className="z-[-1] absolute top-0 left-0 h-full w-full bg-gradient-to-br from-lime-400/15 to-red-400/15 blur-xl "></div>
+      <div className="z-[-1] absolute top-0 left-0 h-full w-full bg-gradient-to-br from-pink-400/15 to-red-400/15 blur-xl "></div>
       <UserForm setShowUserForm={setShowUserForm} shhowUserForm={shhowUserForm} selectedFile={selectedFile} setSelectedFile={setSelectedFile} handleUpload={handleUpload} loading={loading} />
 
       {/* the user form for contribution details */}
@@ -130,7 +130,7 @@ function Interface() {
 
 
       {/* rest of the page */}
-      <Card className="w-full max-w-2xl shadow-lg  bg-gray-100 shadow-black">
+      <Card className="w-full max-w-2xl border border-gray-400  bg-gray-100 ">
 
         <CardContent>
           <div className="space-y-6">
@@ -140,22 +140,20 @@ function Interface() {
               <Label className='bai-jamjuree-semibold ' htmlFor="question">
                 {/* <BrainCircuit size={16} color='black' /> */}
 
-                Ask any question !
+                Enter you question 
               </Label>
               <textarea
                 id="question"
                 placeholder="1. Why is light the fastest thing in the universe ?
-OR
-2. Why it is nearly impossible to colonize Uranus ?
                 "
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 rows={6}
                 // disabled={!currentDbName}
-                className="resize-none disabled:opacity-70 space-grotesk text-sm md:text-md px-2 py-1 rounded-lg  shadow-sm shadow-black"
+                className="resize-none disabled:opacity-70 space-grotesk text-sm md:text-md px-2 py-1 rounded-md  border border-gray-400"
               />
               <motion.button whileTap={{ scale: 1.03 }} whileHover={{ scaleX: 1.05 }} onClick={handleAsk} className='cursor-pointer bg-black w-full p-2 rounded-lg space-grotesk text-white text-sm' >
-                {loading ? '.....' : 'Ask Question'}
+                {loading ? 'Analyzing' : 'Ask Question'}
               </motion.button>
               {/* {!currentDbName && (
                 <p className="text-sm text-red-500">Please upload and process a PDF before asking questions.</p>
