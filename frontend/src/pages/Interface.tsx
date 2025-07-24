@@ -61,7 +61,7 @@ function Interface() {
 
     try {
       const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
-      const response = await axios.post('http://localhost:1000/api/upload-pdf', formData, {
+      const response = await axios.post('https://eureka-7ks7.onrender.com/api/upload-pdf', formData, {
         withCredentials: true,
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -100,7 +100,7 @@ function Interface() {
     setLoading(true);
     setAnswer('');
     try {
-      const response = await axios.post('http://localhost:1000/api/ask-pdf', { question: question, category, subCategory: subCategory }, {
+      const response = await axios.post('https://eureka-7ks7.onrender.com/api/ask-pdf', { question: question, category, subCategory: subCategory }, {
         withCredentials: true,
         headers: {
           "Authorization": `Bearer ${token}`
@@ -128,7 +128,7 @@ function Interface() {
       const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
       setLoading(true);
 
-      const privateDocResponse = await axios.post("http://localhost:1000/api/privateDocs/ask", { question: question, docId: selectedDoc }, {
+      const privateDocResponse = await axios.post("https://eureka-7ks7.onrender.com/api/privateDocs/ask", { question: question, docId: selectedDoc }, {
         withCredentials: true, headers: {
           'Authorization': `Bearer ${token}`
         }

@@ -49,7 +49,7 @@ export const GetUserDocs = createAsyncThunk<Document[], void>(
     try {
       const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token");
 
-      const response = await axios.get("http://localhost:1000/api/user/documents", {
+      const response = await axios.get("https://eureka-7ks7.onrender.com/api/user/documents", {
         withCredentials: true,
         headers: {
           'Authorization': `Bearer ${token}`
@@ -75,7 +75,7 @@ export const GetUserDetails = createAsyncThunk<User, void>(
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token");
-      const response = await axios.get('http://localhost:1000/api/user/account-details', {
+      const response = await axios.get('https://eureka-7ks7.onrender.com/api/user/account-details', {
         withCredentials: true,
         headers: {
           'Authorization': `Bearer ${token}`

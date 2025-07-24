@@ -19,7 +19,7 @@ const EmailVerificationForm = () => {
                 setIsPending("idle")
                 return ;
             }
-          const response = await axios.post("http://localhost:1000/api/user/email-verify",{email:EmailRef.current?.value},{
+          const response = await axios.post("https://eureka-7ks7.onrender.com/api/user/email-verify",{email:EmailRef.current?.value},{
             withCredentials:true,
             headers:{
                 // "Authorization":`Bearer ${token}`
