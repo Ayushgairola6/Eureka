@@ -5,6 +5,7 @@
 .CustPoint {
 
   cursor: url("./assets/hand-pointer.svg"), pointer;
+  
 }
 @custom-variant dark (&:is(.dark *));
 

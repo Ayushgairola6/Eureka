@@ -19,19 +19,21 @@ const index = pc.index("knowledge-base-index");
 
 export const FileUploadHandle = async (req, res) => {
     try {
-        //  console.log(req.data)
-        //  console.log(req.file)
-        const { category, name, email, feedback } = req.body
-        const file = req.file
 
+        const { category, name, feedback, subCategory, visibility } = req.body
+        const file = req.file
+        // console.log(req.body)
         const userid = req.user.id;
         if (!userid) {
             return res.status(400).json({ message: "Please Login to continue ." })
         }
-        if (!category || !name || !email || !feedback || !file) {
-            return res.status(400).json({ message: "All fields are mendatory !" })
+        const email = req.user.email;
+        if (!category || !name || !feedback || !email || !file || !subCategory || typeof subCategory !== "string" || !visibility) {
+            return res.status(400).json({ message: "Invalid data type !" })
         }
-        const StoredContribution = await StoreContributionDetails(name, email, feedback, userid);
+        const documentId = uuidv4();
+
+        const StoredContribution = await StoreContributionDetails(name, email, feedback, userid, visibility, documentId);
 
         if (StoredContribution?.error) {
             console.log(StoredContribution?.error)
@@ -55,7 +57,6 @@ export const FileUploadHandle = async (req, res) => {
             return res.status(400).json({ message: "Error while chunking the text data" })
         }
         // random id for the doc
-        const documentId = uuidv4();
 
 
         if (!StoredContribution || StoredContribution.error) {
@@ -72,13 +73,17 @@ export const FileUploadHandle = async (req, res) => {
             // Option 1: documentId-chunkIndex (simple)
             const chunkId = `${documentId}-${i}`;
 
-            
+
             // pushing the chunk data in formatted way to store in the db
             recordsToUpsert.push({
                 id: chunkId,
                 text: textChunks[i],
+                visibility: visibility,
                 category: category,
-                date_of_contribution: new Date().toISOString()
+                subCategory: subCategory,
+                date_of_contribution: new Date().toISOString(),
+                documentId: documentId,
+
             });
 
             // If batch is full or it's the last chunk, upsert the batch
@@ -128,8 +133,8 @@ async function splitTextIntoChunks(documentText) {
 
 export const FindMatchingResponse = async (req, res) => {
     try {
-        const { question, category } = req.body;
-        if (!question || typeof question !== "string" || !category || typeof category !=='string') {
+        const { question, category, subCategory } = req.body;
+        if (!question || typeof question !== "string" || !category || typeof category !== 'string' || !subCategory || typeof subCategory !== "string") {
             return res.status(400).json({ message: "Invalid question type !" })
 
         }
@@ -158,12 +163,13 @@ export const FindMatchingResponse = async (req, res) => {
 
 
         const AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
-              
+
         if (AnswerToUsersQuestion.error) {
             return res.status(200).json({ answer: "WE currently do not have information regarding this topic" })
         }
-        const FormattedResponse = formatAIResponse(AnswerToUsersQuestion)
-        return res.status(200).json({ message: "Response found", answer: FormattedResponse })
+        // const FormattedResponse = formatAIResponse(AnswerToUsersQuestion)
+        // console.log(AnswerToUsersQuestion)
+        return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion })
 
 
     } catch (error) {
@@ -174,19 +180,19 @@ export const FindMatchingResponse = async (req, res) => {
 
 // styling the ai response
 function formatAIResponse(responseText) {
-  // 1. Heading Detection & Styling
-  const styledResponse = responseText
-    // Detect bold headings (assuming **heading** format)
-    .replace(/\*\*(.*?)\*\*/g, '<h3 class="ai-heading">$1</h3>')
-    
-    // Detect bullet points
-    .replace(/\n\* /g, '<li class="ai-bullet">')
-    
-    // Add container styling
-    .replace(/(<h3.*?<\/h3>)([\s\S]*?)(?=<h3|$)/g, 
-      '<div class="concept-block">$1<div class="explanation">$2</div></div>');
+    // 1. Heading Detection & Styling
+    const styledResponse = responseText
+        // Detect bold headings (assuming **heading** format)
+        .replace(/\*\*(.*?)\*\*/g, '<h3 class="ai-heading">$1</h3>')
 
-  return `
+        // Detect bullet points
+        .replace(/\n\* /g, '<li class="ai-bullet">')
+
+        // Add container styling
+        .replace(/(<h3.*?<\/h3>)([\s\S]*?)(?=<h3|$)/g,
+            '<div class="concept-block">$1<div class="explanation">$2</div></div>');
+
+    return `
     <div class="ai-response">
       ${styledResponse}
       <div class="contribution-cta">
@@ -195,7 +201,7 @@ function formatAIResponse(responseText) {
     </div>
   `;
 }
-const StoreContributionDetails = async (name, email, feedback, userid) => {
+const StoreContributionDetails = async (name, email, feedback, userid, visibility, documentId) => {
     try {
         if (!name || typeof name !== "string" || !email || typeof email !== "string" || !feedback || typeof feedback !== "string" || !userid) {
 
@@ -203,7 +209,7 @@ const StoreContributionDetails = async (name, email, feedback, userid) => {
             return { error: "Invalid data !" }
         }
 
-        const { data, error } = await supabase.from("Contributions").insert({ username: name, email: email, feedback: feedback, user_id: userid })
+        const { data, error } = await supabase.from("Contributions").insert({ username: name, email: email, feedback: feedback, user_id: userid, Document_visibility: visibility, document_id: documentId })
 
         if (error) {
             console.log(error)
@@ -215,5 +221,73 @@ const StoreContributionDetails = async (name, email, feedback, userid) => {
     } catch (error) {
         console.error(error);
         return { error: "Error while storing values in db" }
+    }
+}
+
+
+// getting all the documents that are uploaded by the user;
+
+export const GetPrivateUserDocs = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+        if (!user_id || typeof user_id !== "string") {
+            return res.status(400).json({ message: "Please Login to continue" });
+        }
+
+        const { data, error } = await supabase.from("Contributions").select("id, feedback, created_at, document_id");
+
+        if (error) {
+            console.log(error)
+            return res.status(400).json({ message: "Error while looking for documents !" })
+        }
+
+        // console.log(data);
+        return res.json({ message: "User docs found", data });
+
+    } catch (error) {
+          console.log(error)
+        return res.status(500).json({ message: "Internal Server Error", issue: error })
+    }
+}
+
+export const QueryPersonalDocs = async (req, res) => {
+    try {
+        const { docId, question, } = req.body;
+        if (!docId || typeof docId !== 'string') {
+            return res.status(400).json({ message: "Invalid document Id" });
+        }
+
+        const FoundData = [];
+
+        const response = await index.searchRecords({
+            query: {
+                topK: 10,
+                inputs: { text: question },
+                filter: {
+                    documentId: { $eq: docId }
+                }
+            },
+            fields: ['text', 'metadata'],
+        });
+
+        // console.log(response.result.hits, 'found results')
+        response.result.hits.forEach((e) => {
+            if (e) {
+                FoundData.push(e.fields.text);
+            } else {
+                console.log("no results found")
+            }
+        })
+
+
+        const AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
+
+        if (AnswerToUsersQuestion.error) {
+            return res.status(200).json({ message:"Error while generating a response",answer: "WE currently do not have information regarding this topic" })
+        }
+
+        return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion })
+    } catch (error) {
+        return res.status(500).json({ message: error })
     }
 }

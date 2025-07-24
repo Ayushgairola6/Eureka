@@ -46,7 +46,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   ] as string[]
 }) => {
   return (
-    <div className={`prose dark:prose-invert max-w-none ${className}`}>
+    <div className={`prose h-full dark:prose-invert max-w-none ${className}`}>
       <ReactMarkdown
         components={{
           code: CodeBlock 

@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { MdClose } from "react-icons/md";
 import { motion, useScroll } from 'framer-motion';
 import { useStore } from '../store/zustandHandler.ts';
-
+import { useAppSelector } from '../store/hooks.tsx';
 type NavbarProps = {
     currTab: string;
     setCurrTab: React.Dispatch<React.SetStateAction<string>>;
@@ -16,8 +16,9 @@ const Navbar: React.FC<NavbarProps> = ({ currTab, setCurrTab }) => {
     const [isVisible, setIsVisible] = useState(false);
     const { scrollYProgress } = useScroll();
     const LoggedIn = useStore((state) => state.isLoggedIn)
+    const User = useAppSelector((state) => state.auth.user)
     return (<>
-        <nav className="relative  py-1 px-6 flex items-center justify-between z-[] overflow-x-hidden">
+        <nav onClick={() => console.log(User)} className="relative  py-1 px-6 flex items-center justify-between z-[] overflow-x-hidden">
             {/* top scroll indicator */}
             <motion.div style={{ scaleX: scrollYProgress }} className='bg-indigo-500 w-full fixed py-1 origin-left top-0 left-0 z-[99]' ></motion.div>
 
@@ -36,7 +37,10 @@ const Navbar: React.FC<NavbarProps> = ({ currTab, setCurrTab }) => {
                 {LoggedIn === false && <Link onClick={() => setCurrTab("Register")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "Register" ? "slider" : "bg-transparent text-black"}`} to='/Register'>Register</Link>}
                 {/* end */}
             </div>
-            {isVisible === false ? <BiMenuAltRight onClick={() => setIsVisible(!isVisible)} className="md:hidden block cursor-pointer CustPoint" size={28} /> : <MdClose onClick={() => setIsVisible(!isVisible)} className="md:hidden block  CustPoint" size={28} />}
+            <div className='flex items-center justify-center gap-3'>
+                {isVisible === false ? <BiMenuAltRight onClick={() => setIsVisible(!isVisible)} className="md:hidden block cursor-pointer " size={28} /> : <MdClose onClick={() => setIsVisible(!isVisible)} className="md:hidden block  CustPoint" size={28} />}
+                {LoggedIn === true ? <ul className='CustPoint uppercase bg-gray-300 rounded-full px-2  space-grotesk font-bold'>{User?.username.split(" ")[0].split("")[0]}</ul> : null}
+            </div>
 
         </nav>
         <Sidebar isVisble={isVisible} setIsVisible={setIsVisible} />

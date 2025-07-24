@@ -3,25 +3,36 @@ import {
     FiLock,
     FiChevronDown
 } from 'react-icons/fi';
-import { motion } from 'framer-motion'
 import { useState } from 'react';
+import { BiPurchaseTag } from 'react-icons/bi';
+import { toast, Toaster } from 'sonner';
+import { Link } from 'react-router';
 const Pricing = () => {
 
     const faqs = [
         {
             id: 1,
-            question: "Can I switch plans later?",
-            answer: "Yes, you can upgrade or downgrade at any time."
+            question: "Can I keep my documents private ?",
+            answer: "Yes, you can choose visibility type of the document your document when uploading your files ."
         },
         {
             id: 2,
-            question: "Is my data safe with Eureka?",
-            answer: "We use industry-standard encryption and security practices."
+            question: "How can I access my personal documents",
+            answer: "In the Query interface you can see an option to see all your private docs which you can simply choose by clicking them and start querying in micro second."
         },
         {
             id: 3,
-            question: "How does the open-source version differ?",
-            answer: "The open-source version has all core features but lacks premium support and private document handling."
+            question: "What features does the premium version offers ?",
+            answer: "The premium version has all features from private secure personal documents , access to community contibuted knowledge and many upcoming features as a beta tester ."
+        },
+        {
+            id: 4,
+            question: "Can I cancel my subscription any time ?",
+            answer: "Yes you can cancel your subscription only upto 20 hours of you taking the subscription."
+        }, {
+            id: 5,
+            question: "What are the upcoming features ?",
+            answer: "Upcoming features contains significant changes in how the ai responds and also access to other services and potential offline usage with APIs to access your docs and a plug and use features"
         }
     ];
     const [show, setShow] = useState<Number>(0);
@@ -37,7 +48,7 @@ const Pricing = () => {
                 <h2 className="text-3xl sm:text-4xl bai-jamjuree-medium mb-4">
                     Simple, <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Transparent</span> Pricing
                 </h2>
-                <p className="space-grotesk text-gray-600 max-w-2xl mx-auto">
+                <p className="space-grotesk text-gray-600 max-w-2xl mx-auto text-xs md:text-sm space-grotesk">
                     Choose the plan that fits your needs. Open-source forever, premium options for teams.
                 </p>
                 {/* <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-70"></div> */}
@@ -47,15 +58,15 @@ const Pricing = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
 
                 {/* Free Tier */}
-                <motion.div whileTap={{transform:"translateY(-25px)",boxShadow:"2px 2px 2px gray"}} transition={{duration:0.3}} className="group relative p-8 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ">
+                <div className="group relative p-8 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ">
                     {/* accent gradient background */}
-                   
+
                     {/* rest of the info */}
                     <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-purple-500/30 transition-all duration-500 pointer-events-none"></div>
 
                     <div className="mb-6">
                         <h3 className="bai-jamjuree-semibold text-2xl mb-2">Community</h3>
-                        <p className="space-grotesk text-gray-600 text-sm">For individuals & open-source contributors</p>
+                        <p className="space-grotesk text-gray-600 text-sm">Free access to public knowledgebase and Unlimited contributions</p>
                     </div>
 
                     <div className="mb-8">
@@ -68,29 +79,31 @@ const Pricing = () => {
                             <FiCheckCircle className="text-green-500" />
                             Public knowledge base access
                         </li>
-                        <li className="flex items-center gap-2">
-                            <FiCheckCircle className="text-green-500" />
-                            Unlimited questions
-                        </li>
+
                         <li className="flex items-center gap-2">
                             <FiCheckCircle className="text-green-500" />
                             Community contributions
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <FiLock className="text-gray-500" />
+                            Unlimited questions
                         </li>
                         <li className="flex items-center gap-2 text-gray-400">
                             <FiLock className="text-gray-400" />
                             Private documents
                         </li>
                     </ul>
-
-                    <button className="w-full py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
-                        Get Started
-                    </button>
-                </motion.div>
+                    <Link to="/Interface">
+                        <button className="w-full py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
+                            Get Started
+                        </button>
+                    </Link>
+                </div>
 
                 {/* Pro Tier (Featured) */}
-                <motion.div whileTap={{transform:"translateY(-25px)",boxShadow:"2px 2px 2px gray"}} transition={{duration:0.3}} className="group relative p-8 bg-white/90 backdrop-blur-sm rounded-xl border border-black shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 transform ">
+                <div className="group relative p-8 bg-white/90 backdrop-blur-sm rounded-xl border border-black shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 transform ">
                     {/* accent gradient background */}
-                    
+
                     {/* rest of the info */}
                     <div className="absolute -top-3 right-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs bai-jamjuree-medium px-3 py-1 rounded-full">
                         Most Popular
@@ -98,7 +111,7 @@ const Pricing = () => {
 
                     <div className="mb-6">
                         <h3 className="bai-jamjuree-semibold text-2xl mb-2">Pro</h3>
-                        <p className="space-grotesk text-gray-600 text-sm">For professionals & small teams</p>
+                        <p className="space-grotesk text-gray-600 text-sm">For professionals , small teams , students and other Individuals </p>
                     </div>
 
                     <div className="mb-8">
@@ -125,15 +138,16 @@ const Pricing = () => {
                         </li>
                     </ul>
 
-                    <button className="w-full py-3 px-6 rounded-lg bg-gradient-to-r bg-black CustPoint text-white bai-jamjuree-medium hover:opacity-90 transition-opacity ">
-                        Start Free Trial
+                    <button className="inline-flex items-center justify-center gap-2 w-full py-3 px-6 rounded-lg bg-gradient-to-r bg-black CustPoint text-white bai-jamjuree-medium hover:opacity-90 transition-opacity ">
+                        Subscribe <BiPurchaseTag />
                     </button>
-                </motion.div>
+
+                </div>
 
                 {/* Enterprise Tier */}
-                <motion.div whileTap={{transform:"translateY(-25px)",boxShadow:"2px 2px 2px gray"}} transition={{duration:0.3}} className="group relative p-8 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="group relative p-8 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                     {/* accent gradient background */}
-                    
+
                     {/* rest of the info */}
                     <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-blue-500/30 transition-all duration-500 pointer-events-none"></div>
 
@@ -165,40 +179,46 @@ const Pricing = () => {
                         </li>
                     </ul>
 
-                    <button className="w-full py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
+
+                    <button onClick={() => {
+                        toast("Thanks for your intereset but , this feature is currently not active !")
+                    }} className="w-full py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
                         Contact Sales
                     </button>
-                </motion.div>
-            </div>
+             
 
-            {/* FAQ section */}
-            <div className="max-w-3xl mx-auto mt-20">
-                <h3 className="bai-jamjuree-semibold text-2xl mb-8 text-center">Frequently Asked Questions</h3>
-
-                <div className="space-y-4 ">
-                    {faqs.map((faq, index) => (
-                        <motion.div key={index} onClick={() => {
-                            if (faq.id === show) {
-                                setShow(0)
-                            } else {
-                                setShow(faq.id);
-                            }
-                        }} className={` border-b border-gray-200 pb-4  transition-all duration-500   rounded-lg  bai-jamjuree-regular`}>
-                            <div className={`${show === faq.id ? "h-10 p-3 mb-8" : "h-5 overflow-hidden p-0 mb-0"} transition-all duration-300 `}>
-                                <button className="flex justify-between items-center w-full space-grotesk-medium text-left cursor-pointer">
-                                    <span>{faq.question}</span>
-                                    <FiChevronDown className={`text-purple-600 transition-transform duration-300 ${show === faq.id ? "rotate-45" : "rotate-0"} `} />
-                                </button>
-                                <div className={`mt-2 space-grotesk ${show===faq.id?"text-purple-600":"text-gray-400"} text-sm`}>
-                                    {faq.answer}
-                                </div>
-                            </div>
-
-                        </motion.div>
-                    ))}
-                </div>
             </div>
         </div>
+
+        {/* FAQ section */}
+        <div className="max-w-3xl mx-auto mt-20">
+            <h3 className="bai-jamjuree-semibold text-2xl mb-8 text-center">Frequently Asked Questions</h3>
+
+            <div className="space-y-4 ">
+                {faqs.map((faq, index) => (
+                    <div key={index} onClick={() => {
+                        if (faq.id === show) {
+                            setShow(0)
+                        } else {
+                            setShow(faq.id);
+                        }
+                    }} className={` border-b border-gray-200 pb-4    rounded-lg  bai-jamjuree-regular ${show === faq.id ? " h-30 " : "h-8  overflow-hidden  "}  transition-all duration-200 `}>
+                        <div className={``}>
+                            <button className="flex justify-between items-center w-full space-grotesk-medium text-left cursor-pointer">
+                                <span>{faq.question}</span>
+                                <FiChevronDown className={`text-purple-600 transition-transform duration-300 ${show === faq.id ? "rotate-45" : "rotate-0"} `} />
+                            </button>
+                            <div className={`mt-2 space-grotesk ${show === faq.id ? "text-purple-600 opacity-100" : "opacity-0 text-gray-400"} text-xs`}>
+                                {faq.answer}
+                            </div>
+                        </div>
+
+                    </div>
+                ))}
+            </div>
+        </div>
+        <Toaster />
+    </div >
     </>)
 }
 

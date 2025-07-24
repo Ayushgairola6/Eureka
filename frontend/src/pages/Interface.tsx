@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import { Card, CardContent } from "@/components/ui/card";
-// import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import DropDown from '../components/dropdown';
 import UserForm from '../components/ui/userDetail';
-// import SafeHTML from '@/components/safeHtml.tsx';
+import SubCategories from '@/components/subcategories.tsx';
+import PrivateDocuments from '@/components/PrivateDocuments.tsx';
 import { motion } from 'framer-motion'
-// import { BiQuestionMark } from 'react-icons/bi';
-// import Dispatch from 'react';
-// import SetStateAction
 import { useStore } from '../store/zustandHandler.ts';
 import axios from 'axios';
 import MarkdownRenderer from '@/components/safeHtml.tsx';
+import { IoDocument } from 'react-icons/io5';
+import { useAppDispatch } from '../store/hooks.tsx';
+import { GetUserDocs } from '../store/AuthSlice.ts';
+
 
 function Interface() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -22,13 +23,21 @@ function Interface() {
   // const [currentDbName, setCurrentDbName] = useState<string>('');
   const [isVisible, setIsVisible] = useState(false)
   const [category, setCategory] = useState<string>('');
-  const [shhowUserForm, setShowUserForm] = useState<boolean>(false);
-
-
+  const [shhowUserForm, setShowUserForm] = useState(false);
+  const [visibility, setVisibility] = useState<string>('Public')
+  const [showSubcategory, setShowSubCategory] = useState(false);
+  const [subCategory, setSubCategory] = useState<string>('');
+  const [showDocs, setShowDocs] = useState(false);
   const loggedIn = useStore((state) => state.isLoggedIn)
+  const [selectedDoc, setSelectedDoc] = useState<string>('');
+  const [privateResponse, setPrivateResponse] = useState<string>('');
 
+  const dispatch = useAppDispatch();
+
+
+  // uploading a document
   const handleUpload = async (UserData: FormData) => {
-    if (!selectedFile || category === " " || !UserData) {
+    if (!selectedFile || category === " " || !UserData || !visibility || !subCategory) {
       toast(!selectedFile ? '❌ Please select a PDF file first.' : "❌ Please select a category first.");
       return;
     }
@@ -37,12 +46,16 @@ function Interface() {
       toast("We currently only allow verified users to contribute !Please Login to continue .")
       return;
     }
+
+    toast(visibility === "Public" ? "Your Chosen Visiblity is Public , now everyone will be able to access the the information you shared !" : "Your Chosen Visibility is Private , this document will be only visible to you in you dashboard !")
+
     setLoading(true);
     const formData = new FormData();
     formData.append('file', selectedFile);
     formData.append("category", category);
+    formData.append("visibility", visibility);
+    formData.append('subCategory', subCategory);
     formData.append("name", UserData.get("name") as string);
-    formData.append("email", UserData.get("email") as string);
     formData.append("feedback", UserData.get("feedback") as string);
 
 
@@ -52,11 +65,8 @@ function Interface() {
         withCredentials: true,
         headers: {
           "Authorization": `Bearer ${token}`,
-          // 'Content-Type':"multipart/form-data"
         }
       });
-
-
 
       if (response.data.message === "Upload successfull") {
         toast(`✅ ${response.data.message}`);
@@ -64,30 +74,33 @@ function Interface() {
         toast(`❌ Failed to Upload the File, Please try again later.`);
       }
     } catch (err: any) {
+      console.log(err)
       toast(`❌ Network error: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // ask question
+
+
+  // Asking question from the AI
   const handleAsk = async () => {
+    const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
+    if (selectedDoc || selectedDoc !== "") {
+      await QueryPrivateDocument()
+      return;
+    }
+
     if (!question.trim() || !category || category === "") {
       toast(!question ? '❌ Please enter a question.' : '❌ Please choose a category!');
       return;
     }
-    const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
 
-    // if (!category || category === "") {
-    //   console.log("categoyr is empty",category)
-    //   toast("Please choose a category !");
-    //   return;
-    // }
-    // https://eureka-7ks7.onrender.com
+
     setLoading(true);
     setAnswer('');
     try {
-      const response = await axios.post('http://localhost:1000/api/ask-pdf', { question: question, category }, {
+      const response = await axios.post('http://localhost:1000/api/ask-pdf', { question: question, category, subCategory: subCategory }, {
         withCredentials: true,
         headers: {
           "Authorization": `Bearer ${token}`
@@ -97,16 +110,46 @@ function Interface() {
 
 
       if (response.data.message === "Response found") {
+        console.log(response.data.answer)
         setAnswer(response.data.answer);
       } else {
         toast(`❌ Unable to Generate a Response at the moment'}`);
       }
     } catch (err: any) {
+      console.log(err)
       toast(`❌ Network error: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
+
+  const QueryPrivateDocument = async () => {
+    try {
+      const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
+      setLoading(true);
+
+      const privateDocResponse = await axios.post("http://localhost:1000/api/privateDocs/ask", { question: question, docId: selectedDoc }, {
+        withCredentials: true, headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      setLoading(false);
+
+      setPrivateResponse(privateDocResponse.data.answer);
+      return privateDocResponse.data.answer
+    } catch (err: any) {
+      console.log(err)
+      toast(`❌ Network error: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (loggedIn) {
+      dispatch(GetUserDocs());
+    }
+  }, [loggedIn, dispatch])
 
 
   // state reset function handler that hides any toast or drop down when user clicks anywhere on screen
@@ -114,23 +157,54 @@ function Interface() {
 
 
   return (
-    <div className=" mx-auto p-4 md:p-8 min-h-screen flex flex-col items-center justify-center  dark:bg-gray-900 text-gray-900 dark:text-gray-50 z-[1] relative">
+    <div onClick={() => console.log(privateResponse)} className=" mx-auto p-4 md:p-8 min-h-screen max-h-[90vh]  flex flex-col items-center justify-center  dark:bg-gray-900 text-gray-900 dark:text-gray-50 z-[1] relative">
       {/* draggable question mark */}
+      <PrivateDocuments selectedDoc={selectedDoc} setSelectedDoc={setSelectedDoc} showDocs={showDocs} setShowDocs={setShowDocs} />
+
 
       {/* the dropdown */}
       <div className="z-[-1] absolute top-0 left-0 h-full w-full bg-gradient-to-br from-pink-400/15 to-red-400/15 blur-xl "></div>
-      <UserForm setShowUserForm={setShowUserForm} shhowUserForm={shhowUserForm} selectedFile={selectedFile} setSelectedFile={setSelectedFile} handleUpload={handleUpload} loading={loading} />
 
-      {/* the user form for contribution details */}
-      <DropDown isVisible={isVisible} setIsVisible={setIsVisible} setCategory={setCategory} category={category} />
+      <div className='absolute top-2 flex  justify-center items-center flex-wrap'>
 
 
 
+        {isVisible === true || showSubcategory === true || showDocs === true ? null : <UserForm
+          setShowUserForm={setShowUserForm}
+          shhowUserForm={shhowUserForm}
+          selectedFile={selectedFile}
+          setSelectedFile={setSelectedFile}
+          handleUpload={handleUpload}
+          loading={loading}
+          setVisibility={setVisibility}
+        />}
+
+
+        {isVisible === true || shhowUserForm === true || showDocs === true ? null : <SubCategories
+          showSubcategory={showSubcategory}
+          setShowSubCategory={setShowSubCategory}
+          subCategory={subCategory}
+          setSubCategory={setSubCategory}
+          category={category}
+        />}
+
+        {shhowUserForm === true || showSubcategory === true || showDocs === true ? null : <DropDown
+          isVisible={isVisible}
+          setIsVisible={setIsVisible}
+          setCategory={setCategory}
+          category={category}
+        />}
+
+
+
+
+      </div>
 
 
 
       {/* rest of the page */}
-      <Card className="w-full max-w-2xl border border-gray-400  bg-gray-100 ">
+      <Card className="w-full max-w-2xl border border-gray-400 max-h-[80vh] bg-gray-100  overflow-y-scroll">
+        {/* private docs */}
 
         <CardContent>
           <div className="space-y-6">
@@ -140,7 +214,7 @@ function Interface() {
               <Label className='bai-jamjuree-semibold ' htmlFor="question">
                 {/* <BrainCircuit size={16} color='black' /> */}
 
-                Enter you question 
+                Enter you question
               </Label>
               <textarea
                 id="question"
@@ -152,6 +226,9 @@ function Interface() {
                 // disabled={!currentDbName}
                 className="resize-none disabled:opacity-70 space-grotesk text-sm md:text-md px-2 py-1 rounded-md  border border-gray-400"
               />
+              {/* private documents of the user */}
+              <ul className='bai-jamjuree-regular text-sm  flex items-center justify-end gap-2 CustPoint' onClick={() => setShowDocs(!showDocs)}>{selectedDoc !== "" ? selectedDoc : "MyDocs"} <IoDocument /></ul>
+              {/* action button */}
               <motion.button whileTap={{ scale: 1.03 }} whileHover={{ scaleX: 1.05 }} onClick={handleAsk} className='cursor-pointer bg-black w-full p-2 rounded-lg space-grotesk text-white text-sm' >
                 {loading ? 'Analyzing' : 'Ask Question'}
               </motion.button>
@@ -161,15 +238,15 @@ function Interface() {
             </div>
 
             {/* Answer Display Section */}
-            {answer && (
-              <div className="grid w-full items-center gap-5 mt-4 overflow-y-auto max-h-[50vh]">
+            {answer || privateResponse && (
+              <div className="grid  w-full items-start gap-5 mt-4 max-h-[50vh] min-h-[200px] overflow-y-auto">
                 <Label className='space-grotesk text-sm font-semibold'>Response!</Label>
-                <Card className="bg-gray-100 dark:bg-gray-800 rounded-md shadow-inner border border-black">
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-300 p-4 h-full overflow-auto">
                   <MarkdownRenderer
-                    content={answer}
-                    className="p-4 text-sm text-gray-800 dark:text-gray-200"
+                    content={answer ? answer : privateResponse}
+                    className="text-sm text-gray-800 dark:text-gray-200 h-full"
                   />
-                </Card>
+                </div>
               </div>
             )}
           </div>
@@ -177,30 +254,7 @@ function Interface() {
       </Card>
       <Toaster />
     </div>
-    // <>
-    //   <div className='h-screen '>
-    //     <section className='flex items-center justify-start gap-4 py-2 px-3 '>
-    //       <UserForm setShowUserForm={setShowUserForm} shhowUserForm={shhowUserForm} selectedFile={selectedFile} setSelectedFile={setSelectedFile} handleUpload={handleUpload} loading={loading} />
-    //       <DropDown isVisible={isVisible} setIsVisible={setIsVisible} setCategory={setCategory} />
-    //     </section>
-    //     <div className='h-full '>
-    //       {/* message display section */}
-    //       <div className='  px-3 py-2'>
-    //         {/* individual message container */}
-    //         <section className={`bg-gray-300 rounded-xl w-fit px-3 py-2`}>
-    //           <span className={`bai-jamjuree-regular text-md md:text-lg `}>Name</span>
-    //           <ul className={`space-grotesk md:text-sm text-xs`}>hello</ul>
-    //         </section>
-    //       </div>
-    //       {/* input and button part */}
-    //       <section className='flex items-center justify-between px-2 py-2 gap-2 '>
-    //         <textarea name="questionarea" placeholder='Ask your question' className='border border-gray-400 w-full rounded-lg p-2 space-grotesk front-semibold text-black'></textarea>
-    //         <button className='bg-black text-white px-3 py-1 space-grotesk rounded-lg'>Ask</button>
-    //       </section>
 
-    //     </div>
-    //   </div>
-    // </>
   );
 
 }

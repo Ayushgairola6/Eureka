@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-// import jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { supabase } from './supabaseHandler.js';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
@@ -100,4 +100,26 @@ export const HandleUserLogin = async (req, res) => {
         console.error(error);
         return res.status(500).json({ message: "Error while Logging into your account !" })
     }
+}
+
+//get user account details
+
+export const GetUserAccountDetails = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+        if (!user_id || typeof user_id !== "string") {
+            return res.status(400).json({ message: "Invalid user id" });
+        }
+
+        const { data, error } = await supabase.from("users").select("username , email,id");
+        if (error) {
+            console.log(error)
+            return res.status(404).json({ user:null,message: "User not found" });
+        }
+
+        return res.json({user:data,message:"User data found"});
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" })
+    }
+
 }

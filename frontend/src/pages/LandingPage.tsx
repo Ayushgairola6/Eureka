@@ -1,11 +1,13 @@
-import Why from './Why';
-import Pricing from '@/components/Pricing';
+import React from 'react';
+
 import { FiArrowUpRight } from 'react-icons/fi';
 // import Footer from '@/components/Footer';
 import study from '../assets/study.jpg';
 import research from '../assets/research.jpg';
 import brain from '../assets/brain.jpg'
-import Testimonials from "@/components/Testimonials";
+const Testimonials = React.lazy(()=>import('@/components/Testimonials'));
+const Why = React.lazy(()=>import('./Why'));
+const Pricing = React.lazy(()=>import('@/components/Pricing'));
 import { Link } from 'react-router';
 import { motion } from 'framer-motion'
 import Marquee from '@/components/marquee';
@@ -65,7 +67,7 @@ const LandingPage = () => {
                     <h2 className="bai-jamjuree-light text-xs md:text-lg text-center text-black ">With the help of <Link to="/Interface" className='text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-sky-600 font-bold '>EUREKA</Link> anyone can obtain information about any topic based on the data uploaded and verified by community members , making information access and sharing much easier and faster .</h2>
                     <motion.ul whileHover={{ scale: 1.05, transform: "translateX(50px)" }} transition={{ duration: 0.6, ease: "circInOut" }} whileTap={{ scale: 1.09, transform: "translateX(40px)" }} >
                         <Link
-                            to="/Interface" className=' p-3  overflow-x-hidden  rounded-lg bg-black text-white space-grotesk flex items-center justify-center gap-2 mt-10 CustPoint     transition-all duration-500 '>Get Started <ul  ><FiArrowUpRight className='' /></ul></Link>
+                            to="/Interface" className=' p-3  overflow-x-hidden  rounded-lg bg-black text-white space-grotesk flex items-center justify-center gap-2 mt-10 CustPoint     transition-all duration-500 '>Try for free<ul  ><FiArrowUpRight className='' /></ul></Link>
                     </motion.ul>
 
 
