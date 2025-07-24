@@ -2,7 +2,7 @@ import { Toaster, toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router'
 import { IoIosHourglass } from 'react-icons/io';
-import { MdEmail, MdPassword } from 'react-icons/md';
+import { MdEmail } from 'react-icons/md';
 import { useState, useRef } from 'react';
 import axios from 'axios';
 

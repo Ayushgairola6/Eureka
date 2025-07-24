@@ -1,12 +1,12 @@
-import { Toaster, toast } from 'sonner';
+import { Toaster } from 'sonner';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router'
 import { IoIosHourglass } from 'react-icons/io';
 import { MdEmail, MdPassword } from 'react-icons/md';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
 const ResetPassword = () => {
-    const [isPending, setIsPending] = useState('idle')
+    const [isPending] = useState('idle')
     return (<>
         <div className="h-screen flex items-center justify-center relative z-[2]">
             <Toaster />
