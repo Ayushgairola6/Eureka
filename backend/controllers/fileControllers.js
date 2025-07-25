@@ -146,7 +146,9 @@ export const FindMatchingResponse = async (req, res) => {
                 topK: 10,
                 inputs: { text: question },
                 filter: {
-                    category: { $eq: category } // Exact match filter
+                    category: { $eq: category },
+                    subCategory: { $eq: subCategory },
+                    visibility: { $eq: "Private" }
                 }
             },
             fields: ['text', 'metadata'],
@@ -245,7 +247,7 @@ export const GetPrivateUserDocs = async (req, res) => {
         return res.json({ message: "User docs found", data });
 
     } catch (error) {
-          console.log(error)
+        console.log(error)
         return res.status(500).json({ message: "Internal Server Error", issue: error })
     }
 }
@@ -264,7 +266,8 @@ export const QueryPersonalDocs = async (req, res) => {
                 topK: 10,
                 inputs: { text: question },
                 filter: {
-                    documentId: { $eq: docId }
+                    documentId: { $eq: docId },
+                    visibility: { $eq: "Private" }
                 }
             },
             fields: ['text', 'metadata'],
@@ -283,7 +286,7 @@ export const QueryPersonalDocs = async (req, res) => {
         const AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
 
         if (AnswerToUsersQuestion.error) {
-            return res.status(200).json({ message:"Error while generating a response",answer: "WE currently do not have information regarding this topic" })
+            return res.status(200).json({ message: "Error while generating a response", answer: "WE currently do not have information regarding this topic" })
         }
 
         return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion })
