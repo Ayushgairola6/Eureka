@@ -33,10 +33,12 @@ const App = () => {
   }, [loggedIn, dispatch])
 
   useEffect(() => {
+      const controller = new AbortController();
     const VerifyLoginState: () => Promise<void> = async () => {
       try {
         const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
         const response = await axios.get("https://eureka-7ks7.onrender.com/api/verify/userstate", {
+          signal: controller.signal,
           withCredentials: true,
           headers: {
             "Authorization": `Bearer ${token}`
@@ -51,7 +53,8 @@ const App = () => {
       }
     }
     VerifyLoginState()
-  }, [])
+    return ()=>controller.abort()
+  }, [loggedIn])
 
 
 

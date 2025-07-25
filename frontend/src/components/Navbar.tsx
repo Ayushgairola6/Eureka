@@ -39,7 +39,7 @@ const Navbar: React.FC<NavbarProps> = ({ currTab, setCurrTab }) => {
             </div>
             <div className='flex items-center justify-center gap-3'>
                 {isVisible === false ? <BiMenuAltRight onClick={() => setIsVisible(!isVisible)} className="md:hidden block cursor-pointer " size={28} /> : <MdClose onClick={() => setIsVisible(!isVisible)} className="md:hidden block  CustPoint" size={28} />}
-                {LoggedIn === true ? <ul className='CustPoint uppercase bg-gray-300 rounded-full px-2  space-grotesk font-bold'>{User?.username.split(" ")[0].split("")[0]}</ul> : null}
+                {LoggedIn === true ? <ul className='CustPoint uppercase bg-sky-300 rounded-full px-2  space-grotesk font-bold'>{User?.username.split(" ")[0].split("")[0]}</ul> : null}
             </div>
 
         </nav>

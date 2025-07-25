@@ -110,13 +110,13 @@ function Interface() {
 
 
       if (response.data.message === "Response found") {
-        console.log(response.data.answer)
+        // console.log(response.data.answer)
         setAnswer(response.data.answer);
       } else {
         toast(`❌ Unable to Generate a Response at the moment'}`);
       }
     } catch (err: any) {
-      console.log(err)
+      // console.log(err)
       toast(`❌ Network error: ${err.message}`);
     } finally {
       setLoading(false);
@@ -138,7 +138,7 @@ function Interface() {
       setPrivateResponse(privateDocResponse.data.answer);
       return privateDocResponse.data.answer
     } catch (err: any) {
-      console.log(err)
+      // console.log(err)
       toast(`❌ Network error: ${err.message}`);
     } finally {
       setLoading(false);
@@ -157,7 +157,7 @@ function Interface() {
 
 
   return (
-    <div onClick={() => console.log(privateResponse)} className=" mx-auto p-4 md:p-8 min-h-screen max-h-[90vh]  flex flex-col items-center justify-center  dark:bg-gray-900 text-gray-900 dark:text-gray-50 z-[1] relative">
+    <div  className=" mx-auto p-4 md:p-8 min-h-screen max-h-[90vh]  flex flex-col items-center justify-center  dark:bg-gray-900 text-gray-900 dark:text-gray-50 z-[1] relative">
       {/* draggable question mark */}
       <PrivateDocuments selectedDoc={selectedDoc} setSelectedDoc={setSelectedDoc} showDocs={showDocs} setShowDocs={setShowDocs} />
 

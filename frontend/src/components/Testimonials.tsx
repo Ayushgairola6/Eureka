@@ -1,8 +1,14 @@
 import user from '../assets/user.jpg';
+import user2 from '../../public/user2.jpg';
+import user3 from '../../public/user3.jpg';
+import user4 from '../../public/user4.jpg';
+import user5 from '../../public/user5.jpg';
+
 import { motion } from 'framer-motion';
 import { useRef } from 'react';
 import { FaArrowRight, FaArrowLeft } from 'react-icons/fa';
 import { MdPrivateConnectivity } from 'react-icons/md';
+
 const TestiMonials = () => {
 
     const ContainerRef = useRef<HTMLDivElement>(null);
@@ -54,10 +60,10 @@ const TestiMonials = () => {
                                 <h3 className="bai-jamjuree-semibold text-lg">Game-Changer for Research</h3>
                             </div>
                             <p className="space-grotesk-light text-gray-700 mb-4">
-                                "Eureka helped me find verified legal precedents in minutes—what usually takes hours. The community-shared documents are gold!"
+                                "Eureka helped me find summarize legal precedents in minutes—what usually takes hours. The private documents feature is gold!"
                             </p>
                             <div className="flex items-center gap-2">
-                                <img className="w-8 h-8 rounded-full" src={user} alt="Sarah K." />
+                                <img className="w-10 h-10 rounded-full" src={user2} alt="Sarah K." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Sarah K.</p>
                                     <p className="space-grotesk text-xs text-gray-500">Law Researcher, NY</p>
@@ -83,7 +89,7 @@ const TestiMonials = () => {
                                 "As a startup founder, I use Eureka daily to understand complex SEC filings. It's like having a finance PhD on call."
                             </p>
                             <div className="flex items-center gap-2">
-                                <img className="w-8 h-8 rounded-full" src={user} alt="Michael T." />
+                                <img className="w-10 h-10 rounded-full" src={user4} alt="Michael T." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Michael T.</p>
                                     <p className="space-grotesk text-xs text-gray-500">Startup Founder, SF</p>
@@ -108,7 +114,7 @@ const TestiMonials = () => {
                                 "I upload my ML notes and get back textbook-quality explanations with code examples. It's revolutionized my study routine."
                             </p>
                             <div className="flex items-center gap-2">
-                                <img className="w-8 h-8 rounded-full" src={user} alt="Priya M." />
+                                <img className="w-10 h-10 rounded-full" src={user} alt="Priya M." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Priya M.</p>
                                     <p className="space-grotesk text-xs text-gray-500">AI Student, MIT</p>
@@ -133,7 +139,7 @@ const TestiMonials = () => {
                                 "Eureka's document analysis helped me cross-reference clinical studies in half the time. I discovered connections between studies that led to a major research breakthrough."
                             </p>
                             <div className="flex items-center gap-2">
-                                <img className="w-8 h-8 rounded-full" src={user} alt="Dr. James L." />
+                                <img className="w-10 h-10 rounded-full" src={user5} alt="Dr. James L." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Dr. James L.</p>
                                     <p className="space-grotesk text-xs text-gray-500">Medical Researcher, Johns Hopkins</p>
@@ -150,16 +156,16 @@ const TestiMonials = () => {
                                 <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                                     <MdPrivateConnectivity size={29} />
                                 </div>
-                                <h3 className="bai-jamjuree-semibold text-lg">Privacy of documents</h3>
+                                <h3 className="bai-jamjuree-semibold text-lg">Privacy of Documents</h3>
                             </div>
                             <p className="space-grotesk-light text-gray-700 mb-4">
-                                "The private mode helped me with"
+                                "With Eureka's private mode, I can securely upload sensitive research without worrying about leaks. It gives me peace of mind knowing my work stays confidential until I'm ready to share."
                             </p>
                             <div className="flex items-center gap-2">
-                                <img className="w-8 h-8 rounded-full" src={user} alt="Dr. James L." />
+                                <img className="w-10 h-10 rounded-full" src={user3} alt="Dr. James L." />
                                 <div>
-                                    <p className="bai-jamjuree-medium text-sm">Dr. James L.</p>
-                                    <p className="space-grotesk text-xs text-gray-500">Medical Researcher, Johns Hopkins</p>
+                                    <p className="bai-jamjuree-medium text-sm">Dr. Stephanie Ruth</p>
+                                    <p className="space-grotesk text-xs text-gray-500">Open Source contributer</p>
                                 </div>
                             </div>
                         </motion.div>

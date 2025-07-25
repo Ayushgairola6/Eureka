@@ -14,87 +14,133 @@ const SubCategories: React.FC<SubcategoryProps> = ({ subCategory, setSubCategory
 
 
 
-    const SubCategories = [{
-        parent: "AI", subcategories: [
-            "RAG",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-        ]
-    }, {
-        parent: "Finance", subcategories: [
-            "RAG",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-        ]
-    }, {
-        parent: "Fashion", subcategories: [
-            "RAG",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-        ]
-    }, {
-        parent: "Physics", subcategories: [
-            "Quantum Mechanics",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-        ]
-    }, {
-        parent: "Chemistry", subcategories: [
-            "RAG",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-        ]
-    }, {
-        parent: "Biology", subcategories: [
-            "RAG",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-        ]
-    }, {
-        parent: "History", subcategories: [
-            "Ancient world",
-            "Medieaval world",
-            "Modern world",
-            "World War 1",
-            "World War 2",
-        ]
-    }, {
-        parent: "Geography", subcategories: [
-            "RAG",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-        ]
-    }, {
-        parent: "MatheMatics", subcategories: [
-            "RAG",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-        ]
-    },{
-        parent: "Other", subcategories: [
-            "Language",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-            "Neural Networks",
-        ]
-    }]
+    const SubCategories = [
+        {
+            parent: "AI",
+            subcategories: [
+                "Machine Learning",
+                "Deep Learning",
+                "Natural Language Processing",
+                "Computer Vision",
+                "Reinforcement Learning",
+                "Robotics",
+                "Expert Systems",
+                "Speech Recognition"
+            ]
+        },
+        {
+            parent: "Finance",
+            subcategories: [
+                "Corporate Finance",
+                "Investment Banking",
+                "Personal Finance",
+                "Financial Markets",
+                "Risk Management",
+                "Quantitative Finance",
+                "Accounting",
+                "Fintech"
+            ]
+        },
+        {
+            parent: "Fashion",
+            subcategories: [
+                "Textile Design",
+                "Fashion Marketing",
+                "Apparel Production",
+                "Fashion Merchandising",
+                "Sustainable Fashion",
+                "Fashion Illustration",
+                "Costume Design"
+            ]
+        },
+        {
+            parent: "Physics",
+            subcategories: [
+                "Quantum Mechanics",
+                "Classical Mechanics",
+                "Thermodynamics",
+                "Electromagnetism",
+                "Optics",
+                "Astrophysics",
+                "Nuclear Physics",
+                "Particle Physics"
+            ]
+        },
+        {
+            parent: "Chemistry",
+            subcategories: [
+                "Organic Chemistry",
+                "Inorganic Chemistry",
+                "Physical Chemistry",
+                "Analytical Chemistry",
+                "Biochemistry",
+                "Theoretical Chemistry",
+                "Materials Chemistry"
+            ]
+        },
+        {
+            parent: "Biology",
+            subcategories: [
+                "Molecular Biology",
+                "Cell Biology",
+                "Genetics",
+                "Ecology",
+                "Evolutionary Biology",
+                "Microbiology",
+                "Botany",
+                "Zoology"
+            ]
+        },
+        {
+            parent: "History",
+            subcategories: [
+                "Ancient History",
+                "Medieval History",
+                "Modern History",
+                "World War I",
+                "World War II",
+                "History of Science",
+                "Cultural History"
+            ]
+        },
+        {
+            parent: "Geography",
+            subcategories: [
+                "Physical Geography",
+                "Human Geography",
+                "Cartography",
+                "Geospatial Analysis",
+                "Climatology",
+                "Urban Geography",
+                "Environmental Geography"
+            ]
+        },
+        {
+            parent: "Mathematics",
+            subcategories: [
+                "Algebra",
+                "Calculus",
+                "Geometry",
+                "Statistics",
+                "Number Theory",
+                "Topology",
+                "Discrete Mathematics",
+                "Applied Mathematics"
+            ]
+        },
+        {
+            parent: "Other",
+            subcategories: [
+                "Linguistics",
+                "Philosophy",
+                "Psychology",
+                "Sociology",
+                "Political Science",
+                "Anthropology",
+                "Education"
+            ]
+        }
+    ]
 
     // 
     return (<>
