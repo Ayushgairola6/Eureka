@@ -14,6 +14,7 @@ import { IoDocument } from 'react-icons/io5';
 import { useAppDispatch } from '../store/hooks.tsx';
 import { GetUserDocs } from '../store/AuthSlice.ts';
 
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 function Interface() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -60,11 +61,12 @@ function Interface() {
 
 
     try {
-      const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
-      const response = await axios.post('https://eureka-7ks7.onrender.com/api/upload-pdf', formData, {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
+      const response = await axios.post(`${BaseApiUrl}/api/upload-pdf`, formData, {
         withCredentials: true,
         headers: {
-          "Authorization": `Bearer ${token}`,
+          "Authorization": `Bearer ${{ AuthToken, RefreshToken }}`,
         }
       });
 
@@ -85,7 +87,8 @@ function Interface() {
 
   // Asking question from the AI
   const handleAsk = async () => {
-    const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
+    const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+    const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
     if (selectedDoc || selectedDoc !== "") {
       await QueryPrivateDocument()
       return;
@@ -100,10 +103,10 @@ function Interface() {
     setLoading(true);
     setAnswer('');
     try {
-      const response = await axios.post('https://eureka-7ks7.onrender.com/api/ask-pdf', { question: question, category, subCategory: subCategory }, {
+      const response = await axios.post(`${BaseApiUrl}/api/ask-pdf`, { question: question, category, subCategory: subCategory }, {
         withCredentials: true,
         headers: {
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${{ AuthToken, RefreshToken }}`
         }
       });
 
@@ -116,7 +119,7 @@ function Interface() {
         toast(`❌ Unable to Generate a Response at the moment'}`);
       }
     } catch (err: any) {
-      // console.log(err)
+      console.log(err)
       toast(`❌ Network error: ${err.message}`);
     } finally {
       setLoading(false);
@@ -125,12 +128,13 @@ function Interface() {
 
   const QueryPrivateDocument = async () => {
     try {
-      const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
       setLoading(true);
 
-      const privateDocResponse = await axios.post("https://eureka-7ks7.onrender.com/api/privateDocs/ask", { question: question, docId: selectedDoc }, {
+      const privateDocResponse = await axios.post(`${BaseApiUrl}/api/privateDocs/ask`, { question: question, docId: selectedDoc }, {
         withCredentials: true, headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${{ AuthToken, RefreshToken }}`
         }
       })
       setLoading(false);
@@ -157,7 +161,7 @@ function Interface() {
 
 
   return (
-    <div  className=" mx-auto p-4 md:p-8 min-h-screen max-h-[90vh]  flex flex-col items-center justify-center  dark:bg-gray-900 text-gray-900 dark:text-gray-50 z-[1] relative">
+    <div className=" mx-auto p-4 md:p-8 min-h-screen max-h-[90vh]  flex flex-col items-center justify-center  dark:bg-gray-900 text-gray-900 dark:text-gray-50 z-[1] relative">
       {/* draggable question mark */}
       <PrivateDocuments selectedDoc={selectedDoc} setSelectedDoc={setSelectedDoc} showDocs={showDocs} setShowDocs={setShowDocs} />
 

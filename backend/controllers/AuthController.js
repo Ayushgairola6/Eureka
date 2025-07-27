@@ -66,35 +66,39 @@ export const HandleUserLogin = async (req, res) => {
         const { email, password } = req.body;
 
         if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+            console.error("Invalid data ")
             return res.status(400).json({ message: "Invalid data type !" })
         }
 
         const { data, error } = await supabase.from("users").select('email, id, username').eq('email', email)
 
         if (data?.length === 0 || error) {
-            console.error(error);
+            console.error(error,'user not found');
             return res.status(404).json({ message: "User not found !" })
         }
 
-        const AuthToken = jwt.sign(
-            {
-                id: data[0].id,
-                email: data[0].email,
-                username: data[0].username
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '1d' }
-        );
-
+        const RefreshToken = GenerateRefreshTokens(data[0].id, data[0].email, data[0].username);
+        const AuthToken = GenerateAccessTokens(data[0].id, data[0].email, data[0].username)
+        const store = await StoreTokens(RefreshToken, AuthToken, data[0].id);
+        if (store.error) {
+            console.log(store.error)
+            return res.status(400).json({ message: "Error while logging in please try again later !" })
+        }
         // attaching cookies to the response
-        res.cookie('Eureka_eta_six_version1_Auth_Token', AuthToken, {
+        // console.log(RefreshToken,AuthToken)
+        res.cookie('Eureka_eta_six_version1_RefreshToken', RefreshToken, {
             httpOnly: true,
             secure: true,
             sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
         });
-
-        return res.status(200).json({ message: "Login successfull", token: AuthToken })
+        res.cookie('Eureka_eta_six_version1_AuthToken', AuthToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 24 * 60 * 60 * 1000,
+        });
+        return res.status(200).json({ message: "Login successfull", RefreshToken: RefreshToken, AuthToken:AuthToken })
 
     } catch (error) {
         console.error(error);
@@ -102,6 +106,54 @@ export const HandleUserLogin = async (req, res) => {
     }
 }
 
+// generate access token 
+const GenerateRefreshTokens =  (id, email, username) => {
+    try {
+        if (!id || typeof id !== 'string' || !email || typeof email !== "string" || !username || typeof username !== 'string') {
+            return { status: 400, error: "Error - Some arguments are missing !" }
+        }
+        const RefreshToken = jwt.sign({ id: id, email: email, username: username }, process.env.REFRESH_TOKEN_SECRET,
+            { expiresIn: '30d' });
+
+
+        return RefreshToken;
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+const GenerateAccessTokens =  (id, email, username) => {
+    try {
+        if (!id || typeof id !== 'string' || !email || typeof email !== "string" || !username || typeof username !== 'string') {
+            return { status: 400, error: "Error - Some arguments are missing !" }
+        }
+        const Secret = process.env.JWT_SECRET;
+        const AccessToken = jwt.sign({ id: id, email: email, username: username }, Secret,
+            { expiresIn: '20min' });
+
+
+        return AccessToken;
+    } catch (err) {
+        console.error(err)
+    }
+}
+
+// Store tokens in the database;
+const StoreTokens = async (RefreshToken, AuthToken, id) => {
+    try {
+        if (!RefreshToken  || !AuthToken  || !id || typeof id !== 'string') {
+            return { error: "No token found" }
+        }
+        const { error } = await supabase.from("Tokens").insert({ Refresh_Token: RefreshToken, Access_Token: AuthToken, user_id: id });
+        if (error) {
+            return error;
+        }
+
+        return { message: "Token stored successfully" };
+    } catch (err) {
+        console.error(err);
+    }
+}
 //get user account details
 
 export const GetUserAccountDetails = async (req, res) => {
@@ -114,10 +166,10 @@ export const GetUserAccountDetails = async (req, res) => {
         const { data, error } = await supabase.from("users").select("username , email,id");
         if (error) {
             console.log(error)
-            return res.status(404).json({ user:null,message: "User not found" });
+            return res.status(404).json({ user: null, message: "User not found" });
         }
 
-        return res.json({user:data,message:"User data found"});
+        return res.json({ user: data, message: "User data found" });
     } catch (error) {
         return res.status(500).json({ message: "Internal Server Error" })
     }

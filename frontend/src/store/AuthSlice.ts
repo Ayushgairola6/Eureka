@@ -2,14 +2,14 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from './reduxstore';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 // Document type should be separate from auth state
 export interface Document {
   id: string;
   feedback: string;
   url: string;
   created_at: string;
-  document_id:string;
+  document_id: string;
 
 }
 
@@ -47,12 +47,13 @@ export const GetUserDocs = createAsyncThunk<Document[], void>(
   'auth/getDocuments',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token");
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
 
-      const response = await axios.get("https://eureka-7ks7.onrender.com/api/user/documents", {
+      const response = await axios.get(`${BaseApiUrl}/api/user/documents`, {
         withCredentials: true,
         headers: {
-          'Authorization': `Bearer ${token}`
+          "Authorization": `Bearer ${{ AuthToken, RefreshToken }}`
         }
       });
 
@@ -60,7 +61,7 @@ export const GetUserDocs = createAsyncThunk<Document[], void>(
         return [];
       }
       console.log(response.data);
-      return response.data.data as Document[]; 
+      return response.data.data as Document[];
     } catch (err) {
       return rejectWithValue(
         err instanceof Error ? err.message : 'Failed to fetch documents'
@@ -74,11 +75,12 @@ export const GetUserDetails = createAsyncThunk<User, void>(
   'user/accountdata',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token");
-      const response = await axios.get('https://eureka-7ks7.onrender.com/api/user/account-details', {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
+      const response = await axios.get(`${BaseApiUrl}/api/user/account-details`, {
         withCredentials: true,
         headers: {
-          'Authorization': `Bearer ${token}`
+          "Authorization": `Bearer ${{ AuthToken, RefreshToken }}`
         }
       })
       if (response.data.message === "User data found") {

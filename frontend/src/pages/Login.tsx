@@ -8,6 +8,7 @@ import { CiLogin } from 'react-icons/ci';
 import { IoIosHourglass } from 'react-icons/io';
 import { MdEmail, MdPassword } from "react-icons/md";
 import { useStore } from '../store/zustandHandler.ts'
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 const Login = () => {
     const [isPending, setIsPending] = useState('idle');
@@ -39,10 +40,10 @@ const Login = () => {
                 password: Password.current?.value,
             }
 
-            const response = await axios.post("https://eureka-7ks7.onrender.com/api/user/login", userInformation, {
+            const response = await axios.post(`${BaseApiUrl}/api/user/login`, userInformation, {
                 withCredentials: true,
                 headers: {
-                    "Authorization": `Bearer ${"token"}`
+
                 }
             })
             // console.log(response.data)
@@ -54,7 +55,8 @@ const Login = () => {
                     setIsPending("idle");
                 }, 3000)
                 // console.log(response.data)
-                localStorage.setItem("Eureka_six_eta_v1_Auth_token", response.data.token);
+                localStorage.setItem("Eureka_six_eta_v1_RefreshToken", response.data.RefreshToken);
+                localStorage.setItem("Eureka_six_eta_v1_Authtoken", response.data.AuthToken)
             }
         } catch (error: unknown) {
             setIsPending('failed');

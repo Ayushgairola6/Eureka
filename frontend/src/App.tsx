@@ -8,21 +8,29 @@ const Register = lazy(() => import('./pages/Register.tsx'));
 const Feedback = lazy(() => import('./pages/FeedbackPage.tsx'));
 const EmailVerificationForm = lazy(() => import('./pages/EmailVerificationForm.tsx'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword.tsx'));
+const API = lazy(() => import("./pages/API.tsx"))
+const DocsPage2 = lazy(() => import("./pages/docs_page2.tsx"));
+const Privacy = lazy(() => import("./pages/docs_page3.tsx"));
+const API_functions = lazy(() => import("./pages/docs_page4.tsx"))
+// const GetApiKey = lazy(()=>import("./pages/getAPI_Key.tsx"));
+
 import { useAppDispatch } from './store/hooks.tsx';
 import { GetUserDetails, } from './store/AuthSlice.ts';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer'
-
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 import "./App.css"
 import axios from 'axios';
 import { useStore } from './store/zustandHandler.ts'
+const DocumentationLayout = lazy(() => import('./pages/DocumentationLayout.tsx'));
+
 
 
 const App = () => {
 
   const [currTab, setCurrTab] = useState("Home");
   const Loggedin = useStore((state) => state.Login);
-  const loggedIn = useStore((state)=>state.isLoggedIn);
+  const loggedIn = useStore((state) => state.isLoggedIn);
   const dispatch = useAppDispatch()
 
 
@@ -33,15 +41,16 @@ const App = () => {
   }, [loggedIn, dispatch])
 
   useEffect(() => {
-      const controller = new AbortController();
+    const controller = new AbortController();
     const VerifyLoginState: () => Promise<void> = async () => {
       try {
-        const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token")
-        const response = await axios.get("https://eureka-7ks7.onrender.com/api/verify/userstate", {
-          signal: controller.signal,
+        const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+        const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
+        const response = await axios.get(`${BaseApiUrl}/api/verify/userstate`, {
+          // signal: controller.signal,
           withCredentials: true,
           headers: {
-            "Authorization": `Bearer ${token}`
+            "Authorization": `Bearer ${{ AuthToken, RefreshToken }}`
           }
         })
         if (response.data.message === "verified") {
@@ -49,18 +58,18 @@ const App = () => {
           return
         }
       } catch (error) {
-        console.error(error);
+        console.log(error);
       }
     }
     VerifyLoginState()
-    return ()=>controller.abort()
+    return () => controller.abort()
   }, [loggedIn])
 
 
 
   return (<>
-    <Suspense fallback={<div className='h-screen bg-black flex items-center justify-center font-bold space-grotesk   text-6xl '>
-    <ul className='rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 py-4 px-6 shadow-sm shadow-black animate-pulse'>E</ul>
+    <Suspense fallback={<div className='h-screen bg-black flex items-center justify-center     text-6xl '>
+      <ul className='rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 py-4 px-6 shadow-sm shadow-black animate-pulse bai-jamjuree-bold'>E</ul>
     </div>}>
       <Router >
 
@@ -76,7 +85,17 @@ const App = () => {
           <Route element={<EmailVerificationForm />} path="/ResetPassword" />
           <Route element={<ResetPassword />} path="/temp" />
 
+          <Route element={<DocumentationLayout />}>
+            <Route element={<API />} path="/API/featured" />
+            <Route element={<DocsPage2 />} path="/docs/page2" />
+            <Route element={<Privacy />} path="/docs/page3" />
+            <Route element={<API_functions />} path="/docs/page4" />
+
+
+            {/* Add more documentation routes here */}
+          </Route>
         </Routes>
+
         <Footer></Footer>
 
       </Router>

@@ -29,7 +29,7 @@ const Feedback = () => {
         const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token");
 
         try {
-            const response = await axios.post("https://eureka-7ks7.onrender.com/api/user/review-data", {
+            const response = await axios.post("http://localhost:1000/api/user/review-data", {
                 review: InputRef.current?.value,
                 where: helpRef.current?.value
             }, {

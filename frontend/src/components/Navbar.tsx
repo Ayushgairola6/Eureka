@@ -18,7 +18,7 @@ const Navbar: React.FC<NavbarProps> = ({ currTab, setCurrTab }) => {
     const LoggedIn = useStore((state) => state.isLoggedIn)
     const User = useAppSelector((state) => state.auth.user)
     return (<>
-        <nav onClick={() => console.log(User)} className="relative  py-1 px-6 flex items-center justify-between z-[] overflow-x-hidden">
+        <nav  className="relative  py-1 px-6 flex items-center justify-between z-[] overflow-x-hidden">
             {/* top scroll indicator */}
             <motion.div style={{ scaleX: scrollYProgress }} className='bg-indigo-500 w-full fixed py-1 origin-left top-0 left-0 z-[99]' ></motion.div>
 
@@ -32,6 +32,8 @@ const Navbar: React.FC<NavbarProps> = ({ currTab, setCurrTab }) => {
                 {/* <Link onClick={() => setCurrTab("Details")} className={` rounded-lg py-1 px-2 ${currTab === "Details" ? "slider" : "bg-transparent text-black"}`} to='/Details'>Details</Link> */}
                 <Link onClick={() => setCurrTab("About")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "About" ? "slider" : "bg-transparent text-black"}`} to='/About'>Quick start</Link>
                 <Link onClick={() => setCurrTab("Feedback")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "Feedback" ? "slider" : "bg-transparent text-black"}`} to='/Feedback'>Feedback</Link>
+                 <Link onClick={() => setCurrTab("API")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "API" ? "slider" : "bg-transparent text-black"}`} to='/API/featured'>API</Link>
+
                 {/* only render if the user is not logged In */}
                 {LoggedIn === false && <Link onClick={() => setCurrTab("Login")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "Login" ? "slider" : "bg-transparent text-black"}`} to='/Login'>Login</Link>}
                 {LoggedIn === false && <Link onClick={() => setCurrTab("Register")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "Register" ? "slider" : "bg-transparent text-black"}`} to='/Register'>Register</Link>}

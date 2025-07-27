@@ -22,11 +22,11 @@ export const GenerateResponse = async (question, data) => {
         const FormattedData = [{
             role: "user", parts: [{ text: question }]
         }, {
-            role: "model", parts: [{ text: JSON.stringify({ ...data },Mode_prompt) }]
+            role: "model", parts: [{ text: JSON.stringify({ ...data }, Mode_prompt) }]
         }
         ]
         const result = await genAI.models.generateContent({
-            model:"gemini-1.5-flash",
+            model: "gemini-1.5-flash",
             contents: FormattedData,
             generationConfig: {
                 temperature: 0.8,
@@ -39,9 +39,9 @@ export const GenerateResponse = async (question, data) => {
         const responseText = result.text;
         // console.log(responseText)
         if (!responseText) {
-            return { error: "I am having some issues right now, can we talk later, I am really sorry for this issue, thanks for understanding me " }
+            return { error: "The server is very busy , please try again !" }
         }
-    
+
         return responseText;
     } catch (error) {
         console.error(`error while generating a response ${error}`);

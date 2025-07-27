@@ -5,7 +5,7 @@ import { IoIosHourglass } from 'react-icons/io';
 import { MdEmail } from 'react-icons/md';
 import { useState, useRef } from 'react';
 import axios from 'axios';
-
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 const EmailVerificationForm = () => {
     const [isPending, setIsPending] = useState('idle');
     const EmailRef = useRef<HTMLInputElement>(null)
@@ -19,7 +19,7 @@ const EmailVerificationForm = () => {
                 setIsPending("idle")
                 return ;
             }
-          const response = await axios.post("https://eureka-7ks7.onrender.com/api/user/email-verify",{email:EmailRef.current?.value},{
+          const response = await axios.post(`${BaseApiUrl}/api/user/email-verify`,{email:EmailRef.current?.value},{
             withCredentials:true,
             headers:{
                 // "Authorization":`Bearer ${token}`

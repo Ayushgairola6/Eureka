@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { Router } from './routers/filerouter.js';
 import {AuthRouter} from './routers/AuthRouter.js';
 import { ReviewRouter } from './routers/ReviewRouter.js';
+import {API_Router} from './routers/ApiRouter.js'
 import cookieParser from 'cookie-parser';
 dotenv.config();
 const app = express();
@@ -33,7 +34,7 @@ app.use(express.urlencoded());
 app.use("/api/",Router)
 app.use("/api/",AuthRouter)
 app.use("/api/",ReviewRouter)
-
+app.use("/api/",API_Router)
 app.listen(process.env.PORT, "0.0.0.0", () => {
     console.log(`Server has started on port ${process.env.PORT}`);
 });

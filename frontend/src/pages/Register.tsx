@@ -5,6 +5,7 @@ import axios, { isAxiosError } from 'axios'
 import { toast, Toaster } from "sonner";
 import {FaUserPlus,FaUser} from 'react-icons/fa'
 import { MdEmail ,MdPassword } from "react-icons/md";
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 import { IoIosHourglass } from "react-icons/io";
 const Register = () => {
@@ -48,7 +49,7 @@ const Register = () => {
         }
 
         try {
-            const response = await axios.post("https://eureka-7ks7.onrender.com/api/user/register", UserInformation, {
+            const response = await axios.post(`${BaseApiUrl}/api/user/register`, UserInformation, {
                 withCredentials: true,
                 headers: {
                     "Authorization": `Bearer ${"token"}`

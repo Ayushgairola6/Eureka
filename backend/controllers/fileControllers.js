@@ -167,7 +167,7 @@ export const FindMatchingResponse = async (req, res) => {
         const AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
 
         if (AnswerToUsersQuestion.error) {
-            return res.status(200).json({ answer: "WE currently do not have information regarding this topic" })
+            return res.status(200).json({ answer: AnswerToUsersQuestion.error })
         }
         // const FormattedResponse = formatAIResponse(AnswerToUsersQuestion)
         // console.log(AnswerToUsersQuestion)
