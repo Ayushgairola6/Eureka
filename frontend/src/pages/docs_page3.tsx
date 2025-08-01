@@ -16,23 +16,23 @@ import { FaArrowRight } from "react-icons/fa";
 
 const Privacy = () => {
     return (
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/60 p-8 w-full flex flex-col items-center gap-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/60 px-4 py-6 w-full flex flex-col items-center gap-8 hover:shadow-2xl transition-shadow duration-300">
             {/* Header Section */}
             <div className="text-center space-y-3 w-full">
-                <h1 className="text-4xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                <h1 className="bai-jamjuree-semibold text-2xl md:text-4xl  text-black ">
                     Private Documents
                 </h1>
-                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                <p className="text-sm md:text-lg space-grotesk text-gray-600 max-w-2xl mx-auto">
                     Your <span className="font-semibold text-indigo-600">confidential</span> knowledge base,
                     powered by <span className="font-semibold text-purple-600">secure RAG</span>
                 </p>
                 <div className="flex justify-center gap-2">
-                    <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                        <RiLock2Fill className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 text-xs space-grotesk">
+                        <RiLock2Fill color="black" className="w-3 h-3" />
                         End-to-End Encrypted
                     </span>
-                    <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        <RiFlashlightFill className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-purple-100 text-purple-800 text-xs space-grotesk">
+                        <RiFlashlightFill color="black" className="w-3 h-3" />
                         Instant Setup
                     </span>
                 </div>
@@ -44,7 +44,7 @@ const Privacy = () => {
                 <div className="p-5 bg-indigo-50/50 rounded-xl border border-indigo-100 hover:border-indigo-200 transition-colors">
                     <div className="flex items-start gap-4">
                         <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <RiFileTextFill className="w-5 h-5 text-indigo-600" />
+                            <RiFileTextFill color="black" className="w-5 h-5 text-indigo-600" />
                         </div>
                         <div>
                             <h2 className="text-xl font-semibold text-gray-800 space-grotesk">
@@ -63,7 +63,7 @@ const Privacy = () => {
                 <div className="p-5 bg-purple-50/50 rounded-xl border border-purple-100 hover:border-purple-200 transition-colors">
                     <div className="flex items-start gap-4">
                         <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <RiCodeBoxFill className="w-5 h-5 text-purple-600" />
+                            <RiCodeBoxFill color="black" className="w-5 h-5 text-purple-600" />
                         </div>
                         <div>
                             <h2 className="text-xl font-semibold text-gray-800 space-grotesk">
@@ -74,7 +74,7 @@ const Privacy = () => {
                                 <Link to="/API/featured" className="mx-1 font-mono bg-purple-100/70 text-purple-800 px-2 py-1 rounded-md hover:underline">
                                     API key
                                 </Link>
-                                and plug our <span className="font-semibold">pre-built document intelligence</span>
+                                and plug our <span className="font-semibold">pre-built document intelligence </span>
                                 into any app.
                             </p>
                         </div>
@@ -83,7 +83,7 @@ const Privacy = () => {
             </div>
 
             {/* Visual Workflow */}
-            <div className="w-full mt-4 p-5 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl border border-gray-200">
+            <div className="w-full mt-4 p-5 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl border border-gray-200 bai-jamjuree-regular">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="text-center">
                         <div className="w-12 h-12 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-2">
@@ -136,15 +136,15 @@ const Privacy = () => {
             <div className="w-full mt-8 flex flex-col sm:flex-row justify-center gap-4">
                 <Link
                     to="/API/featured"
-                    className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-medium shadow-lg hover:shadow-indigo-400/30 transition-all duration-300 inline-flex items-center justify-center gap-2 text-center"
+                    className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-medium shadow-lg hover:shadow-indigo-400/30 transition-all duration-300 inline-flex items-center justify-center gap-2 text-center bai-jamjuree-regular"
                 >
                     <RiKey2Fill className="w-5 h-5" />
                     Get Your API Key
                 </Link>
-                <button className="px-6 py-3 bg-white border border-gray-200 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 rounded-xl font-medium shadow-sm hover:shadow-md transition-all duration-300 inline-flex items-center justify-center gap-2">
+                <Link to='/Interface' className="px-6 py-3 bg-black border border-gray-200 hover:border-indigo-300 text-white  rounded-xl font-medium  inline-flex items-center justify-center gap-2 CustPoint bai-jamjuree-regular">
                     <RiUpload2Fill className="w-5 h-5" />
                     Upload First Document
-                </button>
+                </Link>
             </div>
             <div className="flex justify-end items-center flex-wrap">
                 <Link

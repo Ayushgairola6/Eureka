@@ -22,13 +22,12 @@ export const FileUploadHandle = async (req, res) => {
 
         const { category, name, feedback, subCategory, visibility } = req.body
         const file = req.file
-        // console.log(req.body)
-        const userid = req.user.id;
+        const userid = req.user.user_id;
         if (!userid) {
             return res.status(400).json({ message: "Please Login to continue ." })
         }
         const email = req.user.email;
-        if (!category || !name || !feedback || !email || !file || !subCategory || typeof subCategory !== "string" || !visibility) {
+        if (!category || typeof category !== 'string' || !name || typeof name !== 'string' || typeof name !== 'string' || typeof feedback !== 'string' || !feedback || !email || !file || !subCategory || typeof subCategory !== "string" || !visibility) {
             return res.status(400).json({ message: "Invalid data type !" })
         }
         const documentId = uuidv4();
@@ -83,7 +82,7 @@ export const FileUploadHandle = async (req, res) => {
                 subCategory: subCategory,
                 date_of_contribution: new Date().toISOString(),
                 documentId: documentId,
-
+                contributor: name
             });
 
             // If batch is full or it's the last chunk, upsert the batch
@@ -122,7 +121,7 @@ export const FileUploadHandle = async (req, res) => {
 }
 
 // functin to split text content into chunks
-async function splitTextIntoChunks(documentText) {
+export async function splitTextIntoChunks(documentText) {
     const splitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1000,
         chunkOverlap: 200,
@@ -131,6 +130,7 @@ async function splitTextIntoChunks(documentText) {
     return chunks;
 }
 
+// find the matching response values
 export const FindMatchingResponse = async (req, res) => {
     try {
         const { question, category, subCategory } = req.body;
@@ -139,7 +139,7 @@ export const FindMatchingResponse = async (req, res) => {
 
         }
         const FoundData = [];
-
+        const DocumentsUserForReference = [];
         //    console.log(fetchResult)
         const response = await index.searchRecords({
             query: {
@@ -148,30 +148,67 @@ export const FindMatchingResponse = async (req, res) => {
                 filter: {
                     category: { $eq: category },
                     subCategory: { $eq: subCategory },
-                    visibility: { $eq: "Private" }
+                    visibility: { $eq: "Public" }
                 }
             },
-            fields: ['text', 'metadata'],
+            fields: ['text', 'category', 'subCategory', 'date_of_contribution', 'documentId', 'contributor'],
         });
 
-        // console.log(response.result.hits, 'found results')
-        response.result.hits.forEach((e) => {
-            if (e) {
-                FoundData.push(e.fields.text);
-            } else {
-                console.log("no results found")
+        // a set to store only unique values of document ids
+        const seen = new Set();
+
+        try {
+            for (const e of response.result.hits) {
+                if (!e) {
+                    console.log("Empty resuls found");
+                    continue;
+                }
+                const uniqueKey = `${e.fields.documentId}-${e.fields.contributor}`;
+                if (seen.has(uniqueKey)) continue;
+                try {
+                    //1.  push the text results
+                    FoundData.push(e.fields.text);
+                    //2. get the data of that respective document
+                    const { data, error } = await supabase
+                        .from("Doc_Feedback")
+                        .select("upvotes, downvotes, partial_upvotes")
+                        .eq("document_id", e.fields.documentId)
+                        .single();
+
+                    if (error) throw error;
+                    if (!data) {
+                        console.warn(`No feedback data found for document ${e.fields.documentId}`);
+                        continue;
+                    }
+                    //3. construct the data of the doc object
+                    DocumentsUserForReference.push({
+                        doc_id: e.fields.documentId,
+                        uploaded_by: e.fields.contributor,
+                        upvotes: data.upvotes,
+                        downvotes: data.downvotes,
+                        partial_upvotes: data.partial_upvotes
+                    });
+
+                    seen.add(uniqueKey);
+                } catch (formattingdataerror) {
+                    console.log(formattingdataerror)
+                }
             }
-        })
+
+        } catch (er) {
+            console.error(er);
+        }
 
 
         const AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
-
+        // const AnswerToUsersQuestion = 'Kya answer chahiye bhai tujhe?'
         if (AnswerToUsersQuestion.error) {
             return res.status(200).json({ answer: AnswerToUsersQuestion.error })
         }
         // const FormattedResponse = formatAIResponse(AnswerToUsersQuestion)
         // console.log(AnswerToUsersQuestion)
-        return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion })
+
+        return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion, doc_id: DocumentsUserForReference })
 
 
     } catch (error) {
@@ -179,30 +216,6 @@ export const FindMatchingResponse = async (req, res) => {
     }
 }
 
-
-// styling the ai response
-function formatAIResponse(responseText) {
-    // 1. Heading Detection & Styling
-    const styledResponse = responseText
-        // Detect bold headings (assuming **heading** format)
-        .replace(/\*\*(.*?)\*\*/g, '<h3 class="ai-heading">$1</h3>')
-
-        // Detect bullet points
-        .replace(/\n\* /g, '<li class="ai-bullet">')
-
-        // Add container styling
-        .replace(/(<h3.*?<\/h3>)([\s\S]*?)(?=<h3|$)/g,
-            '<div class="concept-block">$1<div class="explanation">$2</div></div>');
-
-    return `
-    <div class="ai-response">
-      ${styledResponse}
-      <div class="contribution-cta">
-        🚀 Was this helpful? Consider contributing your notes to help others!
-      </div>
-    </div>
-  `;
-}
 const StoreContributionDetails = async (name, email, feedback, userid, visibility, documentId) => {
     try {
         if (!name || typeof name !== "string" || !email || typeof email !== "string" || !feedback || typeof feedback !== "string" || !userid) {
@@ -231,12 +244,12 @@ const StoreContributionDetails = async (name, email, feedback, userid, visibilit
 
 export const GetPrivateUserDocs = async (req, res) => {
     try {
-        const user_id = req.user.id;
+        const user_id = req.user.user_id;
         if (!user_id || typeof user_id !== "string") {
             return res.status(400).json({ message: "Please Login to continue" });
         }
 
-        const { data, error } = await supabase.from("Contributions").select("id, feedback, created_at, document_id");
+        const { data, error } = await supabase.from("Contributions").select("id, feedback, created_at, document_id").eq("Document_visibility", "Private");
 
         if (error) {
             console.log(error)

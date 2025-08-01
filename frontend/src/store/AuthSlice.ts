@@ -48,12 +48,11 @@ export const GetUserDocs = createAsyncThunk<Document[], void>(
   async (_, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
 
       const response = await axios.get(`${BaseApiUrl}/api/user/documents`, {
         withCredentials: true,
         headers: {
-          "Authorization": `Bearer ${{ AuthToken, RefreshToken }}`
+          "Authorization": `Bearer ${ AuthToken }`
         }
       });
 
@@ -76,11 +75,10 @@ export const GetUserDetails = createAsyncThunk<User, void>(
   async (_, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
       const response = await axios.get(`${BaseApiUrl}/api/user/account-details`, {
         withCredentials: true,
         headers: {
-          "Authorization": `Bearer ${{ AuthToken, RefreshToken }}`
+          "Authorization": `Bearer ${ AuthToken}`
         }
       })
       if (response.data.message === "User data found") {

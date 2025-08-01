@@ -40,7 +40,7 @@ const API = () => {
     }
     return (
         <>
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 relative overflow-hidden">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 relative overflow-hidden z-[1]">
                 {/* Subtle gradient mesh background */}
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-100/40 to-blue-100/20 z-[-1]" />
 
@@ -91,8 +91,8 @@ const API = () => {
                                     onClick={getAPI_key}
                                     disabled={generating}
                                     className={`w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${generating
-                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                            : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                                            ? "bg-gray-100 text-black cursor-not-allowed"
+                                            : "bg-black hover:bg-blue-700 text-white shadow-sm bai-jamjuree-regular"
                                         }`}
                                 >
                                     {generating ? (

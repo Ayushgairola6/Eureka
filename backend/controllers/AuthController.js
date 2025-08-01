@@ -73,7 +73,7 @@ export const HandleUserLogin = async (req, res) => {
         const { data, error } = await supabase.from("users").select('email, id, username').eq('email', email)
 
         if (data?.length === 0 || error) {
-            console.error(error,'user not found');
+            console.error(error, 'user not found');
             return res.status(404).json({ message: "User not found !" })
         }
 
@@ -84,21 +84,14 @@ export const HandleUserLogin = async (req, res) => {
             console.log(store.error)
             return res.status(400).json({ message: "Error while logging in please try again later !" })
         }
-        // attaching cookies to the response
-        // console.log(RefreshToken,AuthToken)
-        res.cookie('Eureka_eta_six_version1_RefreshToken', RefreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 24 * 60 * 60 * 1000,
-        });
+       
         res.cookie('Eureka_eta_six_version1_AuthToken', AuthToken, {
             httpOnly: true,
             secure: true,
             sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
         });
-        return res.status(200).json({ message: "Login successfull", RefreshToken: RefreshToken, AuthToken:AuthToken })
+        return res.status(200).json({ message: "Login successfull", AuthToken: AuthToken })
 
     } catch (error) {
         console.error(error);
@@ -107,12 +100,12 @@ export const HandleUserLogin = async (req, res) => {
 }
 
 // generate access token 
-const GenerateRefreshTokens =  (id, email, username) => {
+export const GenerateRefreshTokens = (id, email, username) => {
     try {
         if (!id || typeof id !== 'string' || !email || typeof email !== "string" || !username || typeof username !== 'string') {
             return { status: 400, error: "Error - Some arguments are missing !" }
         }
-        const RefreshToken = jwt.sign({ id: id, email: email, username: username }, process.env.REFRESH_TOKEN_SECRET,
+        const RefreshToken = jwt.sign({ user_id: id, email: email, username: username }, process.env.REFRESH_TOKEN_SECRET,
             { expiresIn: '30d' });
 
 
@@ -122,16 +115,14 @@ const GenerateRefreshTokens =  (id, email, username) => {
     }
 }
 
-const GenerateAccessTokens =  (id, email, username) => {
+export const GenerateAccessTokens = (id, email, username) => {
     try {
         if (!id || typeof id !== 'string' || !email || typeof email !== "string" || !username || typeof username !== 'string') {
             return { status: 400, error: "Error - Some arguments are missing !" }
         }
         const Secret = process.env.JWT_SECRET;
-        const AccessToken = jwt.sign({ id: id, email: email, username: username }, Secret,
+        const AccessToken = jwt.sign({ user_id: id, email: email, username: username }, Secret,
             { expiresIn: '20min' });
-
-
         return AccessToken;
     } catch (err) {
         console.error(err)
@@ -141,25 +132,51 @@ const GenerateAccessTokens =  (id, email, username) => {
 // Store tokens in the database;
 const StoreTokens = async (RefreshToken, AuthToken, id) => {
     try {
-        if (!RefreshToken  || !AuthToken  || !id || typeof id !== 'string') {
-            return { error: "No token found" }
+        if (!RefreshToken || !AuthToken || !id || typeof id !== 'string') {
+            return { error: "No token found" };
         }
-        const { error } = await supabase.from("Tokens").insert({ Refresh_Token: RefreshToken, Access_Token: AuthToken, user_id: id });
-        if (error) {
-            return error;
+
+        // Check if a token record already exists for this user
+        const { data, error } = await supabase
+            .from("Tokens")
+            .select('user_id')
+            .eq('user_id', id)
+            .single();
+        
+
+        if (data) {
+            // Update existing token record
+            const { error: updateError } = await supabase
+                .from("Tokens")
+                .update({ Access_Token: AuthToken, Refresh_Token: RefreshToken })
+                .eq('user_id', id);
+            if (updateError) {
+                return { error: updateError };
+            }
+        } else {
+            // Insert new token record
+            const { error: insertError } = await supabase
+                .from("Tokens")
+                .insert({ Refresh_Token: RefreshToken, Access_Token: AuthToken, user_id: id });
+            if (insertError) {
+                return { error: insertError };
+            }
         }
 
         return { message: "Token stored successfully" };
     } catch (err) {
         console.error(err);
+        return { error: err };
     }
-}
+};
 //get user account details
 
 export const GetUserAccountDetails = async (req, res) => {
     try {
-        const user_id = req.user.id;
+        const user_id = req.user.user_id;
+        // console.log(req.user)
         if (!user_id || typeof user_id !== "string") {
+            console.log("No user id found ,whie getting account details")
             return res.status(400).json({ message: "Invalid user id" });
         }
 

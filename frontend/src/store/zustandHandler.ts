@@ -3,11 +3,13 @@ import { create } from 'zustand';
 interface AuthState {
   isLoggedIn: boolean;
   Login: () => void;
-  
+  currTab: string;
+  setCurrTab: () => void;
 }
 
 export const useStore = create<AuthState>((set) => ({
   isLoggedIn: false,
   Login: () => set({ isLoggedIn: true }),
-  // Logout: () => set({ isLoggedIn: false })
+  currTab: 'Home',
+  setCurrTab: () => set({ currTab: 'yeah' })
 }));

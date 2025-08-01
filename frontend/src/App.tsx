@@ -28,9 +28,11 @@ const DocumentationLayout = lazy(() => import('./pages/DocumentationLayout.tsx')
 
 const App = () => {
 
-  const [currTab, setCurrTab] = useState("Home");
+  // const [currTab, setCurrTab] = useState("Home");
   const Loggedin = useStore((state) => state.Login);
   const loggedIn = useStore((state) => state.isLoggedIn);
+  const currTab = useStore ((state)=>state.currTab);
+  const setCurrTab = useStore((state)=>state.setCurrTab)
   const dispatch = useAppDispatch()
 
 
@@ -45,12 +47,11 @@ const App = () => {
     const VerifyLoginState: () => Promise<void> = async () => {
       try {
         const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-        const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
         const response = await axios.get(`${BaseApiUrl}/api/verify/userstate`, {
           // signal: controller.signal,
           withCredentials: true,
           headers: {
-            "Authorization": `Bearer ${{ AuthToken, RefreshToken }}`
+            "Authorization": `Bearer ${ AuthToken }`
           }
         })
         if (response.data.message === "verified") {

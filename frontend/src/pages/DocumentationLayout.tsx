@@ -9,8 +9,9 @@ type DocLayoutProps = {
 const DocumentationLayout: React.FC<DocLayoutProps> = ({ children }) => {
     return (
         <div className="min-h-screen flex items-center justify-evenly bg-white relative overflow-hidden">
+            <div className="absolute top-0 left-0 bg-gradient-to-br from-indigo-600/20 to-red-600/20 blur-3xl h-full w-full"></div>
             {/* Sidebar */}
-            <aside className="absolute left-0 top-0 hidden md:flex flex-col gap-4 w-64 p-6   shadow-lg  h-full bg-black/80 text-white space-grotesk">
+            <aside className="absolute left-0 top-0 hidden md:flex flex-col gap-4 w-64 p-6   shadow-lg  h-full bg-black text-white space-grotesk">
                 <Link to='/API/featured' className="transition-colors hover:bg-white hover:text-black duration-300 rounded px-3 py-2 ">Introduction</Link>
                 <Link to='/docs/page2' className="transition-colors hover:bg-white hover:text-black duration-300 rounded px-3 py-2 ">How Eureka works</Link>
                 <Link to='/docs/page3' className="transition-colors hover:bg-white hover:text-black duration-300 rounded px-3 py-2 ">Private documents</Link>

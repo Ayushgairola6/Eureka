@@ -1,23 +1,23 @@
 import { Link } from "react-router"
 import { FaCode, FaLock, FaKey, FaRocket } from 'react-icons/fa';
 import { FiTool, FiArrowRight } from 'react-icons/fi';
-
+import { RiLockPasswordLine } from "react-icons/ri";
 const API_functions = () => {
-    return (<div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/60 p-8 w-full flex flex-col items-center gap-8 hover:shadow-2xl transition-shadow duration-300">
+    return (<div className="bg-white backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/60 p-8 w-full flex flex-col items-center gap-8 hover:shadow-2xl transition-shadow duration-300">
         {/* Header Section */}
         <div className="text-center space-y-3 w-full">
-            <h1 className="text-4xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-emerald-500">
+            <h1 className="md:text-4xl text-2xl  bai-jamjuree-semibold">
                 Eureka SDK
             </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="md:text-lg text-sm text-gray-600 max-w-2xl mx-auto space-grotesk">
                 Programmatic access to your <span className="font-semibold text-blue-600">private knowledge base</span> with just a few lines of code
             </p>
-            <div className="flex justify-center gap-2">
-                <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <div className="flex justify-center gap-2 space-grotesk ">
+                <span className="inline-flex items-center justify-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                     <FaCode className="w-3 h-3" />
                     Developer Friendly
                 </span>
-                <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                <span className="inline-flex items-center justify-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                     <FaLock className="w-3 h-3" />
                     End-to-End Secure
                 </span>
@@ -25,9 +25,9 @@ const API_functions = () => {
         </div>
 
         {/* Installation */}
-        <div className="w-full p-5 bg-gray-50 rounded-xl border border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                <FiTool className="w-5 h-5 text-blue-600" />
+        <div className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2 bai-jamjuree-semibold">
+                <FiTool className="w-5 h-5 " />
                 Installation
             </h2>
             <div className="mt-3 bg-gray-800 rounded-lg p-4 overflow-x-auto">
@@ -38,122 +38,49 @@ const API_functions = () => {
         </div>
 
         {/* SDK Features */}
-        <div className="w-full space-y-6">
-            {/* Feature 1: List Documents */}
-            <div className="p-5 hover:bg-gray-50/50 rounded-xl transition-all duration-200 border border-gray-100 hover:border-blue-200">
-                <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <span className="text-blue-600 font-bold">1</span>
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-800">
-                            List Your Documents
-                        </h2>
-                        <p className="mt-2 text-gray-600">
-                            Retrieve metadata for all your private documents including IDs, titles, upload dates and processing status.
-                        </p>
-
-                        <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                            <h3 className="text-sm font-mono text-gray-500 mb-2">JavaScript Example</h3>
-                            <pre className="text-sm bg-gray-800 rounded-md p-3 overflow-x-auto text-gray-100">
-                                {`import Eureka from 'eureka-rag-sdk';
-
-const eureka = new Eureka('YOUR_API_KEY');
-const documents = await eureka.listDocuments();
-
-// Returns:
-// {
-//   documents: [
-//     {
-//       id: 'doc_123',
-//       title: 'Research Paper.pdf',
-//       uploadDate: '2023-11-15',
-//       status: 'processed',
-//       size: '2.4MB'
-//     },
-//     ...
-//   ]
-// }`}
-                            </pre>
-                        </div>
-                    </div>
-                </div>
+        <div className="px-4 ">
+            {/* enabling the eureka client */}
+            <div className="flex flex-col gap-2 items-center justify-center">
+                <h1 className="bai-jamjuree-semibold text-lg flex items-center justify-center gap-2">Eureka sdk client</h1>
+                <p className="bg-gray-900 text-white p-3 rounded-lg space-grotesk">
+                    {`const client = new EurekaClient({
+                        apiKey:'YOUR_API_KEY',
+                    baseUrl:"https://eureka-7ks7.onrender.com"
+                    })`}
+                </p>
             </div>
-
-            {/* Feature 2: Query Document */}
-            <div className="p-5 hover:bg-gray-50/50 rounded-xl transition-all duration-200 border border-gray-100 hover:border-emerald-200">
-                <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <span className="text-emerald-600 font-bold">2</span>
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-800">
-                            Query Documents
-                        </h2>
-                        <p className="mt-2 text-gray-600">
-                            Get AI-powered answers from your private documents by providing a document ID and your question.
-                        </p>
-
-                        <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                            <h3 className="text-sm font-mono text-gray-500 mb-2">JavaScript Example</h3>
-                            <pre className="text-sm bg-gray-800 rounded-md p-3 overflow-x-auto text-gray-100">
-                                {`const response = await eureka.queryDocument({
-  documentId: 'doc_123', 
-  question: 'What were the key findings?'
-});
-
-// Returns:
-// {
-//   answer: 'The study found three significant...',
-//   confidence: 0.92,
-//   sources: [{
-//     page: 12,
-//     text: 'As shown in Figure 3...'
-//   }]
-// }`}
-                            </pre>
-                        </div>
-                    </div>
-                </div>
+            {/* Get all private document data */}
+            <div className="flex flex-col gap-2 items-center justify-center">
+                <h1 className="bai-jamjuree-semibold text-lg flex items-center justify-center gap-2">Data of all private documents</h1>
+                <p className="bg-gray-900 text-white p-3 rounded-lg space-grotesk">
+                    {`const client = new EurekaClient({
+                        apiKey:'YOUR_API_KEY',
+                    baseUrl:"https://eureka-7ks7.onrender.com"
+                    })`}
+                </p>
             </div>
-
-            {/* Feature 3: Upload Documents */}
-            <div className="p-5 hover:bg-gray-50/50 rounded-xl transition-all duration-200 border border-gray-100 hover:border-purple-200">
-                <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <span className="text-purple-600 font-bold">3</span>
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-800">
-                            Upload Documents
-                        </h2>
-                        <p className="mt-2 text-gray-600">
-                            Programmatically upload documents to your private knowledge base with automatic processing.
-                        </p>
-
-                        <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                            <h3 className="text-sm font-mono text-gray-500 mb-2">JavaScript Example</h3>
-                            <pre className="text-sm bg-gray-800 rounded-md p-3 overflow-x-auto text-gray-100">
-                                {`const result = await eureka.uploadDocument({
-  file: '/path/to/document.pdf',
-  title: 'Annual Report 2023',
-  visibility: 'private', // optional (default)
-  tags: ['finance', 'annual'] // optional
-});
-
-// Returns:
-// {
-//   id: 'doc_456',
-//   status: 'processing',
-//   estimatedWait: 30 // seconds
-// }`}
-                            </pre>
-                        </div>
-                    </div>
-                </div>
+            {/* Query any private document */}
+            <div className="flex flex-col gap-2 items-center justify-center">
+                <h1 className="bai-jamjuree-semibold text-lg flex items-center justify-center gap-2">Query any specific document</h1>
+                <p className="bg-gray-900 text-white p-3 rounded-lg space-grotesk">
+                    {`const client = new EurekaClient({
+                        apiKey:'YOUR_API_KEY',
+                    baseUrl:"https://eureka-7ks7.onrender.com"
+                    })`}
+                </p>
+            </div>
+            {/* Upload documents */}
+            <div className="flex flex-col gap-2 items-center justify-center">
+                <h1 className="bai-jamjuree-semibold text-lg flex items-center justify-center gap-2">Upload knowledgebase documents</h1>
+                <p className="bg-gray-900 text-white p-3 rounded-lg space-grotesk">
+                    {`const client = new EurekaClient({
+                        apiKey:'YOUR_API_KEY',
+                    baseUrl:"https://eureka-7ks7.onrender.com"
+                    })`}
+                </p>
             </div>
         </div>
-
+        <template></template>
         {/* Authentication Info */}
         <div className="w-full mt-6 p-5 bg-blue-50 rounded-xl border border-blue-200">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">

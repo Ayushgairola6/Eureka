@@ -55,7 +55,6 @@ const Login = () => {
                     setIsPending("idle");
                 }, 3000)
                 // console.log(response.data)
-                localStorage.setItem("Eureka_six_eta_v1_RefreshToken", response.data.RefreshToken);
                 localStorage.setItem("Eureka_six_eta_v1_Authtoken", response.data.AuthToken)
             }
         } catch (error: unknown) {

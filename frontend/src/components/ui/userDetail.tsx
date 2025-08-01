@@ -24,7 +24,7 @@ const UserForm: React.FC<FormProps> = ({ shhowUserForm, setShowUserForm, setSele
     // top-10 right-2  md:right-50
     const fileInputRef = useRef<HTMLInputElement>(null);
     return (<>
-        <div className={` z-[1] space-grotesk `}>
+        <div className={` z-[1] space-grotesk`}>
             <label onClick={() => setShowUserForm(!shhowUserForm)} className="CustPoint  text-sm flex items-center justify-center gap-1 " htmlFor="Category">Contribution <IoMdArrowDropdown size={24} className={`transition-all duration-300  ${shhowUserForm === true ? "rotate-90" : "rotate-0"} `} /></label>
             <section className={`${shhowUserForm ? "h-auto  py-4 flex items-center justify-center gap-2 opacity-100   overflow-y-auto px-3" : "h-0 opacity-0 py-0 px-0"} bg-gradient-to-br from-gray-50 to-gray-100 text-black    overflow-hidden transition-all duration-500 rounded-lg  flex items-start justify-center gap-1  flex-col border border-black/40 relative `}>
                 <div className="flex items-start justify-start gap-3 flex-col" >
