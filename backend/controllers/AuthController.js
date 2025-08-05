@@ -84,7 +84,7 @@ export const HandleUserLogin = async (req, res) => {
             console.log(store.error)
             return res.status(400).json({ message: "Error while logging in please try again later !" })
         }
-       
+
         res.cookie('Eureka_eta_six_version1_AuthToken', AuthToken, {
             httpOnly: true,
             secure: true,
@@ -142,9 +142,11 @@ const StoreTokens = async (RefreshToken, AuthToken, id) => {
             .select('user_id')
             .eq('user_id', id)
             .single();
-        
 
-        if (data) {
+
+            // if the user_id is present in the database 
+            //update the authToken and refreshToken
+        if (data?.user_id) {
             // Update existing token record
             const { error: updateError } = await supabase
                 .from("Tokens")

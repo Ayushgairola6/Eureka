@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router';
 const Interface = lazy(() => import('./pages/Interface.tsx'));
 const LandingPage = lazy(() => import("./pages/LandingPage.tsx"))
@@ -25,16 +25,15 @@ import { useStore } from './store/zustandHandler.ts'
 const DocumentationLayout = lazy(() => import('./pages/DocumentationLayout.tsx'));
 
 
-
 const App = () => {
 
   // const [currTab, setCurrTab] = useState("Home");
   const Loggedin = useStore((state) => state.Login);
   const loggedIn = useStore((state) => state.isLoggedIn);
-  const currTab = useStore ((state)=>state.currTab);
-  const setCurrTab = useStore((state)=>state.setCurrTab)
+  const currTab = useStore((state) => state.currTab);
+  const setCurrTab = useStore((state) => state.setCurrTab)
   const dispatch = useAppDispatch()
-
+  const { isDarkMode } = useStore();
 
   useEffect(() => {
     if (loggedIn) {
@@ -51,7 +50,7 @@ const App = () => {
           // signal: controller.signal,
           withCredentials: true,
           headers: {
-            "Authorization": `Bearer ${ AuthToken }`
+            "Authorization": `Bearer ${AuthToken}`
           }
         })
         if (response.data.message === "verified") {
@@ -66,7 +65,16 @@ const App = () => {
     return () => controller.abort()
   }, [loggedIn])
 
-
+  // toggle dark class from the html body
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isDarkMode) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  }, [isDarkMode])
 
   return (<>
     <Suspense fallback={<div className='h-screen bg-black flex items-center justify-center     text-6xl '>

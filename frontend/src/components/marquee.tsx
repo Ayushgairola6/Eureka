@@ -4,11 +4,14 @@ import { PiTargetDuotone } from "react-icons/pi";
 import { GoVerified } from "react-icons/go";
 import { IoPeopleSharp } from "react-icons/io5";
 import { IoLogoGithub } from "react-icons/io5";
-const Marquee = () => {
+import {useStore} from '../store/zustandHandler';
 
+const Marquee = () => {
+  
+    const {isDarkMode} = useStore();
 
     return (<>
-        <motion.div className="flex items-center justify-center py-2 px-2 overflow-x-hidden gap-20 space-grotesk uppercase bg-gray-100 text-gray-500  z-[2] font-bold ">
+        <motion.div className={`"flex items-center justify-center py-2 px-2 overflow-x-hidden gap-20 space-grotesk uppercase ${isDarkMode?"bg-black text-white":"bg-white text-black"}  z-[2] font-bold "`}>
             <motion.div
                 initial={{ x: "50%" }}
                 animate={{ x: "-100%" }}

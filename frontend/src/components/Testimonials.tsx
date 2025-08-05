@@ -8,14 +8,16 @@ import { motion } from 'framer-motion';
 import { useRef } from 'react';
 import { FaArrowRight, FaArrowLeft } from 'react-icons/fa';
 import { MdPrivateConnectivity } from 'react-icons/md';
+import { useStore } from '../store/zustandHandler';
 
 const TestiMonials = () => {
 
+    const { isDarkMode } = useStore();
     const ContainerRef = useRef<HTMLDivElement>(null);
 
     return (<>
-        <div className="z-[1] relative max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-            <div className='z-[-1] absolute top-0 left-0 h-full w-full bg-gradient-to-br from-orange-500/20 to-yellow-500/10 blur-3xl'></div>
+        <div className={`z-[1] relative  mx-auto px-4 py-12 sm:px-6 lg:px-8 bg-white text-black dark:bg-black dark:text-white`}>
+            {!isDarkMode && <div className='z-[-1] absolute top-0 left-0 h-full w-full bg-gradient-to-br from-orange-500/20 to-yellow-500/10 blur-3xl'></div>}
 
             {/* Section Heading */}
             <div className="text-center mb-12">
@@ -31,7 +33,7 @@ const TestiMonials = () => {
                     if (ContainerRef.current) {
                         ContainerRef.current.scrollBy({ left: 336, behavior: 'smooth' })
                     }
-                }} className='absolute bottom-5 right-2 p-2 bg-gray-300 rounded-full z-[2] cursor-pointer'>
+                }} className={`absolute bottom-5 right-2 p-2 ${isDarkMode?"bg-black":"bg-gray-300"} rounded-full z-[2] cursor-pointer`}>
                     <FaArrowRight /> {/* Changed to FaArrowRight */}
                 </ul>
                 {/* Left arrow (scrolls left) */}
@@ -39,7 +41,7 @@ const TestiMonials = () => {
                     if (ContainerRef.current) {
                         ContainerRef.current.scrollBy({ left: -336, behavior: 'smooth' })
                     }
-                }} className='absolute bottom-5 left-2 p-2 bg-gray-300 rounded-full z-[2] cursor-pointer'>
+                }} className={`absolute bottom-5 left-2 p-2 ${isDarkMode?"bg-black":"bg-gray-300"} rounded-full z-[2] cursor-pointer`}>
                     <FaArrowLeft /> {/* Changed to FaArrowLeft */}
                 </ul>
                 {/* Container with horizontal scroll */}
@@ -50,17 +52,17 @@ const TestiMonials = () => {
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true, margin: "50px" }} // Only animate once
                             transition={{ type: "tween", duration: 0.3 }} // Smoother than linear
-                            className="flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-300 hover:shadow-lg transition-all duration-300 shadow-md">
+                            className={`flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br ${isDarkMode?"from-black to-white/20":"from-gray-50 to-gray-100"} rounded-lg border border-gray-500 hover:shadow-lg transition-all duration-300 shadow-md`}>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                                     <svg className="w-6 h-6 text-blue-500 hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                                     </svg>
                                 </div>
-                                <h3 className="bai-jamjuree-semibold text-lg">Game-Changer for Research</h3>
+                                <h3 className="bai-jamjuree-semibold text-lg">Great for quick overview!</h3>
                             </div>
-                            <p className="space-grotesk-light text-gray-700 mb-4">
-                                "Eureka helped me find summarize legal precedents in minutes—what usually takes hours. The private documents feature is gold!"
+                            <p className={`space-grotesk-light ${isDarkMode?"text-gray-300":"text-gray-700"} mb-4`}>
+                                "I use Eureka's private document feature to upload my personal legal precendents and get quick overview whenver I want . I really like this feature "
                             </p>
                             <div className="flex items-center gap-2">
                                 <img className="w-10 h-10 rounded-full" src={user2} alt="Sarah K." />
@@ -76,23 +78,23 @@ const TestiMonials = () => {
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true, margin: "50px" }}
                             transition={{ type: "tween", duration: 0.3 }}
-                            className="flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-300 hover:shadow-lg transition-all duration-300 shadow-md">
+                            className={`flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br ${isDarkMode?"from-black to-white/20":"from-gray-50 to-gray-100"} rounded-lg border border-gray-500 hover:shadow-lg transition-all duration-300 shadow-md`}>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                                     <svg className="w-6 h-6 text-green-500 hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <h3 className="bai-jamjuree-semibold text-lg">Finance Made Simple</h3>
+                                <h3 className="bai-jamjuree-semibold text-lg">Studies made simple</h3>
                             </div>
-                            <p className="space-grotesk-light text-gray-700 mb-4">
-                                "As a startup founder, I use Eureka daily to understand complex SEC filings. It's like having a finance PhD on call."
+                            <p className={`space-grotesk-light ${isDarkMode?"text-gray-300":"text-gray-700"} mb-4`}>
+                                "I use eureka for quick information gathering , for my assignments , projects and even questions that come to my mind out of curiosity ,as the information is community verified"
                             </p>
                             <div className="flex items-center gap-2">
                                 <img className="w-10 h-10 rounded-full" src={user4} alt="Michael T." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Michael T.</p>
-                                    <p className="space-grotesk text-xs text-gray-500">Startup Founder, SF</p>
+                                    <p className="space-grotesk text-xs text-gray-500">University Student, SF</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -101,7 +103,7 @@ const TestiMonials = () => {
                         <motion.div initial={{ opacity: 0, scale: 0.95 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true, margin: "50px" }}
-                            transition={{ type: "tween", duration: 0.3 }} className="flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-300 hover:shadow-lg transition-all duration-300 shadow-md">
+                            transition={{ type: "tween", duration: 0.3 }} className={`flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br ${isDarkMode?"from-black to-white/20":"from-gray-50 to-gray-100"} rounded-lg border border-gray-500 hover:shadow-lg transition-all duration-300 shadow-md`}>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                                     <svg className="w-6 h-6 text-purple-500 hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -110,14 +112,14 @@ const TestiMonials = () => {
                                 </div>
                                 <h3 className="bai-jamjuree-semibold text-lg">AI Learning Supercharged</h3>
                             </div>
-                            <p className="space-grotesk-light text-gray-700 mb-4">
-                                "I upload my ML notes and get back textbook-quality explanations with code examples. It's revolutionized my study routine."
+                            <p className={`space-grotesk-light ${isDarkMode?"text-gray-300":"text-gray-700"} mb-4`}>
+                                "I upload my ML notes and get back textbook-quality explanations with code examples. It's like having a friend to make notes for me to study"
                             </p>
                             <div className="flex items-center gap-2">
                                 <img className="w-10 h-10 rounded-full" src={user} alt="Priya M." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Priya M.</p>
-                                    <p className="space-grotesk text-xs text-gray-500">AI Student, MIT</p>
+                                    <p className="space-grotesk text-xs text-gray-500">AI/ML Student</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -126,7 +128,7 @@ const TestiMonials = () => {
                         <motion.div initial={{ opacity: 0, scale: 0.95 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true, margin: "50px" }}
-                            transition={{ type: "tween", duration: 0.3 }} className="flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-300 hover:shadow-lg transition-all duration-300 shadow-md">
+                            transition={{ type: "tween", duration: 0.3 }} className={`flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br ${isDarkMode?"from-black to-white/20":"from-gray-50 to-gray-100"} rounded-lg border border-gray-500 hover:shadow-lg transition-all duration-300 shadow-md`}>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                                     <svg className="w-6 h-6 text-red-500 hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -135,14 +137,14 @@ const TestiMonials = () => {
                                 </div>
                                 <h3 className="bai-jamjuree-semibold text-lg">Research Breakthrough</h3>
                             </div>
-                            <p className="space-grotesk-light text-gray-700 mb-4">
-                                "Eureka's document analysis helped me cross-reference clinical studies in half the time. I discovered connections between studies that led to a major research breakthrough."
+                            <p className={`space-grotesk-light ${isDarkMode?"text-gray-300":"text-gray-700"} mb-4`}>
+                                "I love looking for random facts online but i was tired of fake information, since when i found about eureka my curiosity lives in the pits of categories and subcategories"
                             </p>
                             <div className="flex items-center gap-2">
                                 <img className="w-10 h-10 rounded-full" src={user5} alt="Dr. James L." />
                                 <div>
-                                    <p className="bai-jamjuree-medium text-sm">Dr. James L.</p>
-                                    <p className="space-grotesk text-xs text-gray-500">Medical Researcher, Johns Hopkins</p>
+                                    <p className="bai-jamjuree-medium text-sm"> James L.</p>
+                                    <p className="space-grotesk text-xs text-gray-500">Just a curious person</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -151,17 +153,17 @@ const TestiMonials = () => {
                         <motion.div initial={{ opacity: 0, scale: 0.95 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true, margin: "50px" }}
-                            transition={{ type: "tween", duration: 0.3 }} className="flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-300 hover:shadow-lg transition-all duration-300 shadow-md">
+                            transition={{ type: "tween", duration: 0.3 }} className={`flex-shrink-0 w-80 h-76 p-6 bg-gradient-to-br ${isDarkMode?"from-black to-white/20":"from-gray-50 to-gray-100"} rounded-lg border border-gray-500 hover:shadow-lg transition-all duration-300 shadow-md`}>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                                     <MdPrivateConnectivity size={29} />
                                 </div>
                                 <h3 className="bai-jamjuree-semibold text-lg">Privacy of Documents</h3>
                             </div>
-                            <p className="space-grotesk-light text-gray-700 mb-4">
+                            <p className={`space-grotesk-light ${isDarkMode?"text-gray-300":"text-gray-700"} mb-4`}>
                                 "With Eureka's private mode, I can securely upload sensitive research without worrying about leaks. It gives me peace of mind knowing my work stays confidential until I'm ready to share."
                             </p>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 ">
                                 <img className="w-10 h-10 rounded-full" src={user3} alt="Dr. James L." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Dr. Stephanie Ruth</p>

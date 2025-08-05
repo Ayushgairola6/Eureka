@@ -7,7 +7,12 @@ import { useState } from 'react';
 import { BiPurchaseTag } from 'react-icons/bi';
 import { toast, Toaster } from 'sonner';
 import { Link } from 'react-router';
+import { useStore } from '../store/zustandHandler';
+import { MdScale, MdArrowForward } from 'react-icons/md';
+
 const Pricing = () => {
+
+    const { isDarkMode } = useStore();
 
     const faqs = [
         {
@@ -38,17 +43,16 @@ const Pricing = () => {
     const [show, setShow] = useState<Number>(0);
 
     return (<>
-        <div className="relative py-20 px-4 sm:px-6 z-[1] overflow-hidden bg-gray-50">
+        <div className={`relative py-20 px-4 sm:px-6 z-[1] overflow-hidden ${isDarkMode ? "bg-black text-white" : "bg-gray-50 text-black"}`}>
             {/* Gradient background elements */}
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-600/10 to-lime-800/10 blur-3xl z-[-2]"></div>
-            <div className="absolute top-1/3 left-1/4 w-40 h-40 rounded-full bg-purple-600/10 blur-3xl z-[-1] animate-float"></div>
+            {!isDarkMode && <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-600/20 to-lime-800/20 blur-3xl z-[-1]" />}
 
             {/* Section header */}
             <div className="max-w-4xl mx-auto text-center mb-16 relative">
                 <h2 className="text-3xl sm:text-4xl bai-jamjuree-medium mb-4">
                     Simple, <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Transparent</span> Pricing
                 </h2>
-                <p className="space-grotesk text-gray-600 max-w-2xl mx-auto text-xs md:text-sm space-grotesk">
+                <p className={`"space-grotesk ${isDarkMode ? "text-gray-100" : "text-gray-600"} max-w-2xl mx-auto text-xs md:text-sm space-grotesk"`}>
                     Choose the plan that fits your needs. Open-source forever, premium options for teams.
                 </p>
                 {/* <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-70"></div> */}
@@ -58,7 +62,7 @@ const Pricing = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
 
                 {/* Free Tier */}
-                <div className="group relative p-8 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ">
+                <div className={`"group relative p-8 ${isDarkMode ? "from-black to-white/20" : "from-gray-50 to-gray-100"} backdrop-blur-sm rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}>
                     {/* accent gradient background */}
 
                     {/* rest of the info */}
@@ -66,7 +70,7 @@ const Pricing = () => {
 
                     <div className="mb-6">
                         <h3 className="bai-jamjuree-semibold text-2xl mb-2">Community</h3>
-                        <p className="space-grotesk text-gray-600 text-sm">Free access to public knowledgebase and Unlimited contributions</p>
+                        <p className={`"space-grotesk ${isDarkMode ? "text-gray-100" : "text-gray-600"} text-xs"`}>Free access to public knowledgebase and Unlimited contributions</p>
                     </div>
 
                     <div className="mb-8">
@@ -74,7 +78,7 @@ const Pricing = () => {
                         <span className="space-grotesk text-gray-500">/forever</span>
                     </div>
 
-                    <ul className="space-y-4 mb-8 space-grotesk text-gray-700 text-sm">
+                    <ul className={`"space-y-4 mb-8 space-grotesk ${isDarkMode ? "text-gray-100" : "text-gray-700"} text-sm"`}>
                         <li className="flex items-center gap-2">
                             <FiCheckCircle className="text-green-500" />
                             Public knowledge base access
@@ -94,14 +98,15 @@ const Pricing = () => {
                         </li>
                     </ul>
                     <Link to="/Interface">
-                        <button className="w-full py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
+                        <button className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer" ${isDarkMode ? "bg-white text-black" : "bg-black text-white"}`}>
                             Get Started
+                            <MdArrowForward />
                         </button>
                     </Link>
                 </div>
 
                 {/* Pro Tier (Featured) */}
-                <div className="group relative p-8 bg-white/90 backdrop-blur-sm rounded-xl border border-black shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 transform ">
+                <div className={`"group relative p-8 ${isDarkMode ? "from-black to-white/20" : "from-gray-50 to-gray-100"} backdrop-blur-sm rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}>
                     {/* accent gradient background */}
 
                     {/* rest of the info */}
@@ -111,7 +116,7 @@ const Pricing = () => {
 
                     <div className="mb-6">
                         <h3 className="bai-jamjuree-semibold text-2xl mb-2">Pro</h3>
-                        <p className="space-grotesk text-gray-600 text-sm">For professionals , small teams , students and other Individuals </p>
+                        <p className={`"space-grotesk ${isDarkMode ? "text-gray-100" : "text-gray-600"} text-xs"`}>For professionals , small teams , students and other Individuals </p>
                     </div>
 
                     <div className="mb-8">
@@ -119,7 +124,7 @@ const Pricing = () => {
                         <span className="space-grotesk text-gray-500">/month</span>
                     </div>
 
-                    <ul className="space-y-4 mb-8 space-grotesk text-gray-700 text-sm">
+                    <ul className={`"space-y-4 mb-8 space-grotesk ${isDarkMode ? "text-gray-100" : "text-gray-700"} text-sm"`}>
                         <li className="flex items-center gap-2">
                             <FiCheckCircle className="text-green-500" />
                             Everything in Community
@@ -138,14 +143,14 @@ const Pricing = () => {
                         </li>
                     </ul>
 
-                    <button className="inline-flex items-center justify-center gap-2 w-full py-3 px-6 rounded-lg bg-gradient-to-r bg-black CustPoint text-white bai-jamjuree-medium hover:opacity-90 transition-opacity ">
+                    <button className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer" ${isDarkMode ? "bg-white text-black" : "bg-black text-white"}`}>
                         Subscribe <BiPurchaseTag />
                     </button>
 
                 </div>
 
                 {/* Enterprise Tier */}
-                <div className="group relative p-8 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className={`"group relative p-8 ${isDarkMode ? "from-black to-white/20" : "from-gray-50 to-gray-100"} backdrop-blur-sm rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}>
                     {/* accent gradient background */}
 
                     {/* rest of the info */}
@@ -153,14 +158,14 @@ const Pricing = () => {
 
                     <div className="mb-6">
                         <h3 className="bai-jamjuree-semibold text-2xl mb-2">Enterprise</h3>
-                        <p className="space-grotesk text-gray-600 text-sm">For large teams & organizations</p>
+                        <p className={`"space-grotesk ${isDarkMode ? "text-gray-100" : "text-gray-600"} text-xs"`}>For large teams & organizations</p>
                     </div>
 
                     <div className="mb-8">
                         <span className="text-4xl bai-jamjuree-bold">Custom</span>
                     </div>
 
-                    <ul className="space-y-4 mb-8 space-grotesk text-gray-700 text-sm">
+                    <ul className={`"space-y-4 mb-8 space-grotesk ${isDarkMode ? "text-gray-100" : "text-gray-700"} text-sm"`}>
                         <li className="flex items-center gap-2">
                             <FiCheckCircle className="text-green-500" />
                             Everything in Pro
@@ -182,43 +187,44 @@ const Pricing = () => {
 
                     <button onClick={() => {
                         toast("Thanks for your intereset but , this feature is currently not active !")
-                    }} className="w-full py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
+                    }} className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer" ${isDarkMode ? "bg-white text-black" : "bg-black text-white"}`}>
                         Contact Sales
+                        <MdScale />
                     </button>
-             
 
+
+                </div>
             </div>
-        </div>
 
-        {/* FAQ section */}
-        <div className="max-w-3xl mx-auto mt-20">
-            <h3 className="bai-jamjuree-semibold text-2xl mb-8 text-center">Frequently Asked Questions</h3>
+            {/* FAQ section */}
+            <div className="max-w-3xl mx-auto mt-20">
+                <h3 className="bai-jamjuree-semibold text-2xl mb-8 text-center">Frequently Asked Questions</h3>
 
-            <div className="space-y-4 ">
-                {faqs.map((faq, index) => (
-                    <div key={index} onClick={() => {
-                        if (faq.id === show) {
-                            setShow(0)
-                        } else {
-                            setShow(faq.id);
-                        }
-                    }} className={` border-b border-gray-200 pb-4    rounded-lg  bai-jamjuree-regular ${show === faq.id ? " h-30 " : "h-8  overflow-hidden  "}  transition-all duration-200 `}>
-                        <div className={``}>
-                            <button className="flex justify-between items-center w-full space-grotesk-medium text-left cursor-pointer">
-                                <span>{faq.question}</span>
-                                <FiChevronDown className={`text-purple-600 transition-transform duration-300 ${show === faq.id ? "rotate-45" : "rotate-0"} `} />
-                            </button>
-                            <div className={`mt-2 space-grotesk ${show === faq.id ? "text-purple-600 opacity-100" : "opacity-0 text-gray-400"} text-xs`}>
-                                {faq.answer}
+                <div className="space-y-4 ">
+                    {faqs.map((faq, index) => (
+                        <div key={index} onClick={() => {
+                            if (faq.id === show) {
+                                setShow(0)
+                            } else {
+                                setShow(faq.id);
+                            }
+                        }} className={` border-b border-gray-200 pb-4    rounded-lg  bai-jamjuree-regular ${show === faq.id ? " h-30 " : "h-8  overflow-hidden  "}  transition-all duration-200 `}>
+                            <div className={``}>
+                                <button className="flex justify-between items-center w-full space-grotesk-medium text-left cursor-pointer">
+                                    <span>{faq.question}</span>
+                                    <FiChevronDown className={`text-purple-600 transition-transform duration-300 ${show === faq.id ? "rotate-45" : "rotate-0"} `} />
+                                </button>
+                                <div className={`mt-2 space-grotesk ${show === faq.id ? "text-purple-600 opacity-100" : "opacity-0 text-gray-400"} text-xs`}>
+                                    {faq.answer}
+                                </div>
                             </div>
-                        </div>
 
-                    </div>
-                ))}
+                        </div>
+                    ))}
+                </div>
             </div>
-        </div>
-        <Toaster />
-    </div >
+            <Toaster />
+        </div >
     </>)
 }
 

@@ -21,7 +21,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             if (isVisble === true) {
                 setIsVisible(false);
             }
-        }} className={`md:hidden fixed h-fit w-70 -bottom-5 -left-2 rotate-0 bg-white  rounded-r-full shadow-2xl shadow-black     gap-2 z-[99] py-10 rounded-b-xl  ${isVisble === true ? "-translate-y-0 rotate-0" : "translate-y-90 rotate-90 "} duration-500 transition-all cursor-pointer flex items-center justify-start`}>
+            // -translate-y-0 translate-y-90
+        }} className={`md:hidden fixed h-auto w-70 -bottom-5 -left-2 rotate-0 bg-white dark:bg-black  rounded-r-full shadow-2xl shadow-black dark:shadow-purple-500 gap-2 z-[99] py-10 rounded-b-xl  ${isVisble === true ? "-translate-y-0 rotate-0" : "translate-y-90  rotate-90"} duration-500 transition-all cursor-pointer flex items-center justify-start border border-black dark:border-white/40`}>
             {/* <MdClose size={22} className="absolute right-5 bottom-8 hover:scale-110 transition-all duration-300" /> */}
 
 

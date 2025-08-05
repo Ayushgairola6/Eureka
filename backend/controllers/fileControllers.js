@@ -15,7 +15,7 @@ const pc = new Pinecone({
     apiKey: process.env.PINECONE_DB_API_KEY
 });
 
-const index = pc.index("knowledge-base-index");
+export const index = pc.index("knowledge-base-index");
 
 export const FileUploadHandle = async (req, res) => {
     try {
@@ -133,6 +133,8 @@ export async function splitTextIntoChunks(documentText) {
 // find the matching response values
 export const FindMatchingResponse = async (req, res) => {
     try {
+        const user_id = req.user.user_id;
+        if (!user_id || typeof user_id !== 'string') return res.status(400).json({ message: "Please login to continue" })
         const { question, category, subCategory } = req.body;
         if (!question || typeof question !== "string" || !category || typeof category !== 'string' || !subCategory || typeof subCategory !== "string") {
             return res.status(400).json({ message: "Invalid question type !" })
@@ -153,7 +155,10 @@ export const FindMatchingResponse = async (req, res) => {
             },
             fields: ['text', 'category', 'subCategory', 'date_of_contribution', 'documentId', 'contributor'],
         });
-
+        // if the question is too vague
+        if (response.result.hits.length === 0) {
+            return res.status(200).json({ message: "Response found", answer: `Could you please be more specific about what you would like to know about ${subCategory}`, doc_id: [] })
+        }
         // a set to store only unique values of document ids
         const seen = new Set();
 
@@ -207,7 +212,11 @@ export const FindMatchingResponse = async (req, res) => {
         }
         // const FormattedResponse = formatAIResponse(AnswerToUsersQuestion)
         // console.log(AnswerToUsersQuestion)
+        const storeResponse = await StoreQueryAndResponse(user_id, question, AnswerToUsersQuestion);
 
+        if (storeResponse.error) {
+            return res.status(402).json({ message: "Could not store this request", answer: AnswerToUsersQuestion })
+        }
         return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion, doc_id: DocumentsUserForReference })
 
 
@@ -216,7 +225,8 @@ export const FindMatchingResponse = async (req, res) => {
     }
 }
 
-const StoreContributionDetails = async (name, email, feedback, userid, visibility, documentId) => {
+// store user file upload information
+export const StoreContributionDetails = async (name, email, feedback, userid, visibility, documentId) => {
     try {
         if (!name || typeof name !== "string" || !email || typeof email !== "string" || !feedback || typeof feedback !== "string" || !userid) {
 
@@ -267,25 +277,56 @@ export const GetPrivateUserDocs = async (req, res) => {
 
 export const QueryPersonalDocs = async (req, res) => {
     try {
-        const { docId, question, } = req.body;
-        if (!docId || typeof docId !== 'string') {
-            return res.status(400).json({ message: "Invalid document Id" });
+        const user_id = req.user.user_id;
+        if (!user_id || typeof user_id !== "string") {
+            return res.status(400).json({ message: "Please Login to continue" });
+        }
+
+        const { docId, question, query_type } = req.body;
+        if (!docId || typeof docId !== 'string' || !question || typeof question !== 'string' || !query_type || typeof query_type !== 'string') {
+            return res.status(400).json({ message: "Invalid values" });
         }
 
         const FoundData = [];
+        let response;
+        if (query_type === 'QNA') {
+            response = await index.searchRecords({
+                query: {
+                    topK: 10,
+                    inputs: { text: query }, // Note: changed 'question' to 'query' to match req.body
+                    filter: {
+                        documentId: { $eq: document_id }, // Note: changed 'docId' to 'document_id' to match req.body
+                        visibility: { $eq: "Private" }
+                    }
+                },
+                fields: ['text', 'category', 'subCategory', 'date_of_contribution', 'documentId', 'contributor', 'id'],
+            });
 
-        const response = await index.searchRecords({
-            query: {
-                topK: 10,
-                inputs: { text: question },
-                filter: {
-                    documentId: { $eq: docId },
-                    visibility: { $eq: "Private" }
-                }
-            },
-            fields: ['text', 'metadata'],
-        });
+            // Check for empty QNA results here
+            if (response.result.hits.length === 0) {
+                return res.status(200).json({ message: "Response found", answer: `Could you please be more specific about what you would like to know about this topic`, doc_id: [] });
+            }
 
+        } else if (query_type === "Summary") {
+            response = await index.searchRecords({
+                query: {
+                    topK: 50,
+                    filter: {
+                        documentId: { $eq: document_id },
+                        visibility: { $eq: "Private" }
+                    }
+                },
+                fields: ['text', 'category', 'subCategory', 'date_of_contribution', 'documentId', 'contributor', 'id'],
+            });
+
+            // Check for empty Summary results here
+            if (response.result.hits.length === 0) {
+                return res.status(200).json({ message: "Response found", answer: "No information was found in the document to summarize.", doc_id: [] });
+            }
+        } else {
+            // Handle invalid query_type
+            return res.status(400).json({ message: "Invalid query type" });
+        }
         // console.log(response.result.hits, 'found results')
         response.result.hits.forEach((e) => {
             if (e) {
@@ -301,9 +342,31 @@ export const QueryPersonalDocs = async (req, res) => {
         if (AnswerToUsersQuestion.error) {
             return res.status(200).json({ message: "Error while generating a response", answer: "WE currently do not have information regarding this topic" })
         }
+        const storeResponse = await StoreQueryAndResponse(user_id, question, AnswerToUsersQuestion);
 
+        if (storeResponse.error) {
+            return res.status(402).json({ message: "Could not store this request", answer: AnswerToUsersQuestion })
+        }
         return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion })
     } catch (error) {
         return res.status(500).json({ message: error })
+    }
+}
+
+
+// store user response with the question that has been asked for future refrence
+const StoreQueryAndResponse = async (user_id, question, Ai_response) => {
+    try {
+        if (!user_id || typeof user_id !== 'string' || !question || typeof question !== 'string' || !response || typeof Ai_response !== 'string') {
+            return { error: "Invalid arguments" };
+        }
+        const { error } = await supabase.from("Conversation_History").insert({ user_id, question, Ai_response });
+
+        if (error) {
+            return { error: "Error while storing the session data in the database" };
+        }
+        return { message: "Stored " }
+    } catch (error) {
+        return { error: "Could not store the session information" }
     }
 }

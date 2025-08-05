@@ -1,7 +1,7 @@
 import { Link } from "react-router"
 import { FaCode, FaLock, FaKey, FaRocket } from 'react-icons/fa';
 import { FiTool, FiArrowRight } from 'react-icons/fi';
-import { RiLockPasswordLine } from "react-icons/ri";
+// import { RiLockPasswordLine } from "react-icons/ri";
 const API_functions = () => {
     return (<div className="bg-white backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/60 p-8 w-full flex flex-col items-center gap-8 hover:shadow-2xl transition-shadow duration-300">
         {/* Header Section */}

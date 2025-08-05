@@ -26,7 +26,7 @@ export const VerifyToken = async (req, res, next) => {
         try {
             // Try to verify access token
             const decoded = await verifyJwtAsync(AccessToken, process.env.JWT_SECRET);
-            // console.log("user found")
+            console.log("user found")
 
             req.user = decoded;
             return next();
@@ -43,7 +43,7 @@ export const VerifyToken = async (req, res, next) => {
                     .select("Refresh_Token, user_id").eq('Access_Token',AccessToken)
                     
                    
-            //   console.log(data,'Token data from the database')
+              console.log(data,'Token data from the database')
                 if (error || !data) {
                     console.log(data,error)
                     console.log("No Refresh token in database")
@@ -51,7 +51,7 @@ export const VerifyToken = async (req, res, next) => {
                     return res.status(401).json({ message: "Session expired. Please log in again." });
                 }
 
-                const refreshToken = data[0].Refresh_Token;
+                const refreshToken = data[0]?.Refresh_Token;
                 console.log(refreshToken)
                 let refreshDecoded;
                 try {

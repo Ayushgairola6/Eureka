@@ -15,7 +15,8 @@ const Login = () => {
     const navigate = useNavigate();
     const Email = useRef<HTMLInputElement>(null);
     const Password = useRef<HTMLInputElement>(null);
-
+    const [isWeak, setIsWeak] = useState(false);
+    const { isDarkMode } = useStore();
     const loggedIn = useStore((state) => state.Login)
 
 
@@ -24,6 +25,7 @@ const Login = () => {
             navigate("/Interface")
         }
     }, [isPending])
+    const PasswordMustSymbols = ["$", "@", "%", "#", "*", "!", "^", "&", '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
     const HandleUserLogin = async () => {
         try {
@@ -32,6 +34,12 @@ const Login = () => {
                 setIsPending("idle");
                 toast("Please fill in all fields !");
                 return;
+            }
+
+            if (!Email.current.value.split("").includes("@")) {
+                setIsPending("idle")
+                toast("Please Enter a valid email address");
+                return
             }
 
 
@@ -77,16 +85,29 @@ const Login = () => {
             }, 3000);
         }
     }
+
+    // checking password strength
+    const CheckPasswordStrength = () => {
+        if (Password?.current?.value) {
+            // Check if password contains at least one symbol from PasswordMustSymbols
+            const hasSymbol = PasswordMustSymbols.some(symbol =>
+                Password?.current?.value.includes(symbol)
+            );
+
+            setIsWeak(!hasSymbol);
+        }
+    }
+
     return (<>
-        <div className="h-screen flex items-center justify-center relative z-[2]">
+        <div className="h-screen flex items-center justify-center relative z-[2] dark:bg-black ">
             <Toaster />
 
             {/* gradient accent background */}
-            <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-pink-800/30 to-fushia-600/20 blur-2xl z-[-1]"></div>
+            {isDarkMode === false && <div className="absolute h-full w-full top-0 left-0  blur-2xl z-[-1] bg-gradient-to-br from-pink-800/30 to-fushia-600/20 "></div>}
 
-            <motion.div drag whileDrag={{ scale: 0.9 }} dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }} className="bg-gradient-to-br from-gray-100 to-gray-200 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black curso-grab">
+            <motion.div drag whileDrag={{ scale: 0.9 }} dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }} className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-black dark:to-white/15 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab dark:shadow-white">
                 <h1 className="text-center space-grotesk font-bold  text-2xl">Welcome back </h1>
-                <span className="text-xs text-gray-700 space-grotesk text-center">Login to continue contributing !</span>
+                <span className="text-xs text-gray-700 dark:text-gray-400 space-grotesk text-center">Login to continue contributing !</span>
 
                 <span className="flex flex-col gap-2">
                     <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="email"><MdEmail /> Email Address</label>
@@ -94,11 +115,30 @@ const Login = () => {
                 </span>
                 <span className="flex flex-col gap-2">
                     <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="password"><MdPassword /> Password</label>
-                    <input ref={Password} spellCheck className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk" type="text" placeholder="Choose a strong password" />
+                    <input
+                        onChange={CheckPasswordStrength}
+                        ref={Password}
+                        spellCheck
+                        className={`border px-2 py-1 rounded-lg space-grotesk transition-colors duration-200
+                      ${isWeak === true ? " focus:border-red-600 border-red-600" : "focus:border-blue-600 border-gray-300"}`}
+                        type="text"
+                        placeholder="Choose a strong password"
+                    />
                 </span>
-                <Link to='/ResetPassword' className="bai-jamjuree-semibold text-xs text-end text-gray-500 hover:text-sky-600 transition-colors duration-300">Do not remember your password ?</Link>
+                <Link to='/ResetPassword' className="bai-jamjuree-semibold text-xs text-end text-gray-500 dark:text-gray-300 dark:hover:text-sky-600 hover:text-sky-600 transition-colors duration-300">Do not remember your password ?</Link>
                 <span className="flex items-center justfify-center py-4 flex-col gap-2">
-                    {isPending === 'idle' ? <motion.button whileHover={{ boxShadow: "2px 2px 2px black", transform: "translateY(-3px)" }} onClick={HandleUserLogin} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px blue" }} transition={{ duration: 0.2 }} className="bg-black py-2 px-3 rounded-lg space-grotesk text-white w-full CustPoint flex items-center justify-center gap-2">Login <CiLogin /></motion.button> : <motion.ul className='py-2 px-3 bg-gray-700 text-white space-grotesk w-full rounded-lg animate-pulse text-center flex items-center justify-center gap-2'>Please wait <IoIosHourglass className="animate-spin" /></motion.ul>}
+                    {/*normal button */}
+                    <motion.button disabled={isPending !== 'idle'} whileHover={{ boxShadow: "2px 2px 2px black", transform: "translateY(-3px)" }} onClick={HandleUserLogin} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px blue" }} transition={{ duration: 0.2 }} className="bg-black text-white dark:bg-white dark:text-black py-2 px-3 rounded-lg space-grotesk  w-full CustPoint flex items-center justify-center gap-2">{isPending === "idle" ? (
+                        <>
+                            Login <CiLogin />
+                        </>
+                    ) : (
+                        <>
+                            Please wait <IoIosHourglass className="animate-spin" />
+                        </>
+                    )}</motion.button>
+
+                    {/* google button */}
                     <motion.button whileHover={{ boxShadow: "2px 2px 2px black", transform: "translateY(-3px)" }} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px black" }} transition={{ duration: 0.2 }} className="bg-gray-400 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint ">Continue with Google <FaGoogle /></motion.button>
                 </span>
                 <ul className="space-grotesk  text-sm text-center ">New Here ?<Link className="text-transparent bg-clip-text font-semibold bg-gradient-to-r from-purple-600 to-blue-600 " to="/Register"> Register</Link></ul>
