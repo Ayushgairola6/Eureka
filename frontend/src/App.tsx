@@ -12,6 +12,8 @@ const API = lazy(() => import("./pages/API.tsx"))
 const DocsPage2 = lazy(() => import("./pages/docs_page2.tsx"));
 const Privacy = lazy(() => import("./pages/docs_page3.tsx"));
 const API_functions = lazy(() => import("./pages/docs_page4.tsx"))
+const Query_Doc = lazy(() => import("./pages/docs_page5.tsx"));
+const UploadDocuments = lazy(() => import("./pages/docs_page6.tsx"));
 // const GetApiKey = lazy(()=>import("./pages/getAPI_Key.tsx"));
 
 import { useAppDispatch } from './store/hooks.tsx';
@@ -99,6 +101,9 @@ const App = () => {
             <Route element={<DocsPage2 />} path="/docs/page2" />
             <Route element={<Privacy />} path="/docs/page3" />
             <Route element={<API_functions />} path="/docs/page4" />
+            <Route element={<Query_Doc />} path="/docs/page5" />
+            <Route element={<UploadDocuments />} path="/docs/page6" />
+
 
 
             {/* Add more documentation routes here */}

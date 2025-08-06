@@ -19,31 +19,31 @@ export const VerifyToken = async (req, res, next) => {
         const AccessToken = AuthTokenFromCookies || AuthTokenFromHeaders;
         // console.log(AccessToken)
         if (!AccessToken) {
-            console.log("No access token")
+            // console.log("No access token")
             return res.status(401).json({ message: "No session token found" });
         }
 
         try {
             // Try to verify access token
             const decoded = await verifyJwtAsync(AccessToken, process.env.JWT_SECRET);
-            console.log("user found")
+            // console.log("user found")
 
             req.user = decoded;
             return next();
         } catch (err) {
             // If access token expired, try refresh flow
             if (err.name === "TokenExpiredError") {
-                console.log("Access token expired",AccessToken)
+                // console.log("Access token expired",AccessToken)
 
                 // Find refresh token in DB where Access_Token matches
-                console.log("Validating refreshToken")
+                // console.log("Validating refreshToken")
           
                 const { data, error } = await supabase
                     .from("Tokens")
                     .select("Refresh_Token, user_id").eq('Access_Token',AccessToken)
                     
                    
-              console.log(data,'Token data from the database')
+            //   console.log(data,'Token data from the database')
                 if (error || !data) {
                     console.log(data,error)
                     console.log("No Refresh token in database")
@@ -52,17 +52,17 @@ export const VerifyToken = async (req, res, next) => {
                 }
 
                 const refreshToken = data[0]?.Refresh_Token;
-                console.log(refreshToken)
+                // console.log(refreshToken)
                 let refreshDecoded;
                 try {
-                    console.log("Verifying refresh TOken")
+                    // console.log("Verifying refresh TOken")
 
                     refreshDecoded = await verifyJwtAsync(refreshToken, process.env.REFRESH_TOKEN_SECRET);
                 } catch (refreshErr) {
-                    console.log(refreshErr)
+                    // console.log(refreshErr)
                     return res.status(401).json({ message: "Session expired. Please log in again." });
                 }
-                console.log("Assigning new access token because the refreshToken is still valid")
+                // console.log("Assigning new access token because the refreshToken is still valid")
 
                 // If refresh token is valid, issue new access token
                 const newAccessToken = GenerateAccessTokens(
@@ -72,7 +72,7 @@ export const VerifyToken = async (req, res, next) => {
                 );
 
                 // Update the access token in DB
-                console.log("Updating the access token in the databse")
+                // console.log("Updating the access token in the databse")
 
                 await supabase
                     .from("Tokens")

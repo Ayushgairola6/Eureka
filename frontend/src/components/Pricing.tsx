@@ -62,7 +62,7 @@ const Pricing = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
 
                 {/* Free Tier */}
-                <div className={`"group relative p-8 ${isDarkMode ? "from-black to-white/20" : "from-gray-50 to-gray-100"} backdrop-blur-sm rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}>
+                <div className={`"group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}>
                     {/* accent gradient background */}
 
                     {/* rest of the info */}
@@ -98,7 +98,7 @@ const Pricing = () => {
                         </li>
                     </ul>
                     <Link to="/Interface">
-                        <button className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer" ${isDarkMode ? "bg-white text-black" : "bg-black text-white"}`}>
+                        <button className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer dark:bg-white dark:text-black bg-black text-white`}>
                             Get Started
                             <MdArrowForward />
                         </button>
@@ -106,7 +106,7 @@ const Pricing = () => {
                 </div>
 
                 {/* Pro Tier (Featured) */}
-                <div className={`"group relative p-8 ${isDarkMode ? "from-black to-white/20" : "from-gray-50 to-gray-100"} backdrop-blur-sm rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}>
+                <div className={`"group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}>
                     {/* accent gradient background */}
 
                     {/* rest of the info */}
@@ -143,14 +143,14 @@ const Pricing = () => {
                         </li>
                     </ul>
 
-                    <button className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer" ${isDarkMode ? "bg-white text-black" : "bg-black text-white"}`}>
+                    <button className={`dark:bg-white  dark:text-black bg-black text-white w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer`}>
                         Subscribe <BiPurchaseTag />
                     </button>
 
                 </div>
 
                 {/* Enterprise Tier */}
-                <div className={`"group relative p-8 ${isDarkMode ? "from-black to-white/20" : "from-gray-50 to-gray-100"} backdrop-blur-sm rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}>
+                <div className={`"group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}>
                     {/* accent gradient background */}
 
                     {/* rest of the info */}
@@ -187,7 +187,7 @@ const Pricing = () => {
 
                     <button onClick={() => {
                         toast("Thanks for your intereset but , this feature is currently not active !")
-                    }} className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer" ${isDarkMode ? "bg-white text-black" : "bg-black text-white"}`}>
+                    }} className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer dark:bg-white dark:text-black bg-black text-white`}>
                         Contact Sales
                         <MdScale />
                     </button>
@@ -197,28 +197,50 @@ const Pricing = () => {
             </div>
 
             {/* FAQ section */}
-            <div className="max-w-3xl mx-auto mt-20">
-                <h3 className="bai-jamjuree-semibold text-2xl mb-8 text-center">Frequently Asked Questions</h3>
+            <div className="max-w-3xl mx-auto mt-20 px-4 sm:px-0">
+                <h3 className="bai-jamjuree-semibold text-2xl md:text-3xl mb-8 text-center text-gray-900 dark:text-white">
+                    Frequently Asked Questions
+                </h3>
 
-                <div className="space-y-4 ">
-                    {faqs.map((faq, index) => (
-                        <div key={index} onClick={() => {
-                            if (faq.id === show) {
-                                setShow(0)
-                            } else {
-                                setShow(faq.id);
-                            }
-                        }} className={` border-b border-gray-200 pb-4    rounded-lg  bai-jamjuree-regular ${show === faq.id ? " h-30 " : "h-8  overflow-hidden  "}  transition-all duration-200 `}>
-                            <div className={``}>
-                                <button className="flex justify-between items-center w-full space-grotesk-medium text-left cursor-pointer">
-                                    <span>{faq.question}</span>
-                                    <FiChevronDown className={`text-purple-600 transition-transform duration-300 ${show === faq.id ? "rotate-45" : "rotate-0"} `} />
-                                </button>
-                                <div className={`mt-2 space-grotesk ${show === faq.id ? "text-purple-600 opacity-100" : "opacity-0 text-gray-400"} text-xs`}>
+                <div className="space-y-2">
+                    {faqs.map((faq) => (
+                        <div
+                            key={faq.id}
+                            className="border-b border-gray-200 dark:border-gray-700"
+                        >
+                            <button
+                                onClick={() => setShow(show === faq.id ? 0 : faq.id)}
+                                className="flex justify-between items-center w-full py-4 px-2 text-left cursor-pointer 
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 rounded-lg
+                               transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                aria-expanded={show === faq.id}
+                                aria-controls={`faq-${faq.id}`}
+                            >
+                                <span className="space-grotesk-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">
+                                    {faq.question}
+                                </span>
+                                <FiChevronDown
+                                    className={`text-purple-600 dark:text-purple-400 transition-transform duration-200 
+                                  ${show === faq.id ? "rotate-180 transform-gpu" : "rotate-0 transform-gpu"}`}
+                                    style={{ willChange: "transform" }}
+                                />
+                            </button>
+
+                            <div
+                                id={`faq-${faq.id}`}
+                                className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] 
+                              ${show === faq.id ?
+                                        "max-h-[500px] opacity-100 translate-y-0" :
+                                        "max-h-0 opacity-0 -translate-y-2"}`}
+                                style={{
+                                    willChange: "height, opacity, transform",
+                                    transformStyle: "preserve-3d"
+                                }}
+                            >
+                                <div className="pb-4 px-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base">
                                     {faq.answer}
                                 </div>
                             </div>
-
                         </div>
                     ))}
                 </div>

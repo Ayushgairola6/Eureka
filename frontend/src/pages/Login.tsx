@@ -103,9 +103,9 @@ const Login = () => {
             <Toaster />
 
             {/* gradient accent background */}
-            {isDarkMode === false && <div className="absolute h-full w-full top-0 left-0  blur-2xl z-[-1] bg-gradient-to-br from-pink-800/30 to-fushia-600/20 "></div>}
+            {!isDarkMode && <div className="absolute h-full w-full top-0 left-0  blur-2xl z-[-1] bg-gradient-to-br from-pink-600/30 to-fuchsia-600/30 "></div>}
 
-            <motion.div drag whileDrag={{ scale: 0.9 }} dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }} className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-black dark:to-white/15 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab dark:shadow-white">
+            <motion.div drag whileDrag={{ scale: 0.9 }} dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }} className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-black dark:to-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400">
                 <h1 className="text-center space-grotesk font-bold  text-2xl">Welcome back </h1>
                 <span className="text-xs text-gray-700 dark:text-gray-400 space-grotesk text-center">Login to continue contributing !</span>
 
@@ -139,7 +139,7 @@ const Login = () => {
                     )}</motion.button>
 
                     {/* google button */}
-                    <motion.button whileHover={{ boxShadow: "2px 2px 2px black", transform: "translateY(-3px)" }} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px black" }} transition={{ duration: 0.2 }} className="bg-gray-400 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint ">Continue with Google <FaGoogle /></motion.button>
+                    <motion.button whileHover={{ boxShadow: "2px 2px 2px black", transform: "translateY(-3px)" }} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px black" }} transition={{ duration: 0.2 }} className="bg-indigo-400 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint ">Login with Google <FaGoogle /></motion.button>
                 </span>
                 <ul className="space-grotesk  text-sm text-center ">New Here ?<Link className="text-transparent bg-clip-text font-semibold bg-gradient-to-r from-purple-600 to-blue-600 " to="/Register"> Register</Link></ul>
             </motion.div>

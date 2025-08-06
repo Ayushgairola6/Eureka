@@ -3,8 +3,8 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate } from "react-router";
 import axios, { isAxiosError } from 'axios'
 import { toast, Toaster } from "sonner";
-import {FaUserPlus,FaUser} from 'react-icons/fa'
-import { MdEmail ,MdPassword } from "react-icons/md";
+import { FaUserPlus, FaUser, FaGoogle } from 'react-icons/fa'
+import { MdEmail, MdPassword } from "react-icons/md";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 import { IoIosHourglass } from "react-icons/io";
@@ -86,28 +86,35 @@ const Register = () => {
     }
 
     return (<>
-        <div className="h-screen flex items-center justify-center relative z-[2]">
+        <div className="h-screen flex items-center justify-center relative z-[2] dark:bg-black dark:text-white">
             {/* gradient accent background */}
-            <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-blue-600/20 to-indigo-600/20 blur-2xl z-[-1]"></div>
+            <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 dark:from-black dark:to-black blur-2xl z-[-1]"></div>
 
-            <motion.div drag whileDrag={{ scale: 0.9 }} dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }} className="bg-gradient-to-br from-gray-100 to-gray-200 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black curso-grab relative">
+            <motion.div drag whileDrag={{ scale: 0.9 }} dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }} className="bg-gradient-to-br from-gray-100 to-gray-200
+            dark:from-black dark:to-white/15 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black border dark:border-gray-400 cursor-grab relative">
                 <h1 className="text-center space-grotesk font-bold  text-2xl">Welcome to Eureka ! </h1>
-                <span className="text-xs text-gray-700 space-grotesk text-center">Start contributing today and become a part of our community .</span>
+                <span className="text-xs text-gray-700 dark:text-gray-400 space-grotesk text-center">Start contributing today and become a part of our community .</span>
                 <span className="flex flex-col gap-2">
-                    <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="username"> <FaUser/>Username </label>
+                    <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="username"> <FaUser />Username </label>
                     <input ref={Username} className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk" type="text" placeholder="Your full name" />
                 </span>
                 <span className="flex flex-col gap-2">
-                    <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="email"><MdEmail/>Email Address </label>
+                    <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="email"><MdEmail />Email Address </label>
                     <input ref={Email} className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk" type="text" placeholder="Your email address" />
                 </span>
                 <span className="flex flex-col gap-2">
-                    <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="username"><MdPassword/> Password </label>
+                    <label className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2" htmlFor="username"><MdPassword /> Password </label>
                     <input ref={Password} spellCheck onChange={(e) => ReflectPasswordStrength(e)} className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk" type="text" placeholder="Choose a strong password" />
                     <ul className={` text-xs rounded-full h-1  ${Strength > 0 ? "bg-red-600 w-1/4" : "bg-transparent"}`}></ul>
                 </span>
-                <span className="flex items-center justify-center py-4">
-                    {isPending === 'idle' ? <motion.button whileHover={{boxShadow:"2px 2px 2px black",transform:"translateY(-3px)"}} onClick={HandleRegister} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px blue" }} transition={{ duration: 0.2 }} className="bg-black py-2 px-3 rounded-lg space-grotesk text-white w-full CustPoint flex items-center justify-center gap-2">Create Account <FaUserPlus/></motion.button> : <motion.div className="w-full bg-gray-800 space-grotesk border border-gray-600 text-white animate-pulse rounded-lg text-center py-2 px-3 flex items-center justify-center gap-2" >Setting up your Account <IoIosHourglass className="animate-spin"/></motion.div>}
+                <span className="flex items-center justfify-center py-4 flex-col gap-2">
+                    <motion.button disabled={isPending !== 'idle'} whileHover={{ boxShadow: "2px 2px 2px black", transform: "translateY(-3px)" }} onClick={HandleRegister} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px blue" }} transition={{ duration: 0.2 }} className="bg-black dark:bg-white dark:text-black py-2 px-3 rounded-lg space-grotesk text-white w-full CustPoint flex items-center justify-center gap-2">{isPending === 'idle' ? (<>
+                        Create Account <FaUserPlus />
+                    </>) : (<>
+                        Setting up your Account <IoIosHourglass className="animate-spin" />
+                    </>)} </motion.button>
+                    {/* google button */}
+                    <motion.button whileHover={{ boxShadow: "2px 2px 2px black", transform: "translateY(-3px)" }} whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px black" }} transition={{ duration: 0.2 }} className="bg-indigo-400 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint ">Continue with Google <FaGoogle /></motion.button>
                 </span>
                 <ul className="space-grotesk  text-sm text-center ">Have an Account ?<Link className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 font-semibold" to="/Login"> Login</Link></ul>
 

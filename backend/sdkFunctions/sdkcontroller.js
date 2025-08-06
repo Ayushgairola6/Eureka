@@ -69,7 +69,7 @@ export const QuerySpecificDocument = async (req, res) => {
 
             // Check for empty Summary results here
             if (response.result.hits.length === 0) {
-                return res.status(200).json({ message: "Response found", answer: "No information was found in the document to summarize.", doc_id: [] });
+                return res.status(200).json({ message: "Response generated", answer: "No information was found in the document to summarize.", doc_id: [] });
             }
         } else {
             // Handle invalid query_type

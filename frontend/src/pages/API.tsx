@@ -19,10 +19,9 @@ const API = () => {
             }
             setGenerating(true);
             const AuthToken = localStorage.getItem("Eureka_six_eta_v1_AuthToken");
-            const RefreshToken = localStorage.getItem("Eureka_six_eta_v1_RefreshToken");
             const response = await axios.get("http://localhost:1000/api/get/api-key", {
                 withCredentials: true, headers: {
-                    'Authorization': `Bearer ${{ AuthToken, RefreshToken }}`
+                    'Authorization': `Bearer ${AuthToken}`
                 }
             })
             if (response.data.key) {
@@ -40,22 +39,22 @@ const API = () => {
     }
     return (
         <>
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 relative overflow-hidden z-[1]">
+            <div className="min-h-screen flex items-center justify-center  relative overflow-hidden z-[1]">
                 {/* Subtle gradient mesh background */}
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-100/40 to-blue-100/20 z-[-1]" />
+                {/* <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-blue-600/20 z-[-1]" /> */}
 
                 {/* Main Content Container */}
                 <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-4xl w-full">
                     <Toaster />
 
                     {/* Documentation Card */}
-                    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-8 w-full flex flex-col items-center gap-8">
+                    <div className="bg-white dark:bg-black  dark:text-white text-black rounded-xl shadow-md border border-gray-100 p-8 w-full flex flex-col items-center gap-8">
                         {/* Header Section */}
                         <div className="text-center space-y-2">
-                            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 font-sans">
+                            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-200 font-sans">
                                 Eureka API Documentation
                             </h1>
-                            <p className="text-lg text-gray-600 max-w-2xl">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 max-w-2xl">
                                 The complete guide to integrating with our knowledge discovery platform
                             </p>
                         </div>
@@ -63,8 +62,8 @@ const API = () => {
                         {/* API Key Section */}
                         <div className="w-full max-w-md space-y-4">
                             <div className="text-center">
-                                <h2 className="text-lg font-semibold text-gray-800">API Access</h2>
-                                <p className="text-sm text-gray-500 mt-1">
+                                <h2 className="text-lg font-semibold text-gray-800 dark:text-indigo-400">API Access</h2>
+                                <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                                     Requires an active subscription and valid API key
                                 </p>
                             </div>
@@ -74,7 +73,7 @@ const API = () => {
                                     <input
                                         value={key}
                                         readOnly
-                                        className="flex-1 px-4 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
+                                        className="flex-1 px-4 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 dark:bg-black focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
                                         placeholder="Your API key will appear here"
                                     />
                                     <button
@@ -91,8 +90,8 @@ const API = () => {
                                     onClick={getAPI_key}
                                     disabled={generating}
                                     className={`w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${generating
-                                            ? "bg-gray-100 text-black cursor-not-allowed"
-                                            : "bg-black hover:bg-blue-700 text-white shadow-sm bai-jamjuree-regular"
+                                            ? "bg-gray-100 text-black da cursor-not-allowed"
+                                            : "bg-black hover:bg-indigo-500 dark:bg-white dark:text-black text-white shadow-sm bai-jamjuree-regular"
                                         }`}
                                 >
                                     {generating ? (
