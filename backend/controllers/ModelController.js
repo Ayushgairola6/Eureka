@@ -13,7 +13,7 @@ const pc = new Pinecone({
 });
 const Mode_prompt = process.env.SYSTEM_PROMPT;
 
-export const GenerateResponse = async (question, data) => {
+export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
     try {
         if (!question || !data) {
             console.error("Not all the data was given to the model")
@@ -22,7 +22,7 @@ export const GenerateResponse = async (question, data) => {
         const FormattedData = [{
             role: "user", parts: [{ text: question }]
         }, {
-            role: "model", parts: [{ text: JSON.stringify({ ...data }, Mode_prompt) }]
+            role: "model", parts: [{ text: JSON.stringify({ ...data }, SYSTEM_PROMPT ? SYSTEM_PROMPT : Mode_prompt) }]
         }
         ]
         const result = await genAI.models.generateContent({
@@ -37,9 +37,9 @@ export const GenerateResponse = async (question, data) => {
         });
 
         const responseText = result.text;
-        // console.log(result)
+        console.log(result)
         if (!responseText) {
-            console.log(responseText)
+            // console.log(responseText)
             return { error: "The server is very busy , please try again !" }
         }
 

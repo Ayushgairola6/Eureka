@@ -144,8 +144,8 @@ const StoreTokens = async (RefreshToken, AuthToken, id) => {
             .single();
 
 
-            // if the user_id is present in the database 
-            //update the authToken and refreshToken
+        // if the user_id is present in the database 
+        //update the authToken and refreshToken
         if (data?.user_id) {
             // Update existing token record
             const { error: updateError } = await supabase
@@ -176,19 +176,37 @@ const StoreTokens = async (RefreshToken, AuthToken, id) => {
 export const GetUserAccountDetails = async (req, res) => {
     try {
         const user_id = req.user.user_id;
-        // console.log(req.user)
+        // Get the basic user information
         if (!user_id || typeof user_id !== "string") {
             console.log("No user id found ,whie getting account details")
             return res.status(400).json({ message: "Invalid user id" });
         }
+        const { data, error } = await supabase
+            .from('users')
+            .select('username,created_at,email, id, Contributions_user_id_fkey(*)').eq('id', user_id, 'visibility', 'Private').single()
 
-        const { data, error } = await supabase.from("users").select("username , email,id");
-        if (error) {
-            console.log(error)
+        // get the queryCount
+        const { count, error: countError } = await supabase
+            .from('Conversation_History')
+            .select('question', { count: 'exact' })
+            .eq('user_id', user_id);
+
+        if (error || countError) {
+            console.log(error ? error : countError)
             return res.status(404).json({ user: null, message: "User not found" });
         }
 
-        return res.json({ user: data, message: "User data found" });
+        // Like count on the users Public knowledgebase contribution
+        const { data: uservotes, error: uservoteerror } = await supabase
+            .from("Contributions").select("created_at , chunk_count ,Doc_Feedback(upvotes,downvotes,partial_upvotes)").eq("user_id", user_id).eq("Document_visibility", "Public");
+
+
+        if (uservoteerror) {
+            console.log(uservoteerror);
+            return res.status(404).json({ user: null, message: "User not found" });
+        }
+
+        return res.json({ user: data, Querycount: count, FeedbackCounts: uservotes[0].Doc_Feedback, message: "User data found" });
     } catch (error) {
         return res.status(500).json({ message: "Internal Server Error" })
     }

@@ -7,14 +7,12 @@ import {
   FiMail,
   FiSend
 } from 'react-icons/fi';
-import { motion } from 'framer-motion';
-import { useStore } from '../store/zustandHandler';
+import { Link } from 'react-router';
 
 const Footer = () => {
-  const { isDarkMode } = useStore();
 
   return (<>
-    <footer className={`"relative ${isDarkMode ? "bg-black text-white" : "bg-gray-50 text-black"} border-t border-gray-200 overflow-hidden z-[1]"`}>
+    <footer className={`"relative dark:bg-black dark:text-white  border-t border-gray-200 overflow-hidden z-[1]"`}>
       {/* Gradient background elements */}
       <div className="z-[-1] absolute top-0 left-0 w-full h-full bg-gradient-to-br from-sky-600/20 to-red-600/20 blur-3xl "></div>
 
@@ -28,19 +26,19 @@ const Footer = () => {
                 EUREKA
               </span>
             </div>
-            <p className={`"space-grotesk ${isDarkMode?"text-gray-300":"text-gray-600"} text-sm"`}>
+            <p className={`space-grotesk dark:text-gray-300 text-gray-600  text-sm`}>
               The open-source knowledge engine powered by AI and community wisdom.
             </p>
             <div className="flex space-x-4">
-              <motion.a whileTap={{ scale: 1.05 }} href="#" className="text-gray-500 p-2 bg-gray-200 rounded-full hover:text-purple-600 transition-colors">
+              <a href="#" className="text-gray-500 p-2 dark:text-black bg-gray-200 rounded-full hover:text-purple-600 transition-colors">
                 <FiGithub className="w-5 h-5" />
-              </motion.a>
-              <motion.a whileTap={{ scale: 1.05 }} href="#" className="text-gray-500 p-2 bg-gray-200 rounded-full hover:text-blue-600 transition-colors">
+              </a>
+              <a href="#" className="text-gray-500 p-2 dark:text-black bg-gray-200 rounded-full hover:text-blue-600 transition-colors">
                 <FiTwitter className="w-5 h-5" />
-              </motion.a>
-              <motion.a whileTap={{ scale: 1.05 }} href="#" className="text-gray-500 p-2 bg-gray-200 rounded-full hover:text-red-600 transition-colors">
+              </a>
+              <a href="#" className="text-gray-500 p-2 dark:text-black bg-gray-200 rounded-full hover:text-red-600 transition-colors">
                 <FiYoutube className="w-5 h-5" />
-              </motion.a>
+              </a>
             </div>
           </div>
 
@@ -51,10 +49,10 @@ const Footer = () => {
               Quick Links
             </h3>
             <ul className="space-y-3 space-grotesk">
-              <li><a href="#" className="dark:text-gray-300 text-gray-600 hover:text-purple-600 transition-colors text-sm">Public Demo</a></li>
-              <li><a href="#" className="dark:text-gray-300 text-gray-600 hover:text-purple-600 transition-colors text-sm">Documentation</a></li>
-              <li><a href="#" className="dark:text-gray-300 text-gray-600 hover:text-purple-600 transition-colors text-sm">Contribute</a></li>
-              <li><a href="#" className="dark:text-gray-300 text-gray-600 hover:text-purple-600 transition-colors text-sm">Self-Host Guide</a></li>
+              <li><Link to="#" className="dark:text-gray-300 text-gray-600 dark:hover:text-indigo-400 hover:text-purple-600 transition-colors text-sm">Public Demo</Link></li>
+              <li><Link to="#" className="dark:text-gray-300 text-gray-600 dark:hover:text-indigo-400 hover:text-purple-600 transition-colors text-sm">Documentation</Link></li>
+              <li><Link to="#" className="dark:text-gray-300 text-gray-600 dark:hover:text-indigo-400 hover:text-purple-600 transition-colors text-sm">Contribute</Link></li>
+              <li><Link to="#" className="dark:text-gray-300 text-gray-600 dark:hover:text-indigo-400 hover:text-purple-600 transition-colors text-sm">Self-Host Guide</Link></li>
             </ul>
           </div>
 
@@ -65,10 +63,10 @@ const Footer = () => {
               Resources
             </h3>
             <ul className="space-y-3 space-grotesk">
-              <li><a href="#" className="dark:text-gray-300 text-gray-600 hover:text-blue-600 transition-colors text-sm">API Reference</a></li>
-              <li><a href="#" className="dark:text-gray-300 text-gray-600 hover:text-blue-600 transition-colors text-sm">Tutorials</a></li>
-              <li><a href="#" className="dark:text-gray-300 text-gray-600 hover:text-blue-600 transition-colors text-sm">Community</a></li>
-              <li><a href="#" className="dark:text-gray-300 text-gray-600 hover:text-blue-600 transition-colors text-sm">Blog</a></li>
+              <li><Link to="#" className="dark:text-gray-300 text-gray-600 dark:hover:text-indigo-400 hover:text-blue-600 transition-colors text-sm">API Reference</Link></li>
+              <li><Link to="#" className="dark:text-gray-300 text-gray-600 dark:hover:text-indigo-400 hover:text-blue-600 transition-colors text-sm">Tutorials</Link></li>
+              <li><Link to="#" className="dark:text-gray-300 text-gray-600 dark:hover:text-indigo-400 hover:text-blue-600 transition-colors text-sm">Community</Link></li>
+              <li><Link to="#" className="dark:text-gray-300 text-gray-600 dark:hover:text-indigo-400 hover:text-blue-600 transition-colors text-sm">Blog</Link></li>
             </ul>
           </div>
 
@@ -97,22 +95,22 @@ const Footer = () => {
         {/* Bottom footer */}
         <div className="border-t border-gray-200 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="space-grotesk dark:text-gray-300 text-gray-500 text-sm mb-4 md:mb-0">
-            © {new Date().getFullYear()} Eureka. Open-source knowledge for all.
+            © {new Date().getFullYear()} Eureka. Knowledge for all.
           </p>
           <div className="flex space-x-6">
             <a href="#" className="space-grotesk dark:text-gray-300 text-gray-500 hover:text-purple-600 text-sm transition-colors">Terms</a>
             <a href="#" className="space-grotesk dark:text-gray-300 text-gray-500 hover:text-purple-600 text-sm transition-colors">Privacy</a>
-            <a href="#" className="space-grotesk dark:text-gray-300 text-gray-500 hover:text-purple-600 text-sm transition-colors">Cookies</a>
+            {/* <a href="#" className="space-grotesk dark:text-gray-300 text-gray-500 hover:text-purple-600 text-sm transition-colors">Cookies</a> */}
           </div>
         </div>
       </div>
 
       {/* Floating particles */}
       <div className="absolute bottom-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        {[...Array(8)].map((_, i) => (
+        {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="absolute rounded-full bg-purple-500/10"
+            className="absolute rounded-full bg-purple-500/10 dark:bg-gray-50"
             style={{
               width: `${Math.random() * 8 + 4}px`,
               height: `${Math.random() * 8 + 4}px`,

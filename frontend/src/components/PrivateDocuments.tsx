@@ -13,7 +13,7 @@ type PrivateDocProps = {
 const PrivateDocuments: React.FC<PrivateDocProps> = ({ showDocs, setShowDocs, selectedDoc, setSelectedDoc }) => {
     // ${showDocs ? "h-full w-full opacity-100" : "h-0 w-0 opacity-0 overflow-hidden"
     //             }
-    const privateDocs = useAppSelector((state) => state.auth.documents)
+    const User = useAppSelector((state) => state.auth.user)
     return (
         <div
             className={`absolute h-full w-full md:w-1/2 lg:w-1/3 p-4 top-0 left-0 z-[100] space-grotesk 
@@ -39,11 +39,11 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({ showDocs, setShowDocs, se
                     My Documents
                 </h2>
 
-                {privateDocs && privateDocs.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2">
-                        {privateDocs.map((doc) => (
+                {User && User.Contributions_user_id_fkey.length>0 ? (
+                    <div className="grid grid-cols-1  gap-3 p-2">
+                        {User?.Contributions_user_id_fkey.map((doc:any) => (
                             <motion.div
-                                key={doc.document_id}
+                                key={doc.id}
                                 onClick={() => setSelectedDoc(selectedDoc === doc.document_id ? "" : doc.document_id)}
                                 className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200
                       ${selectedDoc === doc.document_id
@@ -55,11 +55,12 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({ showDocs, setShowDocs, se
                                 <h3 className="font-bold text-gray-800 dark:text-white truncate">
                                     {doc.feedback || "Untitled Document"}
                                 </h3>
-                                
-                                <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+
+                                <div className="mt-2 text-xs text-gray-600 dark:text-green-300">
                                     <p>ID: {doc.document_id}</p>
-                                    <p>Uploaded: {new Date(doc.created_at).toLocaleDateString()}</p>
                                 </div>
+                                <p className="mt-2 text-xs text-gray-600 dark:text-red-300">Uploaded: {new Date(doc.created_at).toLocaleDateString()}</p>
+
                             </motion.div>
                         ))}
                     </div>
@@ -67,9 +68,9 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({ showDocs, setShowDocs, se
                     <div className="flex flex-col items-center justify-center h-64 text-center">
                         <FiFile className="text-gray-400 dark:text-gray-500 text-4xl mb-2" />
                         <p className="text-gray-500 dark:text-gray-400">No documents found</p>
-                        <button className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                            Upload Document
-                        </button>
+                        <span className="text-xs text-red-600">
+                           * Click on contributions to upload
+                        </span>
                     </div>
                 )}
             </div>

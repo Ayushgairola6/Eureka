@@ -24,6 +24,7 @@ export const VerifyToken = async (req, res, next) => {
         }
 
         try {
+            // console.log("Verifying access token")
             // Try to verify access token
             const decoded = await verifyJwtAsync(AccessToken, process.env.JWT_SECRET);
             // console.log("user found")
@@ -33,36 +34,29 @@ export const VerifyToken = async (req, res, next) => {
         } catch (err) {
             // If access token expired, try refresh flow
             if (err.name === "TokenExpiredError") {
-                // console.log("Access token expired",AccessToken)
-
-                // Find refresh token in DB where Access_Token matches
-                // console.log("Validating refreshToken")
-          
+                // console.log("Access token expired")
+                const DecodedData = jwt.decode(AccessToken);
                 const { data, error } = await supabase
                     .from("Tokens")
-                    .select("Refresh_Token, user_id").eq('Access_Token',AccessToken)
-                    
-                   
-            //   console.log(data,'Token data from the database')
+                    .select("Refresh_Token").eq(' user_id', DecodedData?.user_id)
+
                 if (error || !data) {
-                    console.log(data,error)
+                    // console.log(data, error)
                     console.log("No Refresh token in database")
 
                     return res.status(401).json({ message: "Session expired. Please log in again." });
                 }
 
                 const refreshToken = data[0]?.Refresh_Token;
-                // console.log(refreshToken)
+                // console.log("refreshtoken data", refreshToken)
+
                 let refreshDecoded;
                 try {
-                    // console.log("Verifying refresh TOken")
 
                     refreshDecoded = await verifyJwtAsync(refreshToken, process.env.REFRESH_TOKEN_SECRET);
                 } catch (refreshErr) {
-                    // console.log(refreshErr)
                     return res.status(401).json({ message: "Session expired. Please log in again." });
                 }
-                // console.log("Assigning new access token because the refreshToken is still valid")
 
                 // If refresh token is valid, issue new access token
                 const newAccessToken = GenerateAccessTokens(
@@ -72,8 +66,6 @@ export const VerifyToken = async (req, res, next) => {
                 );
 
                 // Update the access token in DB
-                // console.log("Updating the access token in the databse")
-
                 await supabase
                     .from("Tokens")
                     .update({ Access_Token: newAccessToken })
@@ -88,11 +80,9 @@ export const VerifyToken = async (req, res, next) => {
                 });
 
                 req.user = refreshDecoded;
-                // Optionally, you can attach a flag to let the client know a new token was issued
                 res.set('X-New-Access-Token', 'true');
                 return next();
             }
-            // Other errors (malformed, invalid, etc.)
             return res.status(403).json({ message: "Invalid or malformed token." });
         }
     } catch (error) {

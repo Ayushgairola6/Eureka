@@ -14,10 +14,11 @@ const Privacy = lazy(() => import("./pages/docs_page3.tsx"));
 const API_functions = lazy(() => import("./pages/docs_page4.tsx"))
 const Query_Doc = lazy(() => import("./pages/docs_page5.tsx"));
 const UploadDocuments = lazy(() => import("./pages/docs_page6.tsx"));
-// const GetApiKey = lazy(()=>import("./pages/getAPI_Key.tsx"));
+const UserDashboard = lazy(() => import("./pages/UserDashBoard.tsx"));
+const ConversationDetail = lazy(() => import("./pages/Doc_History.tsx"));
 
 import { useAppDispatch } from './store/hooks.tsx';
-import { GetUserDetails, } from './store/AuthSlice.ts';
+import { GetUserDashboardData, } from './store/AuthSlice.ts';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer'
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
@@ -37,12 +38,15 @@ const App = () => {
   const dispatch = useAppDispatch()
   const { isDarkMode } = useStore();
 
+  // when loggedIn get userdetails from the dasboard
   useEffect(() => {
     if (loggedIn) {
-      dispatch(GetUserDetails())
+      dispatch(GetUserDashboardData())
     }
   }, [loggedIn, dispatch])
 
+
+  // onMount verify the userstate
   useEffect(() => {
     const controller = new AbortController();
     const VerifyLoginState: () => Promise<void> = async () => {
@@ -60,23 +64,42 @@ const App = () => {
           return
         }
       } catch (error) {
-        console.log(error);
+        // console.log(error);
       }
     }
     VerifyLoginState()
     return () => controller.abort()
-  }, [loggedIn])
+  }, [])
 
-  // toggle dark class from the html body
+
+  // useEffect(() => {
+  //   // This effect runs only once when the component first mounts.
+  //   const cookieString = document.cookie;
+  //   const cookies = cookieString.split(';').map(cookie => cookie.trim());
+  //   const themeCookie = cookies.find(cookie => cookie.startsWith('Eureka_Theme='));
+
+  //   if (themeCookie && themeCookie.split('=')[1] === 'dark') {
+  //     // Sets the initial state to dark if the cookie is found
+  //     // and sets the class on the documentElement.
+  //     document.documentElement.classList.add('dark');
+  //     // You would also want to update your state here
+  //     // setIsDarkMode(true);
+  //   }
+  // }, []);
+
+  // 2. Theme toggle handler (runs on isDarkMode changes)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (isDarkMode) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.cookie = 'Eureka_Theme=dark; path=/';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.cookie = 'Eureka_Theme=light; path=/';
     }
-  }, [isDarkMode])
+  }, [isDarkMode]);
+
+
+
 
   return (<>
     <Suspense fallback={<div className='h-screen bg-black flex items-center justify-center     text-6xl '>
@@ -95,7 +118,8 @@ const App = () => {
           <Route element={<Feedback />} path="/Feedback" />
           <Route element={<EmailVerificationForm />} path="/ResetPassword" />
           <Route element={<ResetPassword />} path="/temp" />
-
+          <Route element={<UserDashboard />} path='/User/dashboard' />
+          <Route element={<ConversationDetail />} path="/user/document-reference" />
           <Route element={<DocumentationLayout />}>
             <Route element={<API />} path="/API/featured" />
             <Route element={<DocsPage2 />} path="/docs/page2" />

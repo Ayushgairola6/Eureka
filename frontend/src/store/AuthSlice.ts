@@ -1,146 +1,108 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import type { RootState } from './reduxstore';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
+
 // Document type should be separate from auth state
-export interface Document {
+interface Contributions_user_id_fkey {
   id: string;
   feedback: string;
-  url: string;
   created_at: string;
   document_id: string;
-
 }
 
-interface User {
+
+
+interface user {
   id: string;
   username: string;
   email: string;
+  Contributions_user_id_fkey: Contributions_user_id_fkey[];
+  created_at: string;
+}
 
-
+interface FeedbackCounts {
+  upvotes: number 
+  downvotes: number 
+  partial_upvotes: number
 }
 
 interface AuthState {
-  user: User | null; // added user to the state
-  token: string | null;
-  isLoggedIn: boolean;
-  documents: Document[]; // Added documents array to state
+  user: user | null;
   loading: boolean;
   error: string | null;
   userStatus: boolean | null;
+  FeedbackCounts: FeedbackCounts ;
+  Querycount: number;
+  AuthenticityScore:number;
 }
 
-// now AuthState is the initial state
 const initialState: AuthState = {
   user: null,
-  token: null,
-  isLoggedIn: false,
-  documents: [],
   loading: false,
   error: null,
-  userStatus: false
+  userStatus: false,
+  Querycount: 0,
+  FeedbackCounts: {upvotes:0,downvotes:0,partial_upvotes:0},
+  AuthenticityScore:0,
 };
 
 // Fixed GetUserDocs thunk with proper typing
-export const GetUserDocs = createAsyncThunk<Document[], void>(
-  'auth/getDocuments',
+export const GetUserDashboardData = createAsyncThunk<AuthState, void>(
+  'user/getDashboardData',
   async (_, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      if (!AuthToken) {
+        return rejectWithValue("Authentication token not found.");
+      }
 
-      const response = await axios.get(`${BaseApiUrl}/api/user/documents`, {
+      const response = await axios.get(`${BaseApiUrl}/api/user/account-details`, {
         withCredentials: true,
         headers: {
-          "Authorization": `Bearer ${ AuthToken }`
+          "Authorization": `Bearer ${AuthToken}`
         }
       });
 
-      if (response.data.message === "No docs found") {
-        return [];
-      }
-      console.log(response.data);
-      return response.data.data as Document[];
+      return response.data;
+
     } catch (err) {
+      console.error("Error fetching dashboard data:", err);
       return rejectWithValue(
-        err instanceof Error ? err.message : 'Failed to fetch documents'
+        err instanceof Error ? err.message : 'Failed to fetch dashboard data'
       );
     }
   }
 );
 
-
-export const GetUserDetails = createAsyncThunk<User, void>(
-  'user/accountdata',
-  async (_, { rejectWithValue }) => {
-    try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      const response = await axios.get(`${BaseApiUrl}/api/user/account-details`, {
-        withCredentials: true,
-        headers: {
-          "Authorization": `Bearer ${ AuthToken}`
-        }
-      })
-      if (response.data.message === "User data found") {
-        return response.data.user[0]
-      } else {
-        return "User data not found"
-      }
-    } catch (err) {
-      // console.log(err);
-
-      return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to get user details"
-      )
-    }
-  }
-)
-
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setCredentials: (
-      state,
-      action: PayloadAction<{ user: User; token: string }>
-    ) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.isLoggedIn = true;
-    },
-    logout: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isLoggedIn = false;
-      state.documents = []; // Clear documents on logout
-    },
+
   },
   extraReducers: (builder) => {
     builder
-      .addCase(GetUserDocs.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(GetUserDocs.fulfilled, (state, action) => {
-        state.loading = false;
-        state.documents = action.payload;
-      })
-      .addCase(GetUserDocs.rejected, (state) => {
-        state.loading = false;
-        state.error = 'Document fetch failed';
-      })
+
       // getting user account details
-      .addCase(GetUserDetails.pending, (state) => {
+      .addCase(GetUserDashboardData.pending, (state) => {
         state.userStatus = true;
 
       })
-      .addCase(GetUserDetails.fulfilled, (state, action) => {
+      .addCase(GetUserDashboardData.fulfilled, (state, action) => {
 
-        state.user = action.payload;
-
+        // console.log(action.payload)
+        if (action.payload?.user) {
+          // Assign the user object and its nested properties
+          state.user = action.payload.user;
+          state.Querycount = action.payload.Querycount;
+          state.FeedbackCounts = action.payload.FeedbackCounts;
+          
+        }
         state.userStatus = false;
       })
-      .addCase(GetUserDetails.rejected, (state) => {
+      .addCase(GetUserDashboardData.rejected, (state) => {
         state.userStatus = false;
       })
   },
@@ -148,8 +110,6 @@ const authSlice = createSlice({
 
 // Selectors
 export const selectCurrentUser = (state: RootState) => state.auth.user;
-export const selectToken = (state: RootState) => state.auth.token;
-export const selectDocuments = (state: RootState) => state.auth.documents;
 export const selectDocumentsLoading = (state: RootState) => state.auth.loading;
 
 export default authSlice.reducer;

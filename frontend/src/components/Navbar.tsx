@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BiMenuAltRight } from "react-icons/bi";
+import { BiLogIn, BiMenuAltRight } from "react-icons/bi";
 import { Link } from "react-router";
 import Sidebar from '@/components/Sidebar';
 import { MdClose } from "react-icons/md";
@@ -7,6 +7,7 @@ import { motion, useScroll } from 'framer-motion';
 import { useStore } from '../store/zustandHandler.ts';
 import { useAppSelector } from '../store/hooks.tsx';
 import { IoBulbOutline, IoMoonOutline } from 'react-icons/io5'
+import { PiUserRectangleBold } from 'react-icons/pi';
 
 type NavbarProps = {
     currTab: string;
@@ -22,7 +23,7 @@ const Navbar: React.FC<NavbarProps> = ({ currTab, setCurrTab }) => {
     const isDark = useStore((state) => state.isDarkMode)
     const User = useAppSelector((state) => state.auth.user)
     return (<>
-        <nav className={`relative  py-1 px-6 flex items-center justify-between z-[2] overflow-x-hidden dark:text-white text-black dark:bg-black `}>
+        <nav  className={`relative bg-gray-100 py-1 px-6 flex items-center justify-between z-[3] overflow-x-hidden dark:text-white text-black dark:bg-black `}>
             {/* top scroll indicator */}
             <motion.div style={{ scaleX: scrollYProgress }} className='bg-indigo-500 w-full fixed py-1 origin-left top-0 left-0 z-[99]' ></motion.div>
 
@@ -39,20 +40,24 @@ const Navbar: React.FC<NavbarProps> = ({ currTab, setCurrTab }) => {
                 <Link onClick={() => setCurrTab("API")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "API" ? "slider" : "bg-transparent "}`} to='/API/featured'>API</Link>
 
                 {/* only render if the user is not logged In */}
-                {LoggedIn === false && <Link onClick={() => setCurrTab("Login")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "Login" ? "slider" : "bg-transparent "}`} to='/Login'>Login</Link>}
-                {LoggedIn === false && <Link onClick={() => setCurrTab("Register")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "Register" ? "slider" : "bg-transparent "}`} to='/Register'>Register</Link>}
+                {LoggedIn === true && < Link onClick={() => setCurrTab("DashBoard")} className={` rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 ${currTab === "DashBoard" ? "slider" : "bg-transparent "}`} to='/User/dashboard'>DashBoard</Link>}
+
+
                 {/* end */}
             </div>
 
-            <div className='flex items-center justify-center gap-3'>
-                <ul className='cursor-pointer'  onClick={ToggleTheme}>
+            <div className='flex items-center justify-center gap-3 bai-jamjuree-regular text-sm'>
+
+                <ul className='cursor-pointer' onClick={ToggleTheme}>
                     {isDark ? <IoBulbOutline size={20} />
                         : <IoMoonOutline size={18} />}
                 </ul>
+                {LoggedIn === false && <Link onClick={() => { setCurrTab("Login") }} className={`hidden rounded-lg py-1 px-2 hover:bg-gray-400 transition-all duration-300 md:flex items-center justify-center gap-2 ${currTab === "Login" ? "slider" : "bg-gray-400   text-black "}`} to='/Login'>Login <BiLogIn/></Link>}
+                {LoggedIn === false && <Link onClick={() => setCurrTab("Register")} className={`hidden rounded-lg py-1 px-3 hover:bg-gray-400 transition-all duration-300 md:flex items-center justify-center gap-2 ${currTab === "Register" ? "slider" : "bg-black dark:bg-white text-white dark:text-black"}`} to='/Register'>Register <PiUserRectangleBold /></Link>}
                 {isVisible === false ? <BiMenuAltRight onClick={() => setIsVisible(!isVisible)} className="md:hidden block cursor-pointer " size={28} /> : <MdClose onClick={() => setIsVisible(!isVisible)} className="md:hidden block  CustPoint" size={28} />}
-                {LoggedIn === true ? <ul className='CustPoint uppercase bg-sky-300 rounded-full px-2 text-white dark:text-black space-grotesk font-bold'>{User?.username.split(" ")[0].split("")[0]}</ul> : null}
+                {LoggedIn === true ? <Link to='user/dashboard'> <ul className='CustPoint uppercase bg-sky-300 rounded-full px-2 text-white dark:text-black space-grotesk font-bold'>{User?.username.trim().split("")[0].toUpperCase()}</ul></Link> : null}
             </div>
-        </nav>
+        </nav >
         <Sidebar isVisble={isVisible} setIsVisible={setIsVisible} />
 
     </>)

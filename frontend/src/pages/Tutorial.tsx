@@ -42,7 +42,7 @@ const Tutorial = () => {
                     <span className="inline-block px-3 py-1 text-xs md:text-sm rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 mb-2">
                         Getting Started
                     </span>
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bai-jamjuree-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bai-jamjuree-bold bg-gradient-to-r from-blue-600 to-pink-600 dark:from-blue-400 dark:to-purple-500 bg-clip-text text-transparent">
                         Eureka Tutorial
                     </h1>
                     <h2 className="text-xl md:text-3xl bai-jamjuree-semibold font-semibold text-gray-800 dark:text-gray-200 mt-1 md:mt-2">

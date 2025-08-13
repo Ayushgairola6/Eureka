@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 
 export const Generate_API_keys = async (req, res) => {
     try {
-        const user_id = req?.user?.id;
+        const user_id = req?.user?.user_id;
         if (!user_id) {
             return res.status(401).json({ message: "Unauthorized, please login into your account to continue" });
         }
@@ -24,7 +24,9 @@ export const Generate_API_keys = async (req, res) => {
         const hashed_api_key = await bcrypt.hash(plaintextKey, 10);
 
         const { error: insertError } = await supabase.from('API_KEYS').insert({ user_id: user_id, API_KEY: hashed_api_key });
+        console.log(hashed_api_key)
         if (insertError) {
+            console.log(insertError);
             return res.status(500).json({ message: "Something went wrong!" });
         }
         // Return the plaintext key to the user, not the hashed one

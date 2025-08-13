@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @import "tw-animate-css";
 
 
@@ -7,7 +8,7 @@
   cursor: url("./assets/hand-pointer.svg"), pointer;
   
 }
-@custom-variant dark (&:is(.dark *));
+/* @custom-variant dark (&:is(.dark *)); */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);

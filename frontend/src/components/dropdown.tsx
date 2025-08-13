@@ -19,7 +19,7 @@ const DropDown: React.FC<DropDownProps> = ({ isVisible, setIsVisible, setCategor
     }
     // top-10 left-10 md:right-10 
 
-    const Categories = [{ name: "AI" }, { name: "Law" }, { name: "Finance" }, { name: "Fashion" }, { name: "Physics" }, { name: "Chemistry" }, { name: "Biology" }, { name: "History" }, { name: "Geography" }, { name: "MatheMatics" },{name:"Other"}]
+    const Categories = [{ name: "AI" }, { name: "Law" }, { name: "Finance" }, { name: "Fashion" }, { name: "Physics" }, { name: "Chemistry" }, { name: "Biology" }, { name: "History" }, { name: "Geography" }, { name: "MatheMatics" },{name:"Programming"},{name:"Other"}]
     return (<>
         {/* <ArrowDownAz/> */}
         <div className="  z-[1] space-grotesk w-auto md:w-fit  ">

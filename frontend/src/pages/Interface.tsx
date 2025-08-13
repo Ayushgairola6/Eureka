@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy } from 'react';
+import {  useState, lazy } from 'react';
 import { Toaster, toast } from 'sonner';
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -14,11 +14,11 @@ import axios from 'axios';
 import { IoOptions } from 'react-icons/io5';
 import MarkdownRenderer from '@/components/safeHtml.tsx';
 import { IoDocument } from 'react-icons/io5';
-import { useAppDispatch } from '../store/hooks.tsx';
-import { GetUserDocs } from '../store/AuthSlice.ts';
 import { FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
 import { IoHeartHalfOutline } from "react-icons/io5";
 import { BiQuestionMark } from 'react-icons/bi';
+import { BsStars } from "react-icons/bs";
+
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 function Interface() {
@@ -43,7 +43,6 @@ function Interface() {
   const [shwoOptions, setShowOptions] = useState(false);
   const [queryType, setQueryType] = useState<string>('');
   const [showType, setShowType] = useState(false);
-  const dispatch = useAppDispatch();
 
 
   // uploading a document
@@ -117,13 +116,14 @@ function Interface() {
           "Authorization": `Bearer ${AuthToken}`
         }
       });
+      console.log(response.data)
       if (response.data.message === "Response found") {
         setDocId((prev) => [...prev, ...response.data.doc_id])
         setAnswer(response.data.answer);
       } else {
         toast(`❌${response.data.answer}`);
       }
-      console.log(response.data)
+      // console.log(response.data)
 
     } catch (err: any) {
       console.log(err)
@@ -135,10 +135,23 @@ function Interface() {
 
   const QueryPrivateDocument = async () => {
     try {
+
+      if (!question) {
+        toast("Question cannot be empty !");
+        return;
+      }
+      if (!selectedDoc) {
+        toast("Please select a document before querying");
+        return;
+      }
+      if (!queryType) {
+        toast("Please select a query type");
+        return;
+      }
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
       setLoading(true);
 
-      const privateDocResponse = await axios.post(`${BaseApiUrl}/api/privateDocs/ask`, { question: question, docId: selectedDoc }, {
+      const privateDocResponse = await axios.post(`${BaseApiUrl}/api/privateDocs/ask`, { question: question, docId: selectedDoc, query_type: queryType }, {
         withCredentials: true, headers: {
           'Authorization': `Bearer ${AuthToken}`
         }
@@ -148,19 +161,14 @@ function Interface() {
       setPrivateResponse(privateDocResponse.data.answer);
       return privateDocResponse.data.answer
     } catch (err: any) {
-      // console.log(err)
+      console.log(err)
       toast(`❌ Network error: ${err.message}`);
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    if (loggedIn) {
-      dispatch(GetUserDocs());
-    }
-  }, [loggedIn, dispatch])
-
+  
 
 
 
@@ -196,10 +204,7 @@ function Interface() {
 
   return (
     <div className=" mx-auto p-4 md:p-8 min-h-screen max-h-[90vh]  flex flex-col items-center justify-center  dark:bg-black text-gray-900 dark:text-gray-50 z-[1] relative">
-      <div className={`absolute top-0 right-3 flex flex-wrap justify-center items-center ${shwoOptions ? " translate-y-0 opacity-100" : " -translate-y-200 opacity-0"} transition-all duration-300 z-[1] `}>
-
-
-
+      <div className={`absolute top-0 right-3 flex flex-wrap  justify-center items-center ${shwoOptions ? " translate-y-0 opacity-100" : " -translate-y-200 opacity-0"} transition-all duration-300 z-[1] `}>
         {isVisible === true || showSubcategory === true || showDocs === true ? null : <UserForm
           setShowUserForm={setShowUserForm}
           shhowUserForm={shhowUserForm}
@@ -209,7 +214,6 @@ function Interface() {
           loading={loading}
           setVisibility={setVisibility}
         />}
-
 
         {isVisible === true || shhowUserForm === true || showDocs === true ? null : <SubCategories
           showSubcategory={showSubcategory}
@@ -290,8 +294,12 @@ function Interface() {
               </div>
 
               {/* action button */}
-              <motion.button whileTap={{ scale: 1.03 }} whileHover={{ scaleX: 1.05 }} transition={{duration:0.3,ease:"circIn"}} onClick={handleAsk} className='cursor-pointer bg-black text-white w-full p-2 rounded-lg space-grotesk dark:bg-white dark:text-black text-sm' >
-                {loading ? 'Analyzing' : 'Ask Question'}
+              <motion.button whileTap={{ scale: 1.03 }} whileHover={{ scaleX: 1.05 }} transition={{ duration: 0.3, ease: "circIn" }} onClick={handleAsk} className={`cursor-pointer ${loading?"bg-gray-700 text-white animate-pulse ":"bg-black dark:bg-gray-100 dark:text-black"} text-white w-full p-2 rounded-lg space-grotesk   text-sm flex items-center justify-center gap-2 `}>
+                {loading ? (<>
+                  Analyzing <BsStars size={24} />
+                </>) : (<>
+                  Ask Question <BsStars size={24} />
+                </>)}
               </motion.button>
 
             </div>
@@ -300,10 +308,10 @@ function Interface() {
             {answer || privateResponse && (
               <div className="grid  w-full items-start gap-5 mt-4 max-h-[50vh] min-h-[200px] overflow-y-auto">
                 <Label className='space-grotesk text-sm font-semibold'>Response!</Label>
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-300 p-4 h-full overflow-auto">
+                <div className="bg-gray-100 dark:bg-black rounded-md border border-gray-300 p-4 h-full overflow-auto">
                   <MarkdownRenderer
                     content={answer ? answer : privateResponse}
-                    className="text-sm text-gray-800 dark:text-gray-200 h-full bai-jamjuree-regular"
+                    className="text-sm text-gray-800 dark:text-gray-200 darj h-full bai-jamjuree-regular leading-loose"
                   />
                 </div>
               </div>
@@ -343,7 +351,7 @@ function Interface() {
                 )}
                 <div className="flex flex-col md:flex-row md:items-start items-stretch justify-between gap-6 w-full">
                   <div className="bai-jamjuree-regular text-sm flex flex-col  gap-2 w-full md:w-1/3">
-                    <section className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "upvote" ? "bg-green-300 text-black " : "bg-white  border-green-200"}`}>
+                    <section className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "upvote" ? "bg-green-300 text-black " : "dark:bg-gray-600 bg-white  border-green-200"}`}>
                       <input
                         onChange={(e) => setLikeness(e.target.value)}
                         value="upvote"
@@ -351,11 +359,11 @@ function Interface() {
                         type="radio"
                         className="ml-1"
                       />
-                      <FaThumbsUp color="black" />
+                      <FaThumbsUp  />
                       <label htmlFor="Helpful">Helpful</label>
 
                     </section>
-                    <section className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "downvote" ? "bg-red-300 text-black " : "bg-white  border-red-200"}`}>
+                    <section className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "downvote" ? "bg-red-300 text-black " : "dark:bg-gray-600 bg-white  border-red-200"}`}>
                       <input
                         onChange={(e) => setLikeness(e.target.value)}
                         value="downvote"
@@ -363,11 +371,11 @@ function Interface() {
                         type="radio"
                         className="ml-1"
                       />
-                      <FaThumbsDown color="black" />
+                      <FaThumbsDown  />
                       <label htmlFor="Incorrect">Flag incorrect</label>
 
                     </section>
-                    <section className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "partial_upvote" ? "bg-sky-300 text-black " : "bg-white  border-sky-200"}`}>
+                    <section className={`flex items-center gap-2 border dark  rounded-lg p-1 ${likeness === "partial_upvote" ? "bg-sky-300 text-black " : "bg-white dark:bg-gray-600  border-sky-200"}`}>
                       <input
                         onChange={(e) => setLikeness(e.target.value)}
                         value="partial_upvote"
@@ -375,7 +383,7 @@ function Interface() {
                         type="radio"
                         className="ml-1"
                       />
-                      <IoHeartHalfOutline color="black" />
+                      <IoHeartHalfOutline  />
                       <label htmlFor="Missing">Missing some information </label>
 
                     </section>

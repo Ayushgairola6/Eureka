@@ -5,6 +5,8 @@ import { toast, Toaster } from 'sonner';
 import { BiClipboard } from 'react-icons/bi';
 import { useStore } from '../store/zustandHandler';
 const ApiDocs = React.lazy(() => import("@/components/ApiDocs"));
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
+
 
 const API = () => {
     const [key, setKey] = useState<string>('');
@@ -19,13 +21,12 @@ const API = () => {
             }
             setGenerating(true);
             const AuthToken = localStorage.getItem("Eureka_six_eta_v1_AuthToken");
-            const response = await axios.get("http://localhost:1000/api/get/api-key", {
+            const response = await axios.get(`${BaseApiUrl}/api/get/api-key`, {
                 withCredentials: true, headers: {
                     'Authorization': `Bearer ${AuthToken}`
                 }
             })
             if (response.data.key) {
-
                 setKey(response.data.key);
             } else {
                 toast(response.data.message);
@@ -33,6 +34,7 @@ const API = () => {
             setGenerating(false);
             return response.data.key ? response.data.key : response.data.message;
         } catch (err: any) {
+            toast(err?.response?.data?.message)
             console.error(err);
             setGenerating(false)
         }

@@ -3,7 +3,6 @@ import user2 from '../../public/user2.jpg';
 import user3 from '../../public/user3.jpg';
 import user4 from '../../public/user4.jpg';
 import user5 from '../../public/user5.jpg';
-
 import { motion } from 'framer-motion';
 import { useRef } from 'react';
 import { FaArrowRight, FaArrowLeft } from 'react-icons/fa';
@@ -22,7 +21,7 @@ const TestiMonials = () => {
             {/* Section Heading */}
             <div className="text-center mb-12">
                 <h1 className="bai-jamjuree-semibold text-3xl md:text-4xl mb-4">Hear From Our Users</h1>
-                <p className="space-grotesk text-gray-600 max-w-2xl mx-auto text-xs md:text-sm space-grotesk">
+                <p className="space-grotesk text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-xs md:text-sm space-grotesk">
                     Discover how Eureka is transforming research and knowledge sharing across industries.
                 </p>
             </div>

@@ -1,9 +1,6 @@
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import { GenerateEmbeddings, GenerateResponse } from "./ModelController.js";
+import { GenerateResponse } from "./ModelController.js";
 import { Pinecone } from '@pinecone-database/pinecone';
 import dotenv from 'dotenv'
 import { v4 as uuidv4 } from 'uuid';
@@ -32,18 +29,14 @@ export const FileUploadHandle = async (req, res) => {
         }
         const documentId = uuidv4();
 
-        const StoredContribution = await StoreContributionDetails(name, email, feedback, userid, visibility, documentId);
 
-        if (StoredContribution?.error) {
-            console.log(StoredContribution?.error)
-            return res.status(400).json({ message: StoredContribution.error })
-        }
         const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
         const loader = new PDFLoader(blob, {
             splitPages: false
         });
-
         const docs = await loader.load();
+        // console.log(docs[0].pageContent[0]);
+
         if (!docs || !docs[0].pageContent) {
             return res.status(400).json({ message: "Error while uploading the file" })
         }
@@ -58,9 +51,7 @@ export const FileUploadHandle = async (req, res) => {
         // random id for the doc
 
 
-        if (!StoredContribution || StoredContribution.error) {
-            return res.status(400).json({ message: "Error while recording contribution details , please try again later !" })
-        }
+        let chunkNumber;
         // array to store a unique record array for upsert operation
         const recordsToUpsert = [];
         // the size of one batch that we process
@@ -70,7 +61,8 @@ export const FileUploadHandle = async (req, res) => {
         for (let i = 0; i < textChunks.length; i++) {
             // Generate a unique ID for each chunk
             // Option 1: documentId-chunkIndex (simple)
-            const chunkId = `${documentId}-${i}`;
+            chunkNumber = i;
+            const chunkId = `${documentId.trim()}:${name.trim()}:${feedback.trim()}:${chunkNumber}`;
 
 
             // pushing the chunk data in formatted way to store in the db
@@ -109,12 +101,22 @@ export const FileUploadHandle = async (req, res) => {
                 return res.status(500).json({ message: "Error during Pinecone upsert operation." });
             }
         }
+        const StoredContribution = await StoreContributionDetails(name, email, feedback, userid, visibility, documentId, chunkNumber);
+
+        if (StoredContribution?.error) {
+            console.log(StoredContribution?.error)
+            return res.status(400).json({ message: StoredContribution.error })
+        }
+        const StoreInFeedback = await StoreFilesIntoDoc_Feedback(userid, documentId);
+        if (StoreInFeedback?.error) {
+            return res.status(400).json({ message: "Error while processing your file" })
+        }
         return res.json({ message: "Upload successfull" })
 
     }
 
     catch (error) {
-        console.error(error);
+        console.error(error, 'total server errors');
         return res.status(500).json({ message: "Internal Server error" })
     }
 
@@ -129,6 +131,32 @@ export async function splitTextIntoChunks(documentText) {
     const chunks = await splitter.splitText(documentText);
     return chunks;
 }
+
+
+// storing the user who uploaded as the first user to like the document 
+const StoreFilesIntoDoc_Feedback = async (user_id, documentId) => {
+    try {
+        const { error: liketableError } = await supabase.from("LikedDocument").insert({ user_id: user_id, document_id: documentId })
+
+        if (liketableError) {
+            console.log(liketableError)
+            return { error: "Errror while storing file data in the feedback table" }
+        }
+        const { error: feedbackTableError } = await supabase.from("Doc_Feedback").insert({
+            document_id: documentId,
+            upvotes: 1
+        });
+        if (feedbackTableError) {
+            console.log(feedbackTableError)
+            return { error: "Errror while storing file data in the feedback table" }
+        }
+
+    } catch (error) {
+        return { error: "Errro while storing the data of file in doc_feedback ", error }
+    }
+}
+
+
 
 // find the matching response values
 export const FindMatchingResponse = async (req, res) => {
@@ -180,6 +208,7 @@ export const FindMatchingResponse = async (req, res) => {
                         .eq("document_id", e.fields.documentId)
                         .single();
 
+                    // console.log("Document feedback")
                     if (error) throw error;
                     if (!data) {
                         console.warn(`No feedback data found for document ${e.fields.documentId}`);
@@ -210,12 +239,12 @@ export const FindMatchingResponse = async (req, res) => {
         if (AnswerToUsersQuestion.error) {
             return res.status(200).json({ answer: AnswerToUsersQuestion.error })
         }
-        // const FormattedResponse = formatAIResponse(AnswerToUsersQuestion)
-        // console.log(AnswerToUsersQuestion)
-        const storeResponse = await StoreQueryAndResponse(user_id, question, AnswerToUsersQuestion);
+    
+   
+        const storeResponses = await StoreQueryAndResponse(user_id, question, AnswerToUsersQuestion)
 
-        if (storeResponse.error) {
-            return res.status(402).json({ message: "Could not store this request", answer: AnswerToUsersQuestion })
+        if (storeResponses.error) {
+            return res.status(200).json({ message: "Could not store this request", answer: AnswerToUsersQuestion })
         }
         return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion, doc_id: DocumentsUserForReference })
 
@@ -226,15 +255,15 @@ export const FindMatchingResponse = async (req, res) => {
 }
 
 // store user file upload information
-export const StoreContributionDetails = async (name, email, feedback, userid, visibility, documentId) => {
+export const StoreContributionDetails = async (name, email, feedback, userid, visibility, documentId, chunkNumber) => {
     try {
-        if (!name || typeof name !== "string" || !email || typeof email !== "string" || !feedback || typeof feedback !== "string" || !userid) {
+        if (!name || typeof name !== "string" || !email || typeof email !== "string" || !feedback || typeof feedback !== "string" || !userid || !chunkNumber) {
 
             console.log("Either email or name was missing from the parameters");
             return { error: "Invalid data !" }
         }
 
-        const { data, error } = await supabase.from("Contributions").insert({ username: name, email: email, feedback: feedback, user_id: userid, Document_visibility: visibility, document_id: documentId })
+        const { data, error } = await supabase.from("Contributions").insert({ username: name, email: email, feedback: feedback, user_id: userid, Document_visibility: visibility, document_id: documentId, chunk_count: chunkNumber })
 
         if (error) {
             console.log(error)
@@ -275,6 +304,8 @@ export const GetPrivateUserDocs = async (req, res) => {
     }
 }
 
+
+// Query personal documents of the user
 export const QueryPersonalDocs = async (req, res) => {
     try {
         const user_id = req.user.user_id;
@@ -283,90 +314,149 @@ export const QueryPersonalDocs = async (req, res) => {
         }
 
         const { docId, question, query_type } = req.body;
+
         if (!docId || typeof docId !== 'string' || !question || typeof question !== 'string' || !query_type || typeof query_type !== 'string') {
             return res.status(400).json({ message: "Invalid values" });
         }
 
         const FoundData = [];
         let response;
+
+        const SYSTEM_PROMPT = query_type === "QNA" ? process.env.SYSTEM_PROMPT : process.env.SUMMARIZER_PROMPT;
         if (query_type === 'QNA') {
             response = await index.searchRecords({
                 query: {
-                    topK: 10,
-                    inputs: { text: query }, // Note: changed 'question' to 'query' to match req.body
+                    topK: 30,
+                    inputs: { text: question }, 
                     filter: {
-                        documentId: { $eq: document_id }, // Note: changed 'docId' to 'document_id' to match req.body
+                        documentId: { $eq: docId }, 
                         visibility: { $eq: "Private" }
                     }
                 },
-                fields: ['text', 'category', 'subCategory', 'date_of_contribution', 'documentId', 'contributor', 'id'],
+                fields: ['text'],
             });
 
-            // Check for empty QNA results here
+             console.log(response)
             if (response.result.hits.length === 0) {
                 return res.status(200).json({ message: "Response found", answer: `Could you please be more specific about what you would like to know about this topic`, doc_id: [] });
             }
 
         } else if (query_type === "Summary") {
-            response = await index.searchRecords({
-                query: {
-                    topK: 50,
-                    filter: {
-                        documentId: { $eq: document_id },
-                        visibility: { $eq: "Private" }
-                    }
-                },
-                fields: ['text', 'category', 'subCategory', 'date_of_contribution', 'documentId', 'contributor', 'id'],
-            });
 
-            // Check for empty Summary results here
-            if (response.result.hits.length === 0) {
-                return res.status(200).json({ message: "Response found", answer: "No information was found in the document to summarize.", doc_id: [] });
+            const { data, error } = await supabase.from("Contributions").select("feedback , chunk_count ,username").eq("document_id", docId);
+
+            if (error || !data.length === 0) {
+                return res.status(404).json({ message: "Unable to find this document in our database" });
+            }
+
+            //   console.log(data)
+            response = await getAllDocumentTextsForSummary(docId, data[0].username, data[0].feedback, data[0].chunk_count)
+            if (!response || response.length === 0) {
+                return res.status(200).json({ message: "Response found", answer: `There was no data in our database about this document !`, doc_id: [] });
             }
         } else {
             // Handle invalid query_type
             return res.status(400).json({ message: "Invalid query type" });
         }
-        // console.log(response.result.hits, 'found results')
-        response.result.hits.forEach((e) => {
-            if (e) {
-                FoundData.push(e.fields.text);
-            } else {
-                console.log("no results found")
-            }
-        })
+        if (response?.result?.hits) {
+            response.result.hits.forEach((e) => {
+                if (e) {
+                    FoundData.push(e.fields.text);
+                } else {
+                    console.log("no results found")
+                }
+            })
+        } {
+
+        }
 
 
-        const AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
-
+        const AnswerToUsersQuestion = await GenerateResponse(question, FoundData.length !== 0 ? FoundData : response, SYSTEM_PROMPT);
+        // const AnswerToUsersQuestion = 'random text';
         if (AnswerToUsersQuestion.error) {
+            console.log(AnswerToUsersQuestion.error)
             return res.status(200).json({ message: "Error while generating a response", answer: "WE currently do not have information regarding this topic" })
         }
-        const storeResponse = await StoreQueryAndResponse(user_id, question, AnswerToUsersQuestion);
+        const storeResponse = await StoreQueryAndResponse(user_id, question, AnswerToUsersQuestion, docId);
 
         if (storeResponse.error) {
-            return res.status(402).json({ message: "Could not store this request", answer: AnswerToUsersQuestion })
+            console.log(storeResponse?.error);
+            return res.status(200).json({ message: "Could not store this request", answer: AnswerToUsersQuestion })
         }
         return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion })
     } catch (error) {
-        return res.status(500).json({ message: error })
+        console.log(error);
+        return res.status(500).json({ message: "Error while processing your request" })
+    }
+}
+
+
+// extract text from the chunks based on the chunk Ids
+export async function getAllDocumentTextsForSummary(docId, username, title, totalChunks) {
+    // console.log(docId, username, title, totalChunks)
+    if (!docId || !username || !title || !totalChunks) {
+        console.warn(`No chunks to fetch for document: ${docId}`);
+        return [];
+    }
+
+    // Step 1: Generate all the chunk IDs based on the count from Supabase.
+    const allChunkIds = [];
+    let chunkId;
+    for (let i = 0; i < totalChunks; i++) {
+        // console.log("Running the id creattion loop")
+        chunkId = `${docId.trim()}:${username.trim()}:${title.trim()}:${i}`
+        // console.log(chunkId, 'individual chunksId')
+
+        allChunkIds.push(chunkId);
+    }
+
+    try {
+        const fetchResponse = await index.namespace("__default__").fetch(allChunkIds);
+        // console.log(fetchResponse, 'fetchResponse')
+        const allTextChunks = [];
+
+        // Step 3: Extract the text from each chunk's metadata.
+        for (const id of allChunkIds) {
+            const record = fetchResponse.records[id];
+            if (record && record.metadata && record.metadata.text) {
+                allTextChunks.push(record.metadata.text);
+            } else {
+                console.warn(`Chunk with ID ${id} was not found or is missing text metadata.`);
+            }
+        }
+
+        // Return the array of text strings.
+        // console.log(allTextChunks)
+        return allTextChunks;
+
+    } catch (error) {
+        console.error("Error fetching all document chunks:", error);
+        return [];
     }
 }
 
 
 // store user response with the question that has been asked for future refrence
-const StoreQueryAndResponse = async (user_id, question, Ai_response) => {
+const StoreQueryAndResponse = async (user_id, question, Ai_response, docId) => {
     try {
-        if (!user_id || typeof user_id !== 'string' || !question || typeof question !== 'string' || !response || typeof Ai_response !== 'string') {
+        if (!user_id || typeof user_id !== 'string' || !question || typeof question !== 'string' || !Ai_response || typeof Ai_response !== 'string' ) {
+            console.log(user_id, docId, Ai_response, question)
+            console.log("All fields are necessary to store the query response")
             return { error: "Invalid arguments" };
         }
-        const { error } = await supabase.from("Conversation_History").insert({ user_id, question, Ai_response });
-
+        const { error } = await supabase.from("Conversation_History").insert({
+            user_id: user_id,
+            question: question,
+            AI_response: Ai_response,
+            document_id: docId
+        });
         if (error) {
+            console.error("Error while storing the session data in the database:", error);
             return { error: "Error while storing the session data in the database" };
         }
-        return { message: "Stored " }
+        return { message: "Stored successfully" }
     } catch (error) {
+        console.error("Error while storing the session information:", error);
         return { error: "Could not store the session information" }
     }
 }

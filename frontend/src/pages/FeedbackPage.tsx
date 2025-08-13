@@ -6,6 +6,7 @@ import { toast, Toaster } from 'sonner';
 import { FiMessageSquare, FiSend, FiStar, FiUser } from 'react-icons/fi';
 import { useStore } from '../store/zustandHandler.ts';
 import { FaResearchgate } from 'react-icons/fa';
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 const Feedback = () => {
     const InputRef = useRef<HTMLTextAreaElement>(null);
@@ -29,7 +30,7 @@ const Feedback = () => {
         const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token");
 
         try {
-            const response = await axios.post("http://localhost:1000/api/user/review-data", {
+            const response = await axios.post(`${BaseApiUrl}/api/user/review-data`, {
                 review: InputRef.current?.value,
                 where: helpRef.current?.value
             }, {
