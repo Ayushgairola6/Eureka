@@ -23,7 +23,7 @@ export const HandleUserRegistration = async (req, res) => {
             return res.status(400).json({ message: "All fields are mandatory" });
         }
 
-        const { data, error } = await supabase.from("users").select();
+        const { data, error } = await supabase.from("users").select().eq("email", email);
         if (error) {
             return res.status(400).json({ message: "Error while creating an account !" })
         }
@@ -173,42 +173,144 @@ const StoreTokens = async (RefreshToken, AuthToken, id) => {
 };
 //get user account details
 
+// Function to get user details
+export const GetUserData = async (user_id) => {
+    try {
+        const { data, error } = await supabase
+            .from("users")
+            .select(`username, created_at, email, id`)
+            .eq('id', user_id)
+            .single();
+
+        if (error) {
+            console.error("Supabase error (GetUserData):", error);
+            return { error };
+        }
+        return { data };
+    } catch (error) {
+        console.error("Exception (GetUserData):", error);
+        return { error };
+    }
+};
+
+// Function to get user contributions
+export const GetUserContributions = async (user_id) => {
+    try {
+        const { data, error } = await supabase
+            .from("Contributions")
+            .select("*")
+            .eq("user_id", user_id).eq("Document_visibility", 'Private');
+
+        if (error) {
+            console.error("Supabase error (GetUserContributions):", error);
+            return { error };
+        }
+        return { data: data || [] };
+    } catch (error) {
+        console.error("Exception (GetUserContributions):", error);
+        return { error };
+    }
+};
+
+// Function to get user question count
+export const GetUserQuestionAskedCount = async (user_id) => {
+    try {
+        const { count, error } = await supabase
+            .from('Conversation_History')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user_id);
+
+        if (error) {
+            console.error("Supabase error (GetUserQuestionAskedCount):", error);
+            return { error };
+        }
+        return { count: count || 0 };
+    } catch (error) {
+        console.error("Exception (GetUserQuestionAskedCount):", error);
+        return { error };
+    }
+};
+
+// Function to get user likes
+export const GetUserLikeCount = async (user_id) => {
+    try {
+        const { data, error } = await supabase
+            .from("Contributions")
+            .select("created_at, chunk_count, Doc_Feedback(upvotes, downvotes, partial_upvotes)")
+            .eq("user_id", user_id)
+            .eq("Document_visibility", "Public");
+
+        if (error) {
+            console.error("Supabase error (GetUserLikeCount):", error);
+            return { error };
+        }
+        return { data: data || [] };
+    } catch (error) {
+        console.error("Exception (GetUserLikeCount):", error);
+        return { error };
+    }
+};
+
+// Function to get user chat rooms
+export const GetUserChatRooms = async (user_id) => {
+    try {
+        const { data: chatrooms, error: chatRoomError } = await supabase
+            .from("Room_and_Members")
+            .select("member_id, room_id, chat_rooms(*)")
+            .eq("member_id", user_id);
+
+        if (chatRoomError) {
+            console.error("Supabase error (GetUserChatRooms):", chatRoomError);
+            return { error: chatRoomError };
+        }
+        return { data: chatrooms || [] };
+    } catch (error) {
+        console.error("Exception (GetUserChatRooms):", error);
+        return { error };
+    }
+};
+
+// Main function to get all user data
 export const GetUserAccountDetails = async (req, res) => {
     try {
         const user_id = req.user.user_id;
-        // Get the basic user information
+
         if (!user_id || typeof user_id !== "string") {
-            console.log("No user id found ,whie getting account details")
+            console.log("No user id found while getting account details");
             return res.status(400).json({ message: "Invalid user id" });
         }
-        const { data, error } = await supabase
-            .from('users')
-            .select('username,created_at,email, id, Contributions_user_id_fkey(*)').eq('id', user_id, 'visibility', 'Private').single()
 
-        // get the queryCount
-        const { count, error: countError } = await supabase
-            .from('Conversation_History')
-            .select('question', { count: 'exact' })
-            .eq('user_id', user_id);
+        // Fetch all data in parallel to improve performance
+        const [userData, countData, votesData, chatroomsData, Contributions_user_id_fkey] = await Promise.all([
+            GetUserData(user_id),
+            GetUserQuestionAskedCount(user_id),
+            GetUserLikeCount(user_id),
+            GetUserChatRooms(user_id),
+            GetUserContributions(user_id),
+        ]);
 
-        if (error || countError) {
-            console.log(error ? error : countError)
-            return res.status(404).json({ user: null, message: "User not found" });
+        // Consistent error handling
+        if (userData.error) {
+            console.error("Failed to fetch user data:", userData.error);
+            return res.status(404).send({ message: "User not found" });
+        }
+        if (countData.error || votesData.error || chatroomsData.error) {
+            console.error("Failed to fetch additional data:", countData.error, votesData.error, chatroomsData.error);
+            return res.status(500).send({ message: "Error fetching user data" });
         }
 
-        // Like count on the users Public knowledgebase contribution
-        const { data: uservotes, error: uservoteerror } = await supabase
-            .from("Contributions").select("created_at , chunk_count ,Doc_Feedback(upvotes,downvotes,partial_upvotes)").eq("user_id", user_id).eq("Document_visibility", "Public");
+        // Return the combined data
+        return res.json({
+            user: userData.data,
+            Contributions_user_id_fkey: Contributions_user_id_fkey.data,
+            Querycount: countData.count,
+            FeedbackCounts: votesData?.data?.length > 0 ? votesData.data[0].Doc_Feedback : null,
+            chatrooms: chatroomsData.data,
+            message: "User data found"
+        });
 
-
-        if (uservoteerror) {
-            console.log(uservoteerror);
-            return res.status(404).json({ user: null, message: "User not found" });
-        }
-
-        return res.json({ user: data, Querycount: count, FeedbackCounts: uservotes[0].Doc_Feedback, message: "User data found" });
     } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error" })
+        console.error("Server exception:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
-
-}
+};

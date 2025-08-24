@@ -264,8 +264,20 @@ html {
   opacity: 0; /* Starts invisible */
   animation: slideIn 0.3s ease-out forwards;
 }
+@media (prefers-color-scheme: dark) {
+  .slider::after {
+    background-color: #4f46e5; /* indigo-600 */
+  }
+}
 
-
+/* If you're using class-based dark mode */
+.dark .slider::after {
+  background-color: #4f46e5; /* indigo-600 */
+}
+@keyframes progressBar {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
 
 @keyframes slideIn {
   0% {

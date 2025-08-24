@@ -1,16 +1,17 @@
 
-import { useAppSelector } from "../store/hooks.tsx";
+import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
+import { setShowDocs } from '../store/InterfaceSlice.ts'
 import { FaArrowLeft } from "react-icons/fa";
 import { motion } from 'framer-motion'
 import { FiFile } from "react-icons/fi";
 type PrivateDocProps = {
-    showDocs: boolean
-    setShowDocs: React.Dispatch<React.SetStateAction<boolean>>
     selectedDoc: string
     setSelectedDoc: React.Dispatch<React.SetStateAction<string>>
 }
 
-const PrivateDocuments: React.FC<PrivateDocProps> = ({ showDocs, setShowDocs, selectedDoc, setSelectedDoc }) => {
+const PrivateDocuments: React.FC<PrivateDocProps> = ({ selectedDoc, setSelectedDoc }) => {
+    const dispatch = useAppDispatch();
+    const { showDocs } = useAppSelector(state => state.interface)
     // ${showDocs ? "h-full w-full opacity-100" : "h-0 w-0 opacity-0 overflow-hidden"
     //             }
     const User = useAppSelector((state) => state.auth.user)
@@ -23,7 +24,7 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({ showDocs, setShowDocs, se
         >
             {/* Close button */}
             <motion.button
-                onClick={() => setShowDocs(!showDocs)}
+                onClick={() => dispatch(setShowDocs(!showDocs))}
                 className={`absolute top-4 right-4 z-10 p-2 rounded-full 
                bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
                transition-all duration-300 ${showDocs ? "rotate-0" : "rotate-180"}`}
@@ -39,9 +40,9 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({ showDocs, setShowDocs, se
                     My Documents
                 </h2>
 
-                {User && User.Contributions_user_id_fkey.length>0 ? (
+                {User && User.Contributions_user_id_fkey ? (
                     <div className="grid grid-cols-1  gap-3 p-2">
-                        {User?.Contributions_user_id_fkey.map((doc:any) => (
+                        {User?.Contributions_user_id_fkey.map((doc: any) => (
                             <motion.div
                                 key={doc.id}
                                 onClick={() => setSelectedDoc(selectedDoc === doc.document_id ? "" : doc.document_id)}
@@ -69,7 +70,7 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({ showDocs, setShowDocs, se
                         <FiFile className="text-gray-400 dark:text-gray-500 text-4xl mb-2" />
                         <p className="text-gray-500 dark:text-gray-400">No documents found</p>
                         <span className="text-xs text-red-600">
-                           * Click on contributions to upload
+                            * Click on contributions to upload
                         </span>
                     </div>
                 )}

@@ -6,19 +6,22 @@ import { BsStars } from "react-icons/bs";
 import { useRef } from "react";
 import { motion } from 'framer-motion'
 import { toast } from "sonner";
+import { setShowUserForm, setVisibility } from '../../store/InterfaceSlice';
+import { useAppSelector, useAppDispatch } from "../../store/hooks";
 // declaring props type
 type FormProps = {
-    shhowUserForm: boolean;
-    setShowUserForm: React.Dispatch<React.SetStateAction<boolean>>;
+    
     setSelectedFile?: React.Dispatch<React.SetStateAction<File | null>>;
     selectedFile?: File | null;
     handleUpload?: (UserData: FormData) => void;
-    loading: boolean,
-    setVisibility: React.Dispatch<React.SetStateAction<string>>
+  
 };
 
-const UserForm: React.FC<FormProps> = ({ shhowUserForm, setShowUserForm, setSelectedFile, handleUpload, loading, setVisibility }) => {
+const UserForm: React.FC<FormProps> = ({ setSelectedFile, handleUpload }) => {
 
+    const dispatch = useAppDispatch();
+
+    const { shhowUserForm, loading } = useAppSelector(state => state.interface);
     const [name, SetName] = React.useState<string>('');
     const [feedback, setFeedback] = React.useState<string>('');
 
@@ -27,7 +30,7 @@ const UserForm: React.FC<FormProps> = ({ shhowUserForm, setShowUserForm, setSele
     const fileInputRef = useRef<HTMLInputElement>(null);
     return (<>
         <div className={` z-[1] space-grotesk`}>
-            <label onClick={() => setShowUserForm(!shhowUserForm)} className="CustPoint  text-sm flex items-center justify-center gap-1 " htmlFor="Category">Contribution <IoMdArrowDropdown size={24} className={`transition-all duration-300  ${shhowUserForm === true ? "rotate-90" : "rotate-0"} `} /></label>
+            <label onClick={() => dispatch(setShowUserForm(!shhowUserForm))} className="CustPoint  text-sm flex items-center justify-center gap-1 " htmlFor="Category">Contribution <IoMdArrowDropdown size={24} className={`transition-all duration-300  ${shhowUserForm === true ? "rotate-90" : "rotate-0"} `} /></label>
             <section className={`${shhowUserForm ? "h-auto  py-4 flex items-center justify-center gap-2 opacity-100   overflow-y-auto px-3" : "h-0 opacity-0 py-0 px-0"} bg-gradient-to-br from-gray-50 to-gray-100 text-black    overflow-hidden transition-all duration-500 rounded-lg  flex items-start justify-center gap-1  flex-col border border-black/40 dark:border-white/40 relative dark:from-gray-800  dark:via-black dark:to-gray-800  dark:text-white`}>
                 <div className="flex items-start justify-start gap-3 flex-col dark:bg-white/10 bg-black/10 w-full rounded-lg p-2" >
                     <label className="text-sm md:text-md font-semibold flex items-center justify-cente gap-2" htmlFor="Name"><FaUserCheck /> Name</label>
@@ -61,11 +64,11 @@ const UserForm: React.FC<FormProps> = ({ shhowUserForm, setShowUserForm, setSele
                     <label className="text-sm md:text-md font-semibold flex items-center justify-cente gap-2" htmlFor="Visibility"><FaEye /> Visibility type</label>
                     <section className="flex items-center flex-col justify-center gap-2 bai-jamjuree-regular text-sm">
                         <span className="flex items-center justify-center gap-2 ">
-                            <input value="Public" onChange={(e) => setVisibility(e.target.value)} name="visibility" type="radio" />
+                            <input value="Public" onChange={(e) => dispatch(setVisibility(e.target.value))} name="visibility" type="radio" />
                             <label htmlFor="visibility">Public</label>
                         </span>
                         <span className="flex items-center justify-center gap-2 bai-jamjuree-regular text-sm">
-                            <input value="Private" onChange={(e) => setVisibility(e.target.value)} name="visibility" type="radio" />
+                            <input value="Private" onChange={(e) => dispatch(setVisibility(e.target.value))} name="visibility" type="radio" />
                             <label htmlFor="visibility">Private</label>
                         </span>
                     </section>

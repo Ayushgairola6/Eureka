@@ -1,5 +1,4 @@
 import { createSlice } from '@reduxjs/toolkit';
-import type { RootState } from './reduxstore';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
@@ -14,6 +13,7 @@ interface Contributions_user_id_fkey {
 
 
 
+
 interface user {
   id: string;
   username: string;
@@ -23,29 +23,55 @@ interface user {
 }
 
 interface FeedbackCounts {
-  upvotes: number 
-  downvotes: number 
+  upvotes: number
+  downvotes: number
   partial_upvotes: number
 }
+interface ChatRoom {
+  room_id: string | null;
+  room_name: string | null;
+  room_type: string | null;
+  created_at: string | null;
+  created_by: string | null;
+  Room_Description: string | null;
+  Room_Joining_code: number | null;
+  participant_count: number | null;
+}
+
+interface UserChatRoom {
+  member_id: string;
+  room_id: string;
+  chat_rooms: ChatRoom;
+}
+
+type ChatRoomsResponse = UserChatRoom[];
 
 interface AuthState {
   user: user | null;
   loading: boolean;
   error: string | null;
   userStatus: boolean | null;
-  FeedbackCounts: FeedbackCounts ;
+  FeedbackCounts: FeedbackCounts;
   Querycount: number;
-  AuthenticityScore:number;
+  AuthenticityScore: number;
+  chatrooms: ChatRoomsResponse;
+  isDarkMode: boolean;
+  Contributions_user_id_fkey: Contributions_user_id_fkey[]
+  currTab: string;
 }
 
 const initialState: AuthState = {
   user: null,
   loading: false,
   error: null,
+  isDarkMode: false,
   userStatus: false,
   Querycount: 0,
-  FeedbackCounts: {upvotes:0,downvotes:0,partial_upvotes:0},
-  AuthenticityScore:0,
+  FeedbackCounts: { upvotes: 0, downvotes: 0, partial_upvotes: 0 },
+  AuthenticityScore: 0,
+  chatrooms: [],
+  Contributions_user_id_fkey: [],
+  currTab: "Home"
 };
 
 // Fixed GetUserDocs thunk with proper typing
@@ -80,7 +106,15 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-
+    toggleTheme: (state) => {
+      // console.log(state.isDarkMode)
+      state.isDarkMode = !state.isDarkMode;
+    }, setTheme: (state, action) => {
+      state.isDarkMode = action.payload;
+    },
+    setCurrTab: (state, action) => {
+      state.currTab = action.payload
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -96,9 +130,10 @@ const authSlice = createSlice({
         if (action.payload?.user) {
           // Assign the user object and its nested properties
           state.user = action.payload.user;
+          state.user.Contributions_user_id_fkey = action.payload.Contributions_user_id_fkey
           state.Querycount = action.payload.Querycount;
           state.FeedbackCounts = action.payload.FeedbackCounts;
-          
+          state.chatrooms = action.payload.chatrooms
         }
         state.userStatus = false;
       })
@@ -108,8 +143,6 @@ const authSlice = createSlice({
   },
 });
 
-// Selectors
-export const selectCurrentUser = (state: RootState) => state.auth.user;
-export const selectDocumentsLoading = (state: RootState) => state.auth.loading;
 
+export const { toggleTheme, setTheme ,setCurrTab} = authSlice.actions
 export default authSlice.reducer;

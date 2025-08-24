@@ -5,11 +5,12 @@ import { FaGitAlt } from "react-icons/fa";
 import { MdOutlineHourglassEmpty } from "react-icons/md";
 import { motion } from 'framer-motion'
 import { FiUploadCloud } from "react-icons/fi";
-import { useStore } from '../store/zustandHandler';
+import { useAppSelector } from '../store/hooks.tsx';
+
 
 const Why = () => {
 
-    const { isDarkMode } = useStore();
+    const  isDarkMode  = useAppSelector(state=>state.auth.isDarkMode);
 
     return (<>
         <motion.div className={`relative min-h-screen py-16 px-4 sm:px-6 z-[1] overflow-hidden  bg-white text-black dark:bg-black dark:text-white`}>

@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router';
 const Interface = lazy(() => import('./pages/Interface.tsx'));
 const LandingPage = lazy(() => import("./pages/LandingPage.tsx"))
@@ -16,32 +16,44 @@ const Query_Doc = lazy(() => import("./pages/docs_page5.tsx"));
 const UploadDocuments = lazy(() => import("./pages/docs_page6.tsx"));
 const UserDashboard = lazy(() => import("./pages/UserDashBoard.tsx"));
 const ConversationDetail = lazy(() => import("./pages/Doc_History.tsx"));
+const ChatRoom = lazy(() => import("./pages/chatRoom.tsx"));
 
-import { useAppDispatch } from './store/hooks.tsx';
-import { GetUserDashboardData, } from './store/AuthSlice.ts';
+
+import { connectSocket, disconnectSocket } from './store/websockteSlice.ts';
+import { useAppDispatch, useAppSelector } from './store/hooks.tsx';
+import { GetUserDashboardData, setTheme } from './store/AuthSlice.ts';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer'
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 import "./App.css"
 import axios from 'axios';
 import { useStore } from './store/zustandHandler.ts'
+import { Toaster } from 'sonner';
 const DocumentationLayout = lazy(() => import('./pages/DocumentationLayout.tsx'));
 
 
 const App = () => {
-
   // const [currTab, setCurrTab] = useState("Home");
   const Loggedin = useStore((state) => state.Login);
   const loggedIn = useStore((state) => state.isLoggedIn);
-  const currTab = useStore((state) => state.currTab);
-  const setCurrTab = useStore((state) => state.setCurrTab)
   const dispatch = useAppDispatch()
-  const { isDarkMode } = useStore();
+  const isDarkMode = useAppSelector(state => state.auth.isDarkMode);
+  const themeInitialized = useRef(false);
+
 
   // when loggedIn get userdetails from the dasboard
   useEffect(() => {
     if (loggedIn) {
-      dispatch(GetUserDashboardData())
+      //get the users informations 
+      dispatch(GetUserDashboardData());
+
+      dispatch(connectSocket());
+
+
+      return () => {
+        dispatch(disconnectSocket());
+        return undefined;
+      };
     }
   }, [loggedIn, dispatch])
 
@@ -72,33 +84,41 @@ const App = () => {
   }, [])
 
 
-  // useEffect(() => {
-  //   // This effect runs only once when the component first mounts.
-  //   const cookieString = document.cookie;
-  //   const cookies = cookieString.split(';').map(cookie => cookie.trim());
-  //   const themeCookie = cookies.find(cookie => cookie.startsWith('Eureka_Theme='));
+  useEffect(() => {
+    // Only run once on mount
+    if (themeInitialized.current) return;
 
-  //   if (themeCookie && themeCookie.split('=')[1] === 'dark') {
-  //     // Sets the initial state to dark if the cookie is found
-  //     // and sets the class on the documentElement.
-  //     document.documentElement.classList.add('dark');
-  //     // You would also want to update your state here
-  //     // setIsDarkMode(true);
-  //   }
-  // }, []);
+    try {
+      const themeCookie = document.cookie
+        .split(';')
+        .find(cookie => cookie.trim().startsWith('Eureka_Theme='));
 
-  // 2. Theme toggle handler (runs on isDarkMode changes)
+      if (themeCookie) {
+        const themeValue = themeCookie.split('=')[1];
+        const shouldBeDark = themeValue === 'dark';
+
+        // Only dispatch if different from current state
+        if (shouldBeDark !== isDarkMode) {
+          dispatch(setTheme(shouldBeDark));
+        }
+
+        themeInitialized.current = true; // Mark as initialized
+      }
+    } catch (e) {
+      console.error('Error reading theme cookie:', e);
+    }
+  }, [dispatch, isDarkMode]);
+
+  // Apply theme to DOM when isDarkMode changes
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
-      document.cookie = 'Eureka_Theme=dark; path=/';
+      document.cookie = 'Eureka_Theme=dark; path=/; max-age=31536000'; // 1 year
     } else {
       document.documentElement.classList.remove('dark');
-      document.cookie = 'Eureka_Theme=light; path=/';
+      document.cookie = 'Eureka_Theme=light; path=/; max-age=31536000';
     }
   }, [isDarkMode]);
-
-
 
 
   return (<>
@@ -107,7 +127,8 @@ const App = () => {
     </div>}>
       <Router >
 
-        <Navbar currTab={currTab} setCurrTab={setCurrTab} />
+        <Navbar  />
+        <Toaster />
         <Routes >
           <Route element={<LandingPage />} path='/'></Route>
           <Route element={<Interface />} path='/Interface' >
@@ -118,8 +139,9 @@ const App = () => {
           <Route element={<Feedback />} path="/Feedback" />
           <Route element={<EmailVerificationForm />} path="/ResetPassword" />
           <Route element={<ResetPassword />} path="/temp" />
+          <Route element={<ConversationDetail />} path="/User/document_chat_history/:id" />
           <Route element={<UserDashboard />} path='/User/dashboard' />
-          <Route element={<ConversationDetail />} path="/user/document-reference" />
+          <Route element={<ChatRoom />} path="/chatroom/:id" />
           <Route element={<DocumentationLayout />}>
             <Route element={<API />} path="/API/featured" />
             <Route element={<DocsPage2 />} path="/docs/page2" />

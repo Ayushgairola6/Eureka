@@ -1,17 +1,15 @@
-import type React from "react";
 import { MdSummarize, MdQuestionAnswer } from "react-icons/md";
-type QueryTypeProps = {
-    queryType: string;
-    setQueryType: React.Dispatch<React.SetStateAction<string>>;
-    showType: boolean;
-    setShowType: React.Dispatch<React.SetStateAction<boolean>>;
-}
-const QueryType: React.FC<QueryTypeProps> = ({ queryType, setQueryType, showType, setShowType }) => {
+import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
+import { setQueryType, setShowType } from '../store/InterfaceSlice.ts';
 
+
+const QueryType = () => {
+    const dispatch = useAppDispatch()
+    const { queryType, showType } = useAppSelector(state => state.interface);
     return (<>
 
         <div onClick={(e) => {
-            setShowType(!showType)
+            dispatch(setShowType(!showType))
             e.stopPropagation()
         }}
             className={`absolute z-10  w-48 rounded-md shadow-lg bg-gray-900 border border-gray-700 overflow-hidden transition-all duration-300 bottom-10 left-4 ${showType
@@ -22,8 +20,9 @@ const QueryType: React.FC<QueryTypeProps> = ({ queryType, setQueryType, showType
             <div className="p-2 space-y-2">
                 <button
                     onClick={() => {
-                        setQueryType(prev => prev === "Summary" ? "" : "Summary");
-                        setShowType(false);
+                        const value = queryType === "Summary" ? "" : "Summary";
+                        dispatch(setQueryType(value));
+                        dispatch(setShowType(false));
                     }}
                     className={`flex items-center w-full px-4 py-2 text-sm space-grotesk transition-colors rounded-lg ${queryType === "Summary"
                         ? "bg-indigo-400 text-black"
@@ -35,8 +34,9 @@ const QueryType: React.FC<QueryTypeProps> = ({ queryType, setQueryType, showType
                 </button>
                 <button
                     onClick={() => {
-                        setQueryType(prev => prev === "QNA" ? "" : "QNA");
-                        setShowType(false);
+                        const value = queryType === "QNA" ? "" : "QNA";
+                        dispatch(setQueryType(value));
+                        dispatch(setShowType(false));
                     }}
                     className={`flex items-center w-full px-4 py-2 text-sm space-grotesk transition-colors rounded-lg ${queryType === "QNA"
                         ? "bg-indigo-400 text-black"

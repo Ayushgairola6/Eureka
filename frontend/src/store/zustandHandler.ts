@@ -6,8 +6,6 @@ interface AuthState {
   Login: () => void;
   currTab: string;
   setCurrTab: () => void;
-  isDarkMode: boolean;
-  toggleTheme: () => void;
 }
 
 
@@ -17,6 +15,5 @@ export const useStore = create<AuthState>((set) => ({
   Login: () => set({ isLoggedIn: true }),
   currTab: 'Home',
   setCurrTab: () => set({ currTab: 'yeah' }),
-  isDarkMode: false, 
-  toggleTheme: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+  
 }));

@@ -3,16 +3,21 @@ import {
     FiLock,
     FiChevronDown
 } from 'react-icons/fi';
-import { useState } from 'react';
-import { BiPurchaseTag } from 'react-icons/bi';
+import { useState, lazy } from 'react';
+// import { BiPurchaseTag } from 'react-icons/bi';
 import { toast, Toaster } from 'sonner';
 import { Link } from 'react-router';
-import { useStore } from '../store/zustandHandler';
+import { useAppSelector } from '../store/hooks.tsx';
+
 import { MdScale, MdArrowForward } from 'react-icons/md';
+// const CheckoutForm = lazy(() => import("@/components/stripeCheckoutForm"));
+// import { Elements } from '@stripe/react-stripe-js';
+// import { loadStripe } from '@stripe/stripe-js';
+
 
 const Pricing = () => {
-
-    const { isDarkMode } = useStore();
+    // const stripePromise = loadStripe('your-publishable-key-here');
+    const isDarkMode  = useAppSelector(state=>state.auth.isDarkMode);
 
     const faqs = [
         {
@@ -143,10 +148,12 @@ const Pricing = () => {
                         </li>
                     </ul>
 
-                    <button className={`dark:bg-white  dark:text-black bg-black text-white w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer`}>
+                    {/* <button className={`dark:bg-white  dark:text-black bg-black text-white w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer`}>
                         Subscribe <BiPurchaseTag />
-                    </button>
-
+                    </button> */}
+                    {/* <Elements stripe={stripePromise}>
+                        <CheckoutForm />
+                    </Elements> */}
                 </div>
 
                 {/* Enterprise Tier */}

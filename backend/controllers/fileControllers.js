@@ -55,7 +55,7 @@ export const FileUploadHandle = async (req, res) => {
         // array to store a unique record array for upsert operation
         const recordsToUpsert = [];
         // the size of one batch that we process
-        const batchSize = 100; // Adjust batch size based on your index type and data size
+        const batchSize = 90; // Adjust batch size based on your index type and data size
 
         // loop to start pushing chunks into the db
         for (let i = 0; i < textChunks.length; i++) {
@@ -336,7 +336,7 @@ export const QueryPersonalDocs = async (req, res) => {
                 fields: ['text'],
             });
 
-             console.log(response)
+            //  console.log(response)
             if (response.result.hits.length === 0) {
                 return res.status(200).json({ message: "Response found", answer: `Could you please be more specific about what you would like to know about this topic`, doc_id: [] });
             }

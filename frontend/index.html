@@ -14,23 +14,7 @@
     rel="stylesheet">
   <title>Eureka</title>
 
-  <script>
-    (function () {
-      try {
-          console.log("Themecookie from the cookies1")
-
-        const themeCookie = document.cookie.split(';').find(cookie => cookie.trim().startsWith('Eureka_Theme='));
-        console.log(themeCookie.split("=")[1],'current value of theme')
-        if ( themeCookie.split('=')[1] === 'dark') {
-          document.documentElement.classList.add('dark');
-      document.cookie = 'Eureka_Theme=dark; path=/';
-          console.log("Themecookie from the cookies2")
-        }
-      } catch (e) {
-        console.error('Error applying theme from cookie:', e);
-      }
-    })();
-  </script>
+  
 </head>
 
 <body>

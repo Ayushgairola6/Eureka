@@ -12,11 +12,11 @@ const Tutorial = React.lazy(() => import("./Tutorial.tsx"));
 import { Link } from 'react-router';
 import { motion } from 'framer-motion'
 import Marquee from '@/components/marquee';
-import { useStore } from '../store/zustandHandler.ts';
+import { useAppSelector } from '../store/hooks.tsx';
 
 //  className="bg-blend-difference object-cover  h-full w-full "
 const LandingPage = () => {
-    const { isDarkMode } = useStore();
+    const isDarkMode  = useAppSelector(state=>state.auth.isDarkMode);
     return (<>
         {/*  ${isDarkMode?"bg-black text-white":"bg-white text-black"}*/}
         <div className={`dark:bg-black dark:text-white bg-white text-black relative flex items-center justify-center flex-wrap max-w-screen min-h-screen w-full overflow-hidden  z-[1]`}>

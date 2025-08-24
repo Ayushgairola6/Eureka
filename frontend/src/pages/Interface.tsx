@@ -1,4 +1,4 @@
-import {  useState, lazy } from 'react';
+import { useState, lazy } from 'react';
 import { Toaster, toast } from 'sonner';
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -18,48 +18,37 @@ import { FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
 import { IoHeartHalfOutline } from "react-icons/io5";
 import { BiQuestionMark } from 'react-icons/bi';
 import { BsStars } from "react-icons/bs";
-
+import { useAppSelector, useAppDispatch } from '../store/hooks.tsx';
+import { setQuestion, setAnswer, setLoading, setLikeness, setPrivateResponse, setShowDocs, setShowOptions, setShowType, setSuggestion } from '../store/InterfaceSlice.ts';
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 function Interface() {
+  const dispatch = useAppDispatch();
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [question, setQuestion] = useState<string>('');
-  const [answer, setAnswer] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  // const [currentDbName, setCurrentDbName] = useState<string>('');
-  const [isVisible, setIsVisible] = useState(false)
-  const [category, setCategory] = useState<string>('');
-  const [shhowUserForm, setShowUserForm] = useState(false);
-  const [visibility, setVisibility] = useState<string>('Public')
-  const [showSubcategory, setShowSubCategory] = useState(false);
-  const [subCategory, setSubCategory] = useState<string>('');
-  const [showDocs, setShowDocs] = useState(false);
+
+
   const loggedIn = useStore((state) => state.isLoggedIn)
   const [selectedDoc, setSelectedDoc] = useState<string>('');
-  const [privateResponse, setPrivateResponse] = useState<string>('');
   const [docId, setDocId] = useState<Array<{ uploaded_by: string; doc_id: string;[key: string]: any }>>([]);
-  const [likeness, setLikeness] = useState<string>('');
-  const [suggestion, setSuggestion] = useState<string>('');
-  const [shwoOptions, setShowOptions] = useState(false);
-  const [queryType, setQueryType] = useState<string>('');
-  const [showType, setShowType] = useState(false);
 
+  const { answer, question, loading, isVisible ,category,suggestion,shhowUserForm,showDocs,showSubcategory,showType,shwoOptions,visibility,subCategory,queryType,likeness,privateResponse} = useAppSelector(state => state.interface);
 
   // uploading a document
   const handleUpload = async (UserData: FormData) => {
     if (!selectedFile || category === " " || !UserData || !visibility || !subCategory) {
-      toast(!selectedFile ? '❌ Please select a PDF file first.' : "❌ Please select a category first.");
+      toast.error(!selectedFile ? '❌ Please select a PDF file first.' : "❌ Please select a category first.");
       return;
     }
 
     if (loggedIn === false) {
-      toast("We currently only allow verified users to contribute !Please Login to continue .")
+      toast.message("We currently only allow verified users to contribute !Please Login to continue .")
       return;
     }
 
-    toast(visibility === "Public" ? "Your Chosen Visiblity is Public , now everyone will be able to access the the information you shared !" : "Your Chosen Visibility is Private , this document will be only visible to you in you dashboard !")
+    toast.info(visibility === "Public" ? "Your Chosen Visiblity is Public , now everyone will be able to access the the information you shared !" : "Your Chosen Visibility is Private , this document will be only visible to you in you dashboard !")
 
-    setLoading(true);
+    dispatch(setLoading(true));
     const formData = new FormData();
     formData.append('file', selectedFile);
     formData.append("category", category);
@@ -79,15 +68,14 @@ function Interface() {
       });
 
       if (response.data.message === "Upload successfull") {
-        toast(`✅ ${response.data.message}`);
+        toast.message(`✅ ${response.data.message}`);
       } else {
-        toast(`❌ Failed to Upload the File, Please try again later.`);
+        toast.info(`❌ Failed to Upload the File, Please try again later.`);
       }
     } catch (err: any) {
-      console.log(err)
-      toast(`❌ Network error: ${err.message}`);
+      toast.error(`❌ Network error: ${err.message}`);
     } finally {
-      setLoading(false);
+      dispatch(setLoading(false));
     }
   };
 
@@ -102,13 +90,13 @@ function Interface() {
     }
 
     if (!question.trim() || !category || category === "") {
-      toast(!question ? '❌ Please enter a question.' : '❌ Please choose a category!');
+      toast.message(!question ? '❌ Please enter a question.' : '❌ Please choose a category!');
       return;
     }
 
 
-    setLoading(true);
-    setAnswer('');
+    dispatch(setLoading(true));
+    dispatch(setAnswer(""))
     try {
       const response = await axios.post(`${BaseApiUrl}/api/ask-pdf`, { question: question, category, subCategory: subCategory }, {
         withCredentials: true,
@@ -116,20 +104,20 @@ function Interface() {
           "Authorization": `Bearer ${AuthToken}`
         }
       });
-      console.log(response.data)
+      // console.log(response.data)
       if (response.data.message === "Response found") {
         setDocId((prev) => [...prev, ...response.data.doc_id])
-        setAnswer(response.data.answer);
+        dispatch(setAnswer(response.data.answer));
       } else {
-        toast(`❌${response.data.answer}`);
+        toast.error(`❌${response.data.answer}`);
       }
       // console.log(response.data)
 
     } catch (err: any) {
-      console.log(err)
-      toast(`❌ Network error: ${err.message}`);
+      // console.log(err)
+      toast.error(`❌ Network error: ${err.message}`);
     } finally {
-      setLoading(false);
+      dispatch(setLoading(false));
     }
   };
 
@@ -137,38 +125,38 @@ function Interface() {
     try {
 
       if (!question) {
-        toast("Question cannot be empty !");
+        toast.info("Question cannot be empty !");
         return;
       }
       if (!selectedDoc) {
-        toast("Please select a document before querying");
+        toast.info("Please select a document before querying");
         return;
       }
       if (!queryType) {
-        toast("Please select a query type");
+        toast.info("Please select a query type");
         return;
       }
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      setLoading(true);
+      dispatch(setLoading(true));
 
       const privateDocResponse = await axios.post(`${BaseApiUrl}/api/privateDocs/ask`, { question: question, docId: selectedDoc, query_type: queryType }, {
         withCredentials: true, headers: {
           'Authorization': `Bearer ${AuthToken}`
         }
       })
-      setLoading(false);
+      dispatch(setLoading(false));
 
-      setPrivateResponse(privateDocResponse.data.answer);
+      dispatch(setPrivateResponse(privateDocResponse.data.answer));
       return privateDocResponse.data.answer
     } catch (err: any) {
-      console.log(err)
-      toast(`❌ Network error: ${err.message}`);
+      // console.log(err)
+      toast.error(`❌ Network error: ${err.message}`);
     } finally {
-      setLoading(false);
+      dispatch(setLoading(false));
     }
   }
 
-  
+
 
 
 
@@ -187,17 +175,17 @@ function Interface() {
         }
       })
       // setAnswer("");
-      setLikeness("");
-      setSuggestion("");
+      dispatch(setLikeness(""));
+      dispatch(setSuggestion(""));
 
       if (response.data.message === 'Feedback recorded successfully') {
-        toast("Thank you for your feedback !")
+        toast.message("Thank you for your feedback !")
       } else {
-        toast(response.data.message);
+        toast.message(response.data.message);
       }
     } catch (error: any) {
       // console.log(error);
-      toast(error.message);
+      toast.error(error.message);
 
     }
   }
@@ -206,32 +194,20 @@ function Interface() {
     <div className=" mx-auto p-4 md:p-8 min-h-screen max-h-[90vh]  flex flex-col items-center justify-center  dark:bg-black text-gray-900 dark:text-gray-50 z-[1] relative">
       <div className={`absolute top-0 right-3 flex flex-wrap  justify-center items-center ${shwoOptions ? " translate-y-0 opacity-100" : " -translate-y-200 opacity-0"} transition-all duration-300 z-[1] `}>
         {isVisible === true || showSubcategory === true || showDocs === true ? null : <UserForm
-          setShowUserForm={setShowUserForm}
-          shhowUserForm={shhowUserForm}
           selectedFile={selectedFile}
           setSelectedFile={setSelectedFile}
           handleUpload={handleUpload}
-          loading={loading}
-          setVisibility={setVisibility}
         />}
 
         {isVisible === true || shhowUserForm === true || showDocs === true ? null : <SubCategories
-          showSubcategory={showSubcategory}
-          setShowSubCategory={setShowSubCategory}
-          subCategory={subCategory}
-          setSubCategory={setSubCategory}
-          category={category}
         />}
 
         {shhowUserForm === true || showSubcategory === true || showDocs === true ? null : <DropDown
-          isVisible={isVisible}
-          setIsVisible={setIsVisible}
-          setCategory={setCategory}
-          category={category}
+          
         />}
       </div>
       {/* draggable question mark */}
-      <PrivateDocuments selectedDoc={selectedDoc} setSelectedDoc={setSelectedDoc} showDocs={showDocs} setShowDocs={setShowDocs} />
+      <PrivateDocuments selectedDoc={selectedDoc} setSelectedDoc={setSelectedDoc}  />
 
 
       {/* the dropdown */}
@@ -266,7 +242,7 @@ function Interface() {
                 placeholder="1. Why is light the fastest thing in the universe ?
                 "
                 value={question}
-                onChange={(e) => setQuestion(e.target.value)}
+                onChange={(e) => dispatch(setQuestion(e.target.value))}
                 rows={6}
                 // disabled={!currentDbName}
                 className="resize-none disabled:opacity-70 space-grotesk text-sm md:text-md px-2 py-1 rounded-md  border border-gray-400"
@@ -278,23 +254,22 @@ function Interface() {
                 <section className='flex items-center justify-center gap-2'>
                   {/* show options icon */}
 
-                  <ul onClick={() => setShowOptions(!shwoOptions)} className={` cursor-pointer  ${shwoOptions ? "bg-green-300  text-black" : "dark:bg-gray-600  bg-gray-200"} rounded-full p-1 relative h-auto`}><IoOptions size={18} />
+                  <ul onClick={() => dispatch(setShowOptions(!shwoOptions))} className={` cursor-pointer  ${shwoOptions ? "bg-green-300  text-black" : "dark:bg-gray-600  bg-gray-200"} rounded-full p-1 relative h-auto`}><IoOptions size={18} />
                   </ul>
                   {/* query type for personal documents */}
-                  {selectedDoc && <ul onClick={() => setShowType(!showType)} className={`  cursor-pointer ${selectedDoc ? "bg-blue-400" : "bg-gray-200"} rounded-full p-1  h-auto relative`}><BiQuestionMark size={18} />
-                    <QueryType queryType={queryType} setQueryType={setQueryType}
-                      showType={showType} setShowType={setShowType}
+                  {selectedDoc && <ul onClick={() => dispatch(setShowType(!showType))} className={`  cursor-pointer ${selectedDoc ? "bg-blue-400" : "bg-gray-200"} rounded-full p-1  h-auto relative`}><BiQuestionMark size={18} />
+                    <QueryType 
                     />
                   </ul>}
                 </section>
 
                 {/* private documents of the user */}
 
-                <ul className={`bai-jamjuree-regular text-sm  flex items-center justify-end gap-2 CustPoint dark:text-gray-200 text-black`} onClick={() => setShowDocs(!showDocs)}>{selectedDoc !== "" ? selectedDoc : "MyDocs"} <IoDocument /></ul>
+                <ul className={`bai-jamjuree-regular text-sm  flex items-center justify-end gap-2 CustPoint dark:text-gray-200 text-black`} onClick={() => dispatch(setShowDocs(!showDocs))}>{selectedDoc !== "" ? selectedDoc : "MyDocs"} <IoDocument /></ul>
               </div>
 
               {/* action button */}
-              <motion.button whileTap={{ scale: 1.03 }} whileHover={{ scaleX: 1.05 }} transition={{ duration: 0.3, ease: "circIn" }} onClick={handleAsk} className={`cursor-pointer ${loading?"bg-gray-700 text-white animate-pulse ":"bg-black dark:bg-gray-100 dark:text-black"} text-white w-full p-2 rounded-lg space-grotesk   text-sm flex items-center justify-center gap-2 `}>
+              <motion.button whileTap={{ scale: 1.03 }} whileHover={{ scaleX: 1.05 }} transition={{ duration: 0.3, ease: "circIn" }} onClick={handleAsk} className={`cursor-pointer ${loading ? "bg-gray-700 text-white animate-pulse " : "bg-black dark:bg-gray-100 dark:text-black"} text-white w-full p-2 rounded-lg space-grotesk   text-sm flex items-center justify-center gap-2 `}>
                 {loading ? (<>
                   Analyzing <BsStars size={24} />
                 </>) : (<>
@@ -302,7 +277,7 @@ function Interface() {
                 </>)}
               </motion.button>
 
-            </div>
+            </div>  
 
             {/* Answer Display Section */}
             {answer || privateResponse && (
@@ -353,37 +328,37 @@ function Interface() {
                   <div className="bai-jamjuree-regular text-sm flex flex-col  gap-2 w-full md:w-1/3">
                     <section className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "upvote" ? "bg-green-300 text-black " : "dark:bg-gray-600 bg-white  border-green-200"}`}>
                       <input
-                        onChange={(e) => setLikeness(e.target.value)}
+                        onChange={(e) => dispatch(setLikeness(e.target.value))}
                         value="upvote"
                         name="quality"
                         type="radio"
                         className="ml-1"
                       />
-                      <FaThumbsUp  />
+                      <FaThumbsUp />
                       <label htmlFor="Helpful">Helpful</label>
 
                     </section>
                     <section className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "downvote" ? "bg-red-300 text-black " : "dark:bg-gray-600 bg-white  border-red-200"}`}>
                       <input
-                        onChange={(e) => setLikeness(e.target.value)}
+                        onChange={(e) => dispatch(setLikeness(e.target.value))}
                         value="downvote"
                         name="quality"
                         type="radio"
                         className="ml-1"
                       />
-                      <FaThumbsDown  />
+                      <FaThumbsDown />
                       <label htmlFor="Incorrect">Flag incorrect</label>
 
                     </section>
                     <section className={`flex items-center gap-2 border dark  rounded-lg p-1 ${likeness === "partial_upvote" ? "bg-sky-300 text-black " : "bg-white dark:bg-gray-600  border-sky-200"}`}>
                       <input
-                        onChange={(e) => setLikeness(e.target.value)}
+                        onChange={(e) => dispatch(setLikeness(e.target.value))}
                         value="partial_upvote"
                         name="quality"
                         type="radio"
                         className="ml-1"
                       />
-                      <IoHeartHalfOutline  />
+                      <IoHeartHalfOutline />
                       <label htmlFor="Missing">Missing some information </label>
 
                     </section>

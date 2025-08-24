@@ -1,17 +1,13 @@
-import user from '../assets/user.jpg';
-import user2 from '../../public/user2.jpg';
-import user3 from '../../public/user3.jpg';
-import user4 from '../../public/user4.jpg';
-import user5 from '../../public/user5.jpg';
 import { motion } from 'framer-motion';
 import { useRef } from 'react';
 import { FaArrowRight, FaArrowLeft } from 'react-icons/fa';
 import { MdPrivateConnectivity } from 'react-icons/md';
-import { useStore } from '../store/zustandHandler';
+import { useAppSelector } from '../store/hooks.tsx';
+
 
 const TestiMonials = () => {
 
-    const { isDarkMode } = useStore();
+    const  isDarkMode = useAppSelector(state=>state.auth.isDarkMode);
     const ContainerRef = useRef<HTMLDivElement>(null);
 
     return (<>
@@ -64,7 +60,7 @@ const TestiMonials = () => {
                                 "I use Eureka's private document feature to upload my personal legal precendents and get quick overview whenver I want . I really like this feature "
                             </p>
                             <div className="flex items-center gap-2">
-                                <img className="w-10 h-10 rounded-full" src={user2} alt="Sarah K." />
+                                <img className="w-10 h-10 rounded-full" src="/user2.jpg" alt="Sarah K." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Sarah K.</p>
                                     <p className="space-grotesk text-xs text-gray-500">Law Researcher, NY</p>
@@ -90,7 +86,7 @@ const TestiMonials = () => {
                                 "I use eureka for quick information gathering , for my assignments , projects and even questions that come to my mind out of curiosity ,as the information is community verified"
                             </p>
                             <div className="flex items-center gap-2">
-                                <img className="w-10 h-10 rounded-full" src={user4} alt="Michael T." />
+                                <img className="w-10 h-10 rounded-full" src="/user4.jpg" alt="Michael T." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Michael T.</p>
                                     <p className="space-grotesk text-xs text-gray-500">University Student, SF</p>
@@ -115,7 +111,7 @@ const TestiMonials = () => {
                                 "I upload my ML notes and get back textbook-quality explanations with code examples. It's like having a friend to make notes for me to study"
                             </p>
                             <div className="flex items-center gap-2">
-                                <img className="w-10 h-10 rounded-full" src={user} alt="Priya M." />
+                                <img className="w-10 h-10 rounded-full" src="/user.jpg" alt="Priya M." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Priya M.</p>
                                     <p className="space-grotesk text-xs text-gray-500">AI/ML Student</p>
@@ -140,7 +136,7 @@ const TestiMonials = () => {
                                 "I love looking for random facts online but i was tired of fake information, since when i found about eureka my curiosity lives in the pits of categories and subcategories"
                             </p>
                             <div className="flex items-center gap-2">
-                                <img className="w-10 h-10 rounded-full" src={user5} alt="Dr. James L." />
+                                <img className="w-10 h-10 rounded-full" src="/user5.jpg" alt="Dr. James L." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm"> James L.</p>
                                     <p className="space-grotesk text-xs text-gray-500">Just a curious person</p>
@@ -163,7 +159,7 @@ const TestiMonials = () => {
                                 "With Eureka's private mode, I can securely upload sensitive research without worrying about leaks. It gives me peace of mind knowing my work stays confidential until I'm ready to share."
                             </p>
                             <div className="flex items-center gap-2 ">
-                                <img className="w-10 h-10 rounded-full" src={user3} alt="Dr. James L." />
+                                <img className="w-10 h-10 rounded-full" src="user3.jpg" alt="Dr. James L." />
                                 <div>
                                     <p className="bai-jamjuree-medium text-sm">Dr. Stephanie Ruth</p>
                                     <p className="space-grotesk text-xs text-gray-500">Open Source contributer</p>
