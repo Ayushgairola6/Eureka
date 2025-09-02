@@ -2,14 +2,14 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 import axios from 'axios';
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
-
 interface RoomMembers {
     user: string
 }
 interface RoomDataPayload {
     room_id: string | null,
     room_name: string | null,
-    username: string | null
+    username: string | null,
+    user_id: string
 }
 interface users {
     username: string
@@ -74,6 +74,8 @@ export const GetChatRoomHistory = createAsyncThunk(
     }
 )
 
+
+
 const socketSlice = createSlice({
     name: 'socket',
     initialState,
@@ -96,34 +98,32 @@ const socketSlice = createSlice({
         },
         // update the array for local updates
         sendMessage: (state, action) => {
-            // Correctly check if the filter result has a length of 0
-            const isDuplicate = state.newMessage.some((e) =>
-                e.message_id === action.payload.message_id
-            );
-
-            if (!isDuplicate) {
-                state.newMessage.push(action.payload);
-            }
+            // only add users messaeg in the messages array 
+            const userMessage = action.payload;
+            // for quick ui updates add it 
+            state.newMessage.push(userMessage);
         },
         // error event emitted by the websocket
         ErrorOccured: (state, action) => { state.errorMessage = action.payload.error },
         joinAChatRoom: (_state, _action: PayloadAction<RoomDataPayload>) => {
         }, Setroom_info: (state, action) => {
-            state.membername = [...action.payload];
+            state.membername = [ ...action.payload];
         },
         leaveChatRoom: (_state, _action: PayloadAction<leaveroom>) => { },
 
         // new message reducer
         NewMessageReceived: (state, action) => {
+            const messageFromServer = action.payload;
 
-            // if a message with same if is present in the array
-            const duplicateById = state.newMessage.some(message =>
-                message.message_id === action.payload.message_id
+            // Find the index of the message with the matching message_id.
+            const existingMessage = state.newMessage.some(
+                (message) => message.message_id === messageFromServer.message_id && message.message === action.payload.message
             );
 
-            if (!duplicateById) {
-                state.newMessage.push(action.payload);
+            if (!existingMessage) {
+                state.newMessage.push(action.payload)
             }
+
         },
         leavingRoomNotification: (state, action) => {
             state.response = action.payload.message;
@@ -131,10 +131,7 @@ const socketSlice = createSlice({
         RoomNotification: (state, action) => {
             state.response = action.payload.message;
         },
-        // isTypingIndicator: (_state, _action) => { },
-        // isTyping: (state, action) => {
-        //     state.whoistyping = action.payload.message
-        // }
+
 
     },
 
@@ -153,5 +150,5 @@ const socketSlice = createSlice({
     },
 });
 
-export const { connectSocket, disconnectSocket, setConnected, setDisconnected, sendMessage, joinAChatRoom, leaveChatRoom, NewMessageReceived, ErrorOccured, leavingRoomNotification, RoomNotification,Setroom_info } = socketSlice.actions;
+export const { connectSocket, disconnectSocket, setConnected, setDisconnected, sendMessage, joinAChatRoom, leaveChatRoom, NewMessageReceived, ErrorOccured, leavingRoomNotification, RoomNotification, Setroom_info } = socketSlice.actions;
 export default socketSlice.reducer;

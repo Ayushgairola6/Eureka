@@ -43,7 +43,19 @@ interface UserChatRoom {
   room_id: string;
   chat_rooms: ChatRoom;
 }
-
+interface metadata {
+  room_id: string | null
+  sent_by: string | null
+}
+interface notifications {
+  id: number
+  metadata: metadata,
+  notification_message: string
+  notification_type: string
+  sent_at: string
+  title: string
+  user_id: string
+}
 type ChatRoomsResponse = UserChatRoom[];
 
 interface AuthState {
@@ -58,8 +70,19 @@ interface AuthState {
   isDarkMode: boolean;
   Contributions_user_id_fkey: Contributions_user_id_fkey[]
   currTab: string;
-}
+  notificationcount: number | 0
+  notifications: notifications[]
+  isLoggedIn: boolean | false
+  isCleaning: boolean
 
+}
+interface ActionPayload {
+  action_type: string
+  room_id: string
+  requested_user_id: string,
+  room_name: string
+  admin_id:string
+}
 const initialState: AuthState = {
   user: null,
   loading: false,
@@ -71,7 +94,12 @@ const initialState: AuthState = {
   AuthenticityScore: 0,
   chatrooms: [],
   Contributions_user_id_fkey: [],
-  currTab: "Home"
+  currTab: "Home",
+  notificationcount: 0,
+  notifications: [],
+  isCleaning: false,
+  isLoggedIn: false
+
 };
 
 // Fixed GetUserDocs thunk with proper typing
@@ -102,6 +130,50 @@ export const GetUserDashboardData = createAsyncThunk<AuthState, void>(
   }
 );
 
+export const AcceptOrRejectRequest = createAsyncThunk
+  <any, ActionPayload>(
+    'request/actions',
+    async ({ action_type, requested_user_id, room_id, room_name,admin_id }, { rejectWithValue }) => {
+      try {
+        const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+        const response = await axios.post(`${BaseApiUrl}/api/user/requests/${action_type}/${requested_user_id}/${room_id}/${room_name}/${admin_id}`, {}, {
+          withCredentials: true,
+          headers: {
+            'Authorization': `Bearer ${AuthToken}`
+          }
+        })
+        // console.log(response.data);
+        return response.data;
+      } catch (err) {
+        console.error("Error managing the notification:", err);
+        return rejectWithValue(
+          err instanceof Error ? err.message : 'Failed to fetch dashboard data'
+        );
+      }
+    }
+  )
+
+export const DeleteNotification = createAsyncThunk(
+  'delete/notification',
+  async (notification_id, { rejectWithValue }) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const response = await axios.put(`${BaseApiUrl}/api/user/delete/notification/${notification_id}`, {}, {
+        withCredentials: true,
+        headers: {
+          "Authorization": `Bearer ${AuthToken}`
+        }
+      })
+      return response.data;
+    } catch (err: any) {
+      console.error("Error deleting a notification:", err);
+      return rejectWithValue(
+        err instanceof Error ? err.message : 'Failed to fetch dashboard data'
+      );
+    }
+  }
+)
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -114,6 +186,36 @@ const authSlice = createSlice({
     },
     setCurrTab: (state, action) => {
       state.currTab = action.payload
+    },
+    SetNotifications: (state, action) => {
+      // console.log(action.payload)
+      state.notifications = state.notifications.filter((elemen) => elemen.id !== action.payload)
+      state.notificationcount -= 1
+    },
+    setNotificationCount: (state) => {
+      state.notificationcount = state.notificationcount - 1
+    },
+    NewUserNotification: (state, action) => {
+      // console.log(action.payload, 'this has been envoked')
+      const notificationExists = (notificationsArray: any, newNotification: any) => {
+        return notificationsArray.some(
+          (existingNotification: any) => existingNotification.id === newNotification.id
+        );
+      };
+      if (action.payload.length) {
+        action.payload.forEach((newNotification: any) => {
+          if (!notificationExists(state.notifications, newNotification)) {
+            state.notifications.push(newNotification);
+            state.notificationcount += 1;
+          }
+        });
+      } else {
+        state.notifications.push(action.payload)
+      }
+
+    },
+    setIsLogin: (state, action) => {
+      state.isLoggedIn = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -134,15 +236,27 @@ const authSlice = createSlice({
           state.Querycount = action.payload.Querycount;
           state.FeedbackCounts = action.payload.FeedbackCounts;
           state.chatrooms = action.payload.chatrooms
+          state.notificationcount = action.payload.notificationcount;
+          state.notifications = action.payload.notifications
         }
         state.userStatus = false;
       })
       .addCase(GetUserDashboardData.rejected, (state) => {
         state.userStatus = false;
       })
+      // notificaiton handle
+      .addCase(AcceptOrRejectRequest.pending, (state) => {
+        state.isCleaning = true;
+      })
+      .addCase(AcceptOrRejectRequest.rejected, (state) => {
+        state.isCleaning = false;
+      })
+      .addCase(AcceptOrRejectRequest.fulfilled, (state) => {
+        state.isCleaning = false;
+      })
   },
 });
 
 
-export const { toggleTheme, setTheme ,setCurrTab} = authSlice.actions
+export const { toggleTheme, setTheme, setCurrTab, SetNotifications, setNotificationCount, NewUserNotification, setIsLogin } = authSlice.actions
 export default authSlice.reducer;

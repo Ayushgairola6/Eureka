@@ -1,6 +1,7 @@
 // features/socket/socketMiddleware.js
 import { io, Socket } from 'socket.io-client';
 import { setConnected, setDisconnected, NewMessageReceived, RoomNotification, Setroom_info } from './websockteSlice.ts';
+import { NewUserNotification } from './AuthSlice.ts'
 import { store } from './reduxstore.ts';
 // import { data } from 'react-router';
 
@@ -20,8 +21,8 @@ const setupSocketListeners = (dispatch: any) => {
             socket.emit("Joining_a_chat_room", state.chats.room_code);
         }
     });
-    
-    socket.on("room-info",(data)=>{
+
+    socket.on("room-info", (data) => {
         dispatch(Setroom_info(data))
     })
 
@@ -31,9 +32,12 @@ const setupSocketListeners = (dispatch: any) => {
     });
 
     socket.on("Room_notification", (data) => {
-        console.log(data)
         dispatch(RoomNotification(data));
     });
+
+    socket.on("new_Notification", (data) => {
+        dispatch(NewUserNotification(data))
+    })
 
     socket.on('disconnect', () => {
         console.log("Socket disconnected");
@@ -41,11 +45,11 @@ const setupSocketListeners = (dispatch: any) => {
     });
 };
 
-let storeRef = null;
+// let storeRef = null;
 // middleware to handle socket events
 export const socketMiddleware = (store: any) => (next: any) => (action: any) => {
     const { dispatch } = store;
-    storeRef = store;
+    // storeRef = store;
 
     // reading the connectSocket reducer function
     switch (action.type) {
@@ -57,11 +61,15 @@ export const socketMiddleware = (store: any) => (next: any) => (action: any) => 
                 socket.disconnect();
                 listenerInitialized = false;
             }
+            const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
 
             socket = io('http://localhost:1000', {
                 reconnection: true,
                 reconnectionAttempts: 5,
-                reconnectionDelay: 1000,
+                transports: ['websocket', 'polling'],
+                reconnectionDelay: 2000, auth: {
+                    token: AuthToken
+                }, withCredentials: true
             });
             setupSocketListeners(dispatch);
             break;
@@ -76,6 +84,7 @@ export const socketMiddleware = (store: any) => (next: any) => (action: any) => 
 
             }
             break;
+    
         case 'socket/leaveChatRoom':
             const room_info = action.payload;
             if (socket && socket.connected) {

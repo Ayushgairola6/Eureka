@@ -26,7 +26,7 @@ const ChatRoom = () => {
     const isConnected = useAppSelector(state => state.socket.isConnected);
     const gettinChats = useAppSelector(state => state.socket.gettingOldMessage);
     const nameofthepersonwhoistyping = useAppSelector(state => state.socket.whoistyping);
-    const roomMembers = useAppSelector(state=>state.socket.membername)
+    const roomMembers = useAppSelector(state => state.socket.membername)
     const [showRoomInfo, setShowRoomInfo] = useState(false);
 
     useEffect(() => {
@@ -53,7 +53,8 @@ const ChatRoom = () => {
             const roomInfo = {
                 room_id: currentRoom.room_id,
                 room_name: currentRoom.chat_rooms.room_name,
-                username: User.username
+                username: User.username,
+                user_id: User.id
             };
 
             // Dispatch the join action
@@ -80,7 +81,7 @@ const ChatRoom = () => {
 
         const message = {
             message_id: uuidv4(),
-            sent_at: now.toISOString(),
+            sent_at: now.toLocaleString(),
             sent_by: User?.id ?? "Anonymus",
             message: newMessage,
             room_id: currentRoom?.room_id,
@@ -93,14 +94,14 @@ const ChatRoom = () => {
         dispatch(sendMessage(message));
     };
 
-    const handleSelectDoc = (doc_id: string, doc_title: string) => {
-        setSelectedDoc({ id: doc_id, title: doc_title });
+    const handleSelectDoc = (doc: any) => {
+        setSelectedDoc(doc);
         // Notify room members about document selection
         const systemMessage = {
             message_id: uuidv4(),
-            sent_at: now.toISOString(),
+            sent_at: now.toLocaleString(),
             sent_by: 'SYSTEM',
-            message: `${User?.username} selected document: ${doc_title}`,
+            message: `${User?.username} selected document: ${doc.feedback}`,
             room_id: currentRoom?.room_id,
             users: { username: "SYSTEM" }
         };
@@ -118,7 +119,7 @@ const ChatRoom = () => {
 
             const responseMessage = {
                 message_id: uuidv4(),
-                sent_at: now.toISOString(),
+                sent_at: now.toLocaleString(),
                 sent_by: 'EUREKA',
                 message: aiResponse,
                 room_id: currentRoom?.room_id,
@@ -136,7 +137,7 @@ const ChatRoom = () => {
     };
 
     return (
-        <div onClick={()=>console.log(roomMembers)} className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             <Toaster />
             {/* Mobile Header */}
             <div className="lg:hidden flex justify-between items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -219,7 +220,7 @@ const ChatRoom = () => {
                                         <FiUsers className="mr-2" /> Members
                                     </h4>
                                     <div className="space-y-2">
-                                        {roomMembers.map((member,index) => (
+                                        {roomMembers.map((member, index) => (
                                             <div key={`${member.user}_at_${index}`} className="flex items-center text-sm">
                                                 <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs mr-2">
                                                     {member.user.charAt(0)}
@@ -250,12 +251,12 @@ const ChatRoom = () => {
                             <FiUsers className="mr-2" /> Members Limit ({currentRoom?.chat_rooms.participant_count})
                         </h3>
                         <div className="space-y-2">
-                            {roomMembers.map((member,index) => (
+                            {roomMembers.map((member, index) => (
                                 <div key={`${member.user}_at_${index}`} className="flex items-center ">
                                     <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white mr-2">
                                         {member.user.charAt(0)}
                                     </div>
-                                       <span className='flex items-center justify-center gap-3'>{member.user} <ul className=' rounded-full bg-green-500 h-2 w-2'></ul></span>
+                                    <span className='flex items-center justify-center gap-3'>{member.user} <ul className=' rounded-full bg-green-500 h-2 w-2'></ul></span>
                                 </div>
                             ))}
                         </div>
@@ -278,7 +279,7 @@ const ChatRoom = () => {
                             <div className="max-w-6xl mx-auto flex justify-between items-center">
                                 <div>
                                     <h3 className="font-medium">Active Document:</h3>
-                                    <p className="text-sm">{selectedDoc?.title}</p>
+                                    <p className="text-sm">{selectedDoc?.feedback}</p>
                                 </div>
                                 <button
                                     onClick={() => setSelectedDoc(null)}
@@ -300,7 +301,7 @@ const ChatRoom = () => {
                                         type="text"
                                         value={aiQuery}
                                         onChange={(e) => setAiQuery(e.target.value)}
-                                        placeholder={`Ask anything about ${selectedDoc.title}...`}
+                                        placeholder={`Ask anything about ${selectedDoc.feedback}...`}
                                         className="flex-1 bg-transparent border-none focus:outline-none"
                                         onKeyUp={(e) => e.key === 'Enter' && handleQueryDocument()}
                                     />
@@ -309,7 +310,7 @@ const ChatRoom = () => {
                                         disabled={isQuerying}
                                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
                                     >
-                                        {isQuerying ? 'Querying...' : 'Ask'}
+                                        {isQuerying ? 'Analyzing...' : 'Ask'}
                                     </button>
                                 </div>
                             </div>
@@ -320,19 +321,50 @@ const ChatRoom = () => {
                     <div className="flex-1 overflow-y-auto p-4 space-grotesk">
                         {gettinChats === true && data.length === 0 ? <div className='flex h-full'>
                             <h1 className='bai-jamjuree-regular  text-green-400 m-auto flex items-center justify-center gap-2'>Looking for older messages... <IoMdHourglass className='animate-spin' /></h1>
-                        </div> : data.map((message, index) => (
+                        </div> : data.map((message: any, index: any) => (
                             <motion.div
                                 key={`${message.room_id}_${message.sent_by}_${index}`}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className={`mb-4 flex items-center    ${message.sent_by === User?.id ? 'text-right justify-start' : 'text-left justify-end'}`}
                             >
-                                <div className={`${message.sent_by === User?.id ? 'bg-blue-500 ' : ' bg-green-500 '} rounded-lg p-2 w-fit`}>
-                                    <p>{message.message}</p>
-                                    <p className="text-xs text-gray-50 opacity-70 mt-1">
-                                        {message.users?.username} • {message?.sent_at.toString().split("T")[0]}
-                                    </p>
+                                <div className={`${message.sent_by === 'SYSTEM'
+                                    ? 'bg-gradient-to-br from-slate-600 to-slate-800 rounded-lg p-0.5'
+                                    : message.sent_by === User?.id
+                                        ? 'bg-gradient-to-br from-purple-700 to-blue-600 rounded-lg p-0.5'
+                                        : 'bg-gradient-to-br from-pink-600 to-lime-600 rounded-lg p-0.5'
+                                    }`}>
+                                    <div className={`${message.sent_by === 'SYSTEM'
+                                        ? 'bg-gray-800 text-gray-200 italic '
+                                        : message.sent_by === User?.id
+                                            ? 'bg-black text-white '
+                                            : 'bg-white text-black '
+                                        } rounded-lg rounded-bl-lg p-3 w-fit max-w-xs `}>
+
+                                        {/* Username - subtle but visible */}
+                                        <p className={`text-xs font-medium mb-1 ${message.sent_by === 'SYSTEM' ? 'text-gray-400' :
+                                            message.sent_by === User?.id ? 'text-gray-400' :
+                                                'text-gray-600'
+                                            }`}>
+                                            {message.users?.username}
+                                            {message.sent_by === 'SYSTEM' && ' • System'}
+                                        </p>
+
+                                        {/* Message text - main content */}
+                                        <p className='text-sm leading-relaxed mb-2'>
+                                            {message.message}
+                                        </p>
+
+                                        {/* Timestamp - very subtle */}
+                                        <p className={`text-xs ${message.sent_by === 'SYSTEM' ? 'text-gray-500' :
+                                            message.sent_by === User?.id ? 'text-gray-500' :
+                                                'text-gray-400'
+                                            }`}>
+                                            {message?.sent_at}
+                                        </p>
+                                    </div>
                                 </div>
+
                                 {data.length - 1 && nameofthepersonwhoistyping !== `${User?.username} is typing...` ? nameofthepersonwhoistyping : null}
                             </motion.div>
                         ))}
@@ -399,7 +431,7 @@ const ChatRoom = () => {
                                             whileTap={{ scale: 0.98 }}
                                         >
                                             <div
-                                                onClick={() => handleSelectDoc(doc.id, doc.feedback)}
+                                                onClick={() => handleSelectDoc(doc)}
                                                 className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedDoc?.id === doc.id
                                                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                                                     : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -437,7 +469,7 @@ const mockQueryAI = async (docId: string, query: string): Promise<string> => {
 
 type Doc = {
     id: string;
-    title: string;
+    feedback: string;
 };
 
 export default ChatRoom;

@@ -4,7 +4,7 @@ import { supabase } from '../controllers/supabaseHandler.js';
 import { GenerateAccessTokens } from '../controllers/AuthController.js';
 dotenv.config();
 
-const verifyJwtAsync = (token, secret) =>
+export const verifyJwtAsync = (token, secret) =>
     new Promise((resolve, reject) => {
         jwt.verify(token, secret, (err, decoded) => {
             if (err) return reject(err);
@@ -22,7 +22,6 @@ export const VerifyToken = async (req, res, next) => {
             // console.log("No access token")
             return res.status(401).json({ message: "No session token found" });
         }
-
         try {
             // console.log("Verifying access token")
             // Try to verify access token

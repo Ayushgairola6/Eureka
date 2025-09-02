@@ -7,18 +7,19 @@ import { FaGoogle } from "react-icons/fa";
 import { CiLogin } from 'react-icons/ci';
 import { IoIosHourglass } from 'react-icons/io';
 import { MdEmail, MdPassword } from "react-icons/md";
-import { useStore } from '../store/zustandHandler.ts'
+import { useAppDispatch, useAppSelector } from '../store/hooks.tsx';
+import {setIsLogin}  from '../store/AuthSlice.ts';
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 const Login = () => {
+
     const [isPending, setIsPending] = useState('idle');
     const navigate = useNavigate();
     const Email = useRef<HTMLInputElement>(null);
     const Password = useRef<HTMLInputElement>(null);
     const [isWeak, setIsWeak] = useState(false);
-    const { isDarkMode } = useStore();
-    const loggedIn = useStore((state) => state.Login)
-
+    const {isDarkMode} = useAppSelector(state=>state.auth);
+    const dispatch = useAppDispatch();
 
     useEffect(() => {
         if (isPending === 'success') {
@@ -58,7 +59,7 @@ const Login = () => {
 
             if (response.data.message === "Login successfull") {
                 setIsPending("success");
-                loggedIn()
+                dispatch(setIsLogin(true));
                 setTimeout(() => {
                     setIsPending("idle");
                 }, 3000)
@@ -99,13 +100,13 @@ const Login = () => {
     }
 
     return (<>
-        <div className="h-screen flex items-center justify-center relative z-[2] dark:bg-black ">
+        <div className="h-screen flex items-center justify-center relative z-[2]  dark:bg-black ">
             <Toaster />
 
             {/* gradient accent background */}
             {!isDarkMode && <div className="absolute h-full w-full top-0 left-0  blur-2xl z-[-1] bg-gradient-to-br from-pink-600/30 to-fuchsia-600/30 "></div>}
 
-            <motion.div drag whileDrag={{ scale: 0.9 }} dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }} className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-black dark:to-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400">
+            <motion.div drag whileDrag={{ scale: 0.9 }} dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }} className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white/10 dark:to-indigo-900/20 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400">
                 <h1 className="text-center space-grotesk font-bold  text-2xl">Welcome back </h1>
                 <span className="text-xs text-gray-700 dark:text-gray-400 space-grotesk text-center">Login to continue contributing !</span>
 

@@ -21,29 +21,26 @@ const ChatRoom = lazy(() => import("./pages/chatRoom.tsx"));
 
 import { connectSocket, disconnectSocket } from './store/websockteSlice.ts';
 import { useAppDispatch, useAppSelector } from './store/hooks.tsx';
-import { GetUserDashboardData, setTheme } from './store/AuthSlice.ts';
+import { GetUserDashboardData, setIsLogin, setTheme } from './store/AuthSlice.ts';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer'
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 import "./App.css"
 import axios from 'axios';
-import { useStore } from './store/zustandHandler.ts'
 import { Toaster } from 'sonner';
 const DocumentationLayout = lazy(() => import('./pages/DocumentationLayout.tsx'));
 
 
 const App = () => {
   // const [currTab, setCurrTab] = useState("Home");
-  const Loggedin = useStore((state) => state.Login);
-  const loggedIn = useStore((state) => state.isLoggedIn);
   const dispatch = useAppDispatch()
-  const isDarkMode = useAppSelector(state => state.auth.isDarkMode);
+  const { isDarkMode, isLoggedIn } = useAppSelector(state => state.auth);
   const themeInitialized = useRef(false);
 
 
   // when loggedIn get userdetails from the dasboard
   useEffect(() => {
-    if (loggedIn) {
+    if (isLoggedIn === true) {
       //get the users informations 
       dispatch(GetUserDashboardData());
 
@@ -55,7 +52,7 @@ const App = () => {
         return undefined;
       };
     }
-  }, [loggedIn, dispatch])
+  }, [isLoggedIn, dispatch])
 
 
   // onMount verify the userstate
@@ -72,7 +69,7 @@ const App = () => {
           }
         })
         if (response.data.message === "verified") {
-          Loggedin()
+          dispatch(setIsLogin(true))
           return
         }
       } catch (error) {
@@ -123,11 +120,11 @@ const App = () => {
 
   return (<>
     <Suspense fallback={<div className='h-screen bg-black flex items-center justify-center     text-6xl '>
-      <ul className='rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 py-4 px-6 shadow-sm shadow-black animate-pulse bai-jamjuree-bold'>E</ul>
+      <img src='/Group 1.svg' alt="Eureka logo" className='rounded-full h-30 w-30 bg-white' />
     </div>}>
       <Router >
 
-        <Navbar  />
+        <Navbar />
         <Toaster />
         <Routes >
           <Route element={<LandingPage />} path='/'></Route>

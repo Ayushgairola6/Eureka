@@ -13,7 +13,7 @@ const ConversationDetail = () => {
   const { user } = useAppSelector(state => state.auth)
   const { DocChats } = useAppSelector(state => state.chats);
   const [current, setCurrent] = useState<string>('');
-  const [value, setValue] = useState('')
+  // const [value, setValue] = useState('')
   const navigate = useNavigate();
   useEffect(() => {
     if (id) {
@@ -31,20 +31,20 @@ const ConversationDetail = () => {
   };
 
 
-  const FindMatchingQuestion = (e: any) => {
+  // const FindMatchingQuestion = (e: any) => {
 
-    let isValid = false;
-    const EachQuestion = DocChats.some((elem) => {
-      const isLetter = elem.question.trim().split("").some((letter) => letter === e.target.value);
+  //   let isValid = false;
+  //   const EachQuestion = DocChats.some((elem) => {
+  //     const isLetter = elem.question.trim().split("").some((letter) => letter === e.target.value);
 
-      if (isLetter) {
-        isValid = true;
-      }
-    });
+  //     if (isLetter) {
+  //       isValid = true;
+  //     }
+  //   });
 
-    console.log(EachQuestion)
-    setValue(e.target.value)
-  }
+  //   console.log(EachQuestion)
+  //   setValue(e.target.value)
+  // }
 
   return (
     <div className="dark:bg-black dark:text-white bg-white text-black min-h-screen p-4 md:p-8">

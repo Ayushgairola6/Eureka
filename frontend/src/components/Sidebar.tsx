@@ -4,17 +4,18 @@ import { IoChatboxEllipsesOutline } from "react-icons/io5";
 import { GoQuestion } from "react-icons/go";
 import { motion } from 'framer-motion'
 import { MdDashboard, MdFeedback, MdLogin } from "react-icons/md";
-import { FaRegRegistered} from "react-icons/fa";
+import { FaRegRegistered } from "react-icons/fa";
 import { MdKey } from "react-icons/md";
-import { useStore } from '../store/zustandHandler.ts';
+import { useAppSelector } from '../store/hooks.tsx';
 type SidebarProps = {
     isVisble: boolean;
     setIsVisible: React.Dispatch<React.SetStateAction<boolean>>;
 };
-
+//  = useAppSelector(state => state.auth.isLoggedIn);
 const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
+    const {isLoggedIn} = useAppSelector(state => state.auth)
 
-    const LoggedIn = useStore((state) => state.isLoggedIn)
+
     return (<>
         <div onClick={() => {
             if (isVisble === true) {
@@ -30,8 +31,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
 
                 <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='/'><IoHomeOutline size={22} />Home</Link>
                 <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='/Interface'><IoChatboxEllipsesOutline size={22} />Try Now</Link>
-                {LoggedIn === false ? <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='/Login'><MdLogin size={22} />Login</Link>:<Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='user/dashboard'><MdDashboard size={22} />Dashboard</Link>}
-                {LoggedIn === false && <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='/Register'><FaRegRegistered size={22} />Register</Link>}
+                {isLoggedIn === false ? <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='/Login'><MdLogin size={22} />Login</Link> : <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='user/dashboard'><MdDashboard size={22} />Dashboard</Link>}
+                {isLoggedIn === false && <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='/Register'><FaRegRegistered size={22} />Register</Link>}
                 <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='/Feedback'><MdFeedback size={22} />Feedback</Link>
                 <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='/API/featured'><MdKey size={22} />API </Link>
                 <Link className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300" to='/About'><GoQuestion size={22} />Quick Start</Link>

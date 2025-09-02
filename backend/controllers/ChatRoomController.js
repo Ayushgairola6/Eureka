@@ -1,3 +1,4 @@
+import { getIo } from '../websocketsHandler.js/socketIoInitiater.js';
 import { supabase } from './supabaseHandler.js'
 import { v4 as uuidv4 } from 'uuid';
 
@@ -86,7 +87,7 @@ export const JoinARoom = async (req, res) => {
             return res.status(400).send({ message: "Please Login to continue" })
         }
         const JoiningCode = req.params.joiningCode;
-        // console.log(JoiningCode,req.body,'values from teh client side')
+
         if (!JoiningCode) {
             return res.status(401).send({ message: "A room code is necessary in order to join any room!" })
         }
@@ -100,11 +101,11 @@ export const JoinARoom = async (req, res) => {
         // check if there is even space left in this room if true only then continue
         const checkLimit = await checkRoomMemberLimit(roomId);
         if (checkLimit.error) {
+            console.error(checkLimit.error);
             return res.status(400).send({ message: checkLimit.error });
         } else if (checkLimit.message === "Room-full") {
             return res.send({ message: "This room is already full !" })
         }
-
 
 
         // if the user is already in that room
@@ -118,14 +119,17 @@ export const JoinARoom = async (req, res) => {
             console.warn(existingError);
             return res.status(500).send({ message: "Error checking room membership." });
         }
+        // console.log('room type is',data.room_type)
 
         // 3. The `existingMembers` array will be empty if the user is not in the room.
         if (existingMembers.length > 0) {
             return res.status(400).send({ message: "Cannot join a room twice!" });
         }
         // if room is private so we will send the notification to the users who is the admin of the room else we wiill add them to the room
-        else if (data.room_type === "Private") {
-            const notify = await SendJoinNotification(user_id, roomId);
+
+        if (data.room_type === "private") {
+            const notification_type = 'room_joining_request';
+            const notify = await SendJoinNotification(user_id, roomId, notification_type);
             if (notify.error) {
                 return res.status(400).send({ message: notify.error });
             }
@@ -134,38 +138,114 @@ export const JoinARoom = async (req, res) => {
         }
 
         //    adding the user in that room if the room is not private so it automatically makes it public
-        const { error: JoiningError } = await supabase.from("Room_and_Members").insert({ room_id: data.room_id, member_id: user_id });
-        if (JoiningError) {
-            console.warn(JoiningError)
+        const join = await JoinTheUser(data.room_id, user_id);
+        if (join.error) {
             return res.status(403).send({ message: "Error while Joining this room" });
         }
-
-        return res.status(200).send({ message: "Room joined successfully" });
+        return res.status(200).send({ message: join.message });
     } catch (RoomJoinError) {
         console.log(RoomJoinError);
         return res.status(500).send({ message: "Internal server error" })
     }
 }
 
-//send room_joining_request
-const SendJoinNotification = async (user_id, room_id) => {
+// add the user in that room
+export const JoinTheUser = async (room_id, user_id) => {
     try {
-        //see if the notifcation has already has been sent
-        const { data, error } = await supabase.from("room_joining_notification").select("user_id,room_id").eq("user_id", user_id).eq("room_id", room_id).single();
+        // if user already exists in that room
+        const { data, error } = await supabase.from("Room_and_Members").select("member_id").eq("member_id", user_id).eq("room_id", room_id).single();
 
-        if (error) {
+        if (error && error.code !== 'PGRST116') { // 'PGRST116' means 'no rows found'
+            // This is a real database error, so we should warn and return an error.
+            console.warn(error);
+            return { error: "Database error while checking membership" };
+        }
+
+        // Check if the user was found (data is not null).
+        if (data) {
+            // User already exists, so prevent them from joining again.
+            return { error: "The user is already in the room!" };
+        }
+
+        // If the user is not in the room, add them.
+        const { error: JoiningError } = await supabase.from("Room_and_Members").insert({ room_id: room_id, member_id: user_id });
+        if (JoiningError) {
+            console.warn(JoiningError);
+            return { error: "Error while joining this room" };
+        }
+        return { message: "Room joined successfully" };
+    } catch (error) {
+        return { error };
+    }
+}
+//send room_joining_request
+export const SendJoinNotification = async (user_id, room_id, notification_type) => {
+    try {
+        // find the person who is the owner of the room
+        const { data: admins, error: adminError } = await supabase.from("chat_rooms").select("created_by,room_name").eq("room_id", room_id).single();
+        // console.log(admins)
+
+        if (adminError) {
+            console.error('Error fetching room admins:', adminError);
+            return { error: "Error while processing your request" };
+        }
+
+        if (!admins || admins.length === 0) {
+            return { error: "No administrators found for this room" };
+        }
+
+
+        // Get requesting user's info
+        const { data: requestingUser, error: userError } = await supabase
+            .from('users')
+            .select('id,username, email')
+            .eq('id', user_id)
+            .single();
+
+        if (userError) {
+            console.error('Error fetching user info:', userError);
+            return { error: "Error while processing your request" };
+        }
+
+        // check if the notification has already been sent
+        const { data: check, error: checkerror } = await supabase.from("notifications").select("metadata").eq("user_id", admins.created_by).eq("notification_type", notification_type);
+
+        if (checkerror) {
+            console.error(checkerror)
+
+            return { error: "Error while processing your request" };
+        } else if (check.length > 0) {
+            const existingRequest = check.find(element =>
+                element.metadata?.room_id === room_id &&
+                element.metadata?.sent_by_id === user_id
+            );
+
+            if (existingRequest) {
+                return { message: "Room joining request has been sent already!" };
+            }
+        }
+
+        // creating a metadata object
+        const metadata = {
+            room_id: room_id, room_name: admins.room_name,
+            sent_by_username: requestingUser.username,
+            sent_by_id: requestingUser.id
+        }
+        // add a new notification
+        const { data: newNotification, error: insertError } = await supabase.from("notifications").insert({ user_id: admins.created_by, notification_type: notification_type, notification_message: `${requestingUser.username} wants to join your room`, title: "Room-joining-request", metadata: metadata }).select("*");
+
+        if (insertError) {
+            console.error(insertError)
             return { error: "Error while processing your request" }
         }
-        if (data) {
-            return { message: "Request has already been sent!" }
-        }
+        const io = getIo()
+        const { data: adminNotifications, errro: geterror } = await supabase.from("notifications").select("*").eq("user_id", admins.created_by);
+        if (geterror) {
+            io.to(admins.created_by).emit("new_Notification", { message: "Unable to update your notifications" })
 
-        // else store the notification value in the database
-        const { error: notifyError } = await supabase.from("room_joining_notification").insert({ user_id: user_id, room_id: room_id });
-
-        if (notifyError) {
-            return { error: "Error while sending a request" };
         }
+        io.to(admins.created_by).emit("new_Notification", adminNotifications)
+        // io.to(user_id).emit("new_Notification")
         return { message: "The admin of the room has been notified !" }
 
     } catch (error) {
@@ -175,20 +255,34 @@ const SendJoinNotification = async (user_id, room_id) => {
 }
 
 // check member limit
-const checkRoomMemberLimit = async (room_id) => {
+export const checkRoomMemberLimit = async (room_id) => {
     try {
-        const { data: limit, error: limitError } = await supabase.from("chat_rooms").select("participant_count").eq("room_id", room_id).single();
-        if (limitError) {
-            return { error: 'error while processing your request' };
-        }
-        if (limit.participant_count < 3) {
-            return { message: "Space-left" }
-        } else {
+        // Get room participant limit
+        const { data: room, error: roomError } = await supabase
+            .from("chat_rooms")
+            .select("participant_count")
+            .eq("room_id", room_id)
+            .single();
+
+        if (roomError) return { error: 'Error fetching room details' };
+
+        // Get current member count
+        const { count: currentCount, error: countError } = await supabase
+            .from("Room_and_Members")
+            .select('*', { count: 'exact', head: true })
+            .eq('room_id', room_id);
+
+        if (countError) return { error: 'Error counting room members' };
+
+        // Check if room is full
+        if (currentCount >= room.participant_count) {
             return { message: "Room-full" };
         }
+
+        return { message: "Space-available" };
     } catch (error) {
-        console.error(error);
-        return { error };
+        console.error("Room limit check error:", error);
+        return { error: "Internal server error" };
     }
 }
 //Get room chat history
@@ -236,7 +330,6 @@ export const GetDocumentChatHistory = async (req, res) => {
 
         const { data, error } = await supabase.from("Conversation_History").select("created_at,question,AI_response,user_id").eq("document_id", document_id).eq("user_id", user_id);
 
-        console.log(data)
         if (error) {
             console.error(error);
             return res.status(404).send({ message: "No such room found" });

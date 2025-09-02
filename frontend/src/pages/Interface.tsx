@@ -9,8 +9,7 @@ const SubCategories = lazy(() => import('@/components/subcategories.tsx'));
 const PrivateDocuments = lazy(() => import("@/components/PrivateDocuments.tsx"));
 const QueryType = lazy(() => import("@/components/Query_type.tsx"))
 import { motion } from 'framer-motion'
-import { useStore } from '../store/zustandHandler.ts';
-import axios from 'axios';
+// import axios from 'axios';
 import { IoOptions } from 'react-icons/io5';
 import MarkdownRenderer from '@/components/safeHtml.tsx';
 import { IoDocument } from 'react-icons/io5';
@@ -19,20 +18,25 @@ import { IoHeartHalfOutline } from "react-icons/io5";
 import { BiQuestionMark } from 'react-icons/bi';
 import { BsStars } from "react-icons/bs";
 import { useAppSelector, useAppDispatch } from '../store/hooks.tsx';
-import { setQuestion, setAnswer, setLoading, setLikeness, setPrivateResponse, setShowDocs, setShowOptions, setShowType, setSuggestion } from '../store/InterfaceSlice.ts';
-const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
+import {
+  setQuestion, setAnswer, setShowDocs, setShowOptions,
+  setShowType, UploadDocuments, QueryAIQuestions,
+  QueryPrivateDocuments, AuthenticityResponseHandler,
+  setLikeness
+} from '../store/InterfaceSlice.ts';
+// const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 function Interface() {
   const dispatch = useAppDispatch();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-
-  const loggedIn = useStore((state) => state.isLoggedIn)
+  const loggedIn = useAppSelector(state => state.auth.isLoggedIn);
   const [selectedDoc, setSelectedDoc] = useState<string>('');
-  const [docId, setDocId] = useState<Array<{ uploaded_by: string; doc_id: string;[key: string]: any }>>([]);
+  // const [docId, setDocId] = useState<Array<{ uploaded_by: string; doc_id: string;[key: string]: any }>>([]);
+  const docId = useAppSelector(state => state.interface.docUser)
 
-  const { answer, question, loading, isVisible ,category,suggestion,shhowUserForm,showDocs,showSubcategory,showType,shwoOptions,visibility,subCategory,queryType,likeness,privateResponse} = useAppSelector(state => state.interface);
+  const { answer, question, loading, isVisible, category, suggestion, shhowUserForm, showDocs, showSubcategory, showType, shwoOptions, visibility, subCategory, queryType, likeness, privateResponse } = useAppSelector(state => state.interface);
 
   // uploading a document
   const handleUpload = async (UserData: FormData) => {
@@ -48,7 +52,6 @@ function Interface() {
 
     toast.info(visibility === "Public" ? "Your Chosen Visiblity is Public , now everyone will be able to access the the information you shared !" : "Your Chosen Visibility is Private , this document will be only visible to you in you dashboard !")
 
-    dispatch(setLoading(true));
     const formData = new FormData();
     formData.append('file', selectedFile);
     formData.append("category", category);
@@ -58,32 +61,37 @@ function Interface() {
     formData.append("feedback", UserData.get("feedback") as string);
 
 
-    try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      const response = await axios.post(`${BaseApiUrl}/api/upload-pdf`, formData, {
-        withCredentials: true,
-        headers: {
-          "Authorization": `Bearer ${AuthToken}`,
-        }
-      });
+    // try {
+    //   const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+    //   const response = await axios.post(`${BaseApiUrl}/api/upload-pdf`, formData, {
+    //     withCredentials: true,
+    //     headers: {
+    //       "Authorization": `Bearer ${AuthToken}`,
+    //     }
+    //   });
 
-      if (response.data.message === "Upload successfull") {
-        toast.message(`✅ ${response.data.message}`);
-      } else {
-        toast.info(`❌ Failed to Upload the File, Please try again later.`);
+    //   if (response.data.message === "Upload successfull") {
+    //     toast.message(`✅ ${response.data.message}`);
+    //   } else {
+    //     toast.info(`❌ Failed to Upload the File, Please try again later.`);
+    //   }
+    // } catch (err: any) {
+    //   toast.error(`❌ Network error: ${err.message}`);
+    // } finally {
+    //   dispatch(setLoading(false));
+    // }
+    dispatch(UploadDocuments(formData)).unwrap().then((res:any) => {
+      if (res.message) {
+        toast.message(res.message)
       }
-    } catch (err: any) {
-      toast.error(`❌ Network error: ${err.message}`);
-    } finally {
-      dispatch(setLoading(false));
-    }
+    }).catch(err => toast.error(err.message))
   };
 
 
 
   // Asking question from the AI
   const handleAsk = async () => {
-    const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+    // const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
     if (selectedDoc || selectedDoc !== "") {
       await QueryPrivateDocument()
       return;
@@ -95,65 +103,87 @@ function Interface() {
     }
 
 
-    dispatch(setLoading(true));
-    dispatch(setAnswer(""))
-    try {
-      const response = await axios.post(`${BaseApiUrl}/api/ask-pdf`, { question: question, category, subCategory: subCategory }, {
-        withCredentials: true,
-        headers: {
-          "Authorization": `Bearer ${AuthToken}`
-        }
-      });
-      // console.log(response.data)
-      if (response.data.message === "Response found") {
-        setDocId((prev) => [...prev, ...response.data.doc_id])
-        dispatch(setAnswer(response.data.answer));
-      } else {
-        toast.error(`❌${response.data.answer}`);
-      }
-      // console.log(response.data)
+    // try {
+    //   const response = await axios.post(`${BaseApiUrl}/api/ask-pdf`, { question: question, category, subCategory: subCategory }, {
+    //     withCredentials: true,
+    //     headers: {
+    //       "Authorization": `Bearer ${AuthToken}`
+    //     }
+    //   });
+    //   // console.log(response.data)
+    //   if (response.data.message === "Response found") {
 
-    } catch (err: any) {
-      // console.log(err)
-      toast.error(`❌ Network error: ${err.message}`);
-    } finally {
-      dispatch(setLoading(false));
+    //     setDocId((prev) => [...prev, ...response.data.doc_id])
+    //     dispatch(setAnswer(response.data.answer));
+    //   } else {
+    //     toast.error(`❌${response.data.answer}`);
+    //   }
+    //   // console.log(response.data)
+
+    // } catch (err: any) {
+    //   // console.log(err)
+    //   toast.error(`❌ Network error: ${err.message}`);
+    // } finally {
+    //   dispatch(setLoading(false));
+    // }
+
+    const data = {
+      question: question,
+      category: category,
+      subCategory: subCategory,
+
     }
+    dispatch(QueryAIQuestions(data)).unwrap().then((res) => {
+      if (res.message) {
+        toast.message(res.message)
+        dispatch(setAnswer(""))
+      }
+    }).catch(err => toast.error(err.message))
+
   };
 
   const QueryPrivateDocument = async () => {
-    try {
+    // try {
 
-      if (!question) {
-        toast.info("Question cannot be empty !");
-        return;
-      }
-      if (!selectedDoc) {
-        toast.info("Please select a document before querying");
-        return;
-      }
-      if (!queryType) {
-        toast.info("Please select a query type");
-        return;
-      }
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      dispatch(setLoading(true));
-
-      const privateDocResponse = await axios.post(`${BaseApiUrl}/api/privateDocs/ask`, { question: question, docId: selectedDoc, query_type: queryType }, {
-        withCredentials: true, headers: {
-          'Authorization': `Bearer ${AuthToken}`
-        }
-      })
-      dispatch(setLoading(false));
-
-      dispatch(setPrivateResponse(privateDocResponse.data.answer));
-      return privateDocResponse.data.answer
-    } catch (err: any) {
-      // console.log(err)
-      toast.error(`❌ Network error: ${err.message}`);
-    } finally {
-      dispatch(setLoading(false));
+    if (!question) {
+      toast.info("Question cannot be empty !");
+      return;
     }
+    if (!selectedDoc) {
+      toast.info("Please select a document before querying");
+      return;
+    }
+    if (!queryType) {
+      toast.info("Please select a query type");
+      return;
+    }
+    //   const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+
+    //   const privateDocResponse = await axios.post(`${BaseApiUrl}/api/privateDocs/ask`, { question: question, docId: selectedDoc, query_type: queryType }, {
+    //     withCredentials: true, headers: {
+    //       'Authorization': `Bearer ${AuthToken}`
+    //     }
+    //   })
+
+    //   dispatch(setPrivateResponse(privateDocResponse.data.answer));
+    //   return privateDocResponse.data.answer
+    // } catch (err: any) {
+    //   // console.log(err)
+    //   toast.error(`❌ Network error: ${err.message}`);
+    // } finally {
+    //   dispatch(setLoading(false));
+    // }
+    const data = {
+      question: question,
+      docId: selectedDoc,
+      query_type: queryType
+    }
+
+    dispatch(QueryPrivateDocuments(data)).unwrap().then((res) => {
+      if (res.message) {
+        toast.message(res.message)
+      }
+    }).catch(err => toast.error(err.message))
   }
 
 
@@ -166,32 +196,42 @@ function Interface() {
       toast("Some fields are missing !");
       return;
     }
-    try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+    // try {
+    //   const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
 
-      const response = await axios.post(`${BaseApiUrl}/api/doc/authenticity`, { likeness: likeness, suggestions: suggestion, docId }, {
-        withCredentials: true, headers: {
-          'Authorization': `Bearer ${AuthToken}`
-        }
-      })
-      // setAnswer("");
-      dispatch(setLikeness(""));
-      dispatch(setSuggestion(""));
+    //   const response = await axios.post(`${BaseApiUrl}/api/doc/authenticity`, { likeness: likeness, suggestions: suggestion, docId }, {
+    //     withCredentials: true, headers: {
+    //       'Authorization': `Bearer ${AuthToken}`
+    //     }
+    //   })
+    //   // setAnswer("");
+    //   dispatch(setLikeness(""));
+    //   dispatch(setSuggestion(""));
 
-      if (response.data.message === 'Feedback recorded successfully') {
-        toast.message("Thank you for your feedback !")
-      } else {
-        toast.message(response.data.message);
-      }
-    } catch (error: any) {
-      // console.log(error);
-      toast.error(error.message);
+    //   if (response.data.message === 'Feedback recorded successfully') {
+    //     toast.message("Thank you for your feedback !")
+    //   } else {
+    //     toast.message(response.data.message);
+    //   }
+    // } catch (error: any) {
+    //   // console.log(error);
+    //   toast.error(error.message);
 
+    // }
+    const data = {
+      likeness: likeness,
+      suggestions: suggestion,
+      docId: docId
     }
+    dispatch(AuthenticityResponseHandler(data)).unwrap().then((res:any) => {
+      if (res.message) {
+        toast.message(res.message)
+      }
+    }).catch(err => toast.error(err.message))
   }
 
   return (
-    <div className=" mx-auto p-4 md:p-8 min-h-screen max-h-[90vh]  flex flex-col items-center justify-center  dark:bg-black text-gray-900 dark:text-gray-50 z-[1] relative">
+    <div className=" mx-auto p-4 md:p-8 min-h-screen   flex flex-col items-center justify-center  dark:bg-black text-gray-900 dark:text-gray-50 z-[1] relative">
       <div className={`absolute top-0 right-3 flex flex-wrap  justify-center items-center ${shwoOptions ? " translate-y-0 opacity-100" : " -translate-y-200 opacity-0"} transition-all duration-300 z-[1] `}>
         {isVisible === true || showSubcategory === true || showDocs === true ? null : <UserForm
           selectedFile={selectedFile}
@@ -203,11 +243,11 @@ function Interface() {
         />}
 
         {shhowUserForm === true || showSubcategory === true || showDocs === true ? null : <DropDown
-          
+
         />}
       </div>
       {/* draggable question mark */}
-      <PrivateDocuments selectedDoc={selectedDoc} setSelectedDoc={setSelectedDoc}  />
+      <PrivateDocuments selectedDoc={selectedDoc} setSelectedDoc={setSelectedDoc} />
 
 
       {/* the dropdown */}
@@ -218,7 +258,7 @@ function Interface() {
 
 
       {/* rest of the page */}
-      <Card className="w-full max-w-2xl border border-gray-400 max-h-[80vh] bg-gray-100 dark:bg-gradient-to-br dark:from-black dark:to-gray-800 rounded-lg  overflow-y-scroll">
+      <Card className="lg:w-1/2 md:w-4/5 w-full  overflow-y-scroll min-h-[85vh] bg-gray-100 dark:bg-white/10 rounded-md  ">
         {/* private docs */}
 
         <CardContent>
@@ -258,14 +298,14 @@ function Interface() {
                   </ul>
                   {/* query type for personal documents */}
                   {selectedDoc && <ul onClick={() => dispatch(setShowType(!showType))} className={`  cursor-pointer ${selectedDoc ? "bg-blue-400" : "bg-gray-200"} rounded-full p-1  h-auto relative`}><BiQuestionMark size={18} />
-                    <QueryType 
+                    <QueryType
                     />
                   </ul>}
                 </section>
 
                 {/* private documents of the user */}
 
-                <ul className={`bai-jamjuree-regular text-sm  flex items-center justify-end gap-2 CustPoint dark:text-gray-200 text-black`} onClick={() => dispatch(setShowDocs(!showDocs))}>{selectedDoc !== "" ? selectedDoc : "MyDocs"} <IoDocument /></ul>
+                <ul className={`bai-jamjuree-regular text-sm  flex items-center justify-end gap-2 CustPoint dark:text-gray-200 text-black`} onClick={() => dispatch(setShowDocs(!showDocs))}>{selectedDoc !== "" ? selectedDoc : "PrivateDocs"} <IoDocument /></ul>
               </div>
 
               {/* action button */}
@@ -277,10 +317,10 @@ function Interface() {
                 </>)}
               </motion.button>
 
-            </div>  
+            </div>
 
             {/* Answer Display Section */}
-            {answer || privateResponse && (
+            {answer || privateResponse ? (
               <div className="grid  w-full items-start gap-5 mt-4 max-h-[50vh] min-h-[200px] overflow-y-auto">
                 <Label className='space-grotesk text-sm font-semibold'>Response!</Label>
                 <div className="bg-gray-100 dark:bg-black rounded-md border border-gray-300 p-4 h-full overflow-auto">
@@ -290,7 +330,9 @@ function Interface() {
                   />
                 </div>
               </div>
-            )}
+            ) : <div className='flex items-center justify-center space-grotesk text-gray-400 '>
+              <h1>Response will be visible here</h1>
+            </div>}
             {/* upvote and downvote system */}
             {answer ? (
               <div className="py-6 px-4 rounded-xl bg-white dark:bg-gray-900 shadow-md mt-6 w-full">
@@ -326,39 +368,29 @@ function Interface() {
                 )}
                 <div className="flex flex-col md:flex-row md:items-start items-stretch justify-between gap-6 w-full">
                   <div className="bai-jamjuree-regular text-sm flex flex-col  gap-2 w-full md:w-1/3">
-                    <section className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "upvote" ? "bg-green-300 text-black " : "dark:bg-gray-600 bg-white  border-green-200"}`}>
-                      <input
-                        onChange={(e) => dispatch(setLikeness(e.target.value))}
-                        value="upvote"
-                        name="quality"
-                        type="radio"
-                        className="ml-1"
-                      />
-                      <FaThumbsUp />
+                    <section
+                      onClick={() => dispatch(setLikeness("upvote"))}
+
+                      className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "upvote" ? "bg-green-300 text-black " : "dark:bg-white/20 bg-white  border-green-200"}`}>
+
+                      <FaThumbsUp color='green' />
                       <label htmlFor="Helpful">Helpful</label>
 
                     </section>
-                    <section className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "downvote" ? "bg-red-300 text-black " : "dark:bg-gray-600 bg-white  border-red-200"}`}>
-                      <input
-                        onChange={(e) => dispatch(setLikeness(e.target.value))}
-                        value="downvote"
-                        name="quality"
-                        type="radio"
-                        className="ml-1"
-                      />
-                      <FaThumbsDown />
+                    <section
+                      onClick={() => dispatch(setLikeness("downvote"))}
+
+                      className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "downvote" ? "bg-red-300 text-black " : "dark:bg-white/20 bg-white  border-red-200"}`}>
+
+                      <FaThumbsDown color='red' />
                       <label htmlFor="Incorrect">Flag incorrect</label>
 
                     </section>
-                    <section className={`flex items-center gap-2 border dark  rounded-lg p-1 ${likeness === "partial_upvote" ? "bg-sky-300 text-black " : "bg-white dark:bg-gray-600  border-sky-200"}`}>
-                      <input
-                        onChange={(e) => dispatch(setLikeness(e.target.value))}
-                        value="partial_upvote"
-                        name="quality"
-                        type="radio"
-                        className="ml-1"
-                      />
-                      <IoHeartHalfOutline />
+                    <section
+                      onClick={() => dispatch(setLikeness("partial_upvote"))}
+                      className={`flex items-center gap-2 border dark  rounded-lg p-1 ${likeness === "partial_upvote" ? "bg-sky-300 text-black " : "bg-white dark:bg-white/20  border-sky-200"}`}>
+
+                      <IoHeartHalfOutline color='blue' />
                       <label htmlFor="Missing">Missing some information </label>
 
                     </section>

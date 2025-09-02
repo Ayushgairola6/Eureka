@@ -4,24 +4,24 @@ import { Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { toast, Toaster } from 'sonner';
 import { FiMessageSquare, FiSend, FiStar, FiUser } from 'react-icons/fi';
-import { useStore } from '../store/zustandHandler.ts';
+import { useAppSelector } from '../store/hooks.tsx';
 import { FaResearchgate } from 'react-icons/fa';
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 const Feedback = () => {
     const InputRef = useRef<HTMLTextAreaElement>(null);
     const helpRef = useRef<HTMLInputElement>(null);
-    const LoggedIn = useStore((state) => state.isLoggedIn);
+    const LoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
     const [isSending, setIsSending] = useState('idle')
 
     const HandleFormSubmit = async () => {
         setIsSending("pending")
         if (LoggedIn === false) {
-            toast("Please Login to continue!");
+            toast.info("Please Login to continue!");
             return;
         }
         if (InputRef?.current?.value === "" || helpRef.current?.value === "") {
-            toast("All fields are neccessary !")
+            toast.info("All fields are neccessary !")
             setIsSending("idle")
 
             // console.log(InputRef?.current?.value, helpRef.current?.value)
@@ -43,14 +43,13 @@ const Feedback = () => {
                 // InputRef?.current?.value = "";
                 // helpRef?.current?.value = "";
                 setIsSending("idle")
-                toast("Thanks for your valuable feedback !")
+                toast.message("Thanks for your valuable feedback !")
             } else {
                 setIsSending("idle")
-                toast("There was some error on the server , Please try again later !")
+                toast.error("There was some error on the server , Please try again later !")
             }
         } catch (error) {
             setIsSending("idle")
-            console.error(error);
             throw new Error("Error while Submitting Feedback");
         }
     }

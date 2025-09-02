@@ -1,22 +1,22 @@
 import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
+const app = express();
+const httpServer = createServer(app);
+import { initializeSocketIo } from "./websocketsHandler.js/socketIoInitiater.js"
+initializeSocketIo(httpServer)
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-// importing all the routers 
+dotenv.config();
+
+
 import { Router } from './routers/filerouter.js';
 import { AuthRouter } from './routers/AuthRouter.js';
 import { ReviewRouter } from './routers/ReviewRouter.js';
 import { API_Router } from './routers/ApiRouter.js'
 import { SdkRouter } from './routers/sdkRouter.js';
 import { ChatsRouter } from './routers/ChatsRouter.js';
-// necessary middlewares and packages installtion
-
-import cookieParser from 'cookie-parser';
-dotenv.config();
-const app = express();
-import cors from 'cors';
 import './controllers/supabaseHandler.js'
-import { createServer } from 'http';
- const httpServer = createServer(app);
-import {initializeSocketIo} from "./websocketsHandler.js/socketIoInitiater.js"
 
 // import formData from 'express-form-data';
 app.use(cors({
@@ -45,7 +45,6 @@ app.use("/api/", ReviewRouter);
 app.use("/api/", API_Router);
 app.use("/api/", SdkRouter);
 app.use("/api/", ChatsRouter);
-initializeSocketIo(httpServer)
 
 
 httpServer.listen(process.env.PORT, "0.0.0.0", () => {

@@ -10,7 +10,6 @@ interface ChatRoomState {
     RoomCreationIspending: boolean;
     isJoiningRoom: boolean;
     DocChats: DocChats[];
-    notificationCount: number
     isOpen:boolean
 }
 interface RoomData {
@@ -34,7 +33,6 @@ const initialState: ChatRoomState = {
     RoomCreationIspending: false,
     isJoiningRoom: false,
     DocChats: [],
-    notificationCount: 0,
     isOpen:false
 }
 

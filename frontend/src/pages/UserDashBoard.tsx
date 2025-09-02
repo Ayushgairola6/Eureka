@@ -6,13 +6,14 @@ import { FiUsers } from 'react-icons/fi';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { TbTextCaption } from "react-icons/tb";
 import { useEffect, useState } from 'react';
-import { FaArrowRight, FaCloudSunRain, FaUserSecret } from "react-icons/fa";
+import { FaArrowDown, FaArrowRight, FaCloudSunRain, FaUserSecret } from "react-icons/fa";
 import { TbSunset2 } from "react-icons/tb";
 import { IoSunnyOutline } from "react-icons/io5";
 import { MdRoomPreferences } from 'react-icons/md';
 import { JoinAChatRoom } from '../store/chatRoomSlice.ts';
 import { toast, Toaster } from 'sonner';
 import { joinAChatRoom } from '../store/websockteSlice.ts';
+// import {NewUserNotification} from '../store/AuthSlice.ts'
 const CreateRoom = lazy(() => import("@/components/createRoom.tsx"));
 
 const UserDashboard = () => {
@@ -26,6 +27,8 @@ const UserDashboard = () => {
     const InputRef = useRef<HTMLInputElement>(null)
     const [score, setScore] = useState<number>(0);
     const [showcard, setShowCard] = useState(false);
+    const [open, setOpen] = useState(false);
+    const [IncreaseHeight, setIncreaseHeight] = useState(false);
     const isDarkMode = useAppSelector(state => state.auth.isDarkMode);
     // Mock conversations
 
@@ -42,10 +45,15 @@ const UserDashboard = () => {
     }, [Feedback]);
 
     const handleJoinRoom = async () => {
-        if (InputRef?.current?.value) {
+        if (InputRef?.current?.value && user) {
             try {
-                const result = await dispatch(JoinAChatRoom(InputRef.current.value)).unwrap();
-                toast.success(result.message);
+                const result = await dispatch(JoinAChatRoom(InputRef.current.value)).unwrap().then((res) => {
+                    if (res && res.message) {
+                        return res.message
+                    }
+                });
+                toast.info(result);
+
             } catch (rejectedAction: any) {
                 console.error('Rejected Action:', rejectedAction);
                 toast.error(rejectedAction.message);
@@ -79,20 +87,7 @@ const UserDashboard = () => {
 
                 </div>
 
-                {/* <nav className="space-y-2 bai-jamjuree-regular">
-                    <Link to="#" className="block py-2 px-4 rounded-lg dark:hover:bg-gray-800 hover:bg-gray-100 transition-all">
-                        Dashboard
-                    </Link>
-                    <Link to="#" className=" py-2 px-4 rounded-lg dark:hover:bg-gray-800 hover:bg-gray-100 transition-all flex items-center gap-2">
-                        <FiMessageSquare /> My Questions
-                    </Link>
-                    <Link to="#" className=" py-2 px-4 rounded-lg dark:hover:bg-gray-800 hover:bg-gray-100 transition-all flex items-center gap-2">
-                        <FiStar /> Saved Conversations
-                    </Link>
-                    <Link to="#" className=" py-2 px-4 rounded-lg dark:hover:bg-gray-800 hover:bg-gray-100 transition-all flex items-center gap-2">
-                        <FiSettings /> Settings
-                    </Link>
-                </nav> */}
+
             </div>
 
             {/* Main Content */}
@@ -164,11 +159,13 @@ const UserDashboard = () => {
                     </motion.div>
                 </div>
 
-                {/* Recent Conversations */}
-                <section className="mb-8">
+                {/* User  Conversations and documents */}
+                <section className={`mb-8 dark:bg-white/5 bg-black/5 p-2 rounded-lg ${open === true ? "h-90 overflow-scroll" : "h-50 overflow-hidden"} transition-discrete ease-linear duration-500`}>
                     <div className="flex justify-between items-center mb-4 bai-jamjuree-regular">
                         <h2 className="text-xl font-bold ">Your documents</h2>
-                        <Link to="#" className="text-sm text-sky-500 hover:underline">View all</Link>
+                        <button onClick={() => setOpen(!open)} className="ext-xs text-green-500 cursor-pointer flex items-center justify-center gap-2">View all
+                            <FaArrowDown className={`${open === false ? "rotate-0" : "rotate-180"} transition-discrete duration-500`} size={10} />
+                        </button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 space-grotesk">
@@ -176,7 +173,7 @@ const UserDashboard = () => {
                             <motion.div
                                 key={conv.id}
                                 whileHover={{ scale: 1.02 }}
-                                className="p-4 rounded-lg border dark:border-gray-800 border-gray-200 dark:hover:bg-gray-900/50 hover:bg-gray-50 transition-all cursor-pointer"
+                                className="p-4 rounded-lg border bg-gray-100 dark:bg-black dark:border-gray-800 border-gray-200  transition-all cursor-pointer"
                             >
                                 <div className="flex justify-between items-start">
                                     <h3 className="font-medium space-grotesk flex items-center justify-center gap-2"><TbTextCaption color='green' /> {conv.feedback}</h3>
@@ -184,7 +181,7 @@ const UserDashboard = () => {
                                 </div>
                                 <p className="text-sm opacity-70 mt-2">{conv.id}...</p>
                                 <div className="flex justify-end items-center mt-4">
-                                    <Link to={`/User/document_chat_history/${conv.document_id}`} className="text-xs text-sky-500 hover:underline">View full chat →</Link>
+                                    <Link to={`/User/document_chat_history/${conv.document_id}`} className="text-xs text-blue-500 hover:underline">View full chat →</Link>
                                 </div>
                             </motion.div>
                         )) : <div className='dark:bg-white/10 bg-black/20 border border-gray-400 rounded-lg w-full p-4 flex '>
@@ -193,11 +190,15 @@ const UserDashboard = () => {
                     </div>
                 </section>
 
-                {/* Rooms 229675 Section */}
-                <section>
+                {/* Rooms  Section */}
+                <section className={`${IncreaseHeight === true ? "h-90 overflow-scroll" : "h-50 overflow-hidden"} transition-discrete ease-linear duration-500`}>
                     <div className="flex justify-between items-center mb-4 space-grotesk">
                         <h2 className="text-xl font-bold">Chatrooms</h2>
-                        <button onClick={() => setShowCard(!showcard)} className="text-sm text-sky-500 hover:underline">Creat New</button>
+                        <section className='inline-flex gap-5'>
+                            <button onClick={() => setShowCard(!showcard)} className="text-sm text-sky-500 hover:underline">Creat New +</button>
+                            <button className="text-xs text-green-500 cursor-pointer flex items-center justify-center gap-2" onClick={() => setIncreaseHeight(!IncreaseHeight)}>{IncreaseHeight === true ? "Hide" : "View all"} <FaArrowDown className={`${IncreaseHeight === false ? "rotate-0" : "rotate-180"} transition-discrete duration-500`} size={10} /></button>
+                        </section>
+
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bai-jamjuree-regular">
@@ -206,12 +207,12 @@ const UserDashboard = () => {
                                 key={room?.room_id}
                                 whileHover={{ y: -4 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={() => console.log(room)}
+                                // onClick={() => console.log(room)}
                                 className="w-full sm:w-[300px] p-4 rounded-xl border border-gray-400 bg-white dark:bg-white/5 shadow-sm hover:shadow-md transition-all cursor-pointer relative"
                             >
                                 {/* Admin badge */}
                                 {user?.id === room.chat_rooms.created_by && (
-                                    <span className="absolute top-3 right-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                    <span className="absolute top-3 right-3 bg-lime-100  text-green-600  text-xs font-medium px-2.5 py-0.5 rounded-full">
                                         Admin
                                     </span>
                                 )}
@@ -261,11 +262,12 @@ const UserDashboard = () => {
                                                     const roomInfo = {
                                                         room_id: room.room_id,
                                                         room_name: room.chat_rooms.room_name,
-                                                        username: user.username
+                                                        username: user.username,
+                                                        user_id: user.id
                                                     };
 
                                                     // Dispatch the join action
-                                                    dispatch(joinAChatRoom(roomInfo));
+                                                    dispatch(joinAChatRoom(roomInfo))
                                                 }
                                             }}>
                                                 <Link className=' text-indigo-600  text-xs ' to={`/chatroom/${room?.room_id}`}>Enter</Link>

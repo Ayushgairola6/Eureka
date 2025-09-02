@@ -3,7 +3,7 @@ import {
     FiLock,
     FiChevronDown
 } from 'react-icons/fi';
-import { useState, lazy } from 'react';
+import { useState } from 'react';
 // import { BiPurchaseTag } from 'react-icons/bi';
 import { toast, Toaster } from 'sonner';
 import { Link } from 'react-router';

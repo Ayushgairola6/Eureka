@@ -7,11 +7,11 @@ import CheckoutForm from './stripeCheckoutForm.tsx'; // Your checkout form compo
 const stripePromise = loadStripe('pk_test_51BTUDGJAJfZb9HEBwDg86TN1KNprHjkfipXmEDMb0gSCassK5T3ZfxsAbcgKVmAIXF7oZ6ItlZZbXO6idTHE67IM007EwQ4uN3');
 
 // This is where you would fetch your client secret from your backend
-const fetchClientSecret = async () => {
-  const response = await fetch('/create-payment-intent', { method: 'POST' });
-  const { clientSecret } = await response.json();
-  return clientSecret;
-};
+// const fetchClientSecret = async () => {
+//   const response = await fetch('/create-payment-intent', { method: 'POST' });
+//   const { clientSecret } = await response.json();
+//   return clientSecret;
+// };
 
 export default function StripeForm() {
   const options = {

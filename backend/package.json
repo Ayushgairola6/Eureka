@@ -27,6 +27,7 @@
     "nodemailer": "^7.0.5",
     "pdf-parse": "^1.1.1",
     "socket.io": "^4.8.1",
+    "socket.io-cookie-parser": "^1.0.0",
     "stripe": "^18.4.0",
     "uuid": "^11.1.0"
   },

@@ -1,10 +1,11 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { supabase } from './supabaseHandler.js';
+import { checkRoomMemberLimit, JoinTheUser } from './chatRoomController.js'
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 dotenv.config();
-
+import { getIo } from '../websocketsHandler.js/socketIoInitiater.js';
 // nodemailer transporter
 const transporter = nodemailer.createTransport({
     host: 'smtp.sendgrid.net',
@@ -15,7 +16,7 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-
+// socket instance
 export const HandleUserRegistration = async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -269,7 +270,37 @@ export const GetUserChatRooms = async (user_id) => {
         return { error };
     }
 };
+export const CountNotifications = async (user_id) => {
+    try {
+        const { count, error } = await supabase
+            .from('notifications')
+            .select('user_id', { count: 'exact', head: true })
+            .eq('user_id', user_id);
+        if (error) {
+            console.error("Supabase error (CountNotifications):", error);
+            return { error: error }
+        }
+        return { notificationcount: count || 0 }
+    } catch (error) {
+        console.error(error)
+        return { error }
+    }
+}
 
+export const GetNotificationsInformations = async (user_id) => {
+    try {
+        const { data, error } = await supabase.from("notifications").select("*").eq("user_id", user_id);
+        if (error) {
+            console.error("Supabase error (CountNotifications):", error);
+            return { error: error }
+        }
+
+        return { notifications: data || [] };
+    } catch (err) {
+        console.error(err)
+        return { err }
+    }
+}
 // Main function to get all user data
 export const GetUserAccountDetails = async (req, res) => {
     try {
@@ -281,12 +312,14 @@ export const GetUserAccountDetails = async (req, res) => {
         }
 
         // Fetch all data in parallel to improve performance
-        const [userData, countData, votesData, chatroomsData, Contributions_user_id_fkey] = await Promise.all([
+        const [userData, countData, votesData, chatroomsData, Contributions_user_id_fkey, notificationcount, notifications] = await Promise.all([
             GetUserData(user_id),
             GetUserQuestionAskedCount(user_id),
             GetUserLikeCount(user_id),
             GetUserChatRooms(user_id),
             GetUserContributions(user_id),
+            CountNotifications(user_id),
+            GetNotificationsInformations(user_id)
         ]);
 
         // Consistent error handling
@@ -306,6 +339,8 @@ export const GetUserAccountDetails = async (req, res) => {
             Querycount: countData.count,
             FeedbackCounts: votesData?.data?.length > 0 ? votesData.data[0].Doc_Feedback : null,
             chatrooms: chatroomsData.data,
+            notificationcount: notificationcount.notificationcount,
+            notifications: notifications.notifications,
             message: "User data found"
         });
 
@@ -314,3 +349,149 @@ export const GetUserAccountDetails = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+
+// Accept or reject room joining request
+
+export const Accept_Or_rejectRequest = async (req, res) => {
+    try {
+        const io = getIo()
+
+        const user_id = req.user.user_id;
+
+        if (!user_id || typeof user_id !== "string" || !req.user.username) {
+            console.log("Accept_Or_rejectRequest error in user_id");
+            return res.status(400).json({ message: "Invalid user id" });
+        }
+
+        const { action_type, requested_user_id, room_id, room_name, admin_id } = req.params;
+
+        // action type is either accept or reject 
+        // admin_id is the id of the admin of the room who recieved the notification
+        // requested_userid is the id of the user sent the room joining request
+        // the room_id and room_name have their values in their name
+        if (!action_type || !requested_user_id || !room_id || !room_name) {
+            return res.status(400).send({ message: "All parameters are required" });
+        }
+
+        // check whether a room is full or not
+        const isFull = await checkRoomMemberLimit(room_id);
+
+        if (isFull.message === 'Room-full') {
+            return res.send({ message: "Room is full" })
+        }
+
+        // if the request is accepted
+        if (action_type === "Accepted") {
+
+
+            // first delete the notification connected to the admin_id from the table and the room_id of which user is the admin
+            const { data, error } = await supabase.from("notifications").delete().eq("user_id", user_id).eq("metadata->>room_id", room_id);
+            if (error) {
+                console.error(error);
+                return res.status(400).send({ message: "Unable to join the room" });
+            }
+            // then store the new notification to send the user who requested the roomJoining
+            // join the user fu
+            const AddInRoom = await JoinTheUser(room_id, requested_user_id);
+            if (AddInRoom.error) {
+                console.error(AddInRoom.error);
+                return res.status(400).send({ message: "Unable to join the room" });
+            }
+
+            const metadata = {
+                room_id: room_id,
+                sent_by_username: "System",
+                sent_by_id: "System"
+            }
+            const notification_type = "Informatory";
+            const notification_message = `You have been added to room ${room_name} by the admin ${req.user.username}`
+            //create a new notification for the users who has been just added to the room
+            const newNotification = await StoreNotifications(metadata, requested_user_id, notification_type, notification_message, 'NA')
+
+
+            console.log(newNotification);
+            io.to(requested_user_id).emit('new_Notification', newNotification || []);
+
+            return res.status(200).send({ message: "Request has been accepted !" });
+
+        } else { // Rejected
+            const { data, error } = await supabase.from("notifications").delete().eq("user_id", user_id).eq("metadata->>room_id", room_id);
+            if (error) {
+                console.error(error);
+                return res.status(200).send({ message: "Rejected the request !" });
+            }
+            const now = new Date();
+            const metadata = {
+                room_id: room_id,
+                sent_by_username: "System",
+                sent_by_id: "System"
+            }
+            const notification_type = "Informatory";
+            const notification_message = `You request to join ${room_name} has been rejected by the admin ${req.user.username}`
+            //create a new notification for the users who has been just added to the room
+            const newNotification = await StoreNotifications(metadata, requested_user_id, notification_type, notification_message, 'NA')
+
+
+            // console.log(newNotification);
+            io.to(requested_user_id).emit('new_Notification', newNotification || []);
+            // get the users notifications and send them to them
+            return res.status(200).send({ message: ` Your request to join the room ${room_name} has been rejected  by the room admin` });
+        }
+
+
+    } catch (error) {
+        console.error("Server exception:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
+export const GetAllUserNotifications = async (user_id) => {
+    try {
+        const { data, error } = await supabase.from("notifications").select("*").eq("user_id", user_id)
+        if (error || !data) {
+            return []
+        }
+        return data;
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+export const StoreNotifications = async (metadata, idOfPersonWhoToSendNotification, notification_type, notification_message, username) => {
+    try {
+        // username value is jut to create a message
+        const { data: newNotification, error: insertError } = await supabase.from("notifications").insert({ user_id: idOfPersonWhoToSendNotification, notification_type: notification_type, notification_message: notification_message, title: "Room-joining-request", metadata: metadata }).select("*");
+
+        if (insertError) {
+            return []
+        }
+        return newNotification;
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+export const DeleteNotification = async (req, res) => {
+    try {
+        const user_id = req.user.user_id;
+        if (!user_id || typeof user_id !== "string") {
+            console.log("No user id found while getting account details");
+            return res.status(400).json({ message: "Invalid user id" });
+        }
+
+        const { notification_id } = req.params;
+
+        const { data, error } = await supabase.from("notifications").delete("*").eq("id", notification_id);
+
+        if (error) {
+            console.error(error);
+            return res.status(400).send({ message: "Something went wrong" })
+        }
+
+        return res.send({ message: "deleted" })
+    } catch (error) {
+        console.error("Server exception:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}

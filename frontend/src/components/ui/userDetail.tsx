@@ -10,11 +10,11 @@ import { setShowUserForm, setVisibility } from '../../store/InterfaceSlice';
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 // declaring props type
 type FormProps = {
-    
+
     setSelectedFile?: React.Dispatch<React.SetStateAction<File | null>>;
     selectedFile?: File | null;
     handleUpload?: (UserData: FormData) => void;
-  
+
 };
 
 const UserForm: React.FC<FormProps> = ({ setSelectedFile, handleUpload }) => {
@@ -25,6 +25,7 @@ const UserForm: React.FC<FormProps> = ({ setSelectedFile, handleUpload }) => {
     const [name, SetName] = React.useState<string>('');
     const [feedback, setFeedback] = React.useState<string>('');
 
+    
 
     // top-10 right-2  md:right-50
     const fileInputRef = useRef<HTMLInputElement>(null);

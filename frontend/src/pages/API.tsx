@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 // import { Link } from 'react-router';
 import { toast, Toaster } from 'sonner';
 import { BiClipboard } from 'react-icons/bi';
-import { useStore } from '../store/zustandHandler';
+import { useAppSelector } from '../store/hooks';
 const ApiDocs = React.lazy(() => import("@/components/ApiDocs"));
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
@@ -11,12 +11,12 @@ const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 const API = () => {
     const [key, setKey] = useState<string>('');
     const [generating, setGenerating] = useState<boolean>(false);
-    const loggedIn = useStore((state) => state.isLoggedIn)
+    const loggedIn = useAppSelector((state) => state.auth.isLoggedIn)
 
     const getAPI_key = async () => {
         try {
-            if (!loggedIn) {
-                toast("Please Login to continue !");
+            if (loggedIn === false) {
+                toast.error("Please Login to continue !");
                 return;
             }
             setGenerating(true);
@@ -29,13 +29,13 @@ const API = () => {
             if (response.data.key) {
                 setKey(response.data.key);
             } else {
-                toast(response.data.message);
+                toast.message(response.data.message);
             }
             setGenerating(false);
             return response.data.key ? response.data.key : response.data.message;
         } catch (err: any) {
-            toast(err?.response?.data?.message)
-            console.error(err);
+            toast.error(err?.response?.data?.message)
+            // console.error(err);
             setGenerating(false)
         }
     }
@@ -92,8 +92,8 @@ const API = () => {
                                     onClick={getAPI_key}
                                     disabled={generating}
                                     className={`w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${generating
-                                            ? "bg-gray-100 text-black da cursor-not-allowed"
-                                            : "bg-black hover:bg-indigo-500 dark:bg-white dark:text-black text-white shadow-sm bai-jamjuree-regular"
+                                        ? "bg-gray-100 text-black da cursor-not-allowed"
+                                        : "bg-black hover:bg-indigo-500 dark:bg-white dark:text-black text-white shadow-sm bai-jamjuree-regular"
                                         }`}
                                 >
                                     {generating ? (
