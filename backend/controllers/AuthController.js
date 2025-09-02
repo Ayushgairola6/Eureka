@@ -71,16 +71,21 @@ export const HandleUserLogin = async (req, res) => {
             return res.status(400).json({ message: "Invalid data type !" })
         }
 
-        const { data, error } = await supabase.from("users").select('email, id, username').eq('email', email)
+        const { data, error } = await supabase.from("users").select('email, id, username , password').eq('email', email).single();
 
-        if (data?.length === 0 || error) {
+        if (!data || error) {
             console.error(error, 'user not found');
             return res.status(404).json({ message: "User not found !" })
         }
+        const isMatching = await bcrypt.compare(password, data.password);
 
-        const RefreshToken = GenerateRefreshTokens(data[0].id, data[0].email, data[0].username);
-        const AuthToken = GenerateAccessTokens(data[0].id, data[0].email, data[0].username)
-        const store = await StoreTokens(RefreshToken, AuthToken, data[0].id);
+        if (!isMatching) {
+            return res.status(400).send({ message: "Invalid password" })
+        }
+
+        const RefreshToken = GenerateRefreshTokens(data.id, data.email, data.username);
+        const AuthToken = GenerateAccessTokens(data.id, data.email, data.username)
+        const store = await StoreTokens(RefreshToken, AuthToken, data.id);
         if (store.error) {
             console.log(store.error)
             return res.status(400).json({ message: "Error while logging in please try again later !" })

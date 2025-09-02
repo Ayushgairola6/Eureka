@@ -11,11 +11,11 @@ dotenv.config();
 
 
 import { Router } from './routers/filerouter.js';
+import { ChatsRouter } from './routers/ChatsRouter.js';
 import { AuthRouter } from './routers/AuthRouter.js';
 import { ReviewRouter } from './routers/ReviewRouter.js';
 import { API_Router } from './routers/ApiRouter.js'
 import { SdkRouter } from './routers/sdkRouter.js';
-import { ChatsRouter } from './routers/ChatsRouter.js';
 import './controllers/supabaseHandler.js'
 
 // import formData from 'express-form-data';
