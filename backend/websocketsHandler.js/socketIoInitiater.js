@@ -14,7 +14,7 @@ let io;
 export const initializeSocketIo = (httpServer) => {
     io = new Server(httpServer, {
         cors: {
-            origin: "http://localhost:5173", // Your frontend URL
+            origin: ["http://localhost:5173",'https://eureka-six-eta.vercel.app'], // Your frontend URL
             credentials: true,
             allowedHeaders: [
                 "Content-Type",

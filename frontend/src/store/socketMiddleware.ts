@@ -3,6 +3,8 @@ import { io, Socket } from 'socket.io-client';
 import { setConnected, setDisconnected, NewMessageReceived, RoomNotification, Setroom_info } from './websockteSlice.ts';
 import { NewUserNotification } from './AuthSlice.ts'
 import { store } from './reduxstore.ts';
+const ServerUrl = import.meta.env.VITE_BACKEND_API_URL
+
 // import { data } from 'react-router';
 
 let socket: Socket
@@ -63,7 +65,7 @@ export const socketMiddleware = (store: any) => (next: any) => (action: any) => 
             }
             const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
 
-            socket = io('http://localhost:1000', {
+            socket = io(ServerUrl, {
                 reconnection: true,
                 reconnectionAttempts: 5,
                 transports: ['websocket', 'polling'],
@@ -84,7 +86,7 @@ export const socketMiddleware = (store: any) => (next: any) => (action: any) => 
 
             }
             break;
-    
+
         case 'socket/leaveChatRoom':
             const room_info = action.payload;
             if (socket && socket.connected) {
