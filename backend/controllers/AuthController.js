@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { supabase } from './supabaseHandler.js';
-import { checkRoomMemberLimit, JoinTheUser } from './chatRoomController.js'
+import { checkRoomMemberLimit, JoinTheUser } from './ChatRoomController.js'
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 dotenv.config();
