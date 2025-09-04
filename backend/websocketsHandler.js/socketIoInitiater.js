@@ -14,7 +14,7 @@ let io;
 export const initializeSocketIo = (httpServer) => {
     io = new Server(httpServer, {
         cors: {
-            origin: ["http://localhost:5173",'https://eureka-six-eta.vercel.app'], // Your frontend URL
+            origin: ["http://localhost:5173", 'https://eureka-six-eta.vercel.app'], // Your frontend URL
             credentials: true,
             allowedHeaders: [
                 "Content-Type",
@@ -32,7 +32,17 @@ export const initializeSocketIo = (httpServer) => {
     // verify the user to give access to the server
     io.use(async (socket, next) => {
         const handshaketoken = socket.handshake.auth.token;
-        const cookietoken = socket.request.headers.cookie['Eureka_eta_six_version1_AuthToken'];
+        const rawCoookie = socket.handshake.headers.cookie;
+        const cookies = {};
+
+        // parsing the cookies
+        rawCoookie.split(";").forEach(cookie => {
+            const [name, value] = cookie.trim().split("=");
+            
+            cookies[name] = value;
+        })
+
+       const cookietoken = cookies['Eureka_eta_six_version1_AuthToken'];
         const token = cookietoken ? cookietoken : handshaketoken;
 
         if (!token) {

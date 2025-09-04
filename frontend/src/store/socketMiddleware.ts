@@ -42,7 +42,7 @@ const setupSocketListeners = (dispatch: any) => {
     })
 
     socket.on('disconnect', () => {
-        console.log("Socket disconnected");
+        // console.log("Socket disconnected");
         dispatch(setDisconnected());
     });
 };
