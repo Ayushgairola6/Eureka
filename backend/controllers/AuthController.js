@@ -3,56 +3,45 @@ import jwt from 'jsonwebtoken';
 import { supabase } from './supabaseHandler.js';
 import { checkRoomMemberLimit, JoinTheUser } from './ChatRoomController.js'
 import dotenv from 'dotenv';
-import nodemailer from 'nodemailer';
 dotenv.config();
 import { getIo } from '../websocketsHandler.js/socketIoInitiater.js';
 // nodemailer transporter
-const transporter = nodemailer.createTransport({
-    host: 'smtp.sendgrid.net',
-    port: 587,
-    auth: {
-        user: 'apikey', // Literally write 'apikey'
-        pass: process.env.SENDGRID_API_KEY, // Replace with your API key
-    },
-});
+import { EmailServices } from '../EmailHandlers/EmailTemplates.js';
+
 
 // socket instance
 export const HandleUserRegistration = async (req, res) => {
     try {
         const { username, email, password } = req.body;
-        if (!username || !email || !password) {
-            return res.status(400).json({ message: "All fields are mandatory" });
+        if (!username || !email || !password || typeof username !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({ message: "Invalid information , please fill in correct data !" });
         }
 
+
         const { data, error } = await supabase.from("users").select().eq("email", email);
+
         if (error) {
-            return res.status(400).json({ message: "Error while creating an account !" })
+            return res.status(400).json({ message: "Error setting up you account ." })
         }
 
         if (data.length > 0) {
-            console.log(data);
             return res.status(400).json({ message: "User already Exists  ! Please Login instead" });
         }
 
         const HashedPassword = await bcrypt.hash(password, 8);
 
         if (!HashedPassword) {
-            return res.status(400).json({ message: "Error while creating an account" });
-
+            return res.status(400).json({ message: "Error setting up you account ." });
         }
 
         const NewUserAccount = await supabase.from('users').insert({ username: username.trim(), email: email, password: HashedPassword })
 
         if (NewUserAccount.error) {
-            return res.status(400).json({ message: "Erorr while creating an account !" });
+            return res.status(400).json({ message: "Error setting up you account ." });
         }
 
-        const mailOptions = {
-            from: 'your@verified-domain.com', // Must be verified in SendGrid
-            to: 'user@example.com',
-            subject: 'Email Verification',
-            html: '<h1>Welcome to Eureka </h1><p>Click <a href="https://your-site.com/verify?token=abc123">here</a> to verify.</p>',
-        };
+        const user = { username: username }
+        const welcomeEmail = await EmailServices.sendWelcomeEmail(user).catch(error => console.error('Register email failed ;', error))
 
         return res.json({ message: "Account created successfully !" })
     } catch (error) {
@@ -80,11 +69,21 @@ export const HandleUserLogin = async (req, res) => {
         const isMatching = await bcrypt.compare(password, data.password);
 
         if (!isMatching) {
+            console.log("passwod did not match")
             return res.status(400).send({ message: "Invalid password" })
         }
 
         const RefreshToken = GenerateRefreshTokens(data.id, data.email, data.username);
+        if (!RefreshToken) {
+            console.error("Error while geenrating refreshtoken");
+            return res.status(400).send({ message: "An error occurred" })
+        }
         const AuthToken = GenerateAccessTokens(data.id, data.email, data.username)
+
+        if (!AuthToken) {
+            console.error("Error while geenrating AccessToken");
+            return res.status(400).send({ message: "An error occurred" })
+        }
         const store = await StoreTokens(RefreshToken, AuthToken, data.id);
         if (store.error) {
             console.log(store.error)
@@ -97,6 +96,11 @@ export const HandleUserLogin = async (req, res) => {
             sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
         });
+        // sending login notification email
+        const clientIp = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress;
+
+        const LoginEmail = await EmailServices.sendLoginNotification(data, { ip: clientIp, userAgent: req.headers['user-agent'], browser: req.headers['sec-ch-ua'], platform: req.headers['sec-ch-ua'], timestamp: new Date() })
+
         return res.status(200).json({ message: "Login successfull", AuthToken: AuthToken })
 
     } catch (error) {
@@ -134,7 +138,84 @@ export const GenerateAccessTokens = (id, email, username) => {
         console.error(err)
     }
 }
+export const ResetPasswordRequest = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email || typeof email !== 'string') {
+            return res.status(400).send({ message: "Invalid email address" })
+        }
+        const { data, error } = await supabase.from('users').select("*").eq("email", email).single();
 
+        if (!data || error) {
+            return res.status(404).send({ message: "Email address not found !" });
+        }
+        const user = data;
+        const ResetPasswordRequestToken = jwt.sign({ user_id: data.id, username: data.username, email: data.email, purpose: "Password_reset" }, process.env.JWT_SECRET,
+            { expiresIn: '1h' })
+
+        if (!ResetPasswordRequestToken) {
+            return res.status(400).send({ message: "An error occured, please try again !" });
+        }
+        const sendEmail = EmailServices.sendPasswordResetEmail(data, ResetPasswordRequestToken);
+        if (!sendEmail) {
+            return res.status(400).send({ message: "An error occured, please try again !" });
+        }
+        return res.send({ message: "An email has been sent to you account with the reset link ." })
+    } catch (error) {
+        return res.status(500).send({ message: "Error while processing your request" });
+    }
+}
+
+export const ResetPassword = async (req, res) => {
+    try {
+        const AuthHeaders = req.headers.authorization;
+        if (!AuthHeaders) {
+            console.log('auth headers not found')
+            return res.status(400).send({ message: "Token not found" });
+        }
+        const { newpassword1, newpassword2 } = req.body;
+
+        if (!newpassword1 || !newpassword2 || typeof newpassword1 !== 'string' || typeof newpassword2 !== 'string') {
+            console.log('password does not match')
+            return res.status(400).send({ message: "Invalid password type" });
+        } else if (newpassword2 !== newpassword1) {
+            console.log('auth headers not found')
+            return res.status(401).send({ message: "Password did not match" });
+        }
+
+
+        const Resettoken = AuthHeaders.split(" ")[1];
+        try {
+            const decoded = jwt.verify(Resettoken, process.env.JWT_SECRET);
+            // Token is valid - use decoded data
+            const userId = decoded.user_id;
+
+            const HashedPassword = await bcrypt.hash(newpassword1, 8);
+
+            if (!HashedPassword) {
+                console.log("error generating new password")
+                return res.status(400).json({ message: "Error setting up you account ." });
+            }
+
+            const { data, error } = await supabase.from("users").update({password: HashedPassword}).eq('id', userId);
+            if (error) {
+                console.error(`password update error from db : ${error}`)
+                return res.status(400).send({ message: "An error occured" });
+            }
+            await EmailServices.sendPasswordResetSuccessEmail({ username: decoded.username, email: decoded.email });
+            return res.status(200).send({ message: "Password reset successfully!" });
+            // Proceed with password reset
+        } catch (error) {
+            return res.status(400).send({ message: "Invalid or expired token. Please try again." });
+        }
+
+
+    } catch (error) {
+        console.error(error)
+        return res.status(500).send({ message: "Error while processing your request" });
+    }
+
+}
 // Store tokens in the database;
 const StoreTokens = async (RefreshToken, AuthToken, id) => {
     try {

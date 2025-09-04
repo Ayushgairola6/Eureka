@@ -135,7 +135,7 @@ const App = () => {
           <Route element={<Register />} path="/Register" />
           <Route element={<Feedback />} path="/Feedback" />
           <Route element={<EmailVerificationForm />} path="/ResetPassword" />
-          <Route element={<ResetPassword />} path="/temp" />
+          <Route element={<ResetPassword />} path="/reset-password" />
           <Route element={<ConversationDetail />} path="/User/document_chat_history/:id" />
           <Route element={<UserDashboard />} path='/User/dashboard' />
           <Route element={<ChatRoom />} path="/chatroom/:id" />
