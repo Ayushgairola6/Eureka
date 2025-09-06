@@ -4,7 +4,7 @@ import { IoMdClose, IoMdHourglass } from 'react-icons/io';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '../store/hooks.tsx';
 import { useParams } from 'react-router';
-import { sendMessage, joinAChatRoom, leaveChatRoom, connectSocket, GetChatRoomHistory, RoomNotification } from '../store/websockteSlice.ts';
+import { sendMessage, joinAChatRoom, leaveChatRoom, connectSocket, GetChatRoomHistory } from '../store/websockteSlice.ts';
 import { toast, Toaster } from 'sonner'
 import { v4 as uuidv4 } from 'uuid';
 const ChatRoom = () => {
@@ -65,7 +65,7 @@ const ChatRoom = () => {
 
             // Dispatch the join action
             dispatch(joinAChatRoom(roomInfo))
-            dispatch(GetChatRoomHistory(id)).unwrap()
+            dispatch(GetChatRoomHistory(id))
             return () => {
                 const data = {
                     room_id: currentRoom.room_id,
