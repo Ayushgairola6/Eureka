@@ -34,7 +34,9 @@ const setupSocketListeners = (dispatch: any) => {
     });
 
     socket.on("Room_notification", (data) => {
-        dispatch(RoomNotification(data));
+        if (data.message && data.message.trim() !== '') {
+            dispatch(RoomNotification(data));
+        }
     });
 
     socket.on("new_Notification", (data) => {

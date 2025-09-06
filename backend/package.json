@@ -16,6 +16,7 @@
     "@pinecone-database/pinecone": "^6.1.1",
     "@supabase/supabase-js": "^2.50.2",
     "bcryptjs": "^3.0.2",
+    "cookie": "^1.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -27,7 +28,6 @@
     "nodemailer": "^7.0.5",
     "pdf-parse": "^1.1.1",
     "socket.io": "^4.8.1",
-    "socket.io-cookie-parser": "^1.0.0",
     "stripe": "^18.4.0",
     "uuid": "^11.1.0"
   },

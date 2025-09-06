@@ -1,7 +1,7 @@
 import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
 import { GenerateResponse } from '../controllers/ModelController.js';
 import { supabase } from '../controllers/supabaseHandler.js';
-import { getAllDocumentTextsForSummary, index, splitTextIntoChunks, StoreContributionDetails } from '../controllers/fileControllers.js';
+import { getAllDocumentTextsForSummary, index, splitTextIntoChunks, StoreContributionDetails, StoreQueryAndResponse } from '../controllers/fileControllers.js';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -12,17 +12,17 @@ export const GetUserDocuments = async (req, res) => {
         const user_id = req.user;
         if (!user_id) {
             // console.log("User_Id not found")
-            return res.status(404).json({ message: "User_id not found" })
+            return res.status(404).json({ message: "Invalid user please check your API key before proceeding" })
         }
-        // console.log("Looking for documents of the user")
+        // get all type of user documents private or public
         const { data, error } = await supabase.from("Contributions").select("*").eq("user_id", user_id);
 
-        if (error || !data) {
-            console.log(error, 'do contributions of the user found');
-
-            return res.status(404).json({ message: "Error while finding your documents ,Please check your API_KEY is valid." });
+        if (error) {
+            console.log(error, 'error while checking for files ');
+            return res.status(404).json({ message: "Error while finding your documents " });
         }
-        return res.status(200).json(data);
+
+        return res.status(200).json({ documents: data, message: `You have ${data.length} number of documents uploaded` });
     } catch (getdocumenterror) {
         console.error(getdocumenterror);
         return res.status(500).json({ message: "Internal Server Error" });
@@ -33,30 +33,36 @@ export const GetUserDocuments = async (req, res) => {
 // Query an individual document
 export const QuerySpecificDocument = async (req, res) => {
     try {
+        const user_id = req.user;
+        if (!user_id) {
+            return res.status(400).send({ message: "Invalid user please check your API key before processing" })
+        }
         const { query, document_id, query_type } = req.body;
         if (!query || typeof query !== 'string' || !document_id || typeof document_id !== 'string' || !query_type || typeof query_type !== 'string') {
+            console.error("error at step one of checking and validating data types")
             return res.status(400).json({ message: "Invalid arguments" });
         }
-        const SYSTEM_PROMPT = query_type === "QNA" ? process.env.SYSTEM_PROMPT : process.env.SUMMARIZER_PROMPT;
 
         const FoundData = [];
-
         let response;
+
+        const SYSTEM_PROMPT = query_type === "QNA" ? process.env.SYSTEM_PROMPT : process.env.SUMMARIZER_PROMPT;
         if (query_type === 'QNA') {
             response = await index.searchRecords({
                 query: {
-                    topK: 10,
+                    topK: 30,
                     inputs: { text: query },
                     filter: {
                         documentId: { $eq: document_id },
                         visibility: { $eq: "Private" }
                     }
                 },
-                fields: ['text', 'category', 'subCategory', 'date_of_contribution', 'documentId', 'contributor', 'id'],
+                fields: ['text'],
             });
 
-            // Check for empty QNA results here
+            //  console.log(response)
             if (response.result.hits.length === 0) {
+                console.error("Response not geenrated at response.result from pinecone")
                 return res.status(200).json({ message: "Response found", answer: `Could you please be more specific about what you would like to know about this topic`, doc_id: [] });
             }
 
@@ -65,20 +71,25 @@ export const QuerySpecificDocument = async (req, res) => {
             const { data, error } = await supabase.from("Contributions").select("feedback , chunk_count ,username").eq("document_id", document_id);
 
             if (error || !data.length === 0) {
+                console.error("Document not found in the database")
+
                 return res.status(404).json({ message: "Unable to find this document in our database" });
             }
 
-            response = await getAllDocumentTextsForSummary(docId, data[0].username, data[0].feedback, data[0].chunk_count)
+            //   console.log(data)
+            response = await getAllDocumentTextsForSummary(document_id, data[0].username, data[0].feedback, data[0].chunk_count)
             if (!response || response.length === 0) {
+                console.error("No summary found")
+
                 return res.status(200).json({ message: "Response found", answer: `There was no data in our database about this document !`, doc_id: [] });
             }
         } else {
             // Handle invalid query_type
+                console.error("Invalid query type")
+
             return res.status(400).json({ message: "Invalid query type" });
         }
-
-
-        if (response?.results?.hits.length !== 0) {
+        if (response?.result?.hits) {
             response.result.hits.forEach((e) => {
                 if (e) {
                     FoundData.push(e.fields.text);
@@ -86,16 +97,23 @@ export const QuerySpecificDocument = async (req, res) => {
                     console.log("no results found")
                 }
             })
+        } {
+
         }
 
 
-        // const AnswerToUsersQuestion = await GenerateResponse(question, FoundData.length !== 0 ? FoundData : response, SYSTEM_PROMPT);
-
-        const AnswerToUsersQuestion = "Random text to avoid too much api token usage";
+        const AnswerToUsersQuestion = await GenerateResponse(query, FoundData.length !== 0 ? FoundData : response, SYSTEM_PROMPT);
+        // const AnswerToUsersQuestion = 'random text';
         if (AnswerToUsersQuestion.error) {
-            return res.status(200).json({ message: "Error while generating a response", answer: "The server is very busy right now , please try again !" })
+            console.log(AnswerToUsersQuestion.error)
+            return res.status(200).json({ message: "Error while generating a response", answer: "The server is very busy right now that is why Eureka was unable to responsd , please try again later" })
         }
+        const storeResponse = await StoreQueryAndResponse(user_id, query, AnswerToUsersQuestion, document_id);
 
+        if (storeResponse.error) {
+            console.log(storeResponse?.error);
+            return res.status(200).json({ message: "Could not store this request", answer: AnswerToUsersQuestion })
+        }
         return res.status(200).json({ message: "Response found", answer: AnswerToUsersQuestion })
     } catch (error) {
         console.error(error);

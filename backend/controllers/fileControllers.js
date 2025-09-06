@@ -437,7 +437,7 @@ export async function getAllDocumentTextsForSummary(docId, username, title, tota
 
 
 // store user response with the question that has been asked for future refrence
-const StoreQueryAndResponse = async (user_id, question, Ai_response, docId) => {
+export const StoreQueryAndResponse = async (user_id, question, Ai_response, docId) => {
     try {
         if (!user_id || typeof user_id !== 'string' || !question || typeof question !== 'string' || !Ai_response || typeof Ai_response !== 'string' ) {
             console.log(user_id, docId, Ai_response, question)

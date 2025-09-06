@@ -2,7 +2,7 @@ import { supabase } from '../controllers/supabaseHandler.js';
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv';
 dotenv.config();
-import cookieParser from 'socket.io-cookie-parser'
+import cookie from 'cookie'
 import { GenerateAccessTokens } from '../controllers/AuthController.js';
 import { verifyJwtAsync } from '../Middlewares/AuthMiddleware.js';
 import { Server } from 'socket.io'
@@ -27,22 +27,13 @@ export const initializeSocketIo = (httpServer) => {
     })
 
 
-    io.use(cookieParser());
 
     // verify the user to give access to the server
     io.use(async (socket, next) => {
         const handshaketoken = socket.handshake.auth.token;
-        const rawCoookie = socket.handshake.headers.cookie;
-        const cookies = {};
+        const cookies = socket.handshake.headers.cookie ? cookie.parse(socket.handshake.headers.cookie) : {};
 
-        // parsing the cookies
-        rawCoookie.split(";").forEach(cookie => {
-            const [name, value] = cookie.trim().split("=");
-            
-            cookies[name] = value;
-        })
-
-       const cookietoken = cookies['Eureka_eta_six_version1_AuthToken'];
+        const cookietoken = cookies['Eureka_eta_six_version1_AuthToken'];
         const token = cookietoken ? cookietoken : handshaketoken;
 
         if (!token) {
@@ -112,7 +103,7 @@ export const initializeSocketIo = (httpServer) => {
 
             const { username, room_id, room_name, user_id } = room_information;
             if (!room_id || !room_name || !username || !user_id) {
-                socket.emit("Room_notification", { error: 'An error occured while trying to joining the room' });
+                socket.emit("Room_notification", { message: 'An error occured while trying to joining the room' });
                 return;
             }
 
@@ -145,7 +136,7 @@ export const initializeSocketIo = (httpServer) => {
         socket.on("leaving_chat_room", (data) => {
             const { room_id, username } = data;
             if (!room_id || !username) {
-                socket.emit("Room_notification", { error: "Unable to leave the room" });
+                socket.emit("Room_notification", { message: "Unable to leave the room" });
                 return;
             }
 
@@ -168,7 +159,7 @@ export const initializeSocketIo = (httpServer) => {
             const { message_id, sent_by, message, room_id, users, sent_at } = data;
 
             if (!sent_by || !message || !room_id || typeof message !== 'string' || !users || typeof users !== 'object' || !message_id) {
-                socket.emit("Room_notification", { error: "Some fields are missing" });
+                socket.emit("Room_notification", { message: "Some fields are missing" });
                 return;
             }
 
@@ -180,7 +171,7 @@ export const initializeSocketIo = (httpServer) => {
 
                     if (storeResult?.error) {
                         console.log(storeResult.error);
-                        socket.emit("Room_notification", { error: "Something went wrong, please try again later!" });
+                        socket.emit("Room_notification", { message: "Something went wrong, please try again later!" });
                         return;
                     }
                 }
@@ -198,7 +189,7 @@ export const initializeSocketIo = (httpServer) => {
 
             } catch (error) {
                 console.error("Error processing message:", error);
-                socket.emit("Room_notification", { error: "Internal server error" });
+                socket.emit("Room_notification", { message: "Internal server error" });
 
             }
         });
@@ -209,13 +200,13 @@ export const initializeSocketIo = (httpServer) => {
             const { user_id, room_code } = data;
             // console.log(data)
             if (!user_id || !room_code) {
-                socket.emit("Room_notification", { error: "Some error occurred !" });
+                socket.emit("Room_notification", { message: "Some error occurred !" });
                 return;
             }
             const room_id = await CheckRoomIdAssociatedWithRoomCode(room_code);
             if (room_id.error || !room_id) {
                 console.log(room_id.error)
-                socket.emit("Room_notification", { error: "Some error occurred !" });
+                socket.emit("Room_notification", { message: "Some error occurred !" });
                 return { error: "Unable to store the message" }
             }
 
@@ -225,7 +216,7 @@ export const initializeSocketIo = (httpServer) => {
 
             if (error) {
                 console.log(error)
-                socket.emit("Room_notification", { error: "Some error occurred !" });
+                socket.emit("Room_notification", { message: "Some error occurred !" });
                 return { error: "Unable to store the message" }
             }
             io.to(room_id.created_by).emit("new_Notification", notifications);

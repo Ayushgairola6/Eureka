@@ -1,46 +1,54 @@
-# 🔍 EUREKA - Community-Powered Knowledge RAG Agent
+🔍 EUREKA - Community-Powered Knowledge RAG Agent
+EUREKA is a community-powered, public knowledge base agent that enables real-time collaboration and advanced AI document analysis.
 
-**Open-source RAG platform for verifiable, structured knowledge with public/private control**
+Note: Only the EUREKA SDK is open-source. The core platform and infrastructure remain proprietary.
 
-[![AGPL License](https://img.shields.io/badge/license-AGPLv3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-
-## 🚀 Why EUREKA?
-
+🚀 Why EUREKA?
 EUREKA transforms how communities build and access reliable knowledge:
-- **Structured knowledge base** with topic hierarchies (e.g., `Physics/Quantum Mechanics`)
-- **Dual privacy mode**: Public (peer-verified) or private (your docs only)
-- **Coming soon**: 
-  - Automated fact-checking system
-  - No-code SDK for deploying custom chatbots
 
-## 🛡️ Intellectual Property Protection
-This project is open-source with safeguards:
-- **AGPLv3 licensed** - Modifications must be shared back
-- **Contributor License Agreement** required for all code submissions
-- **Trademarked name/branding** (unauthorized commercial use prohibited)
-- Core verification algorithms are proprietary (see [EUREKA Pro](https://eureka.ai/pro))
+Structured knowledge base with topic hierarchies
 
-## 🧩 Quick Start
+Dual privacy mode: Public (peer-verified) or private (your docs only)
 
-### Prerequisites
--Typescript
-- PostgreSQL/Supabase 
-- Redis 
-- Node.js
--Javascript
--Tailwind
--Framer-motion
--React
+Real-time collaboration with teams or friends
 
-```bash
-# Clone (includes SDK client)
-git clone https://github.com/Ayushgairola6/Eureka.git
+Advanced AI analysis of large documents in minutes
 
-# Install
-cd frontend -yarn install
-cd backend -npm install
+📦 EUREKA SDK
+The EUREKA SDK is open-source, allowing developers to:
 
-# Configure
-cp .env.example .env
-nano .env  # Add your API keys
+Integrate EUREKA's capabilities into their applications
+
+Create SDK implementations for other programming languages
+
+Build custom solutions on top of EUREKA's knowledge base functionality
+
+Installation
+bash
+npm install eureka-sdk
+Basic Usage
+javascript
+import { EurekaClient } from 'eureka-sdk';
+
+const client = new EurekaClient({
+    apiKey: 'your-api-key-here'
+});
+
+// Upload documents
+await client.uploadDocument(file, category, subCategory, visibility, title, name);
+
+// Query knowledge base
+const response = await client.queryDocument(documentId, query, queryType);
+🛡️ License
+SDK: AGPLv3 - Open source for community development and extension
+
+Core Platform: Proprietary - Contains advanced AI algorithms and infrastructure
+
+🔗 Links
+Documentation
+
+API Reference
+
+Community Forum
+
+EUREKA provides a freemium structure due to its advanced AI-powered architecture. The open-source SDK enables developers to extend EUREKA's capabilities while the core platform remains proprietary.

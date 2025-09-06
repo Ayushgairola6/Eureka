@@ -26,14 +26,14 @@ const LandingPage = () => {
 
                 <div className="h-full w-full flex items-center justify-center p-4">
                     <div className="relative z-[-1] w-full max-w-2xl aspect-square  ">
-                        <div className="bg-gray-200/10  overflow-hidden h-full w-full rounded-full ">
+                        <div className="bg-white border border-gray-400  overflow-hidden h-4/5 w-4/5 m-auto rounded-full ">
                             <picture>
-                                <source srcSet={brain} type="image/webp" />
-                                <source srcSet={brain} type="image/jpeg" />
+                                <source srcSet="/Group 1.svg" type="image/webp" />
+                                <source srcSet="/Group 1.svg" type="image/jpeg" />
                                 <img
                                     loading="lazy"
-                                    className="dark:border-indigo-500 border-sky-500/20 bg-blend-difference object-cover shadow-xl shadow-blue-500 h-full w-full "
-                                    src={brain}
+                                    className="dark:border-indigo-500 border-sky-500/20 bg-blend-difference object-cover  h-full w-full "
+                                    src="/Group 1.svg"
                                     alt="Brain illustration"
                                 />
                             </picture>
@@ -45,7 +45,7 @@ const LandingPage = () => {
                                     <source srcSet={study} type="image/webp" />
                                     <source srcSet={study} type="image/jpeg" />
                                     <img
-                                        className="rounded-full h-18 w-18  border-1 border-sky-500/20 dark:border-indigo-500 shadow-lg transform group-hover:scale-110 transition-all duration-300 CustPoint animate-float z-[1]"
+                                        className="rounded-full h-10 w-10 md:h-20 md:w-20  shadow-lg transform group-hover:scale-110 transition-discrete duration-300 CustPoint animate-float z-[1]"
                                         src={study}
                                         alt="Study icon"
                                     />
@@ -59,13 +59,13 @@ const LandingPage = () => {
                         </div>
 
 
-                        <div className="absolute bottom-2 right-8 group pointer-events-auto">
+                        <div className="absolute bottom-2 right-8 group pointer-events-auto ">
                             <div className="relative">
                                 <picture>
                                     <source srcSet={research} type="image/webp" />
                                     <source srcSet={research} type="image/jpeg" />
                                     <img
-                                        className="rounded-full h-18 w-18 md:h-20 md:w-20 border-1 border-sky-500/20 dark:border-indigo-500 shadow-lg transform group-hover:scale-110 transition-all duration-300 cursor-pointer animate-float-delay z-[1]"
+                                        className="rounded-full h-10 w-10 md:h-20 md:w-20   shadow-lg transform group-hover:scale-110 transition-discrete duration-300 cursor-pointer animate-float-delay z-[1]"
                                         src={research}
                                         alt="Research icon"
                                     />
@@ -75,13 +75,13 @@ const LandingPage = () => {
                                     <div className="absolute top-1/2 left-full w-4 h-4 bg-white transform -translate-y-1/2 rotate-45"></div>
                                 </div>
                             </div>
-
+ {/* The open-source, <span className="cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-sky-600">community-powered</span> knowledge agent—customized for you */}
                         </div>
                     </div>
                 </div>
                 <section className="text-center flex items-center justify-center flex-col gap-2 ">
-                    <h1 className="space-grotesk text-4xl md:text-5xl lg:text-7xl font-bold text-center ">
-                        The open-source, <span className="cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-sky-600">community-powered</span> knowledge agent—customized for you
+                    <h1 className="space-grotesk text-5xl md:text-6xl lg:text-7xl font-bold text-center ">
+                        The collaborative, <span className="cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-sky-600">Community-powered</span> knowledge agent—customized for you 
                     </h1>
                     <h2 className="bai-jamjuree-light text-xs md:text-sm text-center  ">
                         With <Link to="/Interface" className='text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-sky-600 font-bold'>EUREKA</Link>, anyone can access reliable information on any topic, curated and verified by the community. Effortlessly share, discover, and manage knowledge—including your own private documents—for faster, smarter learning.
