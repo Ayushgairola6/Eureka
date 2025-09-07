@@ -40,7 +40,7 @@ const LandingPage = () => {
                         {/* Study Icon */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 group pointer-events-auto">
                             <div className="relative">
-                                <div className="rounded-full h-18 w-18 md:h-20 md:w-20 shadow-lg transform group-hover:scale-110 transition-all duration-300 cursor-pointer animate-float z-20 bg-white dark:bg-gray-800 p-2 border-2 border-purple-200 dark:border-purple-800 flex items-center justify-center">
+                                <div className="rounded-full h-12 w-12 md:h-20 md:w-20 shadow-lg transform group-hover:scale-110 transition-all duration-300 cursor-pointer animate-float z-20 bg-white dark:bg-gray-800 p-2  flex items-center justify-center">
                                     <picture>
                                         <source srcSet={study} type="image/webp" />
                                         <source srcSet={study} type="image/jpeg" />
@@ -61,7 +61,7 @@ const LandingPage = () => {
                         {/* Research Icon */}
                         <div className="absolute bottom-10 right-8 md:right-8 group pointer-events-auto">
                             <div className="relative">
-                                <div className="rounded-full h-18 w-18 md:h-20 md:w-20 shadow-lg transform group-hover:scale-110 transition-all duration-300 cursor-pointer animate-float z-20 bg-white dark:bg-gray-800 p-2 border-2 border-purple-200 dark:border-purple-800 flex items-center justify-center">
+                                <div className="rounded-full h-12 w-12 md:h-20 md:w-20 shadow-lg transform group-hover:scale-110 transition-all duration-300 cursor-pointer animate-float z-20 bg-white dark:bg-gray-800 p-2 flex items-center justify-center">
                                     <picture>
                                         <source srcSet={research} type="image/webp" />
                                         <source srcSet={research} type="image/jpeg" />

@@ -139,7 +139,7 @@ const socketSlice = createSlice({
     extraReducers(builder) {
         builder.addCase(GetChatRoomHistory.fulfilled, (state, action) => {
             state.gettingOldMessage = false;
-            state.newMessage = [...state.newMessage, ...action.payload];
+            state.newMessage = [ ...action.payload];
         })
             .addCase(GetChatRoomHistory.pending, (state) => {
                 state.gettingOldMessage = true;

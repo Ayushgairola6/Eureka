@@ -8,7 +8,46 @@ import { getIo } from '../websocketsHandler.js/socketIoInitiater.js';
 // nodemailer transporter
 import { EmailServices } from '../EmailHandlers/EmailTemplates.js';
 
+export const GenerateRefreshTokens = (id, email, username) => {
+    try {
+        if (!id || typeof id !== 'string' || !email || typeof email !== "string" || !username || typeof username !== 'string') {
+            return { status: 400, error: "Error - Some arguments are missing !" }
+        }
+        const RefreshToken = jwt.sign({ user_id: id, email: email, username: username }, process.env.REFRESH_TOKEN_SECRET,
+            { expiresIn: '30d' });
 
+
+        return RefreshToken;
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+const GenerateEmailVerificationTokens = (username, email) => {
+    try {
+        const Secret = process.env.JWT_SECRET;
+        const VerificationToken = jwt.sign({ email: email, username: username }, Secret,
+            { expiresIn: '20min' });
+
+        return VerificationToken;
+    } catch (error) {
+        return error;
+    }
+
+}
+export const GenerateAccessTokens = (id, email, username) => {
+    try {
+        if (!id || typeof id !== 'string' || !email || typeof email !== "string" || !username || typeof username !== 'string') {
+            return { status: 400, error: "Error - Some arguments are missing !" }
+        }
+        const Secret = process.env.JWT_SECRET;
+        const AccessToken = jwt.sign({ user_id: id, email: email, username: username }, Secret,
+            { expiresIn: '20min' });
+        return AccessToken;
+    } catch (err) {
+        console.error(err)
+    }
+}
 // socket instance
 export const HandleUserRegistration = async (req, res) => {
     try {
@@ -40,10 +79,14 @@ export const HandleUserRegistration = async (req, res) => {
             return res.status(400).json({ message: "Error setting up you account ." });
         }
 
-        const user = { username: username }
-        const welcomeEmail = await EmailServices.sendWelcomeEmail(user).catch(error => console.error('Register email failed ;', error))
+        const user = { username: username, email: email }
+        // send welcome email with verify account email
+        // const welcomeEmail = await EmailServices.sendWelcomeEmail(user).catch(error => console.error('Register email failed ;', error));
+        const verificationtoken = GenerateEmailVerificationTokens(username, email)
 
-        return res.json({ message: "Account created successfully !" })
+        const verificationEmail = await EmailServices.sendAccountVerficicationEmail(user, verificationtoken);
+
+        return res.json({ message: "An email has been sent to your registered email !" })
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Error while creating an account !" })
@@ -109,35 +152,71 @@ export const HandleUserLogin = async (req, res) => {
     }
 }
 
-// generate access token 
-export const GenerateRefreshTokens = (id, email, username) => {
+// verify the users email address and log him in into his account for first time automatically
+export const VerifyEmail = async (req, res) => {
     try {
-        if (!id || typeof id !== 'string' || !email || typeof email !== "string" || !username || typeof username !== 'string') {
-            return { status: 400, error: "Error - Some arguments are missing !" }
-        }
-        const RefreshToken = jwt.sign({ user_id: id, email: email, username: username }, process.env.REFRESH_TOKEN_SECRET,
-            { expiresIn: '30d' });
+        const token = req.params.verificationtoken;
 
-
-        return RefreshToken;
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-export const GenerateAccessTokens = (id, email, username) => {
-    try {
-        if (!id || typeof id !== 'string' || !email || typeof email !== "string" || !username || typeof username !== 'string') {
-            return { status: 400, error: "Error - Some arguments are missing !" }
+        if (!token) {
+            console.log("while verifying token not found");
+            return res.status(400).send({ message: "Verification token not found" });
         }
         const Secret = process.env.JWT_SECRET;
-        const AccessToken = jwt.sign({ user_id: id, email: email, username: username }, Secret,
-            { expiresIn: '20min' });
-        return AccessToken;
-    } catch (err) {
-        console.error(err)
+
+        let decoded;
+        try {
+            decoded = jwt.verify(token, Secret);
+        } catch (jwterror) {
+            console.log(jwterror);
+            return res.status(400).send({ message: jwterror });
+        }
+        const email = decoded.email;
+        const { error } = await supabase.from("users").update({ isVerified: true }).eq("email", email);
+
+        if (error) {
+            conosle.log("account verification error");
+            return res.status(400).send({ message: "Error while verifying your account" });
+        }
+
+        const { data, error: userdateerror } = await supabase.from("users").select("username,isVerified,email,id").eq("email", email).single();
+
+        if (!data) {
+            console.log("user not found")
+            return res.status(404).send({ message: "User not found" });
+        }
+        // logg the user in for the first time automatically;
+        const AuthToken = GenerateAccessTokens(data.id, data.email, data.username)
+
+        if (!AuthToken) {
+            console.error("Error while geenrating AccessToken");
+            return res.status(400).send({ message: "An error occurred" })
+        }
+        const RefreshToken = GenerateRefreshTokens(data.id, data.email, data.username);
+        if (!RefreshToken) {
+            console.error("Error while geenrating refreshtoken");
+            return res.status(400).send({ message: "An error occurred" })
+        }
+        const store = await StoreTokens(RefreshToken, AuthToken, data.id);
+        if (store.error) {
+            console.log(store.error)
+            return res.status(400).json({ message: "Error while logging in please try again later !" })
+        }
+
+        res.cookie('Eureka_eta_six_version1_AuthToken', AuthToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 24 * 60 * 60 * 1000,
+        });
+
+        return res.status(200).send({ message: "Account verified", AuthToken: AuthToken });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send({ message: "Something went wrong " });
     }
 }
+// generate access token 
+
 export const ResetPasswordRequest = async (req, res) => {
     try {
         const { email } = req.body;
@@ -197,7 +276,7 @@ export const ResetPassword = async (req, res) => {
                 return res.status(400).json({ message: "Error setting up you account ." });
             }
 
-            const { data, error } = await supabase.from("users").update({password: HashedPassword}).eq('id', userId);
+            const { data, error } = await supabase.from("users").update({ password: HashedPassword }).eq('id', userId);
             if (error) {
                 console.error(`password update error from db : ${error}`)
                 return res.status(400).send({ message: "An error occured" });
@@ -265,7 +344,7 @@ export const GetUserData = async (user_id) => {
     try {
         const { data, error } = await supabase
             .from("users")
-            .select(`username, created_at, email, id`)
+            .select(`username, created_at, email, id,isVerified`)
             .eq('id', user_id)
             .single();
 

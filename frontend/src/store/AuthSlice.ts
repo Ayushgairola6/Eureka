@@ -18,6 +18,7 @@ interface user {
   id: string;
   username: string;
   email: string;
+  isVerified:boolean;
   Contributions_user_id_fkey: Contributions_user_id_fkey[];
   created_at: string;
 }
@@ -62,7 +63,7 @@ interface AuthState {
   user: user | null;
   loading: boolean;
   error: string | null;
-  userStatus: boolean | null;
+  userStatus: string ;
   FeedbackCounts: FeedbackCounts;
   Querycount: number;
   AuthenticityScore: number;
@@ -88,7 +89,7 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   isDarkMode: false,
-  userStatus: false,
+  userStatus: 'idle',
   Querycount: 0,
   FeedbackCounts: { upvotes: 0, downvotes: 0, partial_upvotes: 0 },
   AuthenticityScore: 0,
@@ -216,6 +217,9 @@ const authSlice = createSlice({
     },
     setIsLogin: (state, action) => {
       state.isLoggedIn = action.payload;
+    },
+    setUseStatus:(state,action)=>{
+      state.userStatus = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -223,7 +227,7 @@ const authSlice = createSlice({
 
       // getting user account details
       .addCase(GetUserDashboardData.pending, (state) => {
-        state.userStatus = true;
+        state.userStatus = 'pending';
 
       })
       .addCase(GetUserDashboardData.fulfilled, (state, action) => {
@@ -239,10 +243,10 @@ const authSlice = createSlice({
           state.notificationcount = action.payload.notificationcount;
           state.notifications = action.payload.notifications
         }
-        state.userStatus = false;
+        state.userStatus = 'idle';
       })
       .addCase(GetUserDashboardData.rejected, (state) => {
-        state.userStatus = false;
+        state.userStatus = 'failed';
       })
       // notificaiton handle
       .addCase(AcceptOrRejectRequest.pending, (state) => {
@@ -258,5 +262,5 @@ const authSlice = createSlice({
 });
 
 
-export const { toggleTheme, setTheme, setCurrTab, SetNotifications, setNotificationCount, NewUserNotification, setIsLogin } = authSlice.actions
+export const { toggleTheme, setTheme, setCurrTab, SetNotifications, setNotificationCount, NewUserNotification, setIsLogin ,setUseStatus} = authSlice.actions
 export default authSlice.reducer;

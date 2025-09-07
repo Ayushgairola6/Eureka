@@ -73,7 +73,6 @@ export const JoinAChatRoom = createAsyncThunk<ApiResponse, string>(
             })
             return response.data
         } catch (err: any) {
-            console.error("Error fetching dashboard data:", err);
             return rejectWithValue(
                 err instanceof Error ? err.message : 'Failed to join'
             );

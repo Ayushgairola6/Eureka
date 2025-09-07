@@ -94,7 +94,7 @@ export const JoinARoom = async (req, res) => {
 
         // looking for the room with which the code is associated
         const { data, error } = await supabase.from("chat_rooms").select("room_id,room_type").eq('Room_Joining_code', JoiningCode).single();
-        if (data.length === 0 || !data || error) {
+        if ( !data || data.length === 0 || error) {
             return res.status(404).send({ message: "No such room found" });
         }
         const roomId = data.room_id
@@ -144,7 +144,7 @@ export const JoinARoom = async (req, res) => {
         }
         return res.status(200).send({ message: join.message });
     } catch (RoomJoinError) {
-        console.log(RoomJoinError);
+        // console.log(RoomJoinError);
         return res.status(500).send({ message: "Internal server error" })
     }
 }

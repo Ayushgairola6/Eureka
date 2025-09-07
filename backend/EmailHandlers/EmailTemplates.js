@@ -327,7 +327,61 @@ export const passwordResetConfirmationEmail = (user) => ({
 </html>
     `
 });
+export const emailVerificationEmail = (user, verificationToken) => ({
+    subject: '✅ Verify Your Eureka Account',
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; }
+        .content { padding: 30px; }
+        .button { display: inline-block; padding: 15px 35px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Verify Your Email</h1>
+            <p>One click away from joining Eureka!</p>
+        </div>
+        
+        <div class="content">
+            <h2>Hello ${user.username},</h2>
+            
+            <p>Welcome to Eureka! Please verify your email address to complete your registration and unlock all features.</p>
 
+            <div style="text-align: center;">
+                <a href="${process.env.CLIENT_URL}/user/verify-email?token=${verificationToken}" class="button">
+                    Verify Email Address
+                </a>
+            </div>
+
+            <p>Or copy this link into your browser:</p>
+            <p style="background: #f8f9fa; padding: 15px; border-radius: 5px; word-break: break-all;">
+                ${process.env.CLIENT_URL}/user/verify-email?token=${verificationToken}
+            </p>
+
+            <p><strong>This link will expire in 24 hours.</strong></p>
+            
+            <p>If you didn't create this account, please ignore this email.</p>
+
+            <p>Welcome aboard!<br><strong>The Eureka Team</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 Eureka. All rights reserved.</p>
+            <p>This is an automated verification message.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `
+});
 
 export class EmailServices {
     // actual email sending function
@@ -365,7 +419,11 @@ export class EmailServices {
     }
 
     static async sendPasswordResetSuccessEmail(user) {
-        const { subject, html } = passwordResetConfirmationEmail(user,);
+        const { subject, html } = passwordResetConfirmationEmail(user);
+        return this.SendEmail(user.email, subject, html);
+    }
+    static async sendAccountVerficicationEmail(user, verificationToken) {
+        const { subject, html } = emailVerificationEmail(user, verificationToken);
         return this.SendEmail(user.email, subject, html);
     }
 }

@@ -1,18 +1,22 @@
 import { lazy, useRef } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { FiUsers } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiFile } from 'react-icons/fi';
+import { MdMarkUnreadChatAlt } from "react-icons/md";
 // FiSettings, FiStar, FiMessageSquare, 
+import { BsLightningChargeFill } from "react-icons/bs";
+
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { TbTextCaption } from "react-icons/tb";
 import { useEffect, useState } from 'react';
-import { FaArrowDown, FaArrowRight, FaCloudSunRain, FaUserSecret } from "react-icons/fa";
+import { FaArrowDown, FaArrowRight, FaCloudSunRain, FaQuestion, FaThumbsDown, FaThumbsUp, FaUserSecret } from "react-icons/fa";
 import { TbSunset2 } from "react-icons/tb";
 import { IoSunnyOutline } from "react-icons/io5";
-import { MdRoomPreferences } from 'react-icons/md';
+import { MdReviews } from 'react-icons/md';
 import { JoinAChatRoom } from '../store/chatRoomSlice.ts';
 import { toast, Toaster } from 'sonner';
 import { joinAChatRoom } from '../store/websockteSlice.ts';
+import { IoMdHourglass } from 'react-icons/io';
 // import {NewUserNotification} from '../store/AuthSlice.ts'
 const CreateRoom = lazy(() => import("@/components/createRoom.tsx"));
 
@@ -48,15 +52,16 @@ const UserDashboard = () => {
         if (InputRef?.current?.value && user) {
             try {
                 const result = await dispatch(JoinAChatRoom(InputRef.current.value)).unwrap().then((res) => {
-                    if (res && res.message) {
-                        return res.message
+                    if (res) {
+                        toast.success(res.message)
                     }
-                });
-                toast.info(result);
-
+                }).catch(error => {
+                    toast.error(error)
+                })
+                return result;
             } catch (rejectedAction: any) {
-                console.error('Rejected Action:', rejectedAction);
-                toast.error(rejectedAction.message);
+                console.log(rejectedAction.response.data);
+                toast.error(rejectedAction.response.data);
             }
         }
     };
@@ -66,7 +71,7 @@ const UserDashboard = () => {
             <Toaster />
             <CreateRoom showcard={showcard} setShowCard={setShowCard} />
             {!isDarkMode && (
-                <div className='h-full w-full absolute z-[-1] bg-gradient-to-br from-white to-emerald-600/20 blur-3xl'></div>
+                <div className='h-full w-full absolute z-[-1] bg-gradient-to-br from-purple-500/20 to-sky-600/20 blur-3xl'></div>
             )}
 
             {/* Sidebar */}
@@ -114,44 +119,44 @@ const UserDashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 bai-jamjuree-regular">
                     <motion.div
                         whileHover={{ y: -5 }}
-                        className="bg-gradient-to-br from-purple-500/10 to-sky-500/10 p-6 rounded-xl border dark:border-gray-800 border-gray-200"
+                        className="bg-gray-100 dark:bg-black p-6 rounded-xl border  border-gray-400"
                     >
-                        <h3 className="text-sm opacity-70">Questions Asked</h3>
+                        <h3 className="text-sm opacity-70 font-semibold">Questions Asked</h3>
                         {/* <p className="text-3xl font-bold mt-2">{user.stats.questions}</p> */}
-                        <p className="text-xs mt-1 text-green-500">{QueryCount / 100}% this month</p>
+                        <p className="text-xs mt-1 text-green-600">{QueryCount / 100}% this month</p>
                     </motion.div>
 
                     <motion.div
                         whileHover={{ y: -5 }}
-                        className="bg-gradient-to-br from-amber-500/10 to-pink-500/10 p-6 rounded-xl border dark:border-gray-800 border-gray-200"
+                        className="bg-gray-100 dark:bg-black p-6 rounded-xl border  border-gray-400"
                     >
-                        <h3 className="text-sm opacity-70">Average Rating</h3>
+                        <h3 className="text-sm opacity-70 font-semibold">Average Rating</h3>
                         <div className="flex items-center gap-2 mt-2 flex-col">
                             {/* <span className="text-3xl font-bold">{user.stats.rating}</span> */}
-                            <div className="flex items-center justify-evenly space-grotesk gap-4 text-xs">
+                            <div className="flex items-center justify-evenly space-grotesk gap-4 text-xs flex-wrap">
                                 <ul
-                                    className='py-1 px-2 rounded-lg bg-white/20 text-yellow-500'>
-                                    Upvotes {Feedback?.upvotes}
+                                    className='py-2 px-4 rounded-lg border border-green-300 dark:bg-white/20 bg-green-500/10 text-green-500 flex items-center justify-center gap-2'>
+                                    <FaThumbsUp /> Upvotes {Feedback?.upvotes}
                                 </ul>
                                 <ul
-                                    className='py-1 px-2 rounded-lg bg-white/20 text-yellow-500'>
-                                    Downvotes  {Feedback?.downvotes}
+                                    className='py-1 px-2 rounded-lg border border-red-300 dark:bg-white/20 bg-red-500/10 text-red-500 flex items-center justify-center gap-2'>
+                                    <FaThumbsDown /> Downvotes  {Feedback?.downvotes}
                                 </ul><ul
-                                    className='p-1 px-2 rounded-lg bg-white/20 text-yellow-500'>
-                                    Partial_Upvotes  {Feedback?.partial_upvotes}
+                                    className='p-1 px-2 rounded-lg border border-sky-300 dark:bg-white/20 bg-sky-500/10 text-sky-500 flex items-center justify-center gap-2' >
+                                    <FaQuestion /> Partial_Upvotes  {Feedback?.partial_upvotes}
                                 </ul>
                             </div>
 
 
                         </div>
-                        <p className="text-xs mt-5 flex items-center justify-between w-full">from peer reviews {Feedback !== null && <span className={`  bai-jamjuree-regular text-sm ${score > 70 ? 'text-green-500' : score > 30 && score < 70 ? 'text-yellow-500' : 'text-red-500'}`}>AuthenticityScore = {score}</span>}</p>
+                        <section className="text-xs mt-5 flex items-center justify-between w-full font-semibold"><ul className='inline-flex gap-2 items-center '><MdReviews /> From peer reviews </ul>{Feedback !== null && <span className={`  bai-jamjuree-regular text-sm ${score > 70 ? 'text-green-500' : score > 30 && score < 70 ? 'text-yellow-500' : 'text-red-500'} dark:bg-white/10 bg-black/10 rounded-lg py-1 px-2`}>Score : {score}</span>}</section>
                     </motion.div>
 
                     <motion.div
                         whileHover={{ y: -5 }}
-                        className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 p-6 rounded-xl border dark:border-gray-800 border-gray-200"
+                        className=" bg-gray-100 dark:bg-black p-6 rounded-xl border border-gray-400"
                     >
-                        <h3 className="text-sm opacity-70">Active Projects</h3>
+                        <h3 className="text-sm opacity-70 font-semibold">Active Projects</h3>
                         <p className="text-3xl font-bold mt-2">{user?.Contributions_user_id_fkey?.length}</p>
                         <span className="text-xs mt-1 truncate">{user?.Contributions_user_id_fkey && user?.Contributions_user_id_fkey.map((doc) => {
                             return <ul key={`${doc.id}_${doc.created_at}`}>{doc.feedback.trim().split("")}</ul>
@@ -160,9 +165,9 @@ const UserDashboard = () => {
                 </div>
 
                 {/* User  Conversations and documents */}
-                <section className={`mb-8 dark:bg-white/5 bg-black/5 p-2 rounded-lg ${open === true ? "h-90 overflow-scroll" : "h-50 overflow-hidden"} transition-discrete ease-linear duration-500`}>
+                <section className={`mb-8   p-2 rounded-lg ${open === true ? "h-90 overflow-scroll" : "h-50 overflow-hidden"} transition-discrete ease-linear duration-500`}>
                     <div className="flex justify-between items-center mb-4 bai-jamjuree-regular">
-                        <h2 className="text-xl font-bold ">Your documents</h2>
+                        <h2 className="text-xl font-bold flex items-center justify-center gap-2">Your documents <FiFile /></h2>
                         <button onClick={() => setOpen(!open)} className="ext-xs text-green-500 cursor-pointer flex items-center justify-center gap-2">View all
                             <FaArrowDown className={`${open === false ? "rotate-0" : "rotate-180"} transition-discrete duration-500`} size={10} />
                         </button>
@@ -173,11 +178,11 @@ const UserDashboard = () => {
                             <motion.div
                                 key={conv.id}
                                 whileHover={{ scale: 1.02 }}
-                                className="p-4 rounded-lg border bg-gray-100 dark:bg-black dark:border-gray-800 border-gray-200  transition-all cursor-pointer"
+                                className="p-4 rounded-lg  bg-gray-100 dark:bg-black border dark:border-gray-200 border-gray-400 transition-all cursor-pointer"
                             >
                                 <div className="flex justify-between items-start">
                                     <h3 className="font-medium space-grotesk flex items-center justify-center gap-2"><TbTextCaption color='green' /> {conv.feedback}</h3>
-                                    <span className="text-xs opacity-50 text-red-500">{conv.created_at.split("T")[0]}</span>
+                                    <span className="text-xs opacity-50 dark:text-white text-black flex items-center justify-center gap-2"><FiCalendar />{conv.created_at.split("T")[0]}</span>
                                 </div>
                                 <p className="text-sm opacity-70 mt-2">{conv.id}...</p>
                                 <div className="flex justify-end items-center mt-4">
@@ -191,7 +196,7 @@ const UserDashboard = () => {
                 </section>
 
                 {/* Rooms  Section */}
-                <section className={`${IncreaseHeight === true ? "h-90 overflow-scroll" : "h-50 overflow-hidden"} transition-discrete ease-linear duration-500`}>
+                <section className={`${IncreaseHeight === true ? "h-100 overflow-scroll" : "h-60 overflow-hidden"} transition-discrete ease-linear duration-300`}>
                     <div className="flex justify-between items-center mb-4 space-grotesk">
                         <h2 className="text-xl font-bold">Chatrooms</h2>
                         <section className='inline-flex gap-5'>
@@ -208,7 +213,7 @@ const UserDashboard = () => {
                                 whileHover={{ y: -4 }}
                                 whileTap={{ scale: 0.98 }}
                                 // onClick={() => console.log(room)}
-                                className="w-full sm:w-[300px] p-4 rounded-xl border border-gray-400 bg-white dark:bg-white/5 shadow-sm hover:shadow-md transition-all cursor-pointer relative"
+                                className="w-full  p-4 rounded-xl border border-gray-400 bg-white dark:bg-white/5 shadow-sm hover:shadow-md transition-all cursor-pointer relative"
                             >
                                 {/* Admin badge */}
                                 {user?.id === room.chat_rooms.created_by && (
@@ -218,15 +223,16 @@ const UserDashboard = () => {
                                 )}
 
                                 {/* Room icon */}
-                                <div className="flex justify-center mb-4">
-                                    <div className="p-4 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-300">
-                                        <MdRoomPreferences className="w-6 h-6" />
+                                {/* <div className="flex justify-center mb-4">
+                                    <div className="p-2 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-300">
+                                        <MdMarkUnreadChatAlt className="w-6 h-6" />
                                     </div>
-                                </div>
+                                </div> */}
 
                                 {/* Room info */}
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white line-clamp-1">
+                                    <h3 className="text-lg  text-gray-800 dark:text-white line-clamp-1 flex items-center justify-start gap-2 bai-jamjuree-semibold">
+                                        <MdMarkUnreadChatAlt className="w-6 h-6" />
                                         {room?.chat_rooms?.room_name || "Untitled Room"}
                                     </h3>
 
@@ -283,15 +289,15 @@ const UserDashboard = () => {
                     </div>
                 </section>
                 {/* join a room with a code section */}
-                <section className='dark:bg-white/5 bg-gray-100 rounded-lg w-full p-3 mt-4 space-y-3'>
-                    <h1 className='bai-jamjuree-semibold '>Have a room code ?</h1>
-                    <div className='flex items-center justify-start gap-4'>
-                        <input ref={InputRef} className='rounded-lg border border-gray-400 px-2 py-1 text-sm space-grotesk ' type="text" placeholder="Enter 6 digit code here " />
+                <section className='dark:bg-white/5 bg-gray-100 border border-gray-300 rounded-lg w-full p-3 mt-4 space-y-3'>
+                    <h1 className='bai-jamjuree-semibold flex items-center justify-start gap-2'><FaUserSecret /> Have a room code ?</h1>
+                    <div className='flex items-center justify-between gap-2'>
+                        <input ref={InputRef} className='rounded-lg border border-gray-400 px-2 py-1 text-sm space-grotesk w-full' type="text" placeholder="Enter 6 digit code here " />
                         <button disabled={isJoining === true} onClick={handleJoinRoom}
-                            className={` text-white dark:text-black  ${isJoining === true ? "bg-green-500" : "dark:bg-white bg-black"} rounded-lg px-2 py-1 text-sm space-grotesk font-semibold CustPoint`}>{isJoining === false ? (<>
-                                Join +
+                            className={` text-white dark:text-black  ${isJoining === true ? "bg-green-500" : "dark:bg-white bg-black"} rounded-lg px-2 py-1 text-sm space-grotesk font-semibold CustPoint flex items-center justify-center gap-2`}>{isJoining === false ? (<>
+                                Join <BsLightningChargeFill />
                             </>) : (<>
-                                Joining..
+                                Joining.. <IoMdHourglass className='animate-spin' />
                             </>)}</button>
                     </div>
                 </section>

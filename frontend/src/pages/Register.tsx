@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from "react-router";
-import axios, { isAxiosError } from 'axios'
+import axios from 'axios'
 import { toast, Toaster } from "sonner";
 import { FaUserPlus, FaUser, FaGoogle } from 'react-icons/fa'
 import { MdEmail, MdPassword } from "react-icons/md";
@@ -56,29 +56,19 @@ const Register = () => {
                 }
             })
 
-            console.log(response)
-            if (response.data.message === "Account created successfully !") {
-                toast("Account Created Successfully !");
+            let reset: any;
+            if (response.data.message === "An email has been sent to your registered email !") {
+                toast("An email has been sent to your registered email !");
                 setIsPending("success")
-                setTimeout(() => {
+                reset = setTimeout(() => {
                     setIsPending("idle")
-                }, 3000)
+                }, 2000)
             }
-        } catch (error: unknown) {
+            return () => clearTimeout(reset);
+        } catch (error: any) {
             setIsPending('failed');
 
-            if (isAxiosError(error)) {
-                if (error.response?.data?.message === "User already Exists  ! Please Login instead") {
-                    toast("User already Exists  ! Please Login instead");
-                } else {
-                    toast("Error while creating your Account !");
-                }
-            } else if (error instanceof Error) {
-                toast(`Unexpected error: ${error.message}`);
-            } else {
-                toast("An unknown error occurred");
-            }
-
+            toast.error(error.response.data.message);
             setTimeout(() => {
                 setIsPending("idle");
             }, 3000);

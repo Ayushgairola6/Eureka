@@ -17,42 +17,63 @@ const UploadDocuments = lazy(() => import("./pages/docs_page6.tsx"));
 const UserDashboard = lazy(() => import("./pages/UserDashBoard.tsx"));
 const ConversationDetail = lazy(() => import("./pages/Doc_History.tsx"));
 const ChatRoom = lazy(() => import("./pages/chatRoom.tsx"));
-
+const EmailVerification = lazy(() => import("./pages/EmailVerification.tsx"))
 
 import { connectSocket, disconnectSocket } from './store/websockteSlice.ts';
 import { useAppDispatch, useAppSelector } from './store/hooks.tsx';
-import { GetUserDashboardData, setIsLogin, setTheme } from './store/AuthSlice.ts';
+import { GetUserDashboardData, setIsLogin, setTheme, setUseStatus } from './store/AuthSlice.ts';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer'
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 import "./App.css"
 import axios from 'axios';
-import { Toaster } from 'sonner';
+import { toast, Toaster } from 'sonner';
+import { IoMdHourglass } from 'react-icons/io';
+// import { BiError } from 'react-icons/bi';
 const DocumentationLayout = lazy(() => import('./pages/DocumentationLayout.tsx'));
 
 
 const App = () => {
   // const [currTab, setCurrTab] = useState("Home");
   const dispatch = useAppDispatch()
-  const { isDarkMode, isLoggedIn } = useAppSelector(state => state.auth);
+  const { isDarkMode, isLoggedIn, userStatus } = useAppSelector(state => state.auth);
   const themeInitialized = useRef(false);
 
 
+  useEffect(() => {
+    let time: any;
+    if (userStatus === 'failed') {
+      toast.error("Failed to fetch your account details");
+      time = setTimeout(() => {
+        setUseStatus('idle');
+      }, 3000)
+
+    }
+    return () => clearTimeout(time);
+  }, [userStatus])
   // when loggedIn get userdetails from the dasboard
   useEffect(() => {
-    if (isLoggedIn === true) {
-      //get the users informations 
-      dispatch(GetUserDashboardData());
+    const fetchUserData = async () => {
+      if (isLoggedIn === true) {
+        try {
+          dispatch(GetUserDashboardData());
+          dispatch(connectSocket());
+        } catch (error) {
+          console.error("Failed to fetch user data:", error);
+        } finally {
+        }
+      }
+    };
 
-      dispatch(connectSocket());
+    fetchUserData();
+  }, [isLoggedIn, dispatch]);
 
-
-      return () => {
-        dispatch(disconnectSocket());
-        return undefined;
-      };
-    }
-  }, [isLoggedIn, dispatch])
+  // Cleanup socket on unmount
+  useEffect(() => {
+    return () => {
+      dispatch(disconnectSocket());
+    };
+  }, [dispatch]);
 
 
   // onMount verify the userstate
@@ -102,7 +123,7 @@ const App = () => {
         themeInitialized.current = true; // Mark as initialized
       }
     } catch (e) {
-      console.error('Error reading theme cookie:', e);
+      // console.error('Error reading theme cookie:', e);
     }
   }, [dispatch, isDarkMode]);
 
@@ -119,6 +140,17 @@ const App = () => {
 
 
   return (<>
+    {/* Global Loading Overlay */}
+    {userStatus === 'pending' && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 flex flex-col items-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-sky-600 mb-4"></div>
+          <p className="text-green-500 flex items-center justify-center gap-2">Loading your account data... <IoMdHourglass className='animate-spin' size={22} /></p>
+        </div>
+      </div>
+    )}
+    
+    {/* main routers */}
     <Suspense fallback={<div className='h-screen bg-black flex items-center justify-center     text-6xl '>
       <img src='/Group 1.svg' alt="Eureka logo" className='rounded-full h-30 w-30 bg-white' />
     </div>}>
@@ -128,6 +160,7 @@ const App = () => {
         <Toaster />
         <Routes >
           <Route element={<LandingPage />} path='/'></Route>
+          <Route element={<EmailVerification />} path="/user/verify-email" />
           <Route element={<Interface />} path='/Interface' >
           </Route>
           <Route element={<About />} path="/About" />

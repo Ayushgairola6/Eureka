@@ -46,7 +46,7 @@ const ChatRoom = () => {
         }
     }, [notification])
 
-    
+
     // finding the current room from the aray of the chatsroom
     const currentRoom = chatrooms.find(e => e.chat_rooms.room_id === id);
     const now = new Date();
@@ -205,7 +205,12 @@ const ChatRoom = () => {
                                         {currentRoom?.chat_rooms.room_type}
                                     </span>
                                 </div>
-
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-sm font-medium">About:</span>
+                                    <span className="px-2 py-1 text-xs  text-black dark:text-white line-clamp-2">
+                                        {currentRoom?.chat_rooms.Room_Description}
+                                    </span>
+                                </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium">Invite Code:</span>
                                     <span className="px-2 py-1 text-xs bg-red-600/10 text-red-600 rounded-full">
@@ -223,7 +228,7 @@ const ChatRoom = () => {
                             {roomMembers.length > 0 && (
                                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <h4 className="font-semibold mb-2 text-sm flex items-center">
-                                        <FiUsers className="mr-2" /> Members
+                                        <FiUsers className="mr-2" />Active now
                                     </h4>
                                     <div className="space-y-2">
                                         {roomMembers.map((member, index) => (
@@ -248,6 +253,9 @@ const ChatRoom = () => {
                         <h2 className="text-xl font-bold ">{currentRoom?.chat_rooms.room_name}</h2>
                         <span className='text-xs text-gray-400'>From {currentRoom?.chat_rooms.created_at?.split("T")[0]}</span>
                         <ul className=' bg-green-600/10 text-green-600 rounded-xl px-2 py-1 text-xs'>{currentRoom?.chat_rooms.room_type}</ul>
+                        <span className="px-2 py-1 text-xs  text-black dark:text-white ">
+                            {currentRoom?.chat_rooms.Room_Description}
+                        </span>
                         <ul className=' bg-red-600/10 text-red-600 rounded-xl px-2 py-1 text-xs'>Invite code - {currentRoom?.chat_rooms.Room_Joining_code}</ul>
 
                     </div>
@@ -257,6 +265,7 @@ const ChatRoom = () => {
                             <FiUsers className="mr-2" /> Members Limit ({currentRoom?.chat_rooms.participant_count})
                         </h3>
                         <div className="space-y-2">
+                            <label htmlFor="active">Active now</label>
                             {roomMembers.map((member, index) => (
                                 <div key={`${member.user}_at_${index}`} className="flex items-center ">
                                     <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white mr-2">

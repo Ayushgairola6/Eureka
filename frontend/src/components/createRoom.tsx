@@ -43,10 +43,9 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
         dispatch(CreateChatRoom(Data))
             .unwrap()
             .then((response) => {
-                if (response.message === 'Room created Successfully !') {
-                    toast.success("Room created successfully!");
-                    // Optional: Redirect or clear form
-                }
+             if(response){
+                toast.success("Rom has been created");
+             }   
             })
             .catch((error) => {
                 toast.error(error || "Failed to create room");
@@ -145,7 +144,7 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
                             onClick={HandleCreateRoom}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className={`w-full mt-6 ${isPending === true ? "bg-green-500" : "bg-indigo-500"}  text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 bai-jamjuree-semibold flex items-center justify-center gap-2`}
+                            className={`w-full mt-6 ${isPending === true ? "bg-green-500 text-white" : "bg-white text-black"}   font-medium py-2 px-4 rounded-lg transition-colors duration-200 bai-jamjuree-semibold flex items-center justify-center gap-2`}
                         >
                             {isPending === false ? (<>
                                 Create Room
