@@ -18,8 +18,9 @@ import { IoHeartHalfOutline } from "react-icons/io5";
 import { BiQuestionMark } from 'react-icons/bi';
 import { BsStars } from "react-icons/bs";
 import { useAppSelector, useAppDispatch } from '../store/hooks.tsx';
+import { SetQueryCount } from '../store/AuthSlice.ts';
 import {
-  setQuestion, setAnswer, setShowDocs, setShowOptions,
+  setQuestion, setShowDocs, setShowOptions,
   setShowType, UploadDocuments, QueryAIQuestions,
   QueryPrivateDocuments, AuthenticityResponseHandler,
   setLikeness
@@ -34,9 +35,9 @@ function Interface() {
   const loggedIn = useAppSelector(state => state.auth.isLoggedIn);
   const [selectedDoc, setSelectedDoc] = useState<string>('');
   // const [docId, setDocId] = useState<Array<{ uploaded_by: string; doc_id: string;[key: string]: any }>>([]);
-  const docId = useAppSelector(state => state.interface.docUser)
+  const docId = useAppSelector(state => state.interface.docUsed)
 
-  const { answer, question, loading, isVisible, category, suggestion, shhowUserForm, showDocs, showSubcategory, showType, shwoOptions, visibility, subCategory, queryType, likeness, privateResponse } = useAppSelector(state => state.interface);
+  const { answer, question, loading, isVisible, category, suggestion, shhowUserForm, showDocs, showSubcategory, showType, shwoOptions, visibility, subCategory, queryType, likeness, sendingFeedback } = useAppSelector(state => state.interface);
 
   // uploading a document
   const handleUpload = async (UserData: FormData) => {
@@ -60,27 +61,7 @@ function Interface() {
     formData.append("name", UserData.get("name") as string);
     formData.append("feedback", UserData.get("feedback") as string);
 
-
-    // try {
-    //   const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-    //   const response = await axios.post(`${BaseApiUrl}/api/upload-pdf`, formData, {
-    //     withCredentials: true,
-    //     headers: {
-    //       "Authorization": `Bearer ${AuthToken}`,
-    //     }
-    //   });
-
-    //   if (response.data.message === "Upload successfull") {
-    //     toast.message(`✅ ${response.data.message}`);
-    //   } else {
-    //     toast.info(`❌ Failed to Upload the File, Please try again later.`);
-    //   }
-    // } catch (err: any) {
-    //   toast.error(`❌ Network error: ${err.message}`);
-    // } finally {
-    //   dispatch(setLoading(false));
-    // }
-    dispatch(UploadDocuments(formData)).unwrap().then((res:any) => {
+    dispatch(UploadDocuments(formData)).unwrap().then((res: any) => {
       if (res.message) {
         toast.message(res.message)
       }
@@ -103,30 +84,6 @@ function Interface() {
     }
 
 
-    // try {
-    //   const response = await axios.post(`${BaseApiUrl}/api/ask-pdf`, { question: question, category, subCategory: subCategory }, {
-    //     withCredentials: true,
-    //     headers: {
-    //       "Authorization": `Bearer ${AuthToken}`
-    //     }
-    //   });
-    //   // console.log(response.data)
-    //   if (response.data.message === "Response found") {
-
-    //     setDocId((prev) => [...prev, ...response.data.doc_id])
-    //     dispatch(setAnswer(response.data.answer));
-    //   } else {
-    //     toast.error(`❌${response.data.answer}`);
-    //   }
-    //   // console.log(response.data)
-
-    // } catch (err: any) {
-    //   // console.log(err)
-    //   toast.error(`❌ Network error: ${err.message}`);
-    // } finally {
-    //   dispatch(setLoading(false));
-    // }
-
     const data = {
       question: question,
       category: category,
@@ -136,7 +93,8 @@ function Interface() {
     dispatch(QueryAIQuestions(data)).unwrap().then((res) => {
       if (res.message) {
         toast.message(res.message)
-        dispatch(setAnswer(""))
+        // dispatch(setAnswer(""))
+        dispatch(SetQueryCount());
       }
     }).catch(err => toast.error(err.message))
 
@@ -157,22 +115,7 @@ function Interface() {
       toast.info("Please select a query type");
       return;
     }
-    //   const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
 
-    //   const privateDocResponse = await axios.post(`${BaseApiUrl}/api/privateDocs/ask`, { question: question, docId: selectedDoc, query_type: queryType }, {
-    //     withCredentials: true, headers: {
-    //       'Authorization': `Bearer ${AuthToken}`
-    //     }
-    //   })
-
-    //   dispatch(setPrivateResponse(privateDocResponse.data.answer));
-    //   return privateDocResponse.data.answer
-    // } catch (err: any) {
-    //   // console.log(err)
-    //   toast.error(`❌ Network error: ${err.message}`);
-    // } finally {
-    //   dispatch(setLoading(false));
-    // }
     const data = {
       question: question,
       docId: selectedDoc,
@@ -196,38 +139,18 @@ function Interface() {
       toast("Some fields are missing !");
       return;
     }
-    // try {
-    //   const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
 
-    //   const response = await axios.post(`${BaseApiUrl}/api/doc/authenticity`, { likeness: likeness, suggestions: suggestion, docId }, {
-    //     withCredentials: true, headers: {
-    //       'Authorization': `Bearer ${AuthToken}`
-    //     }
-    //   })
-    //   // setAnswer("");
-    //   dispatch(setLikeness(""));
-    //   dispatch(setSuggestion(""));
-
-    //   if (response.data.message === 'Feedback recorded successfully') {
-    //     toast.message("Thank you for your feedback !")
-    //   } else {
-    //     toast.message(response.data.message);
-    //   }
-    // } catch (error: any) {
-    //   // console.log(error);
-    //   toast.error(error.message);
-
-    // }
     const data = {
       likeness: likeness,
       suggestions: suggestion,
       docId: docId
     }
-    dispatch(AuthenticityResponseHandler(data)).unwrap().then((res:any) => {
-      if (res.message) {
-        toast.message(res.message)
-      }
-    }).catch(err => toast.error(err.message))
+    dispatch(AuthenticityResponseHandler(data)).unwrap().catch(err => toast.error(err))
+      .then((res: any) => {
+        if (res.message) {
+          toast.success(res.message)
+        }
+      })
   }
 
   return (
@@ -258,12 +181,23 @@ function Interface() {
 
 
       {/* rest of the page */}
-      <Card className="lg:w-1/2 md:w-4/5 w-full  overflow-y-scroll min-h-[85vh] bg-gray-100 dark:bg-white/10 rounded-md  ">
+      <Card className="lg:w-1/2 md:w-4/5 w-full  overflow-y-scroll  bg-gray-100 dark:bg-white/10 rounded-md  ">
         {/* private docs */}
 
         <CardContent>
           <div className="space-y-6 ">
-
+            {/* Answer Display Section */}
+            {answer && (
+              <div className="grid  w-full items-start gap-5 mt-4 max-h-[50vh] min-h-[200px] overflow-y-auto">
+                <Label className='space-grotesk text-sm font-semibold'>Response!</Label>
+                <div className="bg-gray-100 dark:bg-black rounded-md border border-gray-300 p-4 h-full overflow-auto">
+                  <MarkdownRenderer
+                    content={answer}
+                    className="text-sm text-gray-800 dark:text-gray-200 darj h-full bai-jamjuree-regular leading-loose"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Ask Question Section */}
             <div className="grid w-full items-center gap-5 relative ">
@@ -319,96 +253,87 @@ function Interface() {
 
             </div>
 
-            {/* Answer Display Section */}
-            {answer || privateResponse ? (
-              <div className="grid  w-full items-start gap-5 mt-4 max-h-[50vh] min-h-[200px] overflow-y-auto">
-                <Label className='space-grotesk text-sm font-semibold'>Response!</Label>
-                <div className="bg-gray-100 dark:bg-black rounded-md border border-gray-300 p-4 h-full overflow-auto">
-                  <MarkdownRenderer
-                    content={answer ? answer : privateResponse}
-                    className="text-sm text-gray-800 dark:text-gray-200 darj h-full bai-jamjuree-regular leading-loose"
-                  />
-                </div>
-              </div>
-            ) : <div className='flex items-center justify-center space-grotesk text-gray-400 '>
-              <h1>Response will be visible here</h1>
-            </div>}
+
             {/* upvote and downvote system */}
-            {answer ? (
-              <div className="py-6 px-4 rounded-xl bg-white dark:bg-gray-900 shadow-md mt-6 w-full">
+            {answer && (
+              <div onClick={() => console.log(docId)} className="p-2 rounded-lg bg-gray-100 dark:bg-black border border-gray-200 dark:border-gray-700 mt-4">
+                {/* Contributors section */}
+                <h1 className='bai-jamjuree-regular text-sm text-black dark:text-white my-2'>what would you rate this Information</h1>
                 {docId.length > 0 && (
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                    <h1 className="text-sm text-center md:text-md bai-jamjuree-semibold text-gray-700 dark:text-gray-200">
-                      Docs uploaded by these beautiful people used for this answer
-                    </h1>
-                    <div className="flex flex-wrap items-center justify-center gap-2">
+                  <div className="mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">
+                      Contributors to this answer
+                    </h3>
+                    <div className="flex flex-wrap gap-1">
                       {docId
                         .filter((doc, index, self) =>
                           index === self.findIndex((d) => d.uploaded_by === doc.uploaded_by)
                         )
-                        .map((doc, index) => (<>
-                          <div className='flex flex-col items-center justify-center gap-1'>
-                            <span
-                              key={index}
-                              className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-3 py-1 rounded-full text-xs md:text-sm font-medium space-grotesk"
-                            >
-                              {doc?.uploaded_by}
-                            </span>
-                            <section className='flex items-center justify-center gap-1'>
-                              <ul className='flex items-center justfiy-center'><FaThumbsUp color="green" />{doc.upvotes}</ul>
-                              <ul className='flex items-center justfiy-center'> <FaThumbsDown color="red" />{doc.downvotes}</ul>
-                              <ul className='flex items-center justfiy-center'><IoHeartHalfOutline color="skyblue" />{doc.partial_upvotes}</ul>
-                            </section>
+                        .map((doc, index) => (
+                          <div key={index} className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md text-xs">
+                            <span className="text-gray-700 dark:text-gray-200">{doc?.uploaded_by}</span>
+                            <div className="flex items-center gap-1 text-[10px]">
+                              <span className="text-green-500"><FaThumbsUp /> {doc.upvotes}</span>
+                              <span className="text-red-500"><FaThumbsDown /> {doc.downvotes}</span>
+                              <span className="text-blue-500"><IoHeartHalfOutline /> {doc.partial_upvotes}</span>
+                            </div>
                           </div>
-
-                        </>
-                        ))}
+                        ))
+                      }
                     </div>
                   </div>
                 )}
-                <div className="flex flex-col md:flex-row md:items-start items-stretch justify-between gap-6 w-full">
-                  <div className="bai-jamjuree-regular text-sm flex flex-col  gap-2 w-full md:w-1/3">
-                    <section
+
+                {/* Feedback buttons */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center justify-start gap-4">
+                    <button
                       onClick={() => dispatch(setLikeness("upvote"))}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs transition-colors ${likeness === "upvote"
+                        ? "bg-green-100 text-green-800 border border-green-300"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                        }`}
+                    >
+                      <FaThumbsUp  />
+                      {/* <span>Helpful</span> */}
+                    </button>
 
-                      className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "upvote" ? "bg-green-300 text-black " : "dark:bg-white/20 bg-white  border-green-200"}`}>
-
-                      <FaThumbsUp color='green' />
-                      <label htmlFor="Helpful">Helpful</label>
-
-                    </section>
-                    <section
+                    <button
                       onClick={() => dispatch(setLikeness("downvote"))}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs transition-colors ${likeness === "downvote"
+                        ? "bg-red-100 text-red-800 border border-red-300"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        }`}
+                    >
+                      <FaThumbsDown  />
+                      {/* <span>Incorrect</span> */}
+                    </button>
 
-                      className={`flex items-center gap-2 border  rounded-lg p-1 ${likeness === "downvote" ? "bg-red-300 text-black " : "dark:bg-white/20 bg-white  border-red-200"}`}>
-
-                      <FaThumbsDown color='red' />
-                      <label htmlFor="Incorrect">Flag incorrect</label>
-
-                    </section>
-                    <section
+                    <button
                       onClick={() => dispatch(setLikeness("partial_upvote"))}
-                      className={`flex items-center gap-2 border dark  rounded-lg p-1 ${likeness === "partial_upvote" ? "bg-sky-300 text-black " : "bg-white dark:bg-white/20  border-sky-200"}`}>
-
-                      <IoHeartHalfOutline color='blue' />
-                      <label htmlFor="Missing">Missing some information </label>
-
-                    </section>
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs transition-colors ${likeness === "partial_upvote"
+                        ? "bg-blue-100 text-blue-800 border border-blue-300"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        }`}
+                    >
+                      <IoHeartHalfOutline  />
+                      {/* <span>Missing info</span> */}
+                    </button>
                   </div>
-                  <div className="flex flex-col gap-2 w-full md:w-2/3">
 
-                    <div className="flex items-center justify-end mt-2">
-                      <button
-                        onClick={ResponseAuthenticity_Handler}
-                        className="bg-black  space-grotesk text-white rounded-lg px-4 py-2 text-sm hover:bg-gray-800 transition-colors"
-                      >
-                        Submit
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    disabled={sendingFeedback}
+                    onClick={ResponseAuthenticity_Handler}
+                    className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${sendingFeedback
+                      ? "bg-green-600 text-white"
+                      : "bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+                      }`}
+                  >
+                    {sendingFeedback ? "Submitting..." : "Submit"}
+                  </button>
                 </div>
               </div>
-            ) : null}
+            )}
           </div>
         </CardContent>
       </Card>

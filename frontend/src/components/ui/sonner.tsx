@@ -7,12 +7,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
-      className="toaster group space-grotesk"
+      className="toaster group bai-jamjuree-semibold"
       style={
         {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
+          'fontFamily':"bai-jamjuree-semibold"
         } as React.CSSProperties
       }
       {...props}

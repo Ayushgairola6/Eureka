@@ -28,12 +28,12 @@ export const HandleDocumentAuthenticityFeedback = async (req, res) => {
     try {
         const user_id = req.user.user_id;
         if (!user_id) {
-            return res.status(400).json({ message: "Unauhthorized" });
+            return res.status(401).json({ message: "Unauhthorized" });
         }
 
-        const { likeness, suggestions, docId } = req.body;
-        if (!likeness || typeof likeness !== "string" || !suggestions || typeof suggestions !== 'string' || !docId) {
-            return res.status(401).json({ message: "Some fields are missing" });
+        const { likeness, docId } = req.body;
+        if (!likeness || typeof likeness !== "string" || !docId) {
+            return res.status(400).json({ message: "Some fields are missing" });
         }
         const cleanedDocIds = deduplicateDocuments(docId)
 
@@ -44,20 +44,14 @@ export const HandleDocumentAuthenticityFeedback = async (req, res) => {
                     { data, error } =
                         await
                             supabase.rpc(
-                                'increment_doc_feedback_vote'
+                                "handle_document_feedback"
                                 , {
-                                    p_document_id
-                                        : doc_id,
-                                    p_user_id
-                                        : user_id,
-                                    p_vote_type: likeness
+                                    p_user_id: user_id, p_document_id: doc_id, p_likeness: likeness,
                                 });
                 if (error) {
-                    console.error(`Error updating doc ${doc_id}:`, error);
-                    throw error;
+                    console.error("RPC error:", error.message);
                 }
 
-                return data;
             });
 
             const updated = await Promise.all(feedbackUpdates);
@@ -65,11 +59,11 @@ export const HandleDocumentAuthenticityFeedback = async (req, res) => {
             console.error('Error in feedback updates:', error);
         }
 
-
-
         return res.json({ message: "Feedback recorded successfully" });
+
     } catch (error) {
         console.log(error);
+        return res.status(500).send({ message: "Something went wrong !" })
     }
 }
 // only keep on copy of each document Id

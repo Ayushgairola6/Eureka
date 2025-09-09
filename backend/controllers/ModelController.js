@@ -37,7 +37,6 @@ export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
         });
 
         const responseText = result.text;
-        console.log(result)
         if (!responseText) {
             // console.log(responseText)
             return { error: "The server is very busy , please try again !" }

@@ -27,6 +27,7 @@
     "multer": "^2.0.1",
     "nodemailer": "^7.0.5",
     "pdf-parse": "^1.1.1",
+    "redis": "^5.8.2",
     "socket.io": "^4.8.1",
     "stripe": "^18.4.0",
     "uuid": "^11.1.0"

@@ -18,7 +18,7 @@ interface user {
   id: string;
   username: string;
   email: string;
-  isVerified:boolean;
+  isVerified: boolean;
   Contributions_user_id_fkey: Contributions_user_id_fkey[];
   created_at: string;
 }
@@ -63,7 +63,7 @@ interface AuthState {
   user: user | null;
   loading: boolean;
   error: string | null;
-  userStatus: string ;
+  userStatus: string;
   FeedbackCounts: FeedbackCounts;
   Querycount: number;
   AuthenticityScore: number;
@@ -82,7 +82,7 @@ interface ActionPayload {
   room_id: string
   requested_user_id: string,
   room_name: string
-  admin_id:string
+  admin_id: string
 }
 const initialState: AuthState = {
   user: null,
@@ -134,7 +134,7 @@ export const GetUserDashboardData = createAsyncThunk<AuthState, void>(
 export const AcceptOrRejectRequest = createAsyncThunk
   <any, ActionPayload>(
     'request/actions',
-    async ({ action_type, requested_user_id, room_id, room_name,admin_id }, { rejectWithValue }) => {
+    async ({ action_type, requested_user_id, room_id, room_name, admin_id }, { rejectWithValue }) => {
       try {
         const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
         const response = await axios.post(`${BaseApiUrl}/api/user/requests/${action_type}/${requested_user_id}/${room_id}/${room_name}/${admin_id}`, {}, {
@@ -218,8 +218,11 @@ const authSlice = createSlice({
     setIsLogin: (state, action) => {
       state.isLoggedIn = action.payload;
     },
-    setUseStatus:(state,action)=>{
+    setUseStatus: (state, action) => {
       state.userStatus = action.payload;
+    },
+    SetQueryCount: (state) => {
+      state.Querycount += 1;
     }
   },
   extraReducers: (builder) => {
@@ -262,5 +265,5 @@ const authSlice = createSlice({
 });
 
 
-export const { toggleTheme, setTheme, setCurrTab, SetNotifications, setNotificationCount, NewUserNotification, setIsLogin ,setUseStatus} = authSlice.actions
+export const { toggleTheme, setTheme, setCurrTab, SetNotifications, setNotificationCount, NewUserNotification, setIsLogin, setUseStatus,SetQueryCount } = authSlice.actions
 export default authSlice.reducer;

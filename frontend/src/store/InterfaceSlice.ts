@@ -28,14 +28,15 @@ interface InterfaceState {
   shwoOptions: boolean
   queryType: string
   showType: boolean
-  docUser: DocUsed[]
+  docUsed: DocUsed[]
+  sendingFeedback: boolean
 }
 
 const initialState: InterfaceState = {
   question: "",
   answer: "",
   loading: false,
-  isVisible: false, category: '', subCategory: "", visibility: "Public", showSubcategory: false, shhowUserForm: false, showDocs: false, privateResponse: '', likeness: "", suggestion: "", shwoOptions: false, showType: false, queryType: "", docUser: []
+  isVisible: false, category: '', subCategory: "", visibility: "Public", showSubcategory: false, shhowUserForm: false, showDocs: false, privateResponse: '', likeness: "", suggestion: "", shwoOptions: false, showType: false, queryType: "", docUsed: [], sendingFeedback: false
 };
 
 // Async Thunks
@@ -114,6 +115,7 @@ export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
           'Authorization': `Bearer ${AuthToken}`
         }
       })
+      console.log(response.data)
       return response.data;
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
@@ -131,7 +133,7 @@ const interfaceSlice = createSlice({
       state.question = action.payload;
     },
     setDocUsed: (state, action) => {
-      state.docUser.push(action.payload);
+      state.docUsed.push(action.payload);
     },
     setAnswer: (state, action) => {
       state.answer = action.payload;
@@ -185,69 +187,54 @@ const interfaceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(UploadDocuments.pending, (state) => {
-      console.log("uploading doc pending")
       state.loading = true
     })
-      .addCase(UploadDocuments.fulfilled, (state, action) => {
-        console.log("uploading doc completed", action.payload)
-
+      .addCase(UploadDocuments.fulfilled, (state) => {
         state.loading = false
       }).addCase(UploadDocuments.rejected, (state) => {
-        console.log("uploading doc failed")
         state.loading = false;
       })
 
       //ask questions
       .addCase(QueryAIQuestions.pending, (state) => {
-        console.log("QueryAIQuestions doc pending")
-
         state.loading = true
       })
       .addCase(QueryAIQuestions.fulfilled, (state, action) => {
         state.loading = false;
-        console.log("QueryAIQuestions doc completed", action.payload)
-
         state.answer = action.payload.answer;
+        state.docUsed = [...action.payload.doc_id];
+
       }).addCase(QueryAIQuestions.rejected, (state) => {
-        console.log("QueryAIQuestions doc failed")
 
         state.loading = false;
       })
 
       //query privatedocuments
       .addCase(QueryPrivateDocuments.pending, (state) => {
-        console.log("QueryPrivateDocuments doc pending")
-
         state.loading = true
       })
       .addCase(QueryPrivateDocuments.fulfilled, (state, action) => {
         state.loading = false;
-        console.log("QueryPrivateDocuments doc completed", action.payload)
-
-        state.privateResponse = action.payload.answer;
+        state.answer = action.payload.answer;
       })
       .addCase(QueryPrivateDocuments.rejected, (state) => {
-        console.log("QueryPrivateDocuments doc failed")
-
         state.loading = true;
       })
 
       //authenticiy handler
       .addCase(AuthenticityResponseHandler.pending, (state) => {
         console.log("AuthenticityResponseHandler doc pending")
-
-        state.loading = true
+        state.sendingFeedback = true
       })
-      .addCase(AuthenticityResponseHandler.fulfilled, (state, action) => {
-        console.log("AuthenticityResponseHandler doc completed", action.payload)
+      .addCase(AuthenticityResponseHandler.fulfilled, (state) => {
+        console.log("AuthenticityResponseHandler doc completed")
+        state.sendingFeedback = false;
+        // state.docUsed = action.payload
 
-        state.loading = false;
-        state.likeness = "";
-        state.suggestion = '';
       })
       .addCase(AuthenticityResponseHandler.rejected, (state) => {
         console.log("AuthenticityResponseHandler doc failed")
-        state.loading = true;
+        state.sendingFeedback = false;
       })
 
   },

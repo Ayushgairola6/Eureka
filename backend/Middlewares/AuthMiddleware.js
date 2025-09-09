@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { supabase } from '../controllers/supabaseHandler.js';
 import { GenerateAccessTokens } from '../controllers/AuthController.js';
+import { redisClient } from '../CachingHandler/redisClient.js';
 dotenv.config();
 
 export const verifyJwtAsync = (token, secret) =>
@@ -35,18 +36,36 @@ export const VerifyToken = async (req, res, next) => {
             if (err.name === "TokenExpiredError") {
                 // console.log("Access token expired")
                 const DecodedData = jwt.decode(AccessToken);
-                const { data, error } = await supabase
-                    .from("Tokens")
-                    .select("Refresh_Token").eq(' user_id', DecodedData?.user_id)
+                const RefreshTokenKey = `user=${DecodedData.username}'s_userId=${DecodedData.user_id}`;
 
-                if (error || !data) {
-                    // console.log(data, error)
-                    console.log("No Refresh token in database")
+                // checking refresh token in the cache
+                const HasCacheRefreshToken = await redisClient.get(RefreshTokenKey);
+                let refreshToken;
 
-                    return res.status(401).json({ message: "Session expired. Please log in again." });
+                if (HasCacheRefreshToken) {
+                    refreshToken = JSON.parse(HasCacheRefreshToken);
+
+                } else {
+                    const { data, error } = await supabase
+                        .from("Tokens")
+                        .select("Refresh_Token").eq(' user_id', DecodedData?.user_id)
+
+                    if (error || !data) {
+                        // console.log(data, error)
+                        console.log("No Refresh token in database")
+
+                        return res.status(401).json({ message: "Session expired. Please log in again." });
+                    }
+                    refreshToken = data[0].Refresh_Token;
+                    // store the token in the cache
+                    await redisClient.set(RefreshTokenKey, JSON.stringify(data[0].Refresh_Token),{
+                        expiration:{
+                            type:'EX',
+                            value:600
+                        }
+                    })
                 }
 
-                const refreshToken = data[0]?.Refresh_Token;
                 // console.log("refreshtoken data", refreshToken)
 
                 let refreshDecoded;
@@ -54,6 +73,10 @@ export const VerifyToken = async (req, res, next) => {
 
                     refreshDecoded = await verifyJwtAsync(refreshToken, process.env.REFRESH_TOKEN_SECRET);
                 } catch (refreshErr) {
+                    const hasCachedRefreshToken = await redisClient.get(RefreshTokenKey);
+                    if (hasCachedRefreshToken) {
+                        await redisClient.del(RefreshTokenKey);
+                    }
                     return res.status(401).json({ message: "Session expired. Please log in again." });
                 }
 
