@@ -23,7 +23,6 @@ import { IoSunnyOutline } from "react-icons/io5";
 import { MdReviews } from "react-icons/md";
 import { JoinAChatRoom } from "../store/chatRoomSlice.ts";
 import { toast, Toaster } from "sonner";
-import { joinAChatRoom } from "../store/websockteSlice.ts";
 import { IoMdHourglass } from "react-icons/io";
 // import {NewUserNotification} from '../store/AuthSlice.ts'
 const CreateRoom = lazy(() => import("@/components/createRoom.tsx"));
@@ -369,21 +368,7 @@ const UserDashboard = () => {
                         "Unknown date"}
                     </ul>
                     <ul className=" flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => {
-                          if (user && room) {
-                            const roomInfo = {
-                              room_id: room.room_id,
-                              room_name: room.chat_rooms.room_name,
-                              username: user.username,
-                              user_id: user.id,
-                            };
-
-                            // Dispatch the join action
-                            // dispatch(joinAChatRoom(roomInfo));
-                          }
-                        }}
-                      >
+                      <button>
                         <Link
                           className=" text-indigo-600  text-xs "
                           to={`/chatroom/${room?.room_id}`}
