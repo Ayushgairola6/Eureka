@@ -216,13 +216,13 @@ export const HandleUserLogin = async (req, res) => {
     const clientIp =
       req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;
 
-    // const LoginEmail = await EmailServices.sendLoginNotification(data, {
-    //   ip: clientIp,
-    //   userAgent: req.headers["user-agent"],
-    //   browser: req.headers["sec-ch-ua"],
-    //   platform: req.headers["sec-ch-ua"],
-    //   timestamp: new Date(),
-    // });
+    const LoginEmail = await EmailServices.sendLoginNotification(data, {
+      ip: clientIp,
+      userAgent: req.headers["user-agent"],
+      browser: req.headers["sec-ch-ua"],
+      platform: req.headers["sec-ch-ua"],
+      timestamp: new Date(),
+    });
 
     return res
       .status(200)
