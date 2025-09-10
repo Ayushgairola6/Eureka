@@ -157,7 +157,9 @@ export const HandleUserLogin = async (req, res) => {
       typeof password !== "string"
     ) {
       console.error("Invalid data ");
-      return res.status(400).json({ message: "Invalid data type !" });
+      return res
+        .status(400)
+        .json({ message: "This email address does not exist !" });
     }
 
     const { data, error } = await supabase
@@ -174,7 +176,7 @@ export const HandleUserLogin = async (req, res) => {
 
     if (!isMatching) {
       console.log("passwod did not match");
-      return res.status(400).send({ message: "Invalid password" });
+      return res.status(400).send({ message: "The password did not match" });
     }
 
     const RefreshToken = GenerateRefreshTokens(
@@ -184,20 +186,24 @@ export const HandleUserLogin = async (req, res) => {
     );
     if (!RefreshToken) {
       console.error("Error while geenrating refreshtoken");
-      return res.status(400).send({ message: "An error occurred" });
+      return res
+        .status(400)
+        .send({ message: "Error while creating a session" });
     }
     const AuthToken = GenerateAccessTokens(data.id, data.email, data.username);
 
     if (!AuthToken) {
       console.error("Error while geenrating AccessToken");
-      return res.status(400).send({ message: "An error occurred" });
+      return res
+        .status(400)
+        .send({ message: "Error while creating a session" });
     }
     const store = await StoreTokens(RefreshToken, AuthToken, data.id);
     if (store.error) {
       console.log(store.error);
       return res
         .status(400)
-        .json({ message: "Error while logging in please try again later !" });
+        .json({ message: "Error while setting up the session" });
     }
 
     res.cookie("Eureka_eta_six_version1_AuthToken", AuthToken, {
@@ -210,22 +216,20 @@ export const HandleUserLogin = async (req, res) => {
     const clientIp =
       req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;
 
-    const LoginEmail = await EmailServices.sendLoginNotification(data, {
-      ip: clientIp,
-      userAgent: req.headers["user-agent"],
-      browser: req.headers["sec-ch-ua"],
-      platform: req.headers["sec-ch-ua"],
-      timestamp: new Date(),
-    });
+    // const LoginEmail = await EmailServices.sendLoginNotification(data, {
+    //   ip: clientIp,
+    //   userAgent: req.headers["user-agent"],
+    //   browser: req.headers["sec-ch-ua"],
+    //   platform: req.headers["sec-ch-ua"],
+    //   timestamp: new Date(),
+    // });
 
     return res
       .status(200)
       .json({ message: "Login successfull", AuthToken: AuthToken });
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({ message: "Error while Logging into your account !" });
+    return res.status(500).json({ message: "Something went wrong !" });
   }
 };
 

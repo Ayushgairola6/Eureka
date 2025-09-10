@@ -9,7 +9,7 @@ const LoadingIndicator: React.FC<LoadingProp> = ({ text }) => {
     <>
       <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-gray-200 rounded-xl p-6 flex flex-col items-center">
-          <p className="bai-jamjuree-bold text-green-500 flex items-center justify-center gap-2">
+          <div className="bai-jamjuree-bold text-green-500 flex items-center justify-center gap-2">
             {text}
             <motion.ul
               animate={{ y: [0, -4, 0] }}
@@ -38,7 +38,7 @@ const LoadingIndicator: React.FC<LoadingProp> = ({ text }) => {
               }}
               className="bg-green-500 rounded-full h-2 w-2"
             />
-          </p>
+          </div>
         </div>
       </div>
     </>

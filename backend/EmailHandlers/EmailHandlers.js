@@ -1,15 +1,12 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
+import Brevo from "@getbrevo/brevo";
+
 export const EmailTransporter = () => {
-    return nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.GMAIL_PASSWORD,
-        },
-    });
+  const defaultClient = Brevo.ApiClient.instance;
+  const apiKey = defaultClient.authentications["api-key"];
+  apiKey.apiKey = process.env.BREVO_EUREKA_KEY;
+
+  return new Brevo.TransactionalEmailsApi();
 };
-
-

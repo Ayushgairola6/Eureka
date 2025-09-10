@@ -380,7 +380,7 @@ const UserDashboard = () => {
                             };
 
                             // Dispatch the join action
-                            dispatch(joinAChatRoom(roomInfo));
+                            // dispatch(joinAChatRoom(roomInfo));
                           }
                         }}
                       >

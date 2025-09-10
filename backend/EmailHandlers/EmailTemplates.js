@@ -1,11 +1,18 @@
 import { EmailTransporter } from "./EmailHandlers.js";
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
+import * as Brevo from "@getbrevo/brevo";
+import dotenv from "dotenv";
+dotenv.config();
 
-
+const apiInstance = new Brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(
+  Brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_EUREKA_KEY
+);
 
 export const welcomeEmail = (user) => ({
-    subject: '🎉 Welcome to Eureka !',
-    html: `
+  subject: "🎉 Welcome to Eureka !",
+  html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -92,13 +99,12 @@ export const welcomeEmail = (user) => ({
     </div>
 </body>
 </html>
-    `
+    `,
 });
 
-
 export const loginNotificationEmail = (user, loginData) => ({
-    subject: '🔐 New Login Detected on Your Account',
-    html: `
+  subject: "🔐 New Login Detected on Your Account",
+  html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -158,10 +164,18 @@ export const loginNotificationEmail = (user, loginData) => ({
             <p><strong>Login Details:</strong></p>
             <div class="login-details">
                 <p>📅 <strong>Date & Time:</strong> ${new Date().toLocaleString()}</p>
-                <p>🌐 <strong>Ip address:</strong> ${loginData.ip || 'Unknown'}</p>
-                <p>💻 <strong>Device:</strong> ${loginData.userAgent || 'Unknown device'}</p>
-                <p>📱 <strong>Browser:</strong> ${loginData.browser || 'Unknown browser'}</p>
-                <p>📱 <strong>Platform:</strong> ${loginData.platform || 'Unknown browser'}</p>
+                <p>🌐 <strong>Ip address:</strong> ${
+                  loginData.ip || "Unknown"
+                }</p>
+                <p>💻 <strong>Device:</strong> ${
+                  loginData.userAgent || "Unknown device"
+                }</p>
+                <p>📱 <strong>Browser:</strong> ${
+                  loginData.browser || "Unknown browser"
+                }</p>
+                <p>📱 <strong>Platform:</strong> ${
+                  loginData.platform || "Unknown browser"
+                }</p>
 
             </div>
 
@@ -179,12 +193,12 @@ export const loginNotificationEmail = (user, loginData) => ({
     </div>
 </body>
 </html>
-    `
+    `,
 });
 
 export const passwordResetEmail = (user, resetToken) => ({
-    subject: '🔑 Reset Your Password',
-    html: `
+  subject: "🔑 Reset Your Password",
+  html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -275,13 +289,12 @@ export const passwordResetEmail = (user, resetToken) => ({
     </div>
 </body>
 </html>
-    `
+    `,
 });
 
-
 export const passwordResetConfirmationEmail = (user) => ({
-    subject: '✅ Your Password Has Been Reset',
-    html: `
+  subject: "✅ Your Password Has Been Reset",
+  html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -325,11 +338,11 @@ export const passwordResetConfirmationEmail = (user) => ({
     </div>
 </body>
 </html>
-    `
+    `,
 });
 export const emailVerificationEmail = (user, verificationToken) => ({
-    subject: '✅ Verify Your Eureka Account',
-    html: `
+  subject: "✅ Verify Your Eureka Account",
+  html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -380,50 +393,55 @@ export const emailVerificationEmail = (user, verificationToken) => ({
     </div>
 </body>
 </html>
-    `
+    `,
 });
 
 export class EmailServices {
-    // actual email sending function
-    static async SendEmail(to, subject, html) {
-        try {
-            const transporter = EmailTransporter();
-            const mailOptions = {
-                from: `From Team EUREKA - ${process.env.EMAIL_FROM}`,
-                to,
-                subject, html
-            }
+  // actual email sending function
+  static async SendEmail(to, subject, html) {
+    try {
+      const sendSmtpEmail = new Brevo.SendSmtpEmail();
 
-            const result = await transporter.sendMail(mailOptions);
+      sendSmtpEmail.sender = {
+        name: "Eureka",
+        email: "ayushgairola2002@gmail.com",
+      };
+      sendSmtpEmail.to = [{ email: to }];
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = html;
+      sendSmtpEmail.params = {
+        name: "Eureka",
+        email: "ayushgairola2002@gmail.com",
+      };
+      const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+      return data;
+    } catch (error) {
+      console.error("Email sending failed:", error);
+      throw error;
+    }
+  }
+  // Public methods - specific email types
+  static async sendWelcomeEmail(user) {
+    const { subject, html } = welcomeEmail(user);
+    return this.SendEmail(user.email, subject, html);
+  }
 
-            return result;
-        } catch (error) {
-            console.error('Email sending failed:', error);
-            throw error;
-        }
-    }
-    // Public methods - specific email types
-    static async sendWelcomeEmail(user) {
-        const { subject, html } = welcomeEmail(user);
-        return this.SendEmail(user.email, subject, html);
-    }
+  static async sendLoginNotification(user, loginData) {
+    const { subject, html } = loginNotificationEmail(user, loginData);
+    return this.SendEmail(user.email, subject, html);
+  }
 
-    static async sendLoginNotification(user, loginData) {
-        const { subject, html } = loginNotificationEmail(user, loginData);
-        return this.SendEmail(user.email, subject, html);
-    }
+  static async sendPasswordResetEmail(user, resetToken) {
+    const { subject, html } = passwordResetEmail(user, resetToken);
+    return this.SendEmail(user.email, subject, html);
+  }
 
-    static async sendPasswordResetEmail(user, resetToken) {
-        const { subject, html } = passwordResetEmail(user, resetToken);
-        return this.SendEmail(user.email, subject, html);
-    }
-
-    static async sendPasswordResetSuccessEmail(user) {
-        const { subject, html } = passwordResetConfirmationEmail(user);
-        return this.SendEmail(user.email, subject, html);
-    }
-    static async sendAccountVerficicationEmail(user, verificationToken) {
-        const { subject, html } = emailVerificationEmail(user, verificationToken);
-        return this.SendEmail(user.email, subject, html);
-    }
+  static async sendPasswordResetSuccessEmail(user) {
+    const { subject, html } = passwordResetConfirmationEmail(user);
+    return this.SendEmail(user.email, subject, html);
+  }
+  static async sendAccountVerficicationEmail(user, verificationToken) {
+    const { subject, html } = emailVerificationEmail(user, verificationToken);
+    return this.SendEmail(user.email, subject, html);
+  }
 }
