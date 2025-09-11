@@ -1,5 +1,3 @@
-import { EmailTransporter } from "./EmailHandlers.js";
-import jwt from "jsonwebtoken";
 import * as Brevo from "@getbrevo/brevo";
 import dotenv from "dotenv";
 dotenv.config();
@@ -416,7 +414,7 @@ export class EmailServices {
       const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
       return data;
     } catch (error) {
-      console.error("Email sending failed:", error);
+      console.error("Email sending failed");
       throw error;
     }
   }
