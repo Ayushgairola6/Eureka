@@ -1,26 +1,28 @@
 import { useState } from "react";
-import { BiLogIn, BiMenuAltRight } from "react-icons/bi";
+import { BiMenuAltRight, BiMoon, BiSun } from "react-icons/bi";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { Link } from "react-router";
 import Sidebar from "@/components/Sidebar";
 import { MdClose } from "react-icons/md";
 import { motion, useScroll } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
-import { IoBulbOutline, IoMoonOutline } from "react-icons/io5";
-import { PiUserRectangleBold } from "react-icons/pi";
-import { toggleTheme, setCurrTab } from "../store/AuthSlice.ts";
+import { setCurrTab, toggleTheme } from "../store/AuthSlice.ts";
 import { setOpen } from "../store/chatRoomSlice.ts";
 import NotificationPanel from "@/components/notificationBar.tsx";
+import Settings from "@/components/settings.tsx";
+import { GiOpenPalm } from "react-icons/gi";
+import { LuSettings2 } from "react-icons/lu";
 
 const Navbar = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const dispatch = useAppDispatch();
   const { scrollYProgress } = useScroll();
   const notificationcount = useAppSelector(
     (state) => state.auth.notificationcount
   );
   const User = useAppSelector((state) => state.auth.user);
-  const { isDarkMode, isLoggedIn } = useAppSelector((state) => state.auth);
+  const { isLoggedIn, isDarkMode } = useAppSelector((state) => state.auth);
   const isOpen = useAppSelector((state) => state.chats.isOpen);
   // const {isOpen} = useAppSelector(state=>state.chats)
   const { currTab } = useAppSelector((state) => state.auth);
@@ -37,7 +39,7 @@ const Navbar = () => {
         ></motion.div>
 
         {/* navlinks */}
-        <Link to="/" className="CustPoint">
+        <Link to="/" className="cursor-pointer">
           {/* EUREKA */}
           <img
             className="h-10 w-10  rounded-full dark:bg-gray-200"
@@ -67,7 +69,7 @@ const Navbar = () => {
           >
             Try Now
           </Link>
-          {/* <Link onClick={() => setCurrTab("Details")} className={` rounded-lg py-1 px-2 ${currTab === "Details" ? "slider" : "bg-transparent text-black"}`} to='/Details'>Details</Link> */}
+
           <Link
             onClick={() => dispatch(setCurrTab("About"))}
             className={` rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 ${
@@ -112,7 +114,19 @@ const Navbar = () => {
           {/* end */}
         </div>
 
-        <div className="flex items-center justify-center gap-3 bai-jamjuree-regular text-sm overflow-y-clip">
+        <div className="flex items-center justify-center gap-2 bai-jamjuree-regular text-sm overflow-y-clip">
+          {/* settings icon */}
+          <ul
+            className="relative cursor-pointer md:block hidden"
+            onClick={() => setShowSettings(!showSettings)}
+          >
+            {!showSettings ? (
+              <LuSettings2 size={25} />
+            ) : (
+              <GiOpenPalm size={25} />
+            )}
+          </ul>
+          {/* notificaiton icon */}
           {isLoggedIn === true && (
             <ul
               onClick={() => dispatch(setOpen(!isOpen))}
@@ -124,48 +138,29 @@ const Navbar = () => {
               </span>
             </ul>
           )}
-
+          {/* small screen theme icon */}
           <ul
-            className="cursor-pointer  rounded-full p-1 relative "
-            onClick={() => dispatch(toggleTheme())}
+            onClick={() => {
+              dispatch(toggleTheme());
+            }}
+            className="cursor-pointer p-1 md:hidden block"
           >
             {isDarkMode ? (
-              <IoBulbOutline size={18} />
+              <>
+                <BiSun size={22} />
+              </>
             ) : (
-              <IoMoonOutline size={18} />
+              <>
+                <BiMoon size={22} />
+              </>
             )}
           </ul>
 
-          {isLoggedIn === false && (
-            <Link
-              onClick={() => {
-                dispatch(setCurrTab("Login"));
-              }}
-              className={`hidden rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 md:flex items-center justify-center gap-2 ${
-                currTab === "Login" ? "slider" : "bg-indigo-300   text-black "
-              }`}
-              to="/Login"
-            >
-              Login <BiLogIn />
-            </Link>
-          )}
-          {isLoggedIn === false && (
-            <Link
-              onClick={() => dispatch(setCurrTab("Register"))}
-              className={`hidden rounded-lg py-1 px-3 hover:bg-indigo-300 transition-all duration-300 md:flex items-center justify-center gap-2 ${
-                currTab === "Register"
-                  ? "slider"
-                  : "bg-black dark:bg-white text-white dark:text-black"
-              }`}
-              to="/Register"
-            >
-              Register <PiUserRectangleBold />
-            </Link>
-          )}
+          {/* rest of the items */}
           {isLoggedIn === true ? (
             <Link to="user/dashboard">
               {" "}
-              <ul className="CustPoint uppercase bg-indigo-500 rounded-full h-6 w-6 md:h-8 md:w-8 text-lg md:text-xl flex items-center justify-center text-white dark:text-black space-grotesk font-bold">
+              <ul className="cursor-pointer uppercase bg-indigo-500 rounded-full h-6 w-6 md:h-8 md:w-8 text-lg md:text-xl flex items-center justify-center text-white dark:text-black bai-jamjuree-regular  font-bold">
                 {User?.username.trim().split("")[0].toUpperCase()}
               </ul>
             </Link>
@@ -179,7 +174,7 @@ const Navbar = () => {
           ) : (
             <MdClose
               onClick={() => setIsVisible(!isVisible)}
-              className="md:hidden block  CustPoint"
+              className="md:hidden block  cursor-pointer"
               size={28}
             />
           )}
@@ -187,6 +182,11 @@ const Navbar = () => {
       </nav>
       <Sidebar isVisble={isVisible} setIsVisible={setIsVisible} />
       <NotificationPanel />
+      <Settings
+        showSettings={showSettings}
+        setShowSettings={setShowSettings}
+        isLoggedIn={isLoggedIn}
+      />
     </>
   );
 };

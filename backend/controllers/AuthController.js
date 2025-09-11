@@ -233,6 +233,29 @@ export const HandleUserLogin = async (req, res) => {
   }
 };
 
+export const HandleUserLogout = async (req, res) => {
+  try {
+    const user_id = req.user.user_id;
+
+    if (!user_id) {
+      return res.status(401).send({ message: "Please log in to continue" });
+    }
+
+    const { error } = await supabase
+      .from("Tokens")
+      .delete("*")
+      .eq("user_id", user_id);
+    if (error) {
+      return res
+        .status(400)
+        .send({ message: "Unable to log out of your account" });
+    }
+    return res.status(200).send({ message: "Tokens deleted" });
+  } catch (error) {
+    return res.status(500).send({ message: "Unable to logout " });
+  }
+};
+
 // verify the users email address and log him in into his account for first time automatically
 export const VerifyEmail = async (req, res) => {
   try {
@@ -614,7 +637,7 @@ export const GetUserAccountDetails = async (req, res) => {
 
     if (!user_id || typeof user_id !== "string") {
       console.log("No user id found while getting account details");
-      return res.status(400).json({ message: "Invalid user id" });
+      return res.status(401).json({ message: "Invalid user id" });
     }
     const username = req.user.username ? req.user.username : "unkown1";
     // unique userKye for caching
@@ -632,7 +655,7 @@ export const GetUserAccountDetails = async (req, res) => {
       userdata.FeedbackCounts !== 0;
 
     if (hasCachedData && !userdata.error) {
-      console.log("Serving from cache");
+      // console.log("Serving from cache");
       return res.status(200).send({
         user: userdata.userData,
         Contributions_user_id_fkey: userdata.Contributions_user_id_fkey,

@@ -3,9 +3,7 @@ import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { FiUsers, FiCalendar, FiFile } from "react-icons/fi";
 import { MdMarkUnreadChatAlt } from "react-icons/md";
-// FiSettings, FiStar, FiMessageSquare,
 import { BsLightningChargeFill } from "react-icons/bs";
-
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { TbOctahedron, TbTextCaption } from "react-icons/tb";
 import { useEffect, useState } from "react";
@@ -17,6 +15,7 @@ import {
   FaThumbsDown,
   FaThumbsUp,
   FaUserSecret,
+  FaRocketchat,
 } from "react-icons/fa";
 import { TbSunset2 } from "react-icons/tb";
 import { IoSunnyOutline } from "react-icons/io5";
@@ -24,6 +23,7 @@ import { MdReviews } from "react-icons/md";
 import { JoinAChatRoom } from "../store/chatRoomSlice.ts";
 import { toast, Toaster } from "sonner";
 import { IoMdHourglass } from "react-icons/io";
+import { BiLogOut } from "react-icons/bi";
 // import {NewUserNotification} from '../store/AuthSlice.ts'
 const CreateRoom = lazy(() => import("@/components/createRoom.tsx"));
 
@@ -42,6 +42,8 @@ const UserDashboard = () => {
   const [IncreaseHeight, setIncreaseHeight] = useState(false);
   const isDarkMode = useAppSelector((state) => state.auth.isDarkMode);
   // Mock conversations
+
+  const now = new Date();
 
   useEffect(() => {
     const totalVotes =
@@ -106,11 +108,16 @@ const UserDashboard = () => {
           </span>
           <h3 className="font-bold text-xl">{}</h3>
           {/* <p className="text-sm opacity-70">{user.role}</p> */}
-          <p className="text-xs mt-1 opacity-50">
+          <p className="text-sm mt-1 opacity-80">
             Joined on :{user?.created_at.split("T")[0]}
           </p>
-          <p className="text-xs mt-1 opacity-50">{user?.email}</p>
+          <p className="text-sm mt-1 opacity-80">{user?.email}</p>
         </div>
+        <section className="w-full">
+          <button className="flex items-center justify-start gap-4 px-2 py-1 text-red-500 bai-jamjuree-semibold text-md w-full dark:hover:bg-gray-200 hover:bg-black transition-colors duration-300 cursor-pointer">
+            Logout <BiLogOut />
+          </button>
+        </section>
       </div>
 
       {/* Main Content */}
@@ -118,15 +125,15 @@ const UserDashboard = () => {
         {/* Header */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold bai-jamjuree-regular">
+            <h1 className="text-2xl md:text-3xl  font-bold bai-jamjuree-bold">
               Welcome back, {user?.username.trim().split(" ")[0].toUpperCase()}!
             </h1>
-            <p className="opacity-70  space-grotesk">
-              Here's what's happening with your Public Contributions{" "}
+            <p className="opacity-70 text-xs md:text-sm space-grotesk">
+              Let's see what's happening with your Account{" "}
             </p>
           </div>
 
-          <div className="flex gap-4 space-grotesk">
+          {/* <div className="flex gap-4 space-grotesk">
             <div className="bg-gradient-to-r from-purple-600 to-sky-600 p-0.5 rounded-lg animate-pulse">
               <input
                 type="text"
@@ -134,7 +141,7 @@ const UserDashboard = () => {
                 className="bg-white dark:bg-black rounded-md px-4 py-2 w-full md:w-64 focus:outline-none"
               />
             </div>
-          </div>
+          </div> */}
         </header>
 
         {/* Stats Cards */}
@@ -148,7 +155,8 @@ const UserDashboard = () => {
             </h3>
             {/* <p className="text-3xl font-bold mt-2">{user.stats.questions}</p> */}
             <p className="text-xs mt-1 text-green-600">
-              {QueryCount / 100}% this month
+              Percent Questions asked - {QueryCount / 10}% till{" "}
+              {now.toLocaleDateString()}
             </p>
           </motion.div>
 
@@ -161,13 +169,14 @@ const UserDashboard = () => {
               {/* <span className="text-3xl font-bold">{user.stats.rating}</span> */}
               <div className="flex items-center justify-evenly space-grotesk gap-4 text-xs flex-wrap">
                 <ul className="py-2 px-4 rounded-lg border border-green-300 dark:bg-white/20 bg-green-500/10 text-green-500 flex items-center justify-center gap-2">
-                  <FaThumbsUp /> Upvotes {Feedback?.upvotes}
+                  <FaThumbsUp /> Upvotes {Feedback?.upvotes || 0}
                 </ul>
                 <ul className="py-1 px-2 rounded-lg border border-red-300 dark:bg-white/20 bg-red-500/10 text-red-500 flex items-center justify-center gap-2">
-                  <FaThumbsDown /> Downvotes {Feedback?.downvotes}
+                  <FaThumbsDown /> Downvotes {Feedback?.downvotes || 0}
                 </ul>
                 <ul className="p-1 px-2 rounded-lg border border-sky-300 dark:bg-white/20 bg-sky-500/10 text-sky-500 flex items-center justify-center gap-2">
-                  <FaQuestion /> Partial_Upvotes {Feedback?.partial_upvotes}
+                  <FaQuestion /> Partial_Upvotes{" "}
+                  {Feedback?.partial_upvotes || 0}
                 </ul>
               </div>
             </div>
@@ -175,19 +184,19 @@ const UserDashboard = () => {
               <ul className="inline-flex gap-2 items-center ">
                 <MdReviews /> From peer reviews{" "}
               </ul>
-              {Feedback !== null && (
-                <span
-                  className={`  bai-jamjuree-regular text-sm ${
-                    score > 70
-                      ? "text-green-500"
-                      : score > 30 && score < 70
-                      ? "text-yellow-500"
-                      : "text-red-500"
-                  } dark:bg-white/10 bg-black/10 rounded-lg py-1 px-2`}
-                >
-                  Score : {score}
-                </span>
-              )}
+              {/* {Feedback !== null && ( */}
+              <span
+                className={`  bai-jamjuree-regular text-sm ${
+                  score > 70
+                    ? "text-green-500"
+                    : score > 30 && score < 70
+                    ? "text-yellow-500"
+                    : "text-red-500"
+                } dark:bg-white/10 bg-black/10 rounded-lg py-1 px-2`}
+              >
+                Score : {score ? score : 0}
+              </span>
+              {/* )} */}
             </section>
           </motion.div>
 
@@ -196,16 +205,22 @@ const UserDashboard = () => {
             className=" bg-gray-100 dark:bg-black p-6 rounded-xl border border-gray-400"
           >
             <h3 className="text-sm opacity-70 font-semibold">
-              Active Projects
+              Active Documents
             </h3>
-            <p className="text-3xl font-bold mt-2">
+            <span className="text-3xl font-bold mt-2 flex items-center justify-start gap-2">
               {user?.Contributions_user_id_fkey?.length}
-            </p>
-            <span className="text-xs mt-1 truncate">
+              <ul className="text-sm font-semibold">
+                Documents are your current favorite
+              </ul>
+            </span>
+            <span className="text-xs mt-1  flex flex-wrap items-center justify-center gap-2">
               {user?.Contributions_user_id_fkey &&
                 user?.Contributions_user_id_fkey.map((doc) => {
                   return (
-                    <ul key={`${doc.id}_${doc.created_at}`}>
+                    <ul
+                      className="bg-emerald-600 text-white bai-jamjuree-regular rounded-md px-2 py-1"
+                      key={`${doc.id}_${doc.created_at}`}
+                    >
                       {doc.feedback.trim().split("")}
                     </ul>
                   );
@@ -220,31 +235,34 @@ const UserDashboard = () => {
             open === true ? "h-90 overflow-scroll" : "h-50 overflow-hidden"
           } transition-discrete ease-linear duration-500`}
         >
-          <div className="flex justify-between items-center mb-4 bai-jamjuree-regular">
-            <h2 className="text-xl font-bold flex items-center justify-center gap-2">
-              Your documents <FiFile />
+          <div className="flex justify-between items-center mb-4 bai-jamjuree-regular flex-wrap">
+            <h2 className="md:text-xl text-lg font-bold flex  items-center justify-center gap-2">
+              Docs <FiFile />
             </h2>
-            <Link
-              to="/user/misallaneous-chats"
-              className="text-xs text-green-500 cursor-pointer flex items-center justify-center gap-2"
-            >
-              Other chats <TbOctahedron />
-            </Link>
-            <button
-              onClick={() => setOpen(!open)}
-              className="text-xs text-green-500 cursor-pointer flex items-center justify-center gap-2"
-            >
-              View all
-              <FaArrowDown
-                className={`${
-                  open === false ? "rotate-0" : "rotate-180"
-                } transition-discrete duration-500`}
-                size={10}
-              />
-            </button>
+            <section className="inline-flex gap-5">
+              <Link
+                to="/user/misallaneous-chats"
+                className="text-xs md:text-sm text-green-500 cursor-pointer flex items-center justify-center gap-2"
+              >
+                Other chats <TbOctahedron />
+              </Link>
+              <button
+                onClick={() => setOpen(!open)}
+                className="text-xs md:text-sm text-green-500 cursor-pointer flex items-center justify-center gap-2"
+              >
+                View all
+                <FaArrowDown
+                  className={`${
+                    open === false ? "rotate-0" : "rotate-180"
+                  } transition-discrete duration-500`}
+                  size={10}
+                />
+              </button>
+            </section>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 space-grotesk">
+          {/* users private documents list sections */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 space-grotesk   rounded-md p-2">
             {user?.Contributions_user_id_fkey ? (
               user?.Contributions_user_id_fkey.map((conv) => (
                 <motion.div
@@ -288,19 +306,21 @@ const UserDashboard = () => {
             IncreaseHeight === true
               ? "h-100 overflow-scroll"
               : "h-60 overflow-hidden"
-          } transition-discrete ease-linear duration-300`}
+          } transition-discrete ease-linear duration-300  rounded-md p-2`}
         >
           <div className="flex justify-between items-center mb-4 space-grotesk">
-            <h2 className="text-xl font-bold">Chatrooms</h2>
+            <h2 className="md:text-xl text-lg  font-bold flex items-center justify-center gap-2">
+              Chatrooms <FaRocketchat />
+            </h2>
             <section className="inline-flex gap-5">
               <button
                 onClick={() => setShowCard(!showcard)}
-                className="text-sm text-sky-500 hover:underline"
+                className="text-xs md:text-sm text-sky-500 hover:underline"
               >
                 Creat New +
               </button>
               <button
-                className="text-xs text-green-500 cursor-pointer flex items-center justify-center gap-2"
+                className="text-xs md:text-sm text-green-500 cursor-pointer flex items-center justify-center gap-2"
                 onClick={() => setIncreaseHeight(!IncreaseHeight)}
               >
                 {IncreaseHeight === true ? "Hide" : "View all"}{" "}
@@ -314,78 +334,87 @@ const UserDashboard = () => {
             </section>
           </div>
 
+          {/* list of chatrooms section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bai-jamjuree-regular">
-            {chatrooms.map((room) => (
-              <motion.div
-                key={room?.room_id}
-                whileHover={{ y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                // onClick={() => console.log(room)}
-                className="w-full  p-4 rounded-xl border border-gray-400 bg-white dark:bg-white/5 shadow-sm hover:shadow-md transition-all cursor-pointer relative"
-              >
-                {/* Admin badge */}
-                {user?.id === room.chat_rooms.created_by && (
-                  <span className="absolute top-3 right-3 bg-lime-100  text-green-600  text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    Admin
-                  </span>
-                )}
-
-                <div className="text-center space-y-2">
-                  <h3 className="text-lg  text-gray-800 dark:text-white line-clamp-1 flex items-center justify-start gap-2 bai-jamjuree-semibold">
-                    <MdMarkUnreadChatAlt className="w-6 h-6" />
-                    {room?.chat_rooms?.room_name || "Untitled Room"}
-                  </h3>
-
-                  <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 min-h-[40px]">
-                    {room?.chat_rooms?.Room_Description || "No description"}
-                  </p>
-
-                  <div className="flex justify-center gap-3 pt-2 flex-wrap">
-                    <span
-                      className={`text-xs px-3 py-1 rounded-full ${
-                        room?.chat_rooms?.room_type === "private"
-                          ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
-                          : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
-                      }`}
-                    >
-                      {room?.chat_rooms?.room_type || "unknown"}
+            {chatrooms.length > 0 ? (
+              chatrooms.map((room) => (
+                <motion.div
+                  key={room?.room_id}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  // onClick={() => console.log(room)}
+                  className="w-full  p-4 rounded-xl border border-gray-400 bg-white dark:bg-white/5 shadow-sm hover:shadow-md transition-all cursor-pointer relative"
+                >
+                  {/* Admin badge */}
+                  {user?.id === room.chat_rooms.created_by && (
+                    <span className="absolute top-3 right-3 bg-lime-100  text-green-600  text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      Admin
                     </span>
+                  )}
 
-                    <span className="flex items-center text-xs bg-yellow-600/10 px-3 py-1 rounded-full text-yellow-600 ">
-                      <FiUsers className="mr-1" />
-                      {room?.chat_rooms?.participant_count || 0}
-                    </span>
-                    <span className="flex items-center text-xs  dark:bg-red-700/10 px-3 py-1 rounded-full text-red-700 ">
-                      <FaUserSecret className="mr-1" />
-                      {room?.chat_rooms?.Room_Joining_code}
-                    </span>
+                  <div className="text-center space-y-2">
+                    <h3 className="text-lg  text-gray-800 dark:text-white line-clamp-1 flex items-center justify-start gap-2 bai-jamjuree-semibold">
+                      <MdMarkUnreadChatAlt className="w-6 h-6" />
+                      {room?.chat_rooms?.room_name || "Untitled Room"}
+                    </h3>
+
+                    <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 min-h-[40px]">
+                      {room?.chat_rooms?.Room_Description || "No description"}
+                    </p>
+
+                    <div className="flex justify-center gap-3 pt-2 flex-wrap">
+                      <span
+                        className={`text-xs px-3 py-1 rounded-full ${
+                          room?.chat_rooms?.room_type === "private"
+                            ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
+                            : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                        }`}
+                      >
+                        {room?.chat_rooms?.room_type || "unknown"}
+                      </span>
+
+                      <span className="flex items-center text-xs bg-yellow-600/10 px-3 py-1 rounded-full text-yellow-600 ">
+                        <FiUsers className="mr-1" />
+                        {room?.chat_rooms?.participant_count || 0}
+                      </span>
+                      <span className="flex items-center text-xs  dark:bg-red-700/10 px-3 py-1 rounded-full text-red-700 ">
+                        <FaUserSecret className="mr-1" />
+                        {room?.chat_rooms?.Room_Joining_code}
+                      </span>
+                    </div>
+
+                    <div className="pt-3 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between flex-wrap">
+                      <ul>
+                        Created:{" "}
+                        {room?.chat_rooms?.created_at?.split("T")[0] ||
+                          "Unknown date"}
+                      </ul>
+                      <ul className=" flex items-center justify-center gap-2">
+                        <button>
+                          <Link
+                            className=" text-indigo-600  text-xs "
+                            to={`/chatroom/${room?.room_id}`}
+                          >
+                            Enter
+                          </Link>
+                        </button>
+                        <FaArrowRight />
+                      </ul>
+                    </div>
                   </div>
-
-                  <div className="pt-3 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between flex-wrap">
-                    <ul>
-                      Created:{" "}
-                      {room?.chat_rooms?.created_at?.split("T")[0] ||
-                        "Unknown date"}
-                    </ul>
-                    <ul className=" flex items-center justify-center gap-2">
-                      <button>
-                        <Link
-                          className=" text-indigo-600  text-xs "
-                          to={`/chatroom/${room?.room_id}`}
-                        >
-                          Enter
-                        </Link>
-                      </button>
-                      <FaArrowRight />
-                    </ul>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            ) : (
+              <div className="bg-gray-100 dark:bg-black border border-gray-400 rounded-lg flex ">
+                <h1 className="m-auto space-grotesk text-sm md:text-md p-2">
+                  Your are not member of any room yet , Join a room +
+                </h1>
+              </div>
+            )}
           </div>
         </section>
         {/* join a room with a code section */}
-        <section className="dark:bg-white/5 bg-gray-100 border border-gray-300 rounded-lg w-full p-3 mt-4 space-y-3">
+        <section className="dark:bg-white/5 bg-gray-100 border border-gray-300 rounded-lg w-full md:w-1/3 p-3 mt-8 space-y-3">
           <h1 className="bai-jamjuree-semibold flex items-center justify-start gap-2">
             <FaUserSecret /> Have a room code ?
           </h1>

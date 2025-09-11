@@ -1,132 +1,159 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import axios from "axios";
 
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 interface DocUsed {
-  uploaded_by: string
-  doc_id: []
-  upvotes: number
-  downvotes: number
-  partial_upvotes: number
+  uploaded_by: string;
+  doc_id: [];
+  upvotes: number;
+  downvotes: number;
+  partial_upvotes: number;
 }
 
 interface InterfaceState {
-  question: string
-  answer: string
-  loading: boolean
-  isVisible: boolean
-  category: string
-  subCategory: string
-  visibility: string
-  showSubcategory: boolean
-  shhowUserForm: boolean
-  showDocs: boolean
-  privateResponse: string
-  likeness: string
-  suggestion: string
-  shwoOptions: boolean
-  queryType: string
-  showType: boolean
-  docUsed: DocUsed[]
-  sendingFeedback: boolean
+  question: string;
+  answer: string;
+  loading: boolean;
+  isVisible: boolean;
+  category: string;
+  subCategory: string;
+  visibility: string;
+  showSubcategory: boolean;
+  shhowUserForm: boolean;
+  showDocs: boolean;
+  privateResponse: string;
+  likeness: string;
+  suggestion: string;
+  shwoOptions: boolean;
+  queryType: string;
+  showType: boolean;
+  docUsed: DocUsed[];
+  sendingFeedback: boolean;
+  Chats: [];
 }
 
 const initialState: InterfaceState = {
   question: "",
   answer: "",
   loading: false,
-  isVisible: false, category: '', subCategory: "", visibility: "Public", showSubcategory: false, shhowUserForm: false, showDocs: false, privateResponse: '', likeness: "", suggestion: "", shwoOptions: false, showType: false, queryType: "", docUsed: [], sendingFeedback: false
+  isVisible: false,
+  category: "",
+  subCategory: "",
+  visibility: "Public",
+  showSubcategory: false,
+  shhowUserForm: false,
+  showDocs: false,
+  privateResponse: "",
+  likeness: "",
+  suggestion: "",
+  shwoOptions: false,
+  showType: false,
+  queryType: "",
+  docUsed: [],
+  sendingFeedback: false,
+  Chats: [],
 };
 
 // Async Thunks
 export const UploadDocuments = createAsyncThunk<any, FormData>(
-  'upload/docs',
+  "upload/docs",
   async (formData, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      const response = await axios.post(`${BaseApiUrl}/api/upload-pdf`, formData, {
-        withCredentials: true,
-        headers: {
-          'Authorization': `Bearer ${AuthToken}`
+      const response = await axios.post(
+        `${BaseApiUrl}/api/upload-pdf`,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
         }
-      })
+      );
       return response.data;
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       return rejectWithValue(
-        err instanceof Error ? err.message : 'Failed to fetch dashboard data'
+        err instanceof Error ? err.message : "Failed to fetch dashboard data"
       );
     }
   }
-)
-
+);
 
 export const QueryAIQuestions = createAsyncThunk<any, any>(
-  'ask/queryAI',
+  "ask/queryAI",
   async (data, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
       const response = await axios.post(`${BaseApiUrl}/api/ask-pdf`, data, {
         withCredentials: true,
         headers: {
-          'Authorization': `Bearer ${AuthToken}`
-        }
-      })
+          Authorization: `Bearer ${AuthToken}`,
+        },
+      });
       return response.data;
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       return rejectWithValue(
-        err instanceof Error ? err.message : 'Failed to fetch dashboard data'
+        err instanceof Error ? err.message : "Failed to fetch dashboard data"
       );
     }
   }
-)
+);
 
 export const QueryPrivateDocuments = createAsyncThunk<any, any>(
-  'private-doc/queryAI',
+  "private-doc/queryAI",
   async (data, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      const response = await axios.post(`${BaseApiUrl}/api/privateDocs/ask`, data, {
-        withCredentials: true,
-        headers: {
-          'Authorization': `Bearer ${AuthToken}`
+      const response = await axios.post(
+        `${BaseApiUrl}/api/privateDocs/ask`,
+        data,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
         }
-      })
+      );
       return response.data;
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       return rejectWithValue(
-        err instanceof Error ? err.message : 'Failed to fetch dashboard data'
+        err instanceof Error ? err.message : "Failed to fetch dashboard data"
       );
     }
   }
-)
+);
 
 export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
-  'authenticity/verify',
+  "authenticity/verify",
   async (data, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      const response = await axios.post(`${BaseApiUrl}/api/doc/authenticity`, data, {
-        withCredentials: true,
-        headers: {
-          'Authorization': `Bearer ${AuthToken}`
+      const response = await axios.post(
+        `${BaseApiUrl}/api/doc/authenticity`,
+        data,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
         }
-      })
-      console.log(response.data)
+      );
+      console.log(response.data);
       return response.data;
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       return rejectWithValue(
-        err instanceof Error ? err.message : 'Failed to fetch dashboard data'
+        err instanceof Error ? err.message : "Failed to fetch dashboard data"
       );
     }
   }
-)
+);
 const interfaceSlice = createSlice({
-  name: 'interface',
+  name: "interface",
   initialState,
   reducers: {
     setQuestion: (state, action) => {
@@ -182,36 +209,36 @@ const interfaceSlice = createSlice({
     },
     resetState: (_state) => {
       return initialState;
-    }
-
+    },
   },
   extraReducers: (builder) => {
-    builder.addCase(UploadDocuments.pending, (state) => {
-      state.loading = true
-    })
+    builder
+      .addCase(UploadDocuments.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(UploadDocuments.fulfilled, (state) => {
-        state.loading = false
-      }).addCase(UploadDocuments.rejected, (state) => {
+        state.loading = false;
+      })
+      .addCase(UploadDocuments.rejected, (state) => {
         state.loading = false;
       })
 
       //ask questions
       .addCase(QueryAIQuestions.pending, (state) => {
-        state.loading = true
+        state.loading = true;
       })
       .addCase(QueryAIQuestions.fulfilled, (state, action) => {
         state.loading = false;
         state.answer = action.payload.answer;
         state.docUsed = [...action.payload.doc_id];
-
-      }).addCase(QueryAIQuestions.rejected, (state) => {
-
+      })
+      .addCase(QueryAIQuestions.rejected, (state) => {
         state.loading = false;
       })
 
       //query privatedocuments
       .addCase(QueryPrivateDocuments.pending, (state) => {
-        state.loading = true
+        state.loading = true;
       })
       .addCase(QueryPrivateDocuments.fulfilled, (state, action) => {
         state.loading = false;
@@ -223,25 +250,39 @@ const interfaceSlice = createSlice({
 
       //authenticiy handler
       .addCase(AuthenticityResponseHandler.pending, (state) => {
-        console.log("AuthenticityResponseHandler doc pending")
-        state.sendingFeedback = true
+        console.log("AuthenticityResponseHandler doc pending");
+        state.sendingFeedback = true;
       })
       .addCase(AuthenticityResponseHandler.fulfilled, (state) => {
-        console.log("AuthenticityResponseHandler doc completed")
+        console.log("AuthenticityResponseHandler doc completed");
         state.sendingFeedback = false;
         // state.docUsed = action.payload
-
       })
       .addCase(AuthenticityResponseHandler.rejected, (state) => {
-        console.log("AuthenticityResponseHandler doc failed")
+        console.log("AuthenticityResponseHandler doc failed");
         state.sendingFeedback = false;
-      })
-
+      });
   },
 });
 
 export const {
-  setQuestion, setAnswer, setLoading, setIsVisible, setCategory, setLikeness, setPrivateResponse, setQueryType, setShowDocs, setShowOptions, setShowSubcategory, setShowType, setShowUserForm, setSuggestion, setVisibility, setSubCategory, setDocUsed
+  setQuestion,
+  setAnswer,
+  setLoading,
+  setIsVisible,
+  setCategory,
+  setLikeness,
+  setPrivateResponse,
+  setQueryType,
+  setShowDocs,
+  setShowOptions,
+  setShowSubcategory,
+  setShowType,
+  setShowUserForm,
+  setSuggestion,
+  setVisibility,
+  setSubCategory,
+  setDocUsed,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;
