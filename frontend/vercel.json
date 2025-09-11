@@ -1,10 +1,18 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "builds": [
+    {
+      "src": "**/*.html",
+      "use": "@vercel/static-build"
+    },
+    {
+      "src": "**/*.{js,json,css,jsx,ts,tsx}",
+      "use": "@vercel/static-build"
     }
   ]
 }
