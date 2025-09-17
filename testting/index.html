@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <script>
+      const evtSource = new EventSource("http://localhost:5000/sse");
+
+      evtSource.onmessage = (event) => {
+        console.log("Message:", event.data);
+        if (event.data === "[DONE]") {
+          evtSource.close();
+        }
+      };
+
+      evtSource.onerror = (err) => {
+        console.error("SSE error:", err);
+      };
+    </script>
+  </body>
+</html>

@@ -16,6 +16,7 @@ export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
   try {
     if (!question || !data) {
       console.error("Not all the data was given to the model");
+      return { error: "Error while generating a response" };
     }
 
     const FormattedData = [
@@ -52,6 +53,7 @@ export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
       return { error: "The server is very busy , please try again !" };
     }
 
+    // return { error: "Testing out the error fallback function" };
     return responseText;
   } catch (error) {
     console.error(`Gemini failed to generate the response`);

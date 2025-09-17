@@ -212,6 +212,7 @@ export const HandleUserLogin = async (req, res) => {
       sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     });
+
     // sending login notification email
     const clientIp =
       req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;
@@ -237,7 +238,11 @@ export const HandleUserLogout = async (req, res) => {
   try {
     const user_id = req.user.user_id;
 
-    if (!user_id) {
+    if (!user_id || !req.user.username) {
+      console.error(
+        "User information not found at logout from jwt token",
+        req.user
+      );
       return res.status(401).send({ message: "Please log in to continue" });
     }
 
@@ -246,11 +251,15 @@ export const HandleUserLogout = async (req, res) => {
       .delete("*")
       .eq("user_id", user_id);
     if (error) {
+      console.error(error);
       return res
         .status(400)
         .send({ message: "Unable to log out of your account" });
     }
-    return res.status(200).send({ message: "Tokens deleted" });
+    const RefreshTokenKey = `user=${req.user.username}'s_userId=${user_id}`;
+    await redisClient.del(RefreshTokenKey);
+    res.clearCookie("Eureka_eta_six_version1_AuthToken");
+    return res.status(200).send({ message: "Session revoked" });
   } catch (error) {
     return res.status(500).send({ message: "Unable to logout " });
   }

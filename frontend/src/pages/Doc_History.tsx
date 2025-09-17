@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import { GetDocumentChatHistory } from "../store/chatRoomSlice.ts";
 import { lazy, useEffect, useState } from "react";
-import MarkdownRenderer from "@/components/safeHtml.tsx";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 import { Link } from "react-router";
+import { Streamdown } from "streamdown";
 
 const SearchBox = lazy(() => import("@/components/searchbox.tsx"));
 
@@ -175,10 +175,11 @@ const ConversationDetail = () => {
               >
                 <span className="font-medium">You -</span> {message.question}
               </p>
-              <MarkdownRenderer
+              {/* <MarkdownRenderer
                 content={message.AI_response}
                 className="text-sm text-gray-800 dark:text-gray-200 darj h-full bai-jamjuree-regular leading-loose dark:bg-gray-900 bg-gray-300 mr-auto max-w-3xl rounded-lg px-3 py-4"
-              />
+              /> */}
+              <Streamdown>{message.AI_response}</Streamdown>
             </motion.div>
           ))}
         </div>

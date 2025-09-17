@@ -2,7 +2,10 @@ import mammoth from "mammoth";
 import { parse } from "csv-parse/sync";
 import officeparser from "officeparser";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-
+import { MarkdownTextSplitter } from "@langchain/textsplitters";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import { toMarkdown } from "mdast-util-to-markdown";
 const AllowedFileTypes = ["docx", "json", "md", "pptx", "csv", "txt", "pdf"];
 
 export const CheckFileTypeAndParseIt = async (file) => {
@@ -90,3 +93,74 @@ async function ParsePdfFileType(file) {
   }
   return docs[0].pageContent;
 }
+
+// handling markdowns
+const splitter = new MarkdownTextSplitter({
+  chunkSize: 1000, // Maximum size of each chunk
+  chunkOverlap: 200, // Overlap between consecutive chunks
+});
+
+export async function splitMarkdown(markdownContent) {
+  const documents = await splitter.createDocuments([markdownContent]);
+  return documents;
+}
+
+// Function to split markdown by headings
+export function chunkMarkdown(mdText, maxChunkSize = 1000) {
+  const chunks = [];
+  let currentChunk = "";
+  let insideCodeBlock = false;
+
+  const lines = mdText.split("\n");
+
+  for (let line of lines) {
+    // detect code block start/end
+    if (line.trim().startsWith("```")) {
+      insideCodeBlock = !insideCodeBlock;
+    }
+
+    // check if adding this line exceeds max size
+    if (
+      currentChunk.length + line.length + 1 > maxChunkSize &&
+      !insideCodeBlock
+    ) {
+      chunks.push(currentChunk.trim());
+      currentChunk = "";
+    }
+
+    currentChunk += line + "\n";
+  }
+
+  if (currentChunk.trim().length > 0) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks;
+}
+export function formatSSEChunk(chunk) {
+  // split by newline and prefix each line with "data: "
+  return (
+    chunk
+      .split(/\r?\n/)
+      .map((line) => `data: ${line}`)
+      .join("\n") + "\n\n"
+  ); // terminate event with double newline
+}
+// Example markdown content
+const markdownContent = `
+# Main Heading
+This is some introductory text.
+
+## Subheading 1
+This is the content for subheading 1.
+It can include multiple paragraphs.
+
+\`\`\`javascript
+console.log('This is a code block');
+\`\`\`
+
+## Subheading 2
+This is the content for subheading 2.
+- It has a list item
+- And another one
+`;

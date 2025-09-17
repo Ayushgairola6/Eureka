@@ -29,13 +29,16 @@
     "jsonwebtoken": "^9.0.2",
     "langchain": "^0.3.28",
     "mammoth": "^1.10.0",
+    "mdast-util-to-markdown": "^2.1.2",
     "multer": "^2.0.1",
     "nodemailer": "^7.0.5",
     "officeparser": "^4.2.0",
     "pdf-parse": "^1.1.1",
     "redis": "^5.8.2",
+    "remark-parse": "^11.0.0",
     "socket.io": "^4.8.1",
     "stripe": "^18.4.0",
+    "unified": "^11.0.5",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

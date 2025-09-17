@@ -1,13 +1,8 @@
 import React from "react";
-import {
-  IoBulbOutline,
-  IoMoonOutline,
-  IoLogInSharp,
-  IoLogOutSharp,
-} from "react-icons/io5";
-import { BiUserPlus } from "react-icons/bi";
+import { IoBulbOutline, IoMoonOutline, IoLogInSharp } from "react-icons/io5";
+import { BiUserPlus, BiLogOut, BiLoaderAlt } from "react-icons/bi";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { toggleTheme } from "../store/AuthSlice";
+import { LogoutUser, toggleTheme } from "../store/AuthSlice";
 import { Link } from "react-router";
 import { TbDashboard } from "react-icons/tb";
 type settingProps = {
@@ -21,7 +16,7 @@ const Settings: React.FC<settingProps> = ({
   setShowSettings,
   isLoggedIn,
 }) => {
-  const { isDarkMode } = useAppSelector((state) => state.auth);
+  const { isDarkMode, isLoggingOut } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
 
   return (
@@ -79,8 +74,17 @@ const Settings: React.FC<settingProps> = ({
                 }}
                 className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:bg-gray-400  rounded-md hover:text-white transition-colors"
               >
-                <span className="flex-grow">Logout</span>
-                <IoLogOutSharp size={18} />
+                <button
+                  onClick={() => dispatch(LogoutUser())}
+                  className="flex-grow"
+                >
+                  {isLoggingOut === true ? "wait" : "Logout"}
+                </button>
+                {isLoggingOut === false ? (
+                  <BiLogOut size={18} />
+                ) : (
+                  <BiLoaderAlt />
+                )}
               </ul>
             </>
           ) : (

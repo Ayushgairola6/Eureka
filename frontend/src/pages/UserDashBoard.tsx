@@ -8,14 +8,15 @@ import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { TbOctahedron, TbTextCaption } from "react-icons/tb";
 import { useEffect, useState } from "react";
 import {
+  FaFilePdf,
   FaArrowDown,
   FaArrowRight,
   FaCloudSunRain,
-  FaQuestion,
   FaThumbsDown,
   FaThumbsUp,
   FaUserSecret,
   FaRocketchat,
+  FaExclamation,
 } from "react-icons/fa";
 import { TbSunset2 } from "react-icons/tb";
 import { IoSunnyOutline } from "react-icons/io5";
@@ -23,12 +24,14 @@ import { MdReviews } from "react-icons/md";
 import { JoinAChatRoom } from "../store/chatRoomSlice.ts";
 import { toast, Toaster } from "sonner";
 import { IoMdHourglass } from "react-icons/io";
-import { BiLogOut } from "react-icons/bi";
+import { BiLoaderAlt, BiLogOut } from "react-icons/bi";
+import { LogoutUser } from "../store/AuthSlice.ts";
 // import {NewUserNotification} from '../store/AuthSlice.ts'
 const CreateRoom = lazy(() => import("@/components/createRoom.tsx"));
 
 const UserDashboard = () => {
   // Mock user data
+
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const QueryCount = useAppSelector((state) => state.auth.Querycount);
@@ -40,10 +43,15 @@ const UserDashboard = () => {
   const [showcard, setShowCard] = useState(false);
   const [open, setOpen] = useState(false);
   const [IncreaseHeight, setIncreaseHeight] = useState(false);
-  const isDarkMode = useAppSelector((state) => state.auth.isDarkMode);
+  const { isDarkMode, isLoggingOut } = useAppSelector((state) => state.auth);
   // Mock conversations
 
   const now = new Date();
+  // useEffect(() => {
+  //   if (isLoggingOut === true) {
+  //     navigate("/");
+  //   }
+  // }, [isLoggingOut]);
 
   useEffect(() => {
     const totalVotes =
@@ -114,8 +122,40 @@ const UserDashboard = () => {
           <p className="text-sm mt-1 opacity-80">{user?.email}</p>
         </div>
         <section className="w-full">
-          <button className="flex items-center justify-start gap-4 px-2 py-1 text-red-500 bai-jamjuree-semibold text-md w-full dark:hover:bg-gray-200 hover:bg-black transition-colors duration-300 cursor-pointer">
-            Logout <BiLogOut />
+          <button
+            disabled={isLoggingOut}
+            onClick={() => dispatch(LogoutUser())}
+            className={`
+    relative flex items-center justify-center gap-4 px-4 py-2 w-full rounded-md
+    text-white font-semibold transition-all duration-300
+    ${
+      isLoggingOut
+        ? "cursor-not-allowed bg-red-400"
+        : "cursor-pointer bg-red-600 hover:bg-red-700 active:scale-95"
+    }
+  `}
+          >
+            <span
+              className={`${
+                isLoggingOut ? "opacity-0" : "opacity-100"
+              } transition-opacity duration-300`}
+            >
+              Logout
+            </span>
+
+            {isLoggingOut && (
+              <span className="absolute">
+                <BiLoaderAlt className="animate-spin" size={24} />
+              </span>
+            )}
+
+            <span
+              className={`${
+                isLoggingOut ? "opacity-0" : "opacity-100"
+              } transition-opacity duration-300`}
+            >
+              <BiLogOut />
+            </span>
           </button>
         </section>
       </div>
@@ -132,16 +172,6 @@ const UserDashboard = () => {
               Let's see what's happening with your Account{" "}
             </p>
           </div>
-
-          {/* <div className="flex gap-4 space-grotesk">
-            <div className="bg-gradient-to-r from-purple-600 to-sky-600 p-0.5 rounded-lg animate-pulse">
-              <input
-                type="text"
-                placeholder="Search your knowledge..."
-                className="bg-white dark:bg-black rounded-md px-4 py-2 w-full md:w-64 focus:outline-none"
-              />
-            </div>
-          </div> */}
         </header>
 
         {/* Stats Cards */}
@@ -160,6 +190,7 @@ const UserDashboard = () => {
             </p>
           </motion.div>
 
+          {/* user uploaded docs feedback section */}
           <motion.div
             whileHover={{ y: -5 }}
             className="bg-gray-100 dark:bg-black p-6 rounded-xl border  border-gray-400"
@@ -167,15 +198,15 @@ const UserDashboard = () => {
             <h3 className="text-sm opacity-70 font-semibold">Average Rating</h3>
             <div className="flex items-center gap-2 mt-2 flex-col">
               {/* <span className="text-3xl font-bold">{user.stats.rating}</span> */}
-              <div className="flex items-center justify-evenly space-grotesk gap-4 text-xs flex-wrap">
-                <ul className="py-2 px-4 rounded-lg border border-green-300 dark:bg-white/20 bg-green-500/10 text-green-500 flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center space-grotesk gap-1 text-xs flex-wrap">
+                <ul className="py-1 px-2 rounded-lg border  text-green-400 flex items-center justify-center gap-2">
                   <FaThumbsUp /> Upvotes {Feedback?.upvotes || 0}
                 </ul>
-                <ul className="py-1 px-2 rounded-lg border border-red-300 dark:bg-white/20 bg-red-500/10 text-red-500 flex items-center justify-center gap-2">
+                <ul className="py-1 px-2 rounded-lg border  text-red-400 flex items-center justify-center gap-2">
                   <FaThumbsDown /> Downvotes {Feedback?.downvotes || 0}
                 </ul>
-                <ul className="p-1 px-2 rounded-lg border border-sky-300 dark:bg-white/20 bg-sky-500/10 text-sky-500 flex items-center justify-center gap-2">
-                  <FaQuestion /> Partial_Upvotes{" "}
+                <ul className="p-1 px-2 rounded-lg border  text-pink-400 flex items-center justify-center gap-2">
+                  <FaExclamation /> Partial_Upvotes{" "}
                   {Feedback?.partial_upvotes || 0}
                 </ul>
               </div>
@@ -194,12 +225,13 @@ const UserDashboard = () => {
                     : "text-red-500"
                 } dark:bg-white/10 bg-black/10 rounded-lg py-1 px-2`}
               >
-                Score : {score ? score : 0}
+                Confidence : {score ? score : 0}
               </span>
               {/* )} */}
             </section>
           </motion.div>
 
+          {/* user active projects section */}
           <motion.div
             whileHover={{ y: -5 }}
             className=" bg-gray-100 dark:bg-black p-6 rounded-xl border border-gray-400"
@@ -213,15 +245,16 @@ const UserDashboard = () => {
                 Documents are your current favorite
               </ul>
             </span>
-            <span className="text-xs mt-1  flex flex-wrap items-center justify-center gap-2">
+            <span className="text-xs mt-1  flex flex-wrap items-center justify-start gap-1 max-h-20 overflow-hidden">
               {user?.Contributions_user_id_fkey &&
                 user?.Contributions_user_id_fkey.map((doc) => {
                   return (
                     <ul
-                      className="bg-emerald-600 text-white bai-jamjuree-regular rounded-md px-2 py-1"
+                      className=" dark:text-indigo-300 text-teal-500 bai-jamjuree-regular rounded-md truncate flex items-center justify-center gap-2"
                       key={`${doc.id}_${doc.created_at}`}
                     >
                       {doc.feedback.trim().split("")}
+                      <FaFilePdf />
                     </ul>
                   );
                 })}
@@ -443,6 +476,43 @@ const UserDashboard = () => {
               )}
             </button>
           </div>
+        </section>
+        <section className="w-1/3 md:hidden block my-6">
+          <button
+            disabled={isLoggingOut}
+            onClick={() => dispatch(LogoutUser())}
+            className={`
+    relative flex items-center justify-center gap-4 px-4 py-2 w-full rounded-md
+    text-white font-semibold transition-all duration-300
+    ${
+      isLoggingOut
+        ? "cursor-not-allowed bg-red-400"
+        : "cursor-pointer bg-red-600 hover:bg-red-700 active:scale-95"
+    }
+  `}
+          >
+            <span
+              className={`${
+                isLoggingOut ? "opacity-0" : "opacity-100"
+              } transition-opacity duration-300`}
+            >
+              Logout
+            </span>
+
+            {isLoggingOut && (
+              <span className="absolute">
+                <BiLoaderAlt className="animate-spin" size={24} />
+              </span>
+            )}
+
+            <span
+              className={`${
+                isLoggingOut ? "opacity-0" : "opacity-100"
+              } transition-opacity duration-300`}
+            >
+              <BiLogOut />
+            </span>
+          </button>
         </section>
       </div>
     </div>

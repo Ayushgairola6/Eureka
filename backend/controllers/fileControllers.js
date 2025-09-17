@@ -1,18 +1,73 @@
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+
 import { GenerateResponse } from "./ModelController.js";
 import { Pinecone } from "@pinecone-database/pinecone";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import { supabase } from "./supabaseHandler.js";
-import { CheckFileTypeAndParseIt } from "../FilerParsers/FilerParser.js";
+import {
+  CheckFileTypeAndParseIt,
+  chunkMarkdown,
+  formatSSEChunk,
+  splitMarkdown,
+} from "../FilerParsers/FilerParser.js";
 dotenv.config();
 
+import {
+  FormatForHumanFallback,
+  SearchQueryResults,
+} from "../OnlineSearchHandler/WebSearchHandler.js";
 const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
 
 export const index = pc.index("knowledge-base-index");
 
+// current date and time
+const now = new Date();
+const hour = now.getHours();
+const minute = now.getMinutes();
+
+// Array of month names for clarity
+const monthNames = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+// Array of day names
+const dayNames = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+const dayOfMonth = now.getDate();
+const dayOfWeek = dayNames[now.getDay()];
+const year = now.getFullYear();
+const month = monthNames[now.getMonth()];
+
+// Format time in 12-hour format with AM/PM
+const formattedTime = `${hour > 12 ? hour - 12 : hour}:${minute
+  .toString()
+  .padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
+
+// Combine all parts into a single string using a delimiter
+const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
+
+//upload functions
 export const FileUploadHandle = async (req, res) => {
   try {
     const { category, name, feedback, subCategory, visibility } = req.body;
@@ -177,7 +232,8 @@ export const FindMatchingResponse = async (req, res) => {
     const user_id = req.user.user_id;
     if (!user_id || typeof user_id !== "string")
       return res.status(400).json({ message: "Please login to continue" });
-    const { question, category, subCategory } = req.body;
+    // const { question, category, subCategory } = req.body;
+    const { question, category, subCategory } = req.query;
     if (
       !question ||
       typeof question !== "string" ||
@@ -186,8 +242,14 @@ export const FindMatchingResponse = async (req, res) => {
       !subCategory ||
       typeof subCategory !== "string"
     ) {
-      return res.status(400).json({ message: "Invalid question type !" });
+      return res
+        .status(400)
+        .json({ message: "Some fields are missing or the query is Invalid !" });
     }
+
+    //  setting the specific headers for stream type
+
+    // finding info regarding that query
     const FoundData = [];
     const DocumentsUserForReference = [];
     //    console.log(fetchResult)
@@ -265,11 +327,11 @@ export const FindMatchingResponse = async (req, res) => {
       console.error(er);
     }
 
+    res.write(`event: metadata\n`);
+    res.write(
+      `data: ${JSON.stringify({ documents: DocumentsUserForReference })}\n\n`
+    );
     const AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
-    // const AnswerToUsersQuestion = 'Kya answer chahiye bhai tujhe?'
-    if (AnswerToUsersQuestion.error) {
-      return res.status(200).json({ answer: AnswerToUsersQuestion.error });
-    }
 
     const storeResponses = await StoreQueryAndResponse(
       user_id,
@@ -278,18 +340,53 @@ export const FindMatchingResponse = async (req, res) => {
     );
 
     if (storeResponses.error) {
-      return res.status(200).json({
-        message: "Could not store this request",
-        answer: AnswerToUsersQuestion,
-      });
+      // return res.status(200).json({
+      //   message: "Could not store this request",
+      //   answer: AnswerToUsersQuestion,
+      // });
     }
-    return res.status(200).json({
-      message: "Response found",
-      answer: AnswerToUsersQuestion,
-      doc_id: DocumentsUserForReference,
+    // creating lines
+    const Chunks = chunkMarkdown(AnswerToUsersQuestion);
+    let i = 0;
+    const interval = 80;
+    // condition to avoid big chunks
+    const charSender = setInterval(() => {
+      if (i < Chunks.length) {
+        // const safeChunk = markdown.charAt(i);
+        res.write(formatSSEChunk(Chunks[i]));
+        i++;
+      } else {
+        clearInterval(charSender);
+        res.write("data: [DONE]\n\n");
+        res.end();
+      }
+    }, interval);
+
+    // Handle client disconnect
+    req.on("close", () => {
+      console.log("Client disconnected");
+      res.end();
     });
+
+    const responseId = uuidv4();
+
+    // return res.status(200).json({
+    //   message: "Response found",
+    //   answer: AnswerToUsersQuestion,
+    //   Airesponse: {
+    //     id: responseId,
+    //     sent_by: "Eureka",
+    //     sent_at: currentTime,
+    //     message: AnswerToUsersQuestion,
+    //   },
+    //   // doc_id: DocumentsUserForReference,
+    // });
   } catch (error) {
-    console.error(error);
+    console.log(error);
+    res.write(`event: error\n`);
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+  } finally {
+    // res.end();
   }
 };
 
@@ -374,12 +471,13 @@ export const GetPrivateUserDocs = async (req, res) => {
 // Query personal documents of the user
 export const QueryPersonalDocs = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
-    if (!user_id || typeof user_id !== "string") {
-      return res.status(400).json({ message: "Please Login to continue" });
+    const user = req.user;
+    if (!user) {
+      res.write(`event: Error while generating a response\n`);
+      res.end();
     }
 
-    const { docId, question, query_type } = req.body;
+    const { docId, question, query_type } = req.query;
 
     if (
       !docId ||
@@ -389,8 +487,10 @@ export const QueryPersonalDocs = async (req, res) => {
       !query_type ||
       typeof query_type !== "string"
     ) {
-      return res.status(400).json({ message: "Invalid values" });
+      res.write(`event: Error while generating a response\n`);
+      res.end();
     }
+    //  setting the specific headers for stream type
 
     const FoundData = [];
     let response;
@@ -398,7 +498,10 @@ export const QueryPersonalDocs = async (req, res) => {
     const SYSTEM_PROMPT =
       query_type === "QNA"
         ? process.env.SYSTEM_PROMPT
-        : process.env.SUMMARIZER_PROMPT;
+        : query_type === "Summary"
+        ? process.env.SUMMARIZER_PROMPT
+        : process.env.WEB_SEARCH_RESULT_PROMPT;
+
     if (query_type === "QNA") {
       response = await index.searchRecords({
         query: {
@@ -412,24 +515,19 @@ export const QueryPersonalDocs = async (req, res) => {
         fields: ["text"],
       });
 
-      //  console.log(response)
       if (response.result.hits.length === 0) {
-        return res.status(200).json({
-          message: "Response found",
-          answer: `Could you please be more specific about what you would like to know about this topic`,
-          doc_id: [],
-        });
+        res.write(`event: Error while generating a response\n`);
       }
-    } else if (query_type === "Summary") {
+    }
+    // if the query is summary type
+    else if (query_type === "Summary") {
       const { data, error } = await supabase
         .from("Contributions")
         .select("feedback , chunk_count ,username")
         .eq("document_id", docId);
 
       if (error || !data.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "Unable to find this document in our database" });
+        res.write(`event: Error while generating a response\n`);
       }
 
       //   console.log(data)
@@ -440,16 +538,15 @@ export const QueryPersonalDocs = async (req, res) => {
         data[0].chunk_count
       );
       if (!response || response.length === 0) {
-        return res.status(200).json({
-          message: "Response found",
-          answer: `There was no data in our database about this document !`,
-          doc_id: [],
-        });
+        res.write(`event: Error while generating a response\n`);
+        res.end();
       }
     } else {
       // Handle invalid query_type
-      return res.status(400).json({ message: "Invalid query type" });
+      res.write(`event:Error while generating a response\n`);
+      res.end();
     }
+
     if (response?.result?.hits) {
       response.result.hits.forEach((e) => {
         if (e) {
@@ -459,44 +556,57 @@ export const QueryPersonalDocs = async (req, res) => {
         }
       });
     }
-    {
-    }
 
-    const AnswerToUsersQuestion = await GenerateResponse(
+    // geenrating the response based on the found context
+    let AnswerToUsersQuestion = await GenerateResponse(
       question,
       FoundData.length !== 0 ? FoundData : response,
       SYSTEM_PROMPT
     );
-    // const AnswerToUsersQuestion = 'random text';
-    if (AnswerToUsersQuestion.error) {
-      console.log(AnswerToUsersQuestion.error);
-      return res.status(200).json({
-        message: "Error while generating a response",
-        answer: "WE currently do not have information regarding this topic",
-      });
+    // console.log(AnswerToUsersQuestion, "anser to qustion");
+    if (AnswerToUsersQuestion?.error) {
+      // console.log(AnswerToUsersQuestion.error);
+      const WebResults = await SearchQueryResults(question);
+
+      AnswerToUsersQuestion = FormatForHumanFallback(WebResults, question);
+
+      // res.write(`event: Error while generating a response\n`);
     }
+
     const storeResponse = await StoreQueryAndResponse(
-      user_id,
+      user.user_id,
       question,
       AnswerToUsersQuestion,
       docId
     );
 
     if (storeResponse.error) {
-      console.log(storeResponse?.error);
-      return res.status(200).json({
-        message: "Could not store this request",
-        answer: AnswerToUsersQuestion,
-      });
+      console.log(storeResponse.error);
     }
-    return res
-      .status(200)
-      .json({ message: "Response found", answer: AnswerToUsersQuestion });
+
+    const Chunks = chunkMarkdown(AnswerToUsersQuestion);
+    let i = 0;
+    const interval = 80;
+    // condition to avoid big chunks
+    const charSender = setInterval(() => {
+      if (i < Chunks.length) {
+        // const safeChunk = markdown.charAt(i);
+        res.write(formatSSEChunk(Chunks[i]));
+        i++;
+      } else {
+        clearInterval(charSender);
+        res.write("data: [DONE]\n\n");
+        res.end();
+      }
+    }, interval);
+
+    req.on("close", () => {
+      console.log("Client disconnected");
+      res.end();
+    });
   } catch (error) {
     console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Error while processing your request" });
+    res.write(`event: error\n`);
   }
 };
 

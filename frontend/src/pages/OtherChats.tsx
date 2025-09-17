@@ -6,8 +6,8 @@ import { FiArrowLeft, FiCopy, FiShare2 } from "react-icons/fi";
 import { useNavigate } from "react-router";
 import { toast, Toaster } from "sonner";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
-import MarkdownRenderer from "@/components/safeHtml";
 import SearchBox from "@/components/searchbox";
+import { Streamdown } from "streamdown";
 
 const OtherChats = () => {
   const dispatch = useAppDispatch();
@@ -168,10 +168,7 @@ const OtherChats = () => {
                 >
                   <span className="font-medium">You -</span> {message.question}
                 </p>
-                <MarkdownRenderer
-                  content={message.AI_response}
-                  className="text-sm text-gray-800 dark:text-gray-200 darj h-full bai-jamjuree-regular leading-loose dark:bg-gray-900 bg-gray-300 mr-auto max-w-3xl rounded-lg px-3 py-4"
-                />
+                <Streamdown>{message.AI_response}</Streamdown>
               </motion.div>
             ))}
           </div>

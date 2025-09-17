@@ -79,6 +79,8 @@ const App = () => {
     fetchUserData();
   }, [isLoggedIn, dispatch]);
 
+  // if user logs out
+
   // Cleanup socket on unmount
   useEffect(() => {
     return () => {
@@ -199,7 +201,7 @@ const App = () => {
             </Route>
           </Routes>
 
-          <Footer></Footer>
+          {/* <Footer></Footer> */}
         </Router>
       </Suspense>
     </>

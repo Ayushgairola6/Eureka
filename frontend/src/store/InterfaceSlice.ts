@@ -10,7 +10,16 @@ interface DocUsed {
   downvotes: number;
   partial_upvotes: number;
 }
-
+interface messageInt {
+  isComplete: boolean;
+  content: string;
+}
+interface ChatsInterface {
+  id: string;
+  sent_by: string;
+  message: messageInt;
+  sent_at: string;
+}
 interface InterfaceState {
   question: string;
   answer: string;
@@ -30,7 +39,7 @@ interface InterfaceState {
   showType: boolean;
   docUsed: DocUsed[];
   sendingFeedback: boolean;
-  Chats: [];
+  Chats: ChatsInterface[];
 }
 
 const initialState: InterfaceState = {
@@ -142,7 +151,7 @@ export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
           },
         }
       );
-      console.log(response.data);
+      // console.log(response.data);
       return response.data;
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
@@ -152,10 +161,40 @@ export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
     }
   }
 );
+
 const interfaceSlice = createSlice({
   name: "interface",
   initialState,
   reducers: {
+    UpdateChats: (state, action) => {
+      const hasIt = state.Chats.some((elem) => elem.id === action.payload.id);
+      if (!hasIt) {
+        state.Chats.push(action.payload);
+      }
+    },
+    finalizeMessage: (state, action) => {
+      const { id, data } = action.payload;
+      // find the message who we are finalizing with SSE
+      const msg = state.Chats.find((data) => data.id === id);
+      if (data && msg) {
+        msg?.message.isComplete === true;
+        msg.message.content = data;
+      }
+      if (msg) {
+        msg.message.isComplete = true;
+      }
+    },
+    UpdateMessage: (state, action) => {
+      const { id, delta } = action.payload;
+      const msg = state.Chats.find((data) => data.id === id);
+
+      if (msg) {
+        msg.message.content = (msg.message.content || "") + delta; // append instead of replace
+      }
+    },
+    UpdateDocUsed: (state, action) => {
+      state.docUsed = [...action.payload];
+    },
     setQuestion: (state, action) => {
       state.question = action.payload;
     },
@@ -229,8 +268,8 @@ const interfaceSlice = createSlice({
       })
       .addCase(QueryAIQuestions.fulfilled, (state, action) => {
         state.loading = false;
-        state.answer = action.payload.answer;
-        state.docUsed = [...action.payload.doc_id];
+        state.Chats.push(action.payload.Airesponse);
+        // state.docUsed = [...action.payload.doc_id];
       })
       .addCase(QueryAIQuestions.rejected, (state) => {
         state.loading = false;
@@ -242,7 +281,7 @@ const interfaceSlice = createSlice({
       })
       .addCase(QueryPrivateDocuments.fulfilled, (state, action) => {
         state.loading = false;
-        state.answer = action.payload.answer;
+        state.Chats.push(action.payload.Airesponse);
       })
       .addCase(QueryPrivateDocuments.rejected, (state) => {
         state.loading = true;
@@ -250,22 +289,20 @@ const interfaceSlice = createSlice({
 
       //authenticiy handler
       .addCase(AuthenticityResponseHandler.pending, (state) => {
-        console.log("AuthenticityResponseHandler doc pending");
         state.sendingFeedback = true;
       })
       .addCase(AuthenticityResponseHandler.fulfilled, (state) => {
-        console.log("AuthenticityResponseHandler doc completed");
         state.sendingFeedback = false;
         // state.docUsed = action.payload
       })
       .addCase(AuthenticityResponseHandler.rejected, (state) => {
-        console.log("AuthenticityResponseHandler doc failed");
         state.sendingFeedback = false;
       });
   },
 });
 
 export const {
+  UpdateChats,
   setQuestion,
   setAnswer,
   setLoading,
@@ -283,6 +320,9 @@ export const {
   setVisibility,
   setSubCategory,
   setDocUsed,
+  finalizeMessage,
+  UpdateMessage,
+  UpdateDocUsed,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;
