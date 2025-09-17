@@ -33,7 +33,6 @@ import {
   setUseStatus,
 } from "./store/AuthSlice.ts";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import "./App.css";
 import axios from "axios";
@@ -200,8 +199,6 @@ const App = () => {
               {/* Add more documentation routes here */}
             </Route>
           </Routes>
-
-          {/* <Footer></Footer> */}
         </Router>
       </Suspense>
     </>
