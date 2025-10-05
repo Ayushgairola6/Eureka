@@ -14,9 +14,13 @@ import {
 dotenv.config();
 
 import {
+  formatForGemini,
   FormatForHumanFallback,
   SearchQueryResults,
 } from "../OnlineSearchHandler/WebSearchHandler.js";
+import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+import { redisClient } from "../CachingHandler/redisClient.js";
+import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
 const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
@@ -99,6 +103,7 @@ export const FileUploadHandle = async (req, res) => {
     const textChunks = await splitTextIntoChunks(CheckedFileType);
 
     if (!textChunks || textChunks.length === 0) {
+      await notifyMe(`Error while chunking the text by ${req.user.username}`);
       return res
         .status(400)
         .json({ message: "Error while processing your file" });
@@ -136,7 +141,10 @@ export const FileUploadHandle = async (req, res) => {
           // console.log(`Upserted batch of ${recordsToUpsert.length} records.`);
           recordsToUpsert.length = 0; // Clear the batch array
         } catch (error) {
-          console.error("Error during batch upsert:", error);
+          await notifyMe(
+            `Error ${error} while batch upsert the file by ${req.user.username}`
+          );
+
           // Implement more specific error handling if needed
           return res
             .status(500)
@@ -151,7 +159,7 @@ export const FileUploadHandle = async (req, res) => {
         await index.upsertRecords(recordsToUpsert);
         // console.log(`Upserted final batch of ${recordsToUpsert.length} records.`);
       } catch (error) {
-        console.error("Error during final batch upsert:", error);
+        await notifyMe(`${error} = error while batch upserting`);
         return res
           .status(500)
           .json({ message: "Error during Pinecone upsert operation." });
@@ -168,7 +176,7 @@ export const FileUploadHandle = async (req, res) => {
     );
 
     if (StoredContribution?.error) {
-      console.log(StoredContribution?.error);
+      await notifyMe(StoredContribution.error);
       return res.status(400).json({ message: StoredContribution.error });
     }
     const StoreInFeedback = await StoreFilesIntoDoc_Feedback(
@@ -176,13 +184,78 @@ export const FileUploadHandle = async (req, res) => {
       documentId
     );
     if (StoreInFeedback?.error) {
+      await notifyMe(StoreInFeedback.error);
       return res
         .status(400)
         .json({ message: "Error while processing your file" });
     }
+    // update the redis contributions cache
+    const UserAccountDataKey = `user_id=${userid}&username=${name}'s_dashboardData`;
+
+    const CachedContributions = await redisClient.hGet(
+      UserAccountDataKey,
+      "Contributionss"
+    );
+    const Parsed = JSON.parse(CachedContributions);
+    if (Parsed) {
+      const NewArrayOfContributions = Parsed.push({
+        created_at: new Date().toISOString(),
+        feedback: feedback,
+        document_id: documentId,
+        user_id: userid,
+      });
+      await redisClient
+        .hSet(
+          UserAccountDataKey,
+          "Contributions",
+          JSON.stringify(NewArrayOfContributions)
+        )
+        .catch(
+          async (err) =>
+            await notifyMe(
+              `${err}: error occured while updating the cache for user contributions`
+            )
+        );
+    }
+    // create a new notification and inster it in the db
+    const metadata = {
+      sent_by_username: "System",
+    };
+    // add a new notification
+    const { data: newNotification, error: insertError } = await supabase
+      .from("notifications")
+      .insert({
+        user_id: userid, //person who is responsible for this notification
+        notification_type: "Informatory",
+        notification_message: `A new file ${feedback} uploaded .`,
+        title: "New file uploaded",
+        metadata: metadata,
+      })
+      .select("*");
+
+    if (insertError) {
+      await notifyMe(
+        `${insertError}= This error occured while Inserting notification data in file upload controller `
+      );
+    }
+    // send the notification to the user
+    const io = getIo();
+    io.to(userid).emit(
+      "new_Notification",
+      newNotification |
+        [
+          {
+            user_id: userid,
+            notification_type: "Informatory",
+            notification_message: `A new file ${feedback} uploaded`,
+            title: "New file uploaded",
+            metadata: metadata,
+          },
+        ]
+    );
     return res.json({ message: "Upload successfull" });
   } catch (error) {
-    console.error(error, "total server errors");
+    await notifyMe(error);
     return res.status(500).json({ message: "Internal Server error" });
   }
 };
@@ -205,7 +278,6 @@ const StoreFilesIntoDoc_Feedback = async (user_id, documentId) => {
       .insert({ user_id: user_id, document_id: documentId });
 
     if (liketableError) {
-      console.log(liketableError);
       return { error: "Errror while storing file data in the feedback table" };
     }
     const { error: feedbackTableError } = await supabase
@@ -227,13 +299,13 @@ const StoreFilesIntoDoc_Feedback = async (user_id, documentId) => {
 };
 
 // find the matching response values
-export const FindMatchingResponse = async (req, res) => {
+export const GetPublicRecords = async (req, res) => {
   try {
     const user_id = req.user.user_id;
     if (!user_id || typeof user_id !== "string")
       return res.status(400).json({ message: "Please login to continue" });
     // const { question, category, subCategory } = req.body;
-    const { question, category, subCategory } = req.query;
+    const { question, category, subCategory } = req.body;
     if (
       !question ||
       typeof question !== "string" ||
@@ -274,6 +346,9 @@ export const FindMatchingResponse = async (req, res) => {
     });
     // if the question is too vague
     if (response.result.hits.length === 0) {
+      await notifyMe(
+        `No info found in db about category=${category} question=${question} subcategory=${subCategory}`
+      );
       return res.status(200).json({
         message: "Response found",
         answer: `Could you please be more specific about what you would like to know about ${subCategory}`,
@@ -286,7 +361,6 @@ export const FindMatchingResponse = async (req, res) => {
     try {
       for (const e of response.result.hits) {
         if (!e) {
-          console.log("Empty resuls found");
           continue;
         }
         const uniqueKey = `${e.fields.documentId}-${e.fields.contributor}`;
@@ -304,9 +378,6 @@ export const FindMatchingResponse = async (req, res) => {
           // console.log("Document feedback")
           if (error) throw error;
           if (!data) {
-            console.warn(
-              `No feedback data found for document ${e.fields.documentId}`
-            );
             continue;
           }
           //3. construct the data of the doc object
@@ -320,73 +391,79 @@ export const FindMatchingResponse = async (req, res) => {
 
           seen.add(uniqueKey);
         } catch (formattingdataerror) {
-          console.log(formattingdataerror);
+          await notifyMe(formattingdataerror);
         }
       }
     } catch (er) {
-      console.error(er);
+      await notifyMe(
+        `${JSON.stringify(
+          er
+        )}= error while getting documents id from database for documents used for this AI response`
+      );
     }
 
-    res.write(`event: metadata\n`);
-    res.write(
-      `data: ${JSON.stringify({ documents: DocumentsUserForReference })}\n\n`
-    );
-    const AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
+    let AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
+
+    if (AnswerToUsersQuestion.error) {
+      return res.status(200).send({ answer: "Server busy" });
+    }
 
     const storeResponses = await StoreQueryAndResponse(
       user_id,
       question,
-      AnswerToUsersQuestion
+      AnswerToUsersQuestion,
+      null,
+      category,
+      subCategory
     );
 
     if (storeResponses.error) {
-      // return res.status(200).json({
-      //   message: "Could not store this request",
-      //   answer: AnswerToUsersQuestion,
-      // });
+      await notifyMe(
+        `${storeResponses.error} eror while storing the convversation`
+      );
+      return res.status(200).json({
+        message: "Could not store this request",
+        answer: AnswerToUsersQuestion,
+      });
     }
-    // creating lines
-    const Chunks = chunkMarkdown(AnswerToUsersQuestion);
-    let i = 0;
-    const interval = 80;
-    // condition to avoid big chunks
-    const charSender = setInterval(() => {
-      if (i < Chunks.length) {
-        // const safeChunk = markdown.charAt(i);
-        res.write(formatSSEChunk(Chunks[i]));
-        i++;
-      } else {
-        clearInterval(charSender);
-        res.write("data: [DONE]\n\n");
-        res.end();
+
+    // updating the chats cache
+    try {
+      const misallaneousChatsKey = `user=${req.user.username}'s_misallaneousChats`;
+      // update the chats cache in redis
+      const OldChats = await redisClient.get(misallaneousChatsKey);
+      if (OldChats) {
+        const newChats = JSON.parse(OldChats);
+        newChats.push({
+          created_at: new Date().toISOString(),
+          question: question,
+          AI_response: AnswerToUsersQuestion,
+        });
+        // console.log("new misallaneous chats", newChats[newChats.length - 1]);
+
+        //update the value of the key
+        await redisClient.set(misallaneousChatsKey, JSON.stringify(newChats), {
+          expiration: {
+            type: "Ex",
+            value: 600,
+          },
+        });
       }
-    }, interval);
-
-    // Handle client disconnect
-    req.on("close", () => {
-      console.log("Client disconnected");
-      res.end();
-    });
-
+    } catch (cachingerror) {
+      await notifyMe(
+        `Error while updating the misallaneous cache =${cachingerror} `
+      );
+    }
     const responseId = uuidv4();
 
-    // return res.status(200).json({
-    //   message: "Response found",
-    //   answer: AnswerToUsersQuestion,
-    //   Airesponse: {
-    //     id: responseId,
-    //     sent_by: "Eureka",
-    //     sent_at: currentTime,
-    //     message: AnswerToUsersQuestion,
-    //   },
-    //   // doc_id: DocumentsUserForReference,
-    // });
-  } catch (error) {
-    console.log(error);
-    res.write(`event: error\n`);
-    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
-  } finally {
-    // res.end();
+    return res.status(200).json({
+      message: "Response found",
+      answer: AnswerToUsersQuestion,
+      doc_id: DocumentsUserForReference || [],
+    });
+  } catch (err) {
+    await notifyMe(err);
+    return res.status(500).send({ message: "Server busy" });
   }
 };
 
@@ -469,15 +546,14 @@ export const GetPrivateUserDocs = async (req, res) => {
 };
 
 // Query personal documents of the user
-export const QueryPersonalDocs = async (req, res) => {
+export const GetPrivateDocResultss = async (req, res) => {
   try {
     const user = req.user;
     if (!user) {
-      res.write(`event: Error while generating a response\n`);
-      res.end();
+      return res.status(401).send({ message: "Please login to continue" });
     }
 
-    const { docId, question, query_type } = req.query;
+    const { docId, question, query_type } = req.body;
 
     if (
       !docId ||
@@ -487,8 +563,12 @@ export const QueryPersonalDocs = async (req, res) => {
       !query_type ||
       typeof query_type !== "string"
     ) {
-      res.write(`event: Error while generating a response\n`);
-      res.end();
+      await notifyMe(
+        `Error while asking question from private doc by user=${
+          req.user.username
+        } the req.body is like this = ${JSON.stringify(req.body)}`
+      );
+      return res.status(400).send({ message: "Something went wrong" });
     }
     //  setting the specific headers for stream type
 
@@ -516,7 +596,9 @@ export const QueryPersonalDocs = async (req, res) => {
       });
 
       if (response.result.hits.length === 0) {
-        res.write(`event: Error while generating a response\n`);
+        return res
+          .status(400)
+          .send({ message: "Error while generating a response" });
       }
     }
     // if the query is summary type
@@ -527,7 +609,9 @@ export const QueryPersonalDocs = async (req, res) => {
         .eq("document_id", docId);
 
       if (error || !data.length === 0) {
-        res.write(`event: Error while generating a response\n`);
+        return res
+          .status(400)
+          .send({ message: "Error while generating a response" });
       }
 
       //   console.log(data)
@@ -538,13 +622,13 @@ export const QueryPersonalDocs = async (req, res) => {
         data[0].chunk_count
       );
       if (!response || response.length === 0) {
-        res.write(`event: Error while generating a response\n`);
-        res.end();
+        return res
+          .status(400)
+          .send({ message: "Error while generating a response" });
       }
     } else {
       // Handle invalid query_type
-      res.write(`event:Error while generating a response\n`);
-      res.end();
+      return res.status(400).send({ message: "Invalid query type" });
     }
 
     if (response?.result?.hits) {
@@ -552,11 +636,10 @@ export const QueryPersonalDocs = async (req, res) => {
         if (e) {
           FoundData.push(e.fields.text);
         } else {
-          console.log("no results found");
         }
       });
     }
-
+    let WebResults;
     // geenrating the response based on the found context
     let AnswerToUsersQuestion = await GenerateResponse(
       question,
@@ -565,11 +648,14 @@ export const QueryPersonalDocs = async (req, res) => {
     );
     // console.log(AnswerToUsersQuestion, "anser to qustion");
     if (AnswerToUsersQuestion?.error) {
+      await notifyMe(`Gemini response error ${AnswerToUsersQuestion?.error}`);
+
       // console.log(AnswerToUsersQuestion.error);
-      const WebResults = await SearchQueryResults(question);
+      WebResults = await SearchQueryResults(question);
 
-      AnswerToUsersQuestion = FormatForHumanFallback(WebResults, question);
+      const results = FormatForHumanFallback(WebResults.response, question);
 
+      AnswerToUsersQuestion = results.text;
       // res.write(`event: Error while generating a response\n`);
     }
 
@@ -581,32 +667,111 @@ export const QueryPersonalDocs = async (req, res) => {
     );
 
     if (storeResponse.error) {
-      console.log(storeResponse.error);
+      await notifyMe(`Error while storing message  ${storeResponse.error}`);
     }
 
-    const Chunks = chunkMarkdown(AnswerToUsersQuestion);
-    let i = 0;
-    const interval = 80;
-    // condition to avoid big chunks
-    const charSender = setInterval(() => {
-      if (i < Chunks.length) {
-        // const safeChunk = markdown.charAt(i);
-        res.write(formatSSEChunk(Chunks[i]));
-        i++;
-      } else {
-        clearInterval(charSender);
-        res.write("data: [DONE]\n\n");
-        res.end();
-      }
-    }, interval);
-
-    req.on("close", () => {
-      console.log("Client disconnected");
-      res.end();
+    // find the update the cache
+    const DocumentChatCacheKey = `document=${docId}'s_chat-history`;
+    const OldChats = await redisClient.get(DocumentChatCacheKey);
+    if (OldChats) {
+      const newChats = JSON.parse(OldChats);
+      newChats.push({
+        created_at: new Date().toISOString(),
+        question: question,
+        AI_response: AnswerToUsersQuestion,
+      });
+      // update the cache
+      await redisClient.set(DocumentChatCacheKey, JSON.stringify(newChats), {
+        expiration: {
+          type: "EX",
+          value: 600,
+        },
+      });
+    }
+    return res.status(200).send({
+      message: "Response found",
+      Answer: AnswerToUsersQuestion,
+      favicon: WebResults.favicon || [],
     });
-  } catch (error) {
-    console.log(error);
-    res.write(`event: error\n`);
+  } catch (err) {
+    await notifyMe(`Error from Private doc result ${err}`);
+    return res.status(500).send({ message: "Server busy" });
+  }
+};
+// Do websearch
+export const PostTypeWebSearch = async (req, res) => {
+  try {
+    const user_id = req.user.user_id;
+    if (!user_id)
+      return res.status(401).send({ message: "Please login to continue" });
+    const { question } = req.body;
+    if (!question) return res.status(404).send({ message: "Invalid question" });
+    let favicon = [];
+
+    const WebResults = await SearchQueryResults(question);
+    if (WebResults.error) {
+      await notifyMe(WebResults.error);
+      return res.status(400).send({ message: "The server is busy right now" });
+    }
+    const Formattedresult = formatForGemini(WebResults.response);
+    if (!Formattedresult) {
+      await notifyMe(`${Formattedresult}, "Results formatting error"`);
+      return res.status(400).send({ message: "The server is busy right now" });
+    }
+
+    const WebResultPrompt = process.env.WEB_SEARCH_RESULT_PROMPT;
+    let Answer = await GenerateResponse(
+      question,
+      Formattedresult,
+      WebResultPrompt
+    );
+    if (Answer.error) {
+      // console.error(Answer.error, "Gemini response generation error");
+      await notifyMe(
+        `Error while generating a response by gemini :${Answer.error}`
+      );
+      // fallback response
+      const results = await FormatForHumanFallback(WebResults.response);
+      Answer = results.text;
+      favicon = [...results.favicons];
+    }
+    favicon = [...WebResults.favicon];
+    const StoreChats = await StoreQueryAndResponse(user_id, question, Answer);
+    if (StoreChats.error) {
+      await notifyMe(
+        `Error while storing response history ${StoreChats.error}`
+      );
+    }
+
+    // find the update the chats
+    const misallaneousChatsKey = `user=${req.user.username}'s_misallaneousChats`;
+    // update the chats cache in redis
+    const OldChats = await redisClient.get(misallaneousChatsKey);
+    if (OldChats) {
+      const newChats = JSON.parse(OldChats);
+      newChats.push({
+        created_at: new Date().toISOString(),
+        question: question,
+        AI_response: Answer.text,
+      });
+
+      //update the value of the key
+      await redisClient.set(misallaneousChatsKey, JSON.stringify(newChats), {
+        expiration: {
+          type: "Ex",
+          value: 600,
+        },
+      });
+    }
+
+    return res.send({
+      Answer: Answer,
+      message: "Results found",
+      favicon: favicon,
+    });
+  } catch (err) {
+    await notifyMe(err);
+    return res.status(500).send({ message: "Something went wrong" });
   }
 };
 
@@ -667,7 +832,9 @@ export const StoreQueryAndResponse = async (
   user_id,
   question,
   Ai_response,
-  docId
+  docId,
+  category,
+  subCategory
 ) => {
   try {
     if (
@@ -678,15 +845,18 @@ export const StoreQueryAndResponse = async (
       !Ai_response ||
       typeof Ai_response !== "string"
     ) {
-      console.log(user_id, docId, Ai_response, question);
-      console.log("All fields are necessary to store the query response");
       return { error: "Invalid arguments" };
     }
+    const metadata = {
+      category: category,
+      subCategory: subCategory,
+    };
     const { error } = await supabase.from("Conversation_History").insert({
       user_id: user_id,
       question: question,
       AI_response: Ai_response,
       document_id: docId,
+      metadata: metadata,
     });
     if (error) {
       console.error(

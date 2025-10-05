@@ -6,6 +6,7 @@ const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 // Document type should be separate from auth state
 interface Contributions_user_id_fkey {
   id: string;
+  chunk_count: string;
   feedback: string;
   created_at: string;
   document_id: string;

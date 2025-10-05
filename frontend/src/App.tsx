@@ -152,7 +152,7 @@ const App = () => {
     <>
       {/* Global Loading Overlay */}
       {userStatus === "pending" && (
-        <LoadingIndicator text={"Setting things up for you..."} />
+        <LoadingIndicator text={"Setting up your dashboard"} />
       )}
 
       {/* main routers */}

@@ -8,6 +8,7 @@ import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
 // nodemailer transporter
 import { EmailServices } from "../EmailHandlers/EmailTemplates.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
+import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 
 export const GenerateRefreshTokens = (id, email, username) => {
   try {
@@ -134,6 +135,7 @@ export const HandleUserRegistration = async (req, res) => {
       verificationtoken
     );
 
+    await notifyMe(`New user ${username} joined eureka`);
     return res.json({
       message: "An email has been sent to your registered email !",
     });
@@ -164,25 +166,31 @@ export const HandleUserLogin = async (req, res) => {
 
     const { data, error } = await supabase
       .from("users")
-      .select("email, id, username , password")
-      .eq("email", email)
+      .select("email, id, username , password,isVerified")
+      .eq("email", email.toLowerCase())
       .single();
 
     if (!data || error) {
       console.error(error, "user not found");
       return res.status(404).json({ message: "User not found !" });
     }
+    const isVerified = data.isVerified;
+    if (isVerified === false) {
+      return res
+        .status(401)
+        .send({ message: "Please verify your Account first" });
+    }
     const isMatching = await bcrypt.compare(password, data.password);
 
     if (!isMatching) {
       console.log("passwod did not match");
-      return res.status(400).send({ message: "The password did not match" });
+      return res.status(400).send({ message: "Password did not match" });
     }
 
     const RefreshToken = GenerateRefreshTokens(
       data.id,
-      data.email,
-      data.username
+      data.email.toLowerCase(),
+      data.username.toLowerCase()
     );
     if (!RefreshToken) {
       console.error("Error while geenrating refreshtoken");
@@ -190,7 +198,11 @@ export const HandleUserLogin = async (req, res) => {
         .status(400)
         .send({ message: "Error while creating a session" });
     }
-    const AuthToken = GenerateAccessTokens(data.id, data.email, data.username);
+    const AuthToken = GenerateAccessTokens(
+      data.id,
+      data.email.toLowerCase(),
+      data.username.toLowerCase()
+    );
 
     if (!AuthToken) {
       console.error("Error while geenrating AccessToken");
@@ -200,7 +212,6 @@ export const HandleUserLogin = async (req, res) => {
     }
     const store = await StoreTokens(RefreshToken, AuthToken, data.id);
     if (store.error) {
-      console.log(store.error);
       return res
         .status(400)
         .json({ message: "Error while setting up the session" });
@@ -224,6 +235,9 @@ export const HandleUserLogin = async (req, res) => {
       platform: req.headers["sec-ch-ua"],
       timestamp: new Date(),
     });
+    await notifyMe(
+      `New user ${data.username} Logged in into their eureka account`
+    );
 
     return res
       .status(200)
@@ -531,7 +545,7 @@ export const GetUserContributions = async (user_id) => {
   try {
     const { data, error } = await supabase
       .from("Contributions")
-      .select("*")
+      .select("created_at,feedback,document_id,user_id,chunk_count,id")
       .eq("user_id", user_id)
       .eq("Document_visibility", "Private");
 
@@ -645,37 +659,49 @@ export const GetUserAccountDetails = async (req, res) => {
     const user_id = req.user.user_id;
 
     if (!user_id || typeof user_id !== "string") {
-      console.log("No user id found while getting account details");
       return res.status(401).json({ message: "Invalid user id" });
     }
     const username = req.user.username ? req.user.username : "unkown1";
     // unique userKye for caching
     const user_cache_key = `username=${username}&user_id=${user_id}`;
 
-    const userdata = await getUserDataFromCache(user_cache_key);
-    // if there is cache info
-    const hasCachedData =
-      userdata.userData.length > 0 ||
-      userdata.Contributions_user_id_fkey.length > 0 ||
-      userdata.Querycount > 0 ||
-      userdata.chatrooms.length > 0;
-    userdata.notificationcount !== 0 ||
-      userdata.notifications.length > 0 ||
-      userdata.FeedbackCounts !== 0;
+    // const userdata = await getUserDataFromCache(user_cache_key);
+    const UserAccountDataKey = `user_id=${user_id}&username=${username}'s_dashboardData`;
+    // const userdata = await redisClient
+    //   .hGetAll(UserAccountDataKey)
+    //   .catch(
+    //     async (err) =>
+    //       await notifyMe(
+    //         `${err} this error occured while checking for user dashboard data in the cache`
+    //       )
+    //   );
 
-    if (hasCachedData && !userdata.error) {
-      // console.log("Serving from cache");
-      return res.status(200).send({
-        user: userdata.userData,
-        Contributions_user_id_fkey: userdata.Contributions_user_id_fkey,
-        Querycount: userdata.Querycount,
-        FeedbackCounts: userdata.FeedbackCounts,
-        chatrooms: userdata.chatrooms,
-        notificationcount: userdata.notificationcount,
-        notifications: userdata.notifications,
-        message: "User data found",
-      });
-    }
+    // // if there is cache info
+    // if (userdata) {
+    //   const hasCachedData =
+    //     userdata.userdata ||
+    //     userdata.Contributions ||
+    //     userdata.querycount ||
+    //     userdata.Jrooms;
+    //   userdata.notificationcount !== 0 ||
+    //     userdata.notification ||
+    //     userdata.feedbackcount;
+
+    //   if (hasCachedData && !userdata.error) {
+    //     // console.log("Serving from cache");
+    //     return res.status(200).send({
+    //       user: JSON.parse(userdata.userdata),
+    //       Contributions_user_id_fkey: JSON.parse(userdata.Contributions),
+    //       Querycount: JSON.parse(userdata.querycount),
+    //       FeedbackCounts: JSON.parse(userdata.feedbackcount),
+    //       chatrooms: JSON.parse(userdata.rooms),
+    //       notificationcount: JSON.parse(userdata.notificationcount),
+    //       notification: JSON.parse(userdata.notification),
+    //       message: "User data found",
+    //     });
+    //   }
+    // }
+
     // Fetch all data in parallel to improve performance
     const [
       userData,
@@ -697,19 +723,14 @@ export const GetUserAccountDetails = async (req, res) => {
 
     // Consistent error handling
     if (userData.error) {
-      console.error("Failed to fetch user data:", userData.error);
       return res.status(404).send({ message: "User not found" });
     }
     if (countData.error || votesData.error || chatroomsData.error) {
-      console.error(
-        "Failed to fetch additional data:",
-        countData.error,
-        votesData.error,
-        chatroomsData.error
-      );
       return res.status(500).send({ message: "Error fetching user data" });
     }
     const StoreInCache = await StoreUserDataInTheCache(
+      user_id,
+      username,
       user_cache_key,
       userData.data,
       Contributions_user_id_fkey.data,
@@ -721,78 +742,35 @@ export const GetUserAccountDetails = async (req, res) => {
     );
 
     if (StoreInCache?.error) {
-      console.error(`Erro while caching:${StoreInCache?.error}`);
+      await notifyMe(
+        `Error while storing ${req.user.username}'s data in the cache Error level critical`
+      );
     }
     // Return the combined data
     return res.json({
       user: userData.data,
-      Contributions_user_id_fkey: Contributions_user_id_fkey.data,
+      Contributions_user_id_fkey: Contributions_user_id_fkey.data || [],
       Querycount: countData.count,
       FeedbackCounts:
-        votesData?.data?.length > 0 ? votesData.data[0].Doc_Feedback : null,
+        votesData?.data?.length > 0 ? votesData.data[0].Doc_Feedback : 0,
       chatrooms: chatroomsData.data,
       notificationcount: notificationcount.notificationcount,
       notifications: notifications.notifications,
       message: "User data found",
     });
   } catch (error) {
-    console.error("Server exception:", error);
+    await notifyMe(
+      `An error ${error} From User account details function for user ${req.user.username}`
+    );
+
     return res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-// check user information in redis cache
-const getUserDataFromCache = async (base_key) => {
-  if (!base_key) {
-    return { error: "No valid key found" };
-  }
-
-  try {
-    const [
-      userData,
-      Contributions_user_id_fkey,
-      Querycount,
-      FeedbackCounts,
-      chatrooms,
-      notificationcount,
-      notifications,
-    ] = await Promise.all([
-      redisClient.get(`${base_key}_userData`).catch(() => null),
-      redisClient.get(`${base_key}_Contributions`).catch(() => null),
-      redisClient.get(`${base_key}_QueryCount`).catch(() => null),
-      redisClient.get(`${base_key}_FeedbackCounts`).catch(() => null),
-      redisClient.get(`${base_key}_chatrooms`).catch(() => null),
-      redisClient.get(`${base_key}_notificationcount`).catch(() => null),
-      redisClient.get(`${base_key}_notifications`).catch(() => null),
-    ]);
-
-    return {
-      userData: userData ? JSON.parse(userData) : [],
-      Contributions_user_id_fkey: Contributions_user_id_fkey
-        ? JSON.parse(Contributions_user_id_fkey)
-        : [],
-      Querycount: Querycount ? parseInt(Querycount) : 0,
-      FeedbackCounts: FeedbackCounts ? parseInt(FeedbackCounts) : 0,
-      chatrooms: chatrooms ? JSON.parse(chatrooms) : [],
-      notificationcount: notificationcount ? parseInt(notificationcount) : 0,
-      notifications: notifications ? JSON.parse(notifications) : [],
-    };
-  } catch (error) {
-    console.error("Redis cache error:", error);
-    return {
-      userData: [],
-      Contributions_user_id_fkey: [],
-      Querycount: 0,
-      FeedbackCounts: 0,
-      chatrooms: [],
-      notificationcount: 0,
-      notifications: [],
-    };
   }
 };
 
 // store the user data in the cache
 const StoreUserDataInTheCache = async (
+  user_id,
+  username,
   base_key,
   userdata,
   Contributions,
@@ -807,64 +785,25 @@ const StoreUserDataInTheCache = async (
   }
 
   try {
-    await Promise.all([
-      redisClient
-        .set(`${base_key}_userData`, JSON.stringify(userdata), {
-          expiration: {
-            type: "EX",
-            value: 600,
-          },
-        })
-        .catch(() => null),
-      redisClient
-        .set(`${base_key}_Contributions`, JSON.stringify(Contributions), {
-          expiration: {
-            type: "EX",
-            value: 600,
-          },
-        })
-        .catch(() => null),
-      redisClient
-        .set(`${base_key}_QueryCount`, JSON.stringify(querycount), {
-          expiration: {
-            type: "EX",
-            value: 600,
-          },
-        })
-        .catch(() => null),
-      redisClient
-        .set(`${base_key}_FeedbackCounts`, JSON.stringify(feedbackcount), {
-          expiration: {
-            type: "EX",
-            value: 600,
-          },
-        })
-        .catch(() => null),
-      redisClient
-        .set(`${base_key}_chatrooms`, JSON.stringify(rooms), {
-          expiration: {
-            type: "EX",
-            value: 600,
-          },
-        })
-        .catch(() => null),
-      redisClient
-        .set(`${base_key}_notificationcount`, JSON.stringify(notifycount), {
-          expiration: {
-            type: "EX",
-            value: 600,
-          },
-        })
-        .catch(() => null),
-      redisClient
-        .set(`${base_key}_notifications`, JSON.stringify(notify), {
-          expiration: {
-            type: "EX",
-            value: 600,
-          },
-        })
-        .catch(() => null),
-    ]);
+    const UserAccountDataKey = `user_id=${user_id}&username=${username}'s_dashboardData`;
+    // await redisClient.del(UserAccountDataKey);
+    await redisClient
+      .hSet(UserAccountDataKey, {
+        ["userdata"]: JSON.stringify(userdata),
+        ["Contributions"]: JSON.stringify(Contributions),
+        ["querycount"]: JSON.stringify(querycount),
+        ["feedbackcount"]: JSON.stringify(feedbackcount),
+        ["rooms"]: JSON.stringify(rooms),
+        ["notificationcount"]: JSON.stringify(notifycount),
+        ["notification"]: JSON.stringify(notify),
+      })
+      .catch(
+        async (err) =>
+          await notifyMe(
+            `Error ${err} while caching user dashboard information `
+          )
+      );
+    await redisClient.expire(UserAccountDataKey, 50);
   } catch (error) {
     console.error(`Error while Storing information in the cache ${error}`);
     return { error };

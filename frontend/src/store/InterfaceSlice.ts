@@ -10,6 +10,9 @@ interface DocUsed {
   downvotes: number;
   partial_upvotes: number;
 }
+interface favicon {
+  icon: any;
+}
 interface messageInt {
   isComplete: boolean;
   content: string;
@@ -40,6 +43,9 @@ interface InterfaceState {
   docUsed: DocUsed[];
   sendingFeedback: boolean;
   Chats: ChatsInterface[];
+  favicon: favicon[];
+  selectedDoc: string;
+  uploading: boolean;
 }
 
 const initialState: InterfaceState = {
@@ -62,6 +68,9 @@ const initialState: InterfaceState = {
   docUsed: [],
   sendingFeedback: false,
   Chats: [],
+  favicon: [],
+  selectedDoc: "",
+  uploading: false,
 };
 
 // Async Thunks
@@ -95,7 +104,7 @@ export const QueryAIQuestions = createAsyncThunk<any, any>(
   async (data, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      const response = await axios.post(`${BaseApiUrl}/api/ask-pdf`, data, {
+      const response = await axios.post(`${BaseApiUrl}/api/ask-docs`, data, {
         withCredentials: true,
         headers: {
           Authorization: `Bearer ${AuthToken}`,
@@ -117,7 +126,7 @@ export const QueryPrivateDocuments = createAsyncThunk<any, any>(
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
       const response = await axios.post(
-        `${BaseApiUrl}/api/privateDocs/ask`,
+        `${BaseApiUrl}/api/privateDocs/ask-docs`,
         data,
         {
           withCredentials: true,
@@ -161,11 +170,49 @@ export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
     }
   }
 );
+export const WebSearchHandler = createAsyncThunk(
+  "query/web",
+  async (question: string, { rejectWithValue }) => {
+    const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+
+    try {
+      const response = await axios.post(
+        `${BaseApiUrl}/api/query/web-search`,
+        { question },
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (err: any) {
+      console.error("Error fetching response :", err.response.data.message);
+      return rejectWithValue(
+        err instanceof Error ? err.message : "Failed to generate a response"
+      );
+    }
+  }
+);
 
 const interfaceSlice = createSlice({
   name: "interface",
   initialState,
   reducers: {
+    MimicSSE: (state, action) => {
+      const { id, delta } = action.payload;
+      const msg = state.Chats.find((data) => data.id === id);
+
+      let i = 0;
+
+      if (msg) {
+        while (i < delta.length) {
+          msg.message.content = (msg.message.content || "") + delta[i];
+          i++;
+        }
+      }
+    },
     UpdateChats: (state, action) => {
       const hasIt = state.Chats.some((elem) => elem.id === action.payload.id);
       if (!hasIt) {
@@ -183,6 +230,9 @@ const interfaceSlice = createSlice({
       if (msg) {
         msg.message.isComplete = true;
       }
+    },
+    setSelectedDoc: (state, action) => {
+      state.selectedDoc = action.payload;
     },
     UpdateMessage: (state, action) => {
       const { id, delta } = action.payload;
@@ -253,13 +303,13 @@ const interfaceSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(UploadDocuments.pending, (state) => {
-        state.loading = true;
+        state.uploading = true;
       })
       .addCase(UploadDocuments.fulfilled, (state) => {
-        state.loading = false;
+        state.uploading = false;
       })
       .addCase(UploadDocuments.rejected, (state) => {
-        state.loading = false;
+        state.uploading = false;
       })
 
       //ask questions
@@ -268,8 +318,7 @@ const interfaceSlice = createSlice({
       })
       .addCase(QueryAIQuestions.fulfilled, (state, action) => {
         state.loading = false;
-        state.Chats.push(action.payload.Airesponse);
-        // state.docUsed = [...action.payload.doc_id];
+        state.docUsed = [...action.payload.doc_id];
       })
       .addCase(QueryAIQuestions.rejected, (state) => {
         state.loading = false;
@@ -281,10 +330,13 @@ const interfaceSlice = createSlice({
       })
       .addCase(QueryPrivateDocuments.fulfilled, (state, action) => {
         state.loading = false;
-        state.Chats.push(action.payload.Airesponse);
+
+        if (action.payload.favicon && action.payload.favicon.length > 0) {
+          state.favicon = [...action.payload.favicon];
+        }
       })
       .addCase(QueryPrivateDocuments.rejected, (state) => {
-        state.loading = true;
+        state.loading = false;
       })
 
       //authenticiy handler
@@ -297,6 +349,21 @@ const interfaceSlice = createSlice({
       })
       .addCase(AuthenticityResponseHandler.rejected, (state) => {
         state.sendingFeedback = false;
+      })
+      // webSearch
+      .addCase(WebSearchHandler.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(WebSearchHandler.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload.favicon && action.payload.favicon.length > 0) {
+          state.favicon = [...action.payload.favicon];
+        }
+        // state.docUsed = action.payload
+      })
+      .addCase(WebSearchHandler.rejected, (state) => {
+        state.sendingFeedback = false;
+        state.loading = false;
       });
   },
 });
@@ -323,6 +390,8 @@ export const {
   finalizeMessage,
   UpdateMessage,
   UpdateDocUsed,
+  MimicSSE,
+  setSelectedDoc,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

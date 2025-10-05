@@ -17,11 +17,25 @@ export const SearchQueryResults = async (query) => {
       return { error: "Invalid query type" };
     }
 
-    const response = await tvly.search(query);
+    const response = await tvly.search(query, {
+      searchDepth: "basic",
+      maxTokens: 20,
+      includeAnswer: true,
+      include_image_descriptions: true,
+      includeFavicon: true,
+    });
     if (!response) {
       return { error: "Unable to find results online" };
     }
-    return response;
+    const favicons = [];
+    if (response.results.length > 0) {
+      response.results.forEach((res) => {
+        if (res.favicon && !favicons.includes(res.favicon)) {
+          favicons.push(res.favicon);
+        }
+      });
+    }
+    return { response: response, favicon: favicons };
   } catch (error) {
     return { error };
   }
@@ -35,18 +49,24 @@ export function formatForGemini(results) {
   if (!results || results.results.length === 0) {
     combinedContent += "No relevant information was found.";
   } else {
+    // the tavily web search answer
+    combinedContent += `Answer from web search : ${results.answer}`;
+
     results.results.forEach((res, index) => {
       combinedContent += `### Source ${index + 1}: ${res.title}\n`;
       combinedContent += `URL: ${res.url}\n`;
       combinedContent += `Content: ${res.content}\n\n`;
     });
   }
+  if (results.answer) {
+    combinedContent += results.answer;
+  }
 
   // The model's conversation history must alternate between "user" and "model" roles.
   // The context from search results should be treated as part of the user's turn.
   return [
     {
-      role: "user",
+      role: "model",
       parts: [{ text: combinedContent }],
     },
   ];
@@ -70,7 +90,7 @@ export const WebSearchHandle = async (req, res) => {
       res.write("event:Could not find vaid information online\n");
       res.end();
     }
-    const Formattedresult = await formatForGemini(webresults);
+    const Formattedresult = formatForGemini(webresults);
     if (!Formattedresult) {
       res.write("event:Could not find valid information online\n");
       res.end();
@@ -127,53 +147,91 @@ export const FormatForHumanFallback = (searchResult) => {
     !searchResult.results ||
     searchResult.results.length === 0
   ) {
-    return `❌ I couldn't find any relevant updates.`;
+    return {
+      text: `❌ I couldn't find any relevant updates about your query.`,
+      favicons: [],
+    };
   }
 
-  let fallbackText = `# 🌐 Web Results for: *${searchResult.query}*\n\n`;
+  let fallbackText = `## 🔍 Search Results\n\n`;
+  const favicons = [];
 
-  // Add Tavily's direct short answer if available
+  // Add Tavily's direct answer if available - as a highlighted section
   if (searchResult.answer) {
-    fallbackText += `**Quick Summary:** ${searchResult.answer}\n\n---\n\n`;
+    fallbackText += `### 💡 Quick Summary\n${searchResult.answer}\n\n---\n\n`;
   }
 
-  // Add images if any exist
-  if (searchResult.images && searchResult.images.length > 0) {
-    searchResult.images.forEach((imgUrl) => {
-      fallbackText += `![Result Image](${imgUrl})\n\n`;
-    });
-    fallbackText += "---\n\n";
-  }
-
-  // Loop through results
+  // Format each result with clean markdown
   searchResult.results.forEach((res, index) => {
-    fallbackText += `## 🔎 Result ${index + 1}\n\n`;
+    fallbackText += `### ${index + 1}. ${res.title || "Search Result"}\n\n`;
 
-    // Title & link
-    if (res.title && res.url) {
-      fallbackText += `**[${res.title}](${res.url})**\n\n`;
-    } else if (res.title) {
-      fallbackText += `**${res.title}**\n\n`;
+    // Add favicon if available
+    if (res.favicon && !favicons.includes(res.favicon)) {
+      favicons.push(res.favicon);
     }
 
-    // Main content
-    if (res.content) {
-      const cleanContent = res.content.replace(/\s+/g, " ").trim();
+    // Source link
+    if (res.url) {
+      fallbackText += `**Source:** [${new URL(res.url).hostname}](${
+        res.url
+      })\n\n`;
+    }
 
-      // If it's structured text (like multiple headings in one string)
-      if (cleanContent.match(/##|###|[:\{\}\[\]]/)) {
-        fallbackText += "```markdown\n" + cleanContent + "\n```\n\n";
-      } else {
-        fallbackText += cleanContent + "\n\n";
+    // Score indicator (subtle)
+    if (res.score) {
+      const scorePercent = Math.round(res.score * 100);
+      fallbackText += `**Relevance:** ${scorePercent}%\n\n`;
+    }
+
+    // Clean and format content
+    if (res.content) {
+      let cleanContent = res.content
+        .replace(/\s+/g, " ") // Normalize whitespace
+        .replace(/\*   ### /g, "\n**") // Convert bullet points to bold
+        .replace(/\*   /g, "\n• ") // Convert asterisks to proper bullets
+        .replace(/##### /g, "**") // Convert hashes to bold
+        .replace(/Image \d+/g, "") // Remove image placeholders
+        .replace(/\[Skip to main content\]\([^)]+\)/g, "") // Remove skip links
+        .replace(/Toggle navigation Menu/g, "") // Remove navigation text
+        .replace(/\[S D\]\([^)]+\)/g, "") // Remove navigation icons
+        .trim();
+
+      // Limit content length and ensure proper formatting
+      if (cleanContent.length > 400) {
+        cleanContent = cleanContent.substring(0, 400) + "...";
+      }
+
+      if (cleanContent) {
+        fallbackText += `**Summary:** ${cleanContent}\n\n`;
       }
     }
 
-    // Divider
-    fallbackText += "---\n\n";
+    // Raw content as additional context (limited)
+    if (res.raw_content) {
+      const rawClean = res.raw_content
+        .replace(/\s+/g, " ")
+        .trim()
+        .substring(0, 200);
+
+      if (rawClean && rawClean.length > 50) {
+        fallbackText += `**Additional Context:** ${rawClean}${
+          rawClean.length === 200 ? "..." : ""
+        }\n\n`;
+      }
+    }
+
+    if (index < searchResult.results.length - 1) {
+      fallbackText += "---\n\n";
+    }
   });
 
-  // Attribution footer
-  fallbackText += `✨ Powered by [Tavily Search](https://tavily.com)`;
+  // Footer with helpful information
+  fallbackText += "\n---\n";
+  fallbackText +=
+    "\n💡 **Tip:** For the most accurate and verified information, try searching within our community-powered knowledge base where content is peer-reviewed.";
 
-  return fallbackText;
+  return {
+    text: fallbackText,
+    favicons: favicons,
+  };
 };

@@ -1,10 +1,15 @@
 import express from "express";
 import {
   FileUploadHandle,
-  FindMatchingResponse,
   GetPrivateUserDocs,
-  QueryPersonalDocs,
+  PostTypeWebSearch,
+  GetPublicRecords,
+  GetPrivateDocResultss,
 } from "../controllers/fileControllers.js";
+import {
+  FindMatchingResponse,
+  QueryPersonalDocs,
+} from "../SSeHandler/SseHandlers.js";
 import { uploadFile } from "../multerconfig.js";
 export const Router = express.Router();
 import { VerifyToken } from "../Middlewares/AuthMiddleware.js";
@@ -19,6 +24,9 @@ Router.post(
   uploadFile.single("file"),
   FileUploadHandle
 )
+  .post("/ask-docs", VerifyToken, GetPublicRecords)
+  .post("/privateDocs/ask-docs", VerifyToken, GetPrivateDocResultss)
+  .post("/query/web-search", VerifyToken, PostTypeWebSearch)
   .get("/new-sseToken", VerifyToken, GenerateSSEspecificTokens)
   .get("/ask-pdf", VerifySSETokens, FindMatchingResponse)
   .get("/user/documents", VerifyToken, GetPrivateUserDocs)

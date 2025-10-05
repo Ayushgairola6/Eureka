@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BiMenuAltRight, BiMoon, BiSun } from "react-icons/bi";
+import { BiMenuAltRight, BiSun } from "react-icons/bi";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { Link } from "react-router";
 import Sidebar from "@/components/Sidebar";
@@ -10,9 +10,8 @@ import { setCurrTab, toggleTheme } from "../store/AuthSlice.ts";
 import { setOpen } from "../store/chatRoomSlice.ts";
 import NotificationPanel from "@/components/notificationBar.tsx";
 import Settings from "@/components/settings.tsx";
-import { GiOpenPalm } from "react-icons/gi";
-import { LuSettings2 } from "react-icons/lu";
-
+import { IoIosArrowDropdown } from "react-icons/io";
+import { GoMoon } from "react-icons/go";
 const Navbar = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -30,7 +29,7 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`relative bg-gray-100 py-1 px-6 flex items-center justify-between z-[3] overflow-x-hidden dark:text-white text-black dark:bg-black `}
+        className={`relative bg-gray-100 py-1 px-6 flex items-center justify-between z-[3] oveflow-visible dark:text-white text-black dark:bg-black `}
       >
         {/* top scroll indicator */}
         <motion.div
@@ -39,13 +38,17 @@ const Navbar = () => {
         ></motion.div>
 
         {/* navlinks */}
-        <Link to="/" className="cursor-pointer">
+        <Link
+          to="/"
+          className="cursor-pointer flex item-center justify-center gap-2 p-2"
+        >
           {/* EUREKA */}
           <img
-            className="h-10 w-10  rounded-full dark:bg-gray-200"
+            className="h-6 w-6  rounded-full dark:bg-gray-200"
             src="/Group 1.svg"
             alt=""
           />
+          <span className="bebas-neue-regular text-lg">EUREKA</span>
         </Link>
 
         <div
@@ -70,7 +73,7 @@ const Navbar = () => {
             Try Now
           </Link>
 
-          <Link
+          {/* <Link
             onClick={() => dispatch(setCurrTab("About"))}
             className={` rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 ${
               currTab === "About" ? "slider" : "bg-transparent "
@@ -78,7 +81,7 @@ const Navbar = () => {
             to="/About"
           >
             Quick start
-          </Link>
+          </Link> */}
           <Link
             onClick={() => dispatch(setCurrTab("Feedback"))}
             className={` rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 ${
@@ -114,18 +117,32 @@ const Navbar = () => {
           {/* end */}
         </div>
 
-        <div className="flex items-center justify-center gap-2 bai-jamjuree-regular text-sm overflow-y-clip">
+        <div className="flex items-center justify-center gap-2 bai-jamjuree-regular text-sm overflow-visible ">
           {/* settings icon */}
-          <ul
-            className="relative cursor-pointer md:block hidden"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            {!showSettings ? (
-              <LuSettings2 size={25} />
-            ) : (
-              <GiOpenPalm size={25} />
-            )}
-          </ul>
+          <div className="relative  group">
+            <button
+              className={`cursor-pointer md:block hidden p-1  ${
+                showSettings
+                  ? "text-red-600 bg-red-100 dark:bg-red-900/30"
+                  : "text-black dark:text-sky-600 bg-indigo-600/20 dark:bg-white/10"
+              } rounded-full transition-all duration-300 hover:scale-110`}
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              <IoIosArrowDropdown
+                size={22}
+                className={`transition-transform duration-300 ${
+                  showSettings ? "rotate-180" : "rotate-0"
+                }`}
+              />
+            </button>
+
+            {/* Tooltip */}
+            <div className="absolute  top-7 right-4  z-[9999]   hidden md:flex px-2 py-1 bg-black text-white border border-gray-400 text-xs rounded pointer-events-none  opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              Options
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+            </div>
+          </div>
+
           {/* notificaiton icon */}
           {isLoggedIn === true && (
             <ul
@@ -151,7 +168,7 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <BiMoon size={22} />
+                <GoMoon size={22} />
               </>
             )}
           </ul>
@@ -160,7 +177,7 @@ const Navbar = () => {
           {isLoggedIn === true ? (
             <Link to="user/dashboard">
               {" "}
-              <ul className="cursor-pointer uppercase bg-indigo-500 rounded-full h-6 w-6 md:h-8 md:w-8 text-lg md:text-xl flex items-center justify-center text-white dark:text-black bai-jamjuree-regular  font-bold">
+              <ul className="cursor-pointer uppercase bg-emerald-500 rounded-full h-6 w-6  text-lg p-1 flex items-center justify-center  text-white bai-jamjuree-regular  font-bold">
                 {User?.username.trim().split("")[0].toUpperCase()}
               </ul>
             </Link>

@@ -6,6 +6,8 @@ import cookie from "cookie";
 import { GenerateAccessTokens } from "../controllers/AuthController.js";
 import { verifyJwtAsync } from "../Middlewares/AuthMiddleware.js";
 import { Server } from "socket.io";
+import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+import { redisClient } from "../CachingHandler/redisClient.js";
 
 const Room_And_their_members = new Map();
 // Authenticating the user
@@ -219,6 +221,13 @@ export const initializeSocketIo = (httpServer) => {
         }
 
         // Broadcast the message
+        await UpdateTheRoomChatCache(
+          room_id,
+          message,
+          sent_at || new Date().toISOString,
+          sent_by,
+          users
+        );
         io.to(room_id).emit("recieved_message", {
           message_id,
           sent_by,
@@ -275,7 +284,7 @@ export const initializeSocketIo = (httpServer) => {
         });
         return { error: "Either username or room_id not found" };
       }
-      console.log(`${username} is typing`);
+      // console.log(`${username} is typing`);
       io.to(room_id).emit("someone-typing", username);
     });
 
@@ -294,6 +303,43 @@ export const getIo = () => {
 };
 
 // find who is the admin of that room
+
+//Update the message in  the message in Cache
+const UpdateTheRoomChatCache = async (
+  room_id,
+  message,
+  sent_at,
+  sent_by,
+  users
+) => {
+  try {
+    const roomChatCacheKey = `room_id=${room_id}'s_chat-history`;
+    if (!roomChatCacheKey) {
+      await notifyMe("Error while updating the room chat cache history");
+      return { message: "Error while updating the cache" };
+    }
+    const OldChats = await redisClient.get(roomChatCacheKey);
+    if (OldChats) {
+      const NewChats = JSON.parse(OldChats);
+      NewChats.push({
+        message: message,
+        sent_at: sent_at,
+        sent_by: sent_by,
+        room_id: room_id,
+        users: users,
+      });
+
+      await redisClient.set(roomChatCacheKey, JSON.stringify(NewChats), {
+        expiration: {
+          type: "EX",
+          value: 600,
+        },
+      });
+    }
+  } catch (ChatCacheError) {
+    await notifyMe(ChatCacheError);
+  }
+};
 
 //function to store message in the database
 

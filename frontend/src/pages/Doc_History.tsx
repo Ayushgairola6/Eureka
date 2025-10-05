@@ -4,17 +4,17 @@ import { motion } from "framer-motion";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import { GetDocumentChatHistory } from "../store/chatRoomSlice.ts";
 import { lazy, useEffect, useState } from "react";
-import { FaArrowDown, FaArrowUp } from "react-icons/fa";
+import { FaArrowDown, FaArrowRight, FaArrowUp } from "react-icons/fa";
 import { Link } from "react-router";
 import { Streamdown } from "streamdown";
-
 const SearchBox = lazy(() => import("@/components/searchbox.tsx"));
-
+import { setSelectedDoc } from "../store/InterfaceSlice.ts";
 const ConversationDetail = () => {
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { DocChats } = useAppSelector((state) => state.chats);
+  // const { selectedFile } = useAppSelector((state) => state.interface);
   const [current, setCurrent] = useState<string>("");
   const [SearchResult, SetSearchResult] = useState<searchresult[]>([]);
 
@@ -133,7 +133,7 @@ const ConversationDetail = () => {
                 Copy
               </button>
               {/* collapse or reverse buttons */}
-              <button
+              <motion.button
                 onClick={() => {
                   setCurrent((prev) =>
                     prev ===
@@ -142,21 +142,32 @@ const ConversationDetail = () => {
                       : `sent_at=${message.created_at}_question=${message.question}`
                   );
                 }}
-                className="absolute bottom-3 right-5 mt-2 text-sm flex items-center gap-1 text-green-600 transition-colors cursor-pointer"
+                className={`absolute bottom-3 right-5 mt-2 text-sm flex items-center gap-1 cursor-pointer dark:bg-gray-100 bg-black p-1 rounded-full ${
+                  current ===
+                  `sent_at=${message.created_at}_question=${message.question}`
+                    ? "text-red-600"
+                    : "text-green-600"
+                }`}
+                animate={{
+                  rotate:
+                    current ===
+                    `sent_at=${message.created_at}_question=${message.question}`
+                      ? 180
+                      : 0,
+                }}
+                transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
               >
                 {current ===
                 `sent_at=${message.created_at}_question=${message.question}` ? (
                   <>
                     <FaArrowUp className="w-3 h-3" />
-                    Collapse
                   </>
                 ) : (
                   <>
                     <FaArrowDown className="w-3 h-3" />
-                    Extend
                   </>
                 )}
-              </button>
+              </motion.button>
               {/* main content */}
               <div className="flex justify-between items-start mb-2">
                 <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -165,26 +176,39 @@ const ConversationDetail = () => {
               </div>
 
               <p
-                className={`border whitespace-pre-wrap ml-auto my-4 max-w-3xl p-4 rounded-2xl ${
-                  SearchResult.some(
-                    (data) => data.question === message.question
-                  )
-                    ? "border-green-500 "
-                    : "border-gray-400"
-                }dark:bg-white/20  bg-black/20 dark:text-white text-black`}
+                className={`border whitespace-pre-wrap ml-auto my-4 max-w-3xl p-4 rounded-2xl 
+                    dark:bg-sky-500/70  bg-sky-500/40 dark:text-white text-black bai-jamjuree-semibold`}
               >
-                <span className="font-medium">You -</span> {message.question}
+                <span className="">You -</span> {message.question}
               </p>
-              {/* <MarkdownRenderer
-                content={message.AI_response}
-                className="text-sm text-gray-800 dark:text-gray-200 darj h-full bai-jamjuree-regular leading-loose dark:bg-gray-900 bg-gray-300 mr-auto max-w-3xl rounded-lg px-3 py-4"
-              /> */}
-              <Streamdown>{message.AI_response}</Streamdown>
+              <p className="dark:bg-white/10 bg-black/20 rounded-lg p-2 space-grotesk">
+                <Streamdown>{message.AI_response}</Streamdown>
+              </p>
             </motion.div>
           ))}
         </div>
       ) : (
-        <div>No chats found</div>
+        <div className="flex flex-col gap-3">
+          <h1 className="m-auto text-xl md:text-2xl bai-jamjuree-semibold">
+            No chats history
+          </h1>
+          <Link to="/Interface">
+            <motion.button
+              onClick={() => {
+                const Doc = user?.Contributions_user_id_fkey.find(
+                  (e) => e.document_id === id
+                );
+                if (Doc) {
+                  dispatch(setSelectedDoc(Doc.document_id));
+                }
+              }}
+              whileTap={{ scale: 1.06 }}
+              className="cursor-pointer m-auto text-sm  space-grotesk text-green-500 flex items-center justify-center gap-3"
+            >
+              <FaArrowRight /> Start Asking
+            </motion.button>
+          </Link>
+        </div>
       )}
 
       {/* Related documents section (optional) */}

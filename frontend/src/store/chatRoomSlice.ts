@@ -12,6 +12,9 @@ interface ChatRoomState {
   DocChats: DocChats[];
   Misallaneouschats: Misallaneouschats[];
   isOpen: boolean;
+  cursor: any;
+  hasMore: boolean;
+  gettingChats: boolean;
 }
 interface RoomData {
   Room_name: string;
@@ -28,10 +31,15 @@ interface DocChats {
   AI_response: string;
   user_id: string;
 }
+interface metadata {
+  category: string;
+  subcategory: string;
+}
 interface Misallaneouschats {
   created_at: string;
   question: string;
   AI_response: string;
+  metadata: metadata;
 }
 const initialState: ChatRoomState = {
   room_name: "",
@@ -41,6 +49,9 @@ const initialState: ChatRoomState = {
   DocChats: [],
   Misallaneouschats: [],
   isOpen: false,
+  cursor: null,
+  hasMore: false,
+  gettingChats: false,
 };
 
 export const CreateChatRoom = createAsyncThunk<ApiResponse, RoomData>(
@@ -121,11 +132,18 @@ export const GetDocumentChatHistory = createAsyncThunk(
   }
 );
 
-export const GetMisallaneousChatHistory = createAsyncThunk(
+export const GetMisallaneousChatHistory = createAsyncThunk<any, any>(
   "get/Misallaneouschats",
-  async (_, { rejectWithValue }) => {
+  async (cursor = null, { rejectWithValue }) => {
+    // cursor is the created_at timestamp
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+
+      const params: any = {};
+      if (cursor) {
+        params.cursor = cursor;
+      }
+
       const response = await axios.get(
         `${BaseApiUrl}/api/user/doc/misallaneous-history`,
         {
@@ -133,17 +151,19 @@ export const GetMisallaneousChatHistory = createAsyncThunk(
           headers: {
             Authorization: `Bearer ${AuthToken}`,
           },
+          params: params,
         }
       );
       return response.data;
     } catch (err: any) {
       console.error("Error fetching chats data:", err);
       return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to join"
+        err instanceof Error ? err.message : "Failed to fetch chats"
       );
     }
   }
 );
+
 const ChatSlice = createSlice({
   name: "chat",
   initialState,
@@ -182,10 +202,18 @@ const ChatSlice = createSlice({
       .addCase(GetDocumentChatHistory.pending, (_state, _action) => {})
       //getting misallaneous chat histor
       .addCase(GetMisallaneousChatHistory.fulfilled, (state, action) => {
-        state.Misallaneouschats = [...action.payload.data];
+        state.gettingChats = false;
+        const { data, nextCursor, hasMore } = action.payload;
+        state.Misallaneouschats = [...state.Misallaneouschats, ...data];
+        state.cursor = nextCursor;
+        state.hasMore = hasMore !== false;
       })
-      .addCase(GetMisallaneousChatHistory.rejected, (_state, _action) => {})
-      .addCase(GetMisallaneousChatHistory.pending, (_state, _action) => {});
+      .addCase(GetMisallaneousChatHistory.rejected, (state, _action) => {
+        state.gettingChats = false;
+      })
+      .addCase(GetMisallaneousChatHistory.pending, (state, _action) => {
+        state.gettingChats = true;
+      });
   },
 });
 

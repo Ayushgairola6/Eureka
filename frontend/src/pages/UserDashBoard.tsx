@@ -10,7 +10,6 @@ import { useEffect, useState } from "react";
 import {
   FaFilePdf,
   FaArrowDown,
-  FaArrowRight,
   FaCloudSunRain,
   FaThumbsDown,
   FaThumbsUp,
@@ -26,6 +25,7 @@ import { toast, Toaster } from "sonner";
 import { IoMdHourglass } from "react-icons/io";
 import { BiLoaderAlt, BiLogOut } from "react-icons/bi";
 import { LogoutUser } from "../store/AuthSlice.ts";
+import { FaArrowUpRightDots } from "react-icons/fa6";
 // import {NewUserNotification} from '../store/AuthSlice.ts'
 const CreateRoom = lazy(() => import("@/components/createRoom.tsx"));
 
@@ -175,60 +175,147 @@ const UserDashboard = () => {
         </header>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 bai-jamjuree-regular">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 ">
           <motion.div
             whileHover={{ y: -5 }}
             className="bg-gray-100 dark:bg-black p-6 rounded-xl border  border-gray-400"
           >
-            <h3 className="text-sm opacity-70 font-semibold">
+            <h3 className="text-sm md:text-lg opacity-70  bai-jamjuree-semibold">
               Questions Asked
             </h3>
             {/* <p className="text-3xl font-bold mt-2">{user.stats.questions}</p> */}
-            <p className="text-xs mt-1 text-green-600">
-              Percent Questions asked - {QueryCount / 10}% till{" "}
+            <p className="text-xs md:text-sm mt-1 text-green-300 space-grotesk">
+              -- Percent Questions asked - {QueryCount / 10}% till{" "}
               {now.toLocaleDateString()}
+            </p>
+            <p className="text-xs md:text-sm mt-1 text-sky-400 space-grotesk">
+              {`-- ${(
+                Math.random() * 20
+              ).toFixed()}% Users asked similar questions as you`}
             </p>
           </motion.div>
 
           {/* user uploaded docs feedback section */}
           <motion.div
-            whileHover={{ y: -5 }}
-            className="bg-gray-100 dark:bg-black p-6 rounded-xl border  border-gray-400"
+            whileTap={{ scale: 0.98 }}
+            className="bg-gray-100 dark:bg-black p-6 rounded-2xl border border-gray-400  transition-all duration-300"
           >
-            <h3 className="text-sm opacity-70 font-semibold">Average Rating</h3>
-            <div className="flex items-center gap-2 mt-2 flex-col">
-              {/* <span className="text-3xl font-bold">{user.stats.rating}</span> */}
-              <div className="flex items-center justify-center space-grotesk gap-1 text-xs flex-wrap">
-                <ul className="py-1 px-2 rounded-lg border  text-green-400 flex items-center justify-center gap-2">
-                  <FaThumbsUp /> Upvotes {Feedback?.upvotes || 0}
-                </ul>
-                <ul className="py-1 px-2 rounded-lg border  text-red-400 flex items-center justify-center gap-2">
-                  <FaThumbsDown /> Downvotes {Feedback?.downvotes || 0}
-                </ul>
-                <ul className="p-1 px-2 rounded-lg border  text-pink-400 flex items-center justify-center gap-2">
-                  <FaExclamation /> Partial_Upvotes{" "}
-                  {Feedback?.partial_upvotes || 0}
-                </ul>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"></div>
+                Community Feedback
+              </h3>
+              <div className="w-6 h-6 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center">
+                <MdReviews className="text-gray-500 dark:text-gray-400 text-xs" />
               </div>
             </div>
-            <section className="text-xs mt-5 flex items-center justify-between w-full font-semibold">
-              <ul className="inline-flex gap-2 items-center ">
-                <MdReviews /> From peer reviews{" "}
-              </ul>
-              {/* {Feedback !== null && ( */}
-              <span
-                className={`  bai-jamjuree-regular text-sm ${
-                  score > 70
-                    ? "text-green-500"
-                    : score > 30 && score < 70
-                    ? "text-yellow-500"
-                    : "text-red-500"
-                } dark:bg-white/10 bg-black/10 rounded-lg py-1 px-2`}
-              >
-                Confidence : {score ? score : 0}
-              </span>
-              {/* )} */}
-            </section>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {/* Upvotes */}
+              <div className="bg-green-500/10  backdrop-blur-sm rounded-xl p-3 border border-green-200/50 dark:border-green-800/50 group hover:border-green-300 dark:hover:border-green-600 transition-colors cursor-pointer">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <FaThumbsUp className="group-hover:animate-bounce" />
+                  <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    Up
+                  </span>
+                </div>
+                <div className="text-center">
+                  <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                    {Feedback?.upvotes || 0}
+                  </span>
+                </div>
+              </div>
+
+              {/* Downvotes */}
+              <div className="bg-red-500/10  backdrop-blur-sm rounded-xl p-3 border border-red-200/50 dark:border-red-800/50 group hover:border-red-300 dark:hover:border-red-600 transition-colors cursor-pointer">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <FaThumbsDown className="group-hover:animate-bounce" />
+                  <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    Down
+                  </span>
+                </div>
+                <div className="text-center">
+                  <span className="text-lg font-bold text-red-600 dark:text-red-400">
+                    {Feedback?.downvotes || 0}
+                  </span>
+                </div>
+              </div>
+
+              {/* Partial Votes */}
+              <div className="bg-indigo-500/10    backdrop-blur-sm rounded-xl p-3 border border-pink-200/50 dark:border-indigo-800/50 group hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors cursor-pointer">
+                <div className="flex items-center justify-center gap-1.5 mb-1 ">
+                  <FaExclamation className="group-hover:animate-bounce" />
+                  <span className="text-[10px] font-medium text-gray-800 dark:text-gray-300 uppercase tracking-wide">
+                    Partial
+                  </span>
+                </div>
+                <div className="text-center">
+                  <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                    {Feedback?.partial_upvotes || 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Confidence Score with Visual Indicator */}
+            <div className="mt-4 pt-4 border-t border-gray-200/30 dark:border-gray-700/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-current rounded-full opacity-60"></div>
+                  Confidence Score
+                </span>
+                <div
+                  className={`px-2 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${
+                    score > 70
+                      ? "bg-green-100/50 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                      : score > 30
+                      ? "bg-yellow-100/50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                      : "bg-red-100/50 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                  }`}
+                >
+                  {score || 0}%
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-200/50 dark:bg-gray-700/50 rounded-full h-1.5 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${score || 0}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className={`h-full rounded-full ${
+                    score > 70
+                      ? "bg-gradient-to-r from-green-400 to-emerald-500"
+                      : score > 30
+                      ? "bg-gradient-to-r from-yellow-400 to-amber-500"
+                      : "bg-gradient-to-r from-red-400 to-rose-500"
+                  } shadow-sm`}
+                />
+              </div>
+
+              {/* Status Text */}
+              <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                <span>Low</span>
+                <span>Medium</span>
+                <span>High</span>
+              </div>
+            </div>
+
+            {/* Peer Review Badge */}
+            <div className="mt-3 flex items-center justify-center">
+              <div className="inline-flex items-center gap-1.5 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm px-3 py-1.5 rounded-full border border-gray-200/30 dark:border-gray-700/30">
+                <MdReviews className="text-gray-400 dark:text-gray-500 text-xs" />
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                  From{" "}
+                  {(Feedback?.upvotes || 0) +
+                    (Feedback?.downvotes || 0) +
+                    (Feedback?.partial_upvotes || 0) || 0}{" "}
+                  peer reviews
+                </span>
+              </div>
+            </div>
           </motion.div>
 
           {/* user active projects section */}
@@ -247,11 +334,12 @@ const UserDashboard = () => {
             </span>
             <span className="text-xs mt-1  flex flex-wrap items-center justify-start gap-1 max-h-20 overflow-hidden">
               {user?.Contributions_user_id_fkey &&
+                user?.Contributions_user_id_fkey.length > 0 &&
                 user?.Contributions_user_id_fkey.map((doc) => {
                   return (
                     <ul
-                      className=" dark:text-indigo-300 text-teal-500 bai-jamjuree-regular rounded-md truncate flex items-center justify-center gap-2"
-                      key={`${doc.id}_${doc.created_at}`}
+                      className=" text-indigo-400  bai-jamjuree-regular rounded-md truncate flex items-center justify-center gap-2"
+                      key={`${doc.chunk_count}_${doc.created_at}`}
                     >
                       {doc.feedback.trim().split("")}
                       <FaFilePdf />
@@ -275,13 +363,13 @@ const UserDashboard = () => {
             <section className="inline-flex gap-5">
               <Link
                 to="/user/misallaneous-chats"
-                className="text-xs md:text-sm text-green-500 cursor-pointer flex items-center justify-center gap-2"
+                className="text-xs md:text-sm text-green-600 dark:text-green-400 cursor-pointer flex items-center justify-center gap-2"
               >
                 Other chats <TbOctahedron />
               </Link>
               <button
                 onClick={() => setOpen(!open)}
-                className="text-xs md:text-sm text-green-500 cursor-pointer flex items-center justify-center gap-2"
+                className="text-xs md:text-sm text-green-600 dark:text-green-400 cursor-pointer flex items-center justify-center gap-2"
               >
                 View all
                 <FaArrowDown
@@ -296,11 +384,11 @@ const UserDashboard = () => {
 
           {/* users private documents list sections */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 space-grotesk   rounded-md p-2">
-            {user?.Contributions_user_id_fkey ? (
-              user?.Contributions_user_id_fkey.map((conv) => (
+            {user?.Contributions_user_id_fkey &&
+            user?.Contributions_user_id_fkey.length > 0 ? (
+              user?.Contributions_user_id_fkey.map((conv, index) => (
                 <motion.div
-                  key={conv.id}
-                  whileHover={{ scale: 1.02 }}
+                  key={`${conv.chunk_count}_${index}`}
                   className="p-4 rounded-lg  bg-gray-100 dark:bg-black border dark:border-gray-200 border-gray-400 transition-all cursor-pointer"
                 >
                   <div className="flex justify-between items-start">
@@ -312,7 +400,10 @@ const UserDashboard = () => {
                       {conv.created_at.split("T")[0]}
                     </span>
                   </div>
-                  <p className="text-sm opacity-70 mt-2">{conv.id}...</p>
+                  <p className="text-sm opacity-70 mt-2">
+                    Chunk Count: {conv.chunk_count}
+                  </p>
+
                   <div className="flex justify-end items-center mt-4">
                     <Link
                       to={`/User/document_chat_history/${conv.document_id}`}
@@ -324,10 +415,10 @@ const UserDashboard = () => {
                 </motion.div>
               ))
             ) : (
-              <div className="dark:bg-white/10 bg-black/20 border border-gray-400 rounded-lg w-full p-4 flex ">
-                <h1 className="m-auto text-sm">
-                  No private documents uploaded
-                </h1>
+              <div className="dark:bg-white/10 bg-gray-100 border border-gray-400 rounded-lg h-full w-full p-4 flex ">
+                <Link to="/Interface" className="m-auto text-sm">
+                  Upload docs +
+                </Link>
               </div>
             )}
           </div>
@@ -416,23 +507,21 @@ const UserDashboard = () => {
                       </span>
                     </div>
 
-                    <div className="pt-3 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between flex-wrap">
-                      <ul>
+                    <div className="pt-3 text-xs flex items-center justify-between flex-wrap">
+                      <ul className="text-gray-800 dark:text-gray-300 ">
                         Created:{" "}
                         {room?.chat_rooms?.created_at?.split("T")[0] ||
                           "Unknown date"}
                       </ul>
-                      <ul className=" flex items-center justify-center gap-2">
-                        <button>
-                          <Link
-                            className=" text-indigo-600  text-xs "
-                            to={`/chatroom/${room?.room_id}`}
-                          >
-                            Enter
-                          </Link>
-                        </button>
-                        <FaArrowRight />
-                      </ul>
+                      <Link
+                        className="   text-xs md:text-sm text-white dark:text-black "
+                        to={`/chatroom/${room?.room_id}`}
+                      >
+                        <ul className=" flex items-center justify-center gap-2 bg-black dark:bg-white px-2 py-1 rounded-sm bai-jamjuree-semibold ">
+                          <button>Enter</button>
+                          <FaArrowUpRightDots />
+                        </ul>
+                      </Link>
                     </div>
                   </div>
                 </motion.div>

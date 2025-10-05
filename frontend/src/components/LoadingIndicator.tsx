@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
 import React from "react";
+import { BiHourglass } from "react-icons/bi";
 type LoadingProp = {
   text: string;
 };
@@ -7,37 +7,11 @@ type LoadingProp = {
 const LoadingIndicator: React.FC<LoadingProp> = ({ text }) => {
   return (
     <>
-      <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-gray-200 rounded-xl p-6 flex flex-col items-center">
-          <div className="bai-jamjuree-bold text-green-500 flex items-center justify-center gap-2">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="rounded-xl p-6 flex flex-col items-center">
+          <div className="text-xl bai-jamjuree-semibold text-green-400 flex items-center justify-center gap-3">
             {text}
-            <motion.ul
-              animate={{ y: [0, -4, 0] }}
-              transition={{
-                duration: 0.6,
-                repeat: Infinity,
-                delay: 0,
-              }}
-              className="bg-green-500 rounded-full h-2 w-2"
-            />
-            <motion.ul
-              animate={{ y: [0, -5, 0] }}
-              transition={{
-                duration: 0.6,
-                repeat: Infinity,
-                delay: 1,
-              }}
-              className="bg-green-500 rounded-full h-2 w-2"
-            />
-            <motion.ul
-              animate={{ y: [0, -6, 0] }}
-              transition={{
-                duration: 0.6,
-                repeat: Infinity,
-                delay: 2,
-              }}
-              className="bg-green-500 rounded-full h-2 w-2"
-            />
+            <BiHourglass className="animate-spin" />
           </div>
         </div>
       </div>

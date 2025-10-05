@@ -1,3 +1,5 @@
+import { redisClient } from "../CachingHandler/redisClient.js";
+import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
 import { supabase } from "./supabaseHandler.js";
 import { v4 as uuidv4 } from "uuid";
@@ -327,13 +329,28 @@ export const SendJoinNotification = async (
 export const checkRoomMemberLimit = async (room_id) => {
   try {
     // Get room participant limit
-    const { data: room, error: roomError } = await supabase
-      .from("chat_rooms")
-      .select("participant_count")
-      .eq("room_id", room_id)
-      .single();
+    let pariticipantCount;
+    const RoomParticipantLimitCacheKey = `room=${room_id}'s_participantCount`;
+    const CacheLimit = await redisClient.get(RoomParticipantLimitCacheKey);
+    // if the participant count is cached
+    if (CacheLimit) {
+      pariticipantCount = JSON.parse(CacheLimit);
+    } else {
+      // get the linit from the db and cache it
+      const { data: room, error: roomError } = await supabase
+        .from("chat_rooms")
+        .select("participant_count")
+        .eq("room_id", room_id)
+        .single();
 
-    if (roomError) return { error: "Error fetching room details" };
+      if (roomError) return { error: "Error fetching room details" };
+
+      pariticipantCount = room.participant_count;
+      await redisClient.set(
+        RoomParticipantLimitCacheKey,
+        JSON.stringify(room.participant_count)
+      );
+    }
 
     // Get current member count
     const { count: currentCount, error: countError } = await supabase
@@ -344,7 +361,7 @@ export const checkRoomMemberLimit = async (room_id) => {
     if (countError) return { error: "Error counting room members" };
 
     // Check if room is full
-    if (currentCount >= room.participant_count) {
+    if (currentCount >= pariticipantCount) {
       return { message: "Room-full" };
     }
 
@@ -364,6 +381,14 @@ export const GetRoomChatHistory = async (req, res) => {
     const room_id = req.params.room_id;
     if (!room_id) return res.status(400).send({ message: "Invalid room id" });
 
+    const RoomChatKey = `room_id=${room_id}'s_chat-history`;
+
+    const CachedChats = await redisClient.get(RoomChatKey);
+    if (CachedChats) {
+      // console.log("CachedChats", JSON.parse(CachedChats));
+      // redisClient.del(RoomChatKey);
+      return res.status(200).send({ chats: JSON.parse(CachedChats) });
+    }
     const { data, error } = await supabase
       .from("room-chat-history")
       .select(
@@ -376,14 +401,25 @@ export const GetRoomChatHistory = async (req, res) => {
   `
       )
       .eq("room_id", room_id)
-      .order("sent_at", { ascending: true });
+      .order("sent_at", { ascending: true })
+      .limit(10);
 
+    console.log(data);
     if (!data || data.length === 0) {
       return res.status(200).send({ chats: [], message: "No messages found" });
     }
 
     if (error) {
       return res.status(400).send({ message: "Unable to read older messages" });
+    }
+    // cache the chats
+    if (data.length !== 0) {
+      await redisClient.set(RoomChatKey, JSON.stringify(data), {
+        expiration: {
+          type: "EX",
+          value: 600,
+        },
+      });
     }
     return res.send({ chats: data });
   } catch (error) {
@@ -403,6 +439,11 @@ export const GetDocumentChatHistory = async (req, res) => {
     if (!document_id)
       return res.status(400).send({ message: "Invalid document_id " });
 
+    const DocumentChatCacheKey = `document=${document_id}'s_chat-history`;
+    const CachedDocChats = await redisClient.get(DocumentChatCacheKey);
+    if (CachedDocChats) {
+      return res.status(200).send(JSON.parse(CachedDocChats));
+    }
     const { data, error } = await supabase
       .from("Conversation_History")
       .select("created_at,question,AI_response")
@@ -412,6 +453,15 @@ export const GetDocumentChatHistory = async (req, res) => {
     if (error) {
       console.error(error);
       return res.status(404).send({ message: "No such room found" });
+    }
+
+    if (data.length !== 0) {
+      await redisClient.set(DocumentChatCacheKey, JSON.stringify(data), {
+        expiration: {
+          type: "EX",
+          value: 600,
+        },
+      });
     }
 
     return res.send(data);
@@ -426,24 +476,53 @@ export const GetDocumentChatHistory = async (req, res) => {
 export const GetMisallaneousChatHistory = async (req, res) => {
   try {
     const user_id = req.user.user_id;
-    if (!user_id)
-      return res.status(400).send({ message: "Please login to continue" });
+    if (!user_id) {
+      return res.status(402).send({ message: "Please login to continue" });
+    }
 
-    const { data, error } = await supabase
+    // 1. Get the cursor (timestamp of the last fetched chat) from the request query
+    const cursor = req.query.cursor; // Expecting an ISO date string, e.g., from the client's previous request
+    const limit = 5; // Define your limit
+
+    let query = supabase
       .from("Conversation_History")
-      .select("created_at,question,AI_response")
+      .select(" created_at, question, AI_response, metadata")
       .eq("user_id", user_id)
-      .is("document_id", null);
+      .is("document_id", null)
+      .order("created_at", { ascending: false }) // Order newest first
+      .limit(limit);
+
+    // results older than current timestamp
+    if (cursor) {
+      query = query.lt("created_at", cursor);
+    }
+
+    const { data, error } = await query;
+
     if (error) {
-      console.error(error, "error while geting chats");
+      await notifyMe(
+        `Error while getting misallaneous chats by user=${req.user.username}: ${error}`
+      );
       return res
         .status(404)
         .send({ message: "Error while loading chat history" });
     }
 
-    return res.send({ message: "Chats found", data });
+    // 3. The new cursor for the next page is the `created_at` of the oldest record in this batch
+    let nextCursor = null;
+    if (data && data.length > 0) {
+      nextCursor = data[data.length - 1].created_at;
+    }
+
+    // 4. Send the data and the next cursor to the client
+    return res.send({
+      message: data.length > 0 ? "Chats found" : "No more chats",
+      data: data,
+      nextCursor: nextCursor,
+      hasMore: data.length === limit,
+    });
   } catch (err) {
-    console.error(`erro while getting misallaneous chats :${err}`);
+    await notifyMe(`"Error while getting miscellaneous chats:", ${err}`);
     return res.status(500).send({ message: "Something went wrong!" });
   }
 };

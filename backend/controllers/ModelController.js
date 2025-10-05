@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { Pinecone } from "@pinecone-database/pinecone";
 dotenv.config();
 import { v4 as uuidv4 } from "uuid";
+import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 
 const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
 // const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -37,26 +38,25 @@ export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
       },
     ];
     const result = await genAI.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash-lite-001",
       contents: FormattedData,
       generationConfig: {
         temperature: 0.8,
         topP: 0.95,
         topK: 40,
-        maxOutputTokens: 600,
+        maxOutputTokens: 400,
       },
     });
 
     const responseText = result.text;
     if (!responseText) {
-      // console.log(responseText)
+      await notifyMe(`Error while generating a response :${result}`);
       return { error: "The server is very busy , please try again !" };
     }
 
     // return { error: "Testing out the error fallback function" };
     return responseText;
   } catch (error) {
-    console.error(`Gemini failed to generate the response`);
     return { error: "Error while generating a response by the model" };
   }
 };
