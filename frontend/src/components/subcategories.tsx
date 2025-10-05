@@ -13,7 +13,7 @@ type subcatProp = {
 };
 const SubCategories: React.FC<subcatProp> = ({ hoveredCat }) => {
   const dispatch = useAppDispatch();
-  const { subCategory, category, showSubcategory, isVisible } = useAppSelector(
+  const { subCategory, showSubcategory, isVisible } = useAppSelector(
     (state) => state.interface
   );
 

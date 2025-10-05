@@ -66,7 +66,6 @@ function Interface() {
     Chats,
     selectedDoc,
     shhowUserForm,
-    docUsed,
   } = useAppSelector((state) => state.interface);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -337,7 +336,7 @@ function Interface() {
             dispatch(MimicSSE({ id: AiId, delta: res.answer }));
           }
         })
-        .catch((err: any) => {
+        .catch(() => {
           dispatch(setLoading(false));
           dispatch(MimicSSE({ id: AiId, delta: "Server busy" }));
 
