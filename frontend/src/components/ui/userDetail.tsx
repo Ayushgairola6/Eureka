@@ -1,10 +1,5 @@
 import React, { useState } from "react";
-import {
-  FaRegFile,
-  FaUserCheck,
-  FaEye,
-  FaCloudUploadAlt,
-} from "react-icons/fa";
+import { FaRegFile, FaEye, FaCloudUploadAlt } from "react-icons/fa";
 import { FaCircleNodes } from "react-icons/fa6";
 import { BsStars } from "react-icons/bs";
 import { useRef } from "react";
@@ -51,9 +46,14 @@ const UserForm: React.FC<FormProps> = ({
     );
   };
 
-  const { shhowUserForm, loading, category, subCategory, uploading } =
-    useAppSelector((state) => state.interface);
-  const [name, SetName] = React.useState<string>("");
+  const {
+    shhowUserForm,
+    loading,
+    category,
+    subCategory,
+    uploading,
+    visibility,
+  } = useAppSelector((state) => state.interface);
   const [feedback, setFeedback] = React.useState<string>("");
 
   // top-10 right-2  md:right-50
@@ -98,6 +98,7 @@ const UserForm: React.FC<FormProps> = ({
       SetSearchResult([]);
     }
   }
+
   function SetValues(val: string) {
     const isCategory = Categories.some((cat) => cat.name === val);
     if (isCategory) {
@@ -109,9 +110,9 @@ const UserForm: React.FC<FormProps> = ({
   return (
     <>
       <div
-        className={` absolute top-0 left-0 ${
-          shhowUserForm === true ? "-translate-x-0" : "-translate-x-full"
-        } transition-all duration-300  z-[1] h-full w-full md:w-[600px] p-4`}
+        className={`absolute top-12 left-0 ${
+          shhowUserForm === true ? "translate-x-0" : "-translate-x-full"
+        } transition-transform duration-300 z-[1] w-full md:w-[600px] p-4`}
       >
         <button
           onClick={() => dispatch(setShowUserForm(false))}
@@ -122,30 +123,12 @@ const UserForm: React.FC<FormProps> = ({
         <section
           className={`h-auto  py-4 flex items-center justify-center gap-2 opacity-100   overflow-y-auto px-3 bg-gray-100 text-black dark:bg-black dark:text-white  overflow-hidden transition-all duration-500 rounded-lg     flex-col border border-gray-300 `}
         >
-          <div className="flex items-start justify-start gap-3 flex-col w-full rounded-lg p-2">
-            <label
-              className="text-sm md:text-md  flex items-center justify-center gap-2 bai-jamjuree-semibold"
-              htmlFor="Name"
-            >
-              Name <FaUserCheck />
-            </label>
-            <input
-              onChange={(e) => {
-                SetName(e.target.value);
-              }}
-              value={name}
-              className=" rounded-sm px-2 py-1 space-grotesk border border-black dark:border-white  font-normal"
-              type="text"
-              placeholder="Your Name"
-            />
-          </div>
-
           <div className="flex items-start justify-start gap-3 flex-col  w-full rounded-lg p-2">
             <label
               className="text-sm md:text-md font-semibold flex items-center justify-cente gap-2 bai-jamjuree-semibold"
               htmlFor="Feeback"
             >
-              A Title <FaCircleNodes />
+              File name <FaCircleNodes />
             </label>
             <textarea
               onChange={(e) => {
@@ -153,7 +136,7 @@ const UserForm: React.FC<FormProps> = ({
               }}
               value={feedback}
               className="border text-sm py-1 space-grotesk  border-black dark:border-white rounded-sm px-2 font-normal w-full"
-              placeholder="Anything related to this document "
+              placeholder="Fifty shades of C++ ... "
               rows={2}
             />
           </div>
@@ -199,31 +182,24 @@ const UserForm: React.FC<FormProps> = ({
               </div>
             </section>
 
-            <section className="flex items-center justify-center gap-2 flex-wrap">
-              {Categories.map((cat, index) => {
-                return (
-                  <>
-                    <ul
-                      onClick={() => dispatch(setCategory(cat.name))}
-                      className={`px-3 py-1 rounded-xl text-xs space-grotesk transition-all duration-200 border cursor-pointer ${
-                        category === cat.name
-                          ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white border-transparent shadow-lg shadow-indigo-500/25"
-                          : "bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-800 dark:hover:text-gray-200"
-                      } hover:scale-105 active:scale-95 backdrop-blur-sm`}
-                      key={`cat=${cat.name}_at_index=${index}`}
-                    >
-                      <span
-                        className={`h-1 w-1 rounded-full ${
-                          category === cat.name
-                            ? "bg-yellow-600"
-                            : "bg-pink-600"
-                        }`}
-                      ></span>
-                      {cat.name}
-                    </ul>
-                  </>
-                );
-              })}
+            <section className="flex items-center justify-center gap-2 flex-wrap max-h-30 overflow-auto  space-grotesk">
+              {Categories.map((cat) => (
+                <button
+                  key={cat.name}
+                  onClick={() => dispatch(setCategory(cat.name))}
+                  className="p-2 rounded-lg text-xs flex flex-col items-center gap-1"
+                  title={cat.name}
+                >
+                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                    {cat.name.slice(0, 2)}
+                  </div>
+                  <span className="text-[10px] truncate w-full text-center">
+                    {cat.name.length > 8
+                      ? `${cat.name.slice(0, 8)}...`
+                      : cat.name}
+                  </span>
+                </button>
+              ))}
             </section>
           </div>
           {/* subCategories */}
@@ -235,40 +211,30 @@ const UserForm: React.FC<FormProps> = ({
               SubDomain <FiChevronDown />
             </label>
 
-            <section className="flex items-center justify-center gap-2 flex-wrap">
-              {SubCategories.filter((cat) => cat.parent === category).map(
-                (cat, index) => (
-                  <div
-                    key={`subcat-${index}`}
-                    className="flex items-center justify-evenly flex-wrap "
-                  >
-                    {cat?.subcategories?.map((sub, subIndex) => (
-                      <label
-                        key={`sub-${subIndex}`}
-                        className="flex items-center p-2.5 rounded-xl transition-all duration-200 cursor-pointer group hover:bg-gray-50/80 dark:hover:bg-gray-800/80 backdrop-blur-sm"
+            <section className="flex items-center justify-center gap-2 flex-wrap space-grotesk">
+              {category && (
+                <div className="mt-3">
+                  <label className="text-sm font-semibold">
+                    Subcategories for {category}
+                  </label>
+                  <div className="flex flex-wrap gap-1 mt-2 max-h-24 overflow-auto">
+                    {SubCategories.find(
+                      (cat) => cat.parent === category
+                    )?.subcategories.map((sub) => (
+                      <button
+                        key={sub}
+                        onClick={() => dispatch(setSubCategory(sub))}
+                        className={`px-2 py-1 text-xs rounded-full border ${
+                          subCategory === sub
+                            ? "bg-blue-500 text-white border-blue-500"
+                            : "bg-gray-100 dark:bg-gray-800 border"
+                        }`}
                       >
-                        <div
-                          className={`w-2 h-2  rounded-full mr-3 transition-colors ${
-                            subCategory === sub
-                              ? "bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg shadow-green-500/25"
-                              : "bg-gray-300 dark:bg-gray-600 group-hover:bg-gray-400 dark:group-hover:bg-gray-500"
-                          }`}
-                        />
-                        <span className=" text-sm  bai-jamjuree-regular flex-1 text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
-                          {sub}
-                        </span>
-                        <input
-                          onChange={() => dispatch(setSubCategory(sub))}
-                          type="radio"
-                          value={sub}
-                          name="subcategory"
-                          checked={subCategory === sub}
-                          className="sr-only"
-                        />
-                      </label>
+                        {sub}
+                      </button>
                     ))}
                   </div>
-                )
+                </div>
               )}
             </section>
           </div>
@@ -389,44 +355,114 @@ const UserForm: React.FC<FormProps> = ({
               </p>
             </div>
           </div>
-          <div className="flex items-start justify-start gap-3 flex-col bai-jamjuree-regular  w-full rounded-lg p-2">
-            <label
-              className="text-sm md:text-md font-semibold flex items-center justify-cente gap-2 bai-jamjuree-semibold"
-              htmlFor="Visibility"
-            >
-              Visibility type <FaEye />
+          {/* visibility section */}
+          <div className="flex items-start justify-start gap-3 flex-col w-full rounded-lg p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
+            <label className="text-sm font-semibold flex items-center gap-2 bai-jamjuree-semibold text-gray-700 dark:text-gray-300">
+              Visibility <FaEye className="text-blue-500" />
             </label>
-            <section className="flex items-center justify-evenly  w-full  text-sm">
-              <span className="flex items-center justify-start gap-2 bai-jamjuree-regular">
+
+            <section className="flex items-center gap-4 w-full">
+              {/* Public Option */}
+              <label className="flex-1 cursor-pointer group">
                 <input
                   value="Public"
                   onChange={(e) => dispatch(setVisibility(e.target.value))}
                   name="visibility"
                   type="radio"
-                  className="space-grotesk"
+                  className="sr-only" // Hide default radio
                 />
-                <label htmlFor="visibility ">Public</label>
-              </span>
-              <span className="flex items-center justify-start gap-2 bai-jamjuree-regular text-sm">
+                <div
+                  className={`p-3 rounded-xl border-2 transition-all duration-200 group-hover:scale-105 ${
+                    visibility === "Public"
+                      ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-lg shadow-green-500/20"
+                      : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 group-hover:border-green-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                        visibility === "Public"
+                          ? "border-green-500 bg-green-500"
+                          : "border-gray-400 dark:border-gray-500 group-hover:border-green-400"
+                      }`}
+                    >
+                      {visibility === "Public" && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                      )}
+                    </div>
+                    <div>
+                      <span
+                        className={`font-medium text-sm block ${
+                          visibility === "Public"
+                            ? "text-green-700 dark:text-green-300"
+                            : "text-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        Public
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Anyone can access
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </label>
+
+              {/* Private Option */}
+              <label className="flex-1 cursor-pointer group">
                 <input
                   value="Private"
                   onChange={(e) => dispatch(setVisibility(e.target.value))}
                   name="visibility"
                   type="radio"
+                  className="sr-only"
                 />
-                <label htmlFor="visibility ">Private</label>
-              </span>
+                <div
+                  className={`p-3 rounded-xl border-2 transition-all duration-200 group-hover:scale-105 ${
+                    visibility === "Private"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg shadow-blue-500/20"
+                      : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 group-hover:border-blue-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                        visibility === "Private"
+                          ? "border-blue-500 bg-blue-500"
+                          : "border-gray-400 dark:border-gray-500 group-hover:border-blue-400"
+                      }`}
+                    >
+                      {visibility === "Private" && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                      )}
+                    </div>
+                    <div>
+                      <span
+                        className={`font-medium text-sm block ${
+                          visibility === "Private"
+                            ? "text-blue-700 dark:text-blue-300"
+                            : "text-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        Private
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Only you can access
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </label>
             </section>
           </div>
           <motion.button
             onClick={() => {
               const UserData = new FormData();
-              if (!name || !feedback) {
+              if (!feedback) {
                 toast("Please fill in all fields");
                 return;
               }
 
-              UserData.append("name", name);
               UserData.append("feedback", feedback);
               handleUpload?.(UserData);
             }}

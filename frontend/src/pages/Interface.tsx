@@ -126,50 +126,53 @@ function Interface() {
 
   // uploading a document
   const handleUpload = async (UserData: FormData) => {
-    if (
-      !selectedFile ||
-      category === " " ||
-      !UserData ||
-      !visibility ||
-      !subCategory
-    ) {
-      toast.error(
-        !selectedFile
-          ? "❌ Please select a PDF file first."
-          : "❌ Please select a category first."
+    try {
+      if (
+        !selectedFile ||
+        category === " " ||
+        !UserData ||
+        !visibility ||
+        !subCategory
+      ) {
+        toast.error(
+          !selectedFile
+            ? "❌ Please select a file first."
+            : "❌ Please select a category first."
+        );
+        return;
+      }
+
+      if (loggedIn === false) {
+        toast.message(
+          "We currently only allow verified users to contribute !Please Login to continue ."
+        );
+        return;
+      }
+
+      toast.info(
+        visibility === "Public"
+          ? "Thanks for your contribution ."
+          : "This document will be only accessible to you ."
       );
-      return;
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("category", category);
+      formData.append("visibility", visibility);
+      formData.append("subCategory", subCategory);
+      formData.append("feedback", UserData.get("feedback") as string);
+
+      dispatch(UploadDocuments(formData))
+        .unwrap()
+        .then((res: any) => {
+          if (res.message) {
+            toast.message(res.message);
+          }
+        })
+        .catch((err) => toast.error(err.message));
+    } catch (err) {
+      console.error(err);
     }
-
-    if (loggedIn === false) {
-      toast.message(
-        "We currently only allow verified users to contribute !Please Login to continue ."
-      );
-      return;
-    }
-
-    toast.info(
-      visibility === "Public"
-        ? "Thanks for your contribution ."
-        : "This document will be only accessible to you ."
-    );
-
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-    formData.append("category", category);
-    formData.append("visibility", visibility);
-    formData.append("subCategory", subCategory);
-    formData.append("name", UserData.get("name") as string);
-    formData.append("feedback", UserData.get("feedback") as string);
-
-    dispatch(UploadDocuments(formData))
-      .unwrap()
-      .then((res: any) => {
-        if (res.message) {
-          toast.message(res.message);
-        }
-      })
-      .catch((err) => toast.error(err.message));
   };
 
   // Ask for a new SSEToken;
@@ -441,13 +444,8 @@ function Interface() {
   return (
     <>
       <div
-        className={`w-full  flex items-center justify-center flex-col h-screen dark:bg-black bg-white relative p-4 z-[1]`}
+        className={`w-full  flex items-center justify-center flex-col h-screen dark:bg-black  relative p-4 z-[1]`}
       >
-        <UserForm
-          setSelectedFile={setSelectedFile}
-          selectedFile={selectedFile}
-          handleUpload={handleUpload}
-        />
         {/* gradient background for light thtme */}
         <div className="z-[-2] absolute top-0 left-0 h-full w-full bg-gradient-to-br from-orange-600/30 to-red-600/30 blur-3xl  dark:from-white/10 dark:to-black"></div>
         {/* the options section */}
@@ -695,6 +693,11 @@ function Interface() {
         </motion.section>
         <Toaster />
       </div>
+      <UserForm
+        setSelectedFile={setSelectedFile}
+        selectedFile={selectedFile}
+        handleUpload={handleUpload}
+      />
     </>
   );
 }

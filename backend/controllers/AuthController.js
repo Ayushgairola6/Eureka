@@ -158,10 +158,7 @@ export const HandleUserLogin = async (req, res) => {
       !password ||
       typeof password !== "string"
     ) {
-      console.error("Invalid data ");
-      return res
-        .status(400)
-        .json({ message: "This email address does not exist !" });
+      return res.status(400).json({ message: "Invalid information" });
     }
 
     const { data, error } = await supabase
@@ -171,19 +168,18 @@ export const HandleUserLogin = async (req, res) => {
       .single();
 
     if (!data || error) {
-      console.error(error, "user not found");
-      return res.status(404).json({ message: "User not found !" });
+      return res.status(404).json({ message: "User not found " });
     }
+    // making the user verify their account
     const isVerified = data.isVerified;
     if (isVerified === false) {
       return res
-        .status(401)
+        .status(400)
         .send({ message: "Please verify your Account first" });
     }
     const isMatching = await bcrypt.compare(password, data.password);
 
     if (!isMatching) {
-      console.log("passwod did not match");
       return res.status(400).send({ message: "Password did not match" });
     }
 
@@ -193,7 +189,8 @@ export const HandleUserLogin = async (req, res) => {
       data.username.toLowerCase()
     );
     if (!RefreshToken) {
-      console.error("Error while geenrating refreshtoken");
+      await notifyMe(`The Refresh token geenration controller is down`);
+
       return res
         .status(400)
         .send({ message: "Error while creating a session" });
@@ -205,16 +202,18 @@ export const HandleUserLogin = async (req, res) => {
     );
 
     if (!AuthToken) {
-      console.error("Error while geenrating AccessToken");
+      await notifyMe(`The Access token geenration controller is down`);
       return res
         .status(400)
         .send({ message: "Error while creating a session" });
     }
     const store = await StoreTokens(RefreshToken, AuthToken, data.id);
     if (store.error) {
+      await notifyMe(`Unable to store user tokens in the db`);
+
       return res
         .status(400)
-        .json({ message: "Error while setting up the session" });
+        .json({ message: "Error while creating a session" });
     }
 
     res.cookie("Eureka_eta_six_version1_AuthToken", AuthToken, {
@@ -243,8 +242,12 @@ export const HandleUserLogin = async (req, res) => {
       .status(200)
       .json({ message: "Login successfull", AuthToken: AuthToken });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Something went wrong !" });
+    await notifyMe(
+      `Something went wrong while in the login controller for user=${
+        req.user.username
+      } errordetails=${JSON.stringify(error)}`
+    );
+    return;
   }
 };
 

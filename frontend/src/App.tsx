@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense, useRef } from "react";
+import { useEffect, lazy, Suspense, useRef, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 const Interface = lazy(() => import("./pages/Interface.tsx"));
 const LandingPage = lazy(() => import("./pages/LandingPage.tsx"));
@@ -43,6 +43,10 @@ const DocumentationLayout = lazy(
   () => import("./pages/DocumentationLayout.tsx")
 );
 
+// const [loadValue, setLoadValue] = useState<number>(0);
+// useEffect(()=>{
+
+// },)
 const App = () => {
   // const [currTab, setCurrTab] = useState("Home");
   const dispatch = useAppDispatch();
@@ -159,11 +163,14 @@ const App = () => {
       <Suspense
         fallback={
           <div className="h-screen bg-black flex items-center justify-center     text-6xl ">
-            <img
-              src="/Group 1.svg"
-              alt="Eureka logo"
-              className="rounded-full h-30 w-30 bg-white"
-            />
+            <section className="text-center bg-gray-50 p-3 rounded-md text-black flex flex-col items-center justify-center gap-2">
+              <img
+                src="/Group 1.svg"
+                alt="Eureka logo"
+                className="rounded-full h-18 w-18"
+              />
+              <span className="bebas-neue-regular text-xl">Ask?EUREKA</span>
+            </section>
           </div>
         }
       >

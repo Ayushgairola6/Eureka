@@ -40,15 +40,11 @@ const Navbar = () => {
         {/* navlinks */}
         <Link
           to="/"
-          className="cursor-pointer flex item-center justify-center gap-2 p-2"
+          className="cursor-pointer flex items-center justify-center gap-2 "
         >
           {/* EUREKA */}
-          <img
-            className="h-6 w-6  rounded-full dark:bg-gray-200"
-            src="/Group 1.svg"
-            alt=""
-          />
-          <span className="bebas-neue-regular text-lg">EUREKA</span>
+
+          <span className="bebas-neue-regular text-xl">Ask?EUREKA</span>
         </Link>
 
         <div

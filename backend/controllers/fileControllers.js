@@ -74,7 +74,7 @@ const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek
 //upload functions
 export const FileUploadHandle = async (req, res) => {
   try {
-    const { category, name, feedback, subCategory, visibility } = req.body;
+    const { category, feedback, subCategory, visibility } = req.body;
     const file = req.file;
     const userid = req.user.user_id;
     if (!userid) {
@@ -84,9 +84,6 @@ export const FileUploadHandle = async (req, res) => {
     if (
       !category ||
       typeof category !== "string" ||
-      !name ||
-      typeof name !== "string" ||
-      typeof name !== "string" ||
       typeof feedback !== "string" ||
       !feedback ||
       !email ||
@@ -120,7 +117,7 @@ export const FileUploadHandle = async (req, res) => {
       // Generate a unique ID for each chunk
       // Option 1: documentId-chunkIndex (simple)
       chunkNumber = i;
-      const chunkId = `${documentId.trim()}:${name.trim()}:${feedback.trim()}:${chunkNumber}`;
+      const chunkId = `${documentId.trim()}:${req.user.username.trim()}:${feedback.trim()}:${chunkNumber}`;
 
       // pushing the chunk data in formatted way to store in the db
       recordsToUpsert.push({
@@ -131,7 +128,7 @@ export const FileUploadHandle = async (req, res) => {
         subCategory: subCategory,
         date_of_contribution: new Date().toISOString(),
         documentId: documentId,
-        contributor: name,
+        contributor: userid,
       });
 
       // If batch is full or it's the last chunk, upsert the batch
@@ -166,7 +163,6 @@ export const FileUploadHandle = async (req, res) => {
       }
     }
     const StoredContribution = await StoreContributionDetails(
-      name,
       email,
       feedback,
       userid,
@@ -190,7 +186,7 @@ export const FileUploadHandle = async (req, res) => {
         .json({ message: "Error while processing your file" });
     }
     // update the redis contributions cache
-    const UserAccountDataKey = `user_id=${userid}&username=${name}'s_dashboardData`;
+    const UserAccountDataKey = `user_id=${userid}&username=${req.user.username}'s_dashboardData`;
 
     const CachedContributions = await redisClient.hGet(
       UserAccountDataKey,
@@ -469,7 +465,6 @@ export const GetPublicRecords = async (req, res) => {
 
 // store user file upload information
 export const StoreContributionDetails = async (
-  name,
   email,
   feedback,
   userid,
@@ -479,8 +474,6 @@ export const StoreContributionDetails = async (
 ) => {
   try {
     if (
-      !name ||
-      typeof name !== "string" ||
       !email ||
       typeof email !== "string" ||
       !feedback ||
@@ -488,12 +481,10 @@ export const StoreContributionDetails = async (
       !userid ||
       !chunkNumber
     ) {
-      console.log("Either email or name was missing from the parameters");
       return { error: "Invalid data !" };
     }
 
     const { data, error } = await supabase.from("Contributions").insert({
-      username: name,
       email: email,
       feedback: feedback,
       user_id: userid,
@@ -503,13 +494,11 @@ export const StoreContributionDetails = async (
     });
 
     if (error) {
-      console.log(error);
       return { error: "Error while recording you contribution details ." };
     }
 
     return { message: "Done" };
   } catch (error) {
-    console.error(error);
     return { error: "Error while storing values in db" };
   }
 };

@@ -19,7 +19,6 @@ import {
 } from "react-icons/fa";
 import { TbSunset2 } from "react-icons/tb";
 import { IoSunnyOutline } from "react-icons/io5";
-import { MdReviews } from "react-icons/md";
 import { JoinAChatRoom } from "../store/chatRoomSlice.ts";
 import { toast, Toaster } from "sonner";
 import { IoMdHourglass } from "react-icons/io";
@@ -28,13 +27,17 @@ import { LogoutUser } from "../store/AuthSlice.ts";
 import { FaArrowUpRightDots } from "react-icons/fa6";
 // import {NewUserNotification} from '../store/AuthSlice.ts'
 const CreateRoom = lazy(() => import("@/components/createRoom.tsx"));
-
+const QuestionAskedChart = lazy(
+  () => import("@/components/UserQuestionAskedChart.tsx")
+);
+const UserFeedbackReport = lazy(
+  () => import("@/components/UserFeedbackReport.tsx")
+);
 const UserDashboard = () => {
   // Mock user data
 
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
-  const QueryCount = useAppSelector((state) => state.auth.Querycount);
   const Feedback = useAppSelector((state) => state.auth.FeedbackCounts);
   const chatrooms = useAppSelector((state) => state.auth.chatrooms);
   const isJoining = useAppSelector((state) => state.chats.isJoiningRoom);
@@ -45,13 +48,9 @@ const UserDashboard = () => {
   const [IncreaseHeight, setIncreaseHeight] = useState(false);
   const { isDarkMode, isLoggingOut } = useAppSelector((state) => state.auth);
   // Mock conversations
-
-  const now = new Date();
-  // useEffect(() => {
-  //   if (isLoggingOut === true) {
-  //     navigate("/");
-  //   }
-  // }, [isLoggingOut]);
+  const SimilarQuestions = lazy(
+    () => import("@/components/SimilarQueryChart.tsx")
+  );
 
   useEffect(() => {
     const totalVotes =
@@ -176,148 +175,10 @@ const UserDashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 ">
-          <motion.div
-            whileHover={{ y: -5 }}
-            className="bg-gray-100 dark:bg-black p-6 rounded-xl border  border-gray-400"
-          >
-            <h3 className="text-sm md:text-lg opacity-70  bai-jamjuree-semibold">
-              Questions Asked
-            </h3>
-            {/* <p className="text-3xl font-bold mt-2">{user.stats.questions}</p> */}
-            <p className="text-xs md:text-sm mt-1 text-green-300 space-grotesk">
-              -- Percent Questions asked - {QueryCount / 10}% till{" "}
-              {now.toLocaleDateString()}
-            </p>
-            <p className="text-xs md:text-sm mt-1 text-sky-400 space-grotesk">
-              {`-- ${(
-                Math.random() * 20
-              ).toFixed()}% Users asked similar questions as you`}
-            </p>
-          </motion.div>
-
+          <QuestionAskedChart />
+          <SimilarQuestions />
           {/* user uploaded docs feedback section */}
-          <motion.div
-            whileTap={{ scale: 0.98 }}
-            className="bg-gray-100 dark:bg-black p-6 rounded-2xl border border-gray-400  transition-all duration-300"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
-                <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"></div>
-                Community Feedback
-              </h3>
-              <div className="w-6 h-6 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center">
-                <MdReviews className="text-gray-500 dark:text-gray-400 text-xs" />
-              </div>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {/* Upvotes */}
-              <div className="bg-green-500/10  backdrop-blur-sm rounded-xl p-3 border border-green-200/50 dark:border-green-800/50 group hover:border-green-300 dark:hover:border-green-600 transition-colors cursor-pointer">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <FaThumbsUp className="group-hover:animate-bounce" />
-                  <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                    Up
-                  </span>
-                </div>
-                <div className="text-center">
-                  <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                    {Feedback?.upvotes || 0}
-                  </span>
-                </div>
-              </div>
-
-              {/* Downvotes */}
-              <div className="bg-red-500/10  backdrop-blur-sm rounded-xl p-3 border border-red-200/50 dark:border-red-800/50 group hover:border-red-300 dark:hover:border-red-600 transition-colors cursor-pointer">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <FaThumbsDown className="group-hover:animate-bounce" />
-                  <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                    Down
-                  </span>
-                </div>
-                <div className="text-center">
-                  <span className="text-lg font-bold text-red-600 dark:text-red-400">
-                    {Feedback?.downvotes || 0}
-                  </span>
-                </div>
-              </div>
-
-              {/* Partial Votes */}
-              <div className="bg-indigo-500/10    backdrop-blur-sm rounded-xl p-3 border border-pink-200/50 dark:border-indigo-800/50 group hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors cursor-pointer">
-                <div className="flex items-center justify-center gap-1.5 mb-1 ">
-                  <FaExclamation className="group-hover:animate-bounce" />
-                  <span className="text-[10px] font-medium text-gray-800 dark:text-gray-300 uppercase tracking-wide">
-                    Partial
-                  </span>
-                </div>
-                <div className="text-center">
-                  <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                    {Feedback?.partial_upvotes || 0}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Confidence Score with Visual Indicator */}
-            <div className="mt-4 pt-4 border-t border-gray-200/30 dark:border-gray-700/30">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-current rounded-full opacity-60"></div>
-                  Confidence Score
-                </span>
-                <div
-                  className={`px-2 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${
-                    score > 70
-                      ? "bg-green-100/50 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                      : score > 30
-                      ? "bg-yellow-100/50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
-                      : "bg-red-100/50 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-                  }`}
-                >
-                  {score || 0}%
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-200/50 dark:bg-gray-700/50 rounded-full h-1.5 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${score || 0}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  className={`h-full rounded-full ${
-                    score > 70
-                      ? "bg-gradient-to-r from-green-400 to-emerald-500"
-                      : score > 30
-                      ? "bg-gradient-to-r from-yellow-400 to-amber-500"
-                      : "bg-gradient-to-r from-red-400 to-rose-500"
-                  } shadow-sm`}
-                />
-              </div>
-
-              {/* Status Text */}
-              <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-500 mt-1">
-                <span>Low</span>
-                <span>Medium</span>
-                <span>High</span>
-              </div>
-            </div>
-
-            {/* Peer Review Badge */}
-            <div className="mt-3 flex items-center justify-center">
-              <div className="inline-flex items-center gap-1.5 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm px-3 py-1.5 rounded-full border border-gray-200/30 dark:border-gray-700/30">
-                <MdReviews className="text-gray-400 dark:text-gray-500 text-xs" />
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  From{" "}
-                  {(Feedback?.upvotes || 0) +
-                    (Feedback?.downvotes || 0) +
-                    (Feedback?.partial_upvotes || 0) || 0}{" "}
-                  peer reviews
-                </span>
-              </div>
-            </div>
-          </motion.div>
-
+          <UserFeedbackReport score={score} />
           {/* user active projects section */}
           <motion.div
             whileHover={{ y: -5 }}
