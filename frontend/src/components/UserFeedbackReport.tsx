@@ -2,6 +2,7 @@ import { useAppSelector } from "../store/hooks";
 import React from "react";
 import { motion } from "framer-motion";
 import { PieChart, ResponsiveContainer, Pie, Cell } from "recharts";
+import { FaThumbsUp } from "react-icons/fa";
 
 // import { FaExclamation, FaThumbsDown, FaThumbsUp } from "react-icons/fa";
 
@@ -80,11 +81,11 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
           </div>
 
           {/* Right: Stats & Metrics */}
-          <div className="space-y-4">
+          <div className="space-y-4 space-grotesk">
             {/* Stats Grid */}
 
             {/* Confidence Score */}
-            <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
+            <div className="space-grotesk bg-white/50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Confidence Score
@@ -126,6 +127,10 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
               peer reviews
             </div>
           </div>
+        </div>
+        <div className="bai-jamjuree-regular text-md  w-full text-center flex items-center justify-center gap-4">
+          <FaThumbsUp />
+          Keep Up the good work
         </div>
       </motion.div>
     </>

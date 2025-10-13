@@ -35,6 +35,7 @@ import {
   setSelectedDoc,
   setShowUserForm,
   setLoading,
+  updateFavicon,
 } from "../store/InterfaceSlice.ts";
 import { v4 as uuid } from "uuid";
 import axios from "axios";
@@ -238,17 +239,23 @@ function Interface() {
       // const Url = `${BaseApiUrl}/api/user/web-search?question=${question}&AccessToken=${SseToken}`;
       // const SSe = HandleSSEConnection(Url, AiId, dispatch);
       // return SSe;
-      dispatch(WebSearchHandler(question))
+      dispatch(WebSearchHandler({ question, MessageId: AiId }))
         .unwrap()
         .then((res) => {
-          if (res.message) {
+          console.log(res);
+          if (res.message === "Results found") {
             dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
+            dispatch(updateFavicon(res.favicon));
           }
         })
         .catch(() => {
-          dispatch(MimicSSE({ id: AiId, delta: "Server busy" }));
-
-          toast.error("Server busy");
+          dispatch(
+            MimicSSE({
+              id: AiId,
+              delta:
+                "I was unable to find anything related to you question in your document . If you could be more specific about what you want to know about this document I will be able to assist you properly.",
+            })
+          );
         });
       dispatch(setQuestion(""));
     } catch (err: any) {
@@ -411,6 +418,7 @@ function Interface() {
         docId: selectedDoc,
         question,
         query_type: queryType,
+        MessageId: AiId,
       };
       if (!data.docId || !data.question || !data.query_type) {
         toast.error(`Some fields are missing`);
@@ -461,33 +469,45 @@ function Interface() {
                 <div key={`chat-${index}-${chat.sent_by}`} className={` mb-3 `}>
                   {/* Chat Bubble Container */}
                   <div className="space-y-8 ">
-                    {favicon.length > 0 &&
-                      chat.id === Chats[Chats.length - 1].id &&
-                      chat.sent_by === "Eureka" && (
-                        <>
-                          <ul className="bai-jamjuree-semibold text-sm">
-                            Source{" "}
-                          </ul>
-                          <span className="flex items-center justify-start gap-1">
-                            {favicon.map((im: any, index) => {
-                              return (
-                                <img
-                                  className="h-8 w-8 rounded-full"
-                                  key={index}
-                                  src={im}
-                                  alt="/source.png"
-                                />
-                              );
-                            })}
-                          </span>
-                        </>
-                      )}
+                    {favicon.length > 0 && (
+                      <>
+                        {favicon.find(
+                          (elem: any) => elem.MessageId === chat.id
+                        ) && (
+                          <>
+                            <ul className="bai-jamjuree-semibold text-sm ">
+                              From{" "}
+                              {
+                                favicon.find((e) => e.MessageId === chat.id)
+                                  ?.icon.length
+                              }
+                              {"+ "}
+                              Sources
+                            </ul>
+                            <span className="flex items-center justify-start gap-1">
+                              {favicon
+                                .find((z) => z.MessageId === chat.id)
+                                ?.icon.map((im: any, index) => {
+                                  return (
+                                    <img
+                                      className="h-8 w-8 rounded-full"
+                                      key={index}
+                                      src={im}
+                                      alt="/source.png"
+                                    />
+                                  );
+                                })}
+                            </span>
+                          </>
+                        )}
+                      </>
+                    )}
                     {/* Chat Bubble */}
                     {chat.sent_by === "Eureka" &&
                     chat.message.content === "" &&
                     chat.id === Chats[Chats.length - 1].id ? (
                       <ul className="bai-jamjuree-semibold text-lg animate-pulse my-8">
-                        "Thinking...
+                        Thinking longer for better answer
                       </ul>
                     ) : (
                       <div
@@ -553,7 +573,7 @@ function Interface() {
               <h1 className="text-2xl bai-jamjuree-bold">
                 Welcome,{" "}
                 {user?.username
-                  ? user?.username.split(" ")[0].toLocaleUpperCase()
+                  ? user?.username.split("_")[0].toLocaleUpperCase()
                   : "Beautiful person"}{" "}
               </h1>
               <span className="text-sm dark:text-gray-400 text-gray-700 space-grotesk">
@@ -574,6 +594,7 @@ function Interface() {
             onChange={(e) => {
               dispatch(setQuestion(e.target.value));
             }}
+            onKeyUp={(e) => e.key === "Enter" && handleAsk()}
             ref={textareaRef}
             rows={2}
             name="input"

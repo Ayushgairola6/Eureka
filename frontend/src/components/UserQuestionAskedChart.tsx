@@ -5,14 +5,14 @@ const QuestionAskedChart = () => {
   const { Querycount } = useAppSelector((state: any) => state.auth);
 
   const data = [
-    { name: "Questions", value: Querycount, fill: "#10b981" },
-    { name: "Remaining", value: 10 - Querycount, fill: "#374151" },
+    { name: "Questions", value: Querycount, fill: "lime" },
+    { name: "Remaining", value: 100 - Querycount, fill: "orange" },
   ];
   return (
     <>
       <motion.div
         whileHover={{ y: -5 }}
-        className="bg-gray-100 dark:bg-black p-6 rounded-xl border border-gray-400"
+        className="h-40 bg-gray-100 dark:bg-black p-6 rounded-xl border border-gray-400"
       >
         <h3 className="text-sm md:text-lg opacity-70 bai-jamjuree-semibold mb-4">
           Questions Asked
@@ -36,7 +36,7 @@ const QuestionAskedChart = () => {
               <span className="text-2xl font-bold text-green-500">
                 {Querycount}
               </span>
-              <div className="text-xs text-gray-500">/10</div>
+              <div className="text-xs dark:text-white text-black">/100</div>
             </div>
           </div>
 
@@ -45,18 +45,15 @@ const QuestionAskedChart = () => {
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-500">Progress</span>
               <span className="text-sm font-bold text-green-500">
-                {(Querycount / 10) * 100}%
+                {Querycount / 100}%
               </span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2">
               <div
                 className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${(Querycount / 10) * 100}%` }}
+                style={{ width: `${Querycount / 100}%` }}
               ></div>
             </div>
-            <p className="text-xs text-sky-400 mt-2">
-              {Math.random() * 20}% users asked similar questions
-            </p>
           </div>
         </div>
       </motion.div>

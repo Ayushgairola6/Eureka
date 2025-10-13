@@ -1,6 +1,16 @@
 import { redisClient } from "../CachingHandler/redisClient.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
-import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
+import {
+  formatForGemini,
+  FormatForHumanFallback,
+  SearchQueryResults,
+} from "../OnlineSearchHandler/WebSearchHandler.js";
+import {
+  getIo,
+  UpdateTheRoomChatCache,
+} from "../websocketsHandler.js/socketIoInitiater.js";
+import { index } from "./fileControllers.js";
+import { GenerateResponse } from "./ModelController.js";
 import { supabase } from "./supabaseHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -17,6 +27,48 @@ const IsAString = (value) => {
   }
 };
 
+const now = new Date();
+const hour = now.getHours();
+const minute = now.getMinutes();
+
+// Array of month names for clarity
+const monthNames = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+// Array of day names
+const dayNames = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+const dayOfMonth = now.getDate();
+const dayOfWeek = dayNames[now.getDay()];
+const year = now.getFullYear();
+const month = monthNames[now.getMonth()];
+
+// Format time in 12-hour format with AM/PM
+const formattedTime = `${hour > 12 ? hour - 12 : hour}:${minute
+  .toString()
+  .padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
+
+// Combine all parts into a single string using a delimiter
+const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
 // Generate Random RoomCode
 function generate6DigitCode() {
   // Create a typed array to hold 3 bytes (24 bits)
@@ -404,7 +456,6 @@ export const GetRoomChatHistory = async (req, res) => {
       .order("sent_at", { ascending: true })
       .limit(10);
 
-    console.log(data);
     if (!data || data.length === 0) {
       return res.status(200).send({ chats: [], message: "No messages found" });
     }
@@ -524,5 +575,237 @@ export const GetMisallaneousChatHistory = async (req, res) => {
   } catch (err) {
     await notifyMe(`"Error while getting miscellaneous chats:", ${err}`);
     return res.status(500).send({ message: "Something went wrong!" });
+  }
+};
+
+export const QueryDocWithEurekaInChatRoom = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    if (!userId)
+      return res.status(401).send({ message: "Please login to continue" });
+
+    const { question, room_id, user_id, document_id, MessageId } = req.body;
+    if (
+      !question ||
+      !room_id ||
+      !user_id ||
+      !document_id ||
+      typeof question !== "string" ||
+      typeof room_id !== "string" ||
+      typeof user_id !== "string" ||
+      typeof document_id !== "string"
+    ) {
+      return res.status(400).send({ message: "Some fields are missing" });
+    }
+    // check for matching results from db
+    const DbResults = await index.searchRecords({
+      query: {
+        topK: 30,
+        inputs: { text: question },
+        filter: {
+          documentId: { $eq: document_id },
+          visibility: { $eq: "Private" },
+        },
+      },
+      fields: ["text"],
+    });
+
+    if (DbResults.result.hits.length === 0) {
+      return res.status(200).send({
+        answer:
+          "I was unable to find anything related to you question in your document . If you could be more specific about what you want to know about this document I will be able to assist you properly.",
+      });
+    }
+
+    const FoundInformation = [];
+    DbResults.result.hits.forEach((rest) => {
+      if (rest._score && rest.fields.text) {
+        FoundInformation.push({ _score: rest._score, text: rest.fields.text });
+      }
+    });
+
+    const AnswerToQuestion = await GenerateResponse(
+      question,
+      FoundInformation,
+      process.env.SYSTEM_PROMPT
+    );
+
+    if (!AnswerToQuestion || AnswerToQuestion.error) {
+      return res.status(400).send({
+        message:
+          "Error while generating a response the server is very busy right now !",
+      });
+    }
+    //     const AnswerToQuestion = `# Testing Broadcast System
+
+    // This is a **test message** to check the broadcast functionality across the chat room.
+
+    // ## Features to Test:
+    // - ✅ **Real-time delivery** to all users
+    // - ✅ **Markdown rendering** in messages
+    // - ✅ **Message formatting** and styling
+    // - ✅ **Different sender types** (User, System, Eureka)
+
+    // ### Code Block Test:
+    // \`\`\`javascript
+    // const message = {
+    //   id: "test_123",
+    //   content: "Hello from broadcast!",
+    //   timestamp: new Date().toISOString(),
+    //   sender: "SYSTEM"
+    // };
+    // \`\`\`
+
+    // ### List Test:
+    // - Item 1 with *italic*
+    // - Item 2 with **bold**
+    // - Item 3 with ~~strikethrough~~
+
+    // ### Table Test:
+    // | Feature | Status | Notes |
+    // |---------|--------|-------|
+    // | Real-time | ✅ Working | Socket.io |
+    // | Markdown | ✅ Rendered | Streamdown |
+    // | Styling | ✅ Applied | Tailwind |
+
+    // > This is a blockquote testing the broadcast system across all connected clients in the room.
+
+    // **Message ID:** ${Date.now()}
+    // **Room:** ${Math.random().toString(36).substr(2, 9)}
+    // `;
+
+    // broadcast the message to the room so that the message is synchrnus
+    const io = getIo();
+
+    if (io) {
+      io.to(room_id).emit("recieved_message", {
+        message_id: MessageId,
+        sent_by: null,
+        message: AnswerToQuestion,
+        room_id: room_id,
+        users: { username: "EUREKA" },
+        sent_at: currentTime || new Date().toISOString(),
+      });
+    }
+
+    // sote the messagein the db
+    const { error } = await supabase.from("room-chat-history").insert({
+      sent_by: null,
+      message: AnswerToQuestion,
+      room_id: room_id,
+      message_id: MessageId,
+      sent_at: currentTime || new Date().toISOString(),
+    });
+    if (error) {
+      await notifyMe(
+        `An error occured of critical level occured when storing chat history in the db at ${currentTime}`
+      );
+    }
+    // update the cache for EUREKA
+    await UpdateTheRoomChatCache(
+      room_id,
+      AnswerToQuestion,
+      currentTime || new Date().toISOString,
+      null,
+      { username: "EUREKA" }
+    );
+    return res.status(200).send({ answer: AnswerToQuestion });
+  } catch (error) {
+    return res.satus(500).send({ message: "Something went wrong" });
+
+    await notifyMe(error);
+  }
+};
+
+export const QueryWebInEurekaChatRoom = async (req, res) => {
+  try {
+    const user_id = req.user.user_id;
+    if (!user_id) {
+      return res.status(401).send({ message: "Please login to continue" });
+    }
+    const { query } = req.params;
+    if (!query) {
+      return res.status(200).send({ answer: "This question is too vague." });
+    }
+    const { room_id, MessageId } = req.body;
+    if (!room_id || !MessageId) {
+      await notifyMe("Something is wrong in the chatRoomWebSearchHandler");
+      return res.status(400).send({ message: "Something went wrong" });
+      F;
+    }
+
+    const webResults = await SearchQueryResults(query);
+    if (!webResults || webResults.error) {
+      await notifyMe(webResults.error);
+
+      return res.status(400).send({ message: "Something went wrong" });
+    }
+
+    const Formattedresult = formatForGemini(webResults.response);
+    if (!Formattedresult) {
+      return res.status(400).send({
+        message:
+          "The server is quite loaded right now so i am having trouble generating a response right now.",
+      });
+    }
+    // creating  response for the user
+    let AnswerToQuestion = await GenerateResponse(
+      query,
+      Formattedresult,
+      process.env.WEB_SEARCH_RESULT_PROMPT
+    );
+
+    if (!AnswerToQuestion || AnswerToQuestion.error) {
+      AnswerToQuestion = FormatForHumanFallback(webResults.response).text;
+      // return res.status(400).send({
+      //   message:
+      //     "The server is quite loaded right now so i am having trouble generating a response right now. ",
+      // });
+    }
+    // emitting the response throughout the room
+    const io = getIo();
+    if (io) {
+      io.to(room_id).emit("recieved_message", {
+        message_id: MessageId,
+        sent_by: null,
+        message: AnswerToQuestion,
+        room_id: room_id,
+        users: { username: "EUREKA" },
+        sent_at: currentTime || new Date().toISOString(),
+      });
+    }
+    // sote the messagein the db
+    const { error } = await supabase.from("room-chat-history").insert({
+      sent_by: null,
+      message: AnswerToQuestion,
+      room_id: room_id,
+      message_id: MessageId,
+      sent_at: currentTime || new Date().toISOString(),
+    });
+    if (error) {
+      await notifyMe(
+        `An error occured of critical level occured when storing chat history in the db at ${currentTime}`
+      );
+    }
+    // update the cache for EUREKA
+    await UpdateTheRoomChatCache(
+      room_id,
+      AnswerToQuestion,
+      currentTime || new Date().toISOString,
+      null,
+      { username: "EUREKA" }
+    );
+    const FormattedFavIcon = {
+      MessageId: MessageId,
+      favicon: webResults.favicon || [],
+    };
+    return res.send({
+      answer: AnswerToQuestion,
+      favicon: FormattedFavIcon,
+    });
+  } catch (error) {
+    await notifyMe(error);
+
+    return res.satus(500).send({ message: "Something went wrong" });
   }
 };

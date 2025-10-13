@@ -7,9 +7,9 @@ const bot = new TelegramBot(token, { polling: false });
 
 const MY_CHAT_ID = process.env.MY_CHAT_ID;
 
-async function notifyMe(message) {
+async function notifyMe(message, error) {
   try {
-    await bot.sendMessage(MY_CHAT_ID, `🔔 ${message}`);
+    await bot.sendMessage(MY_CHAT_ID, `🔔 ${`${message} ${error}`} `);
   } catch (error) {}
 }
 

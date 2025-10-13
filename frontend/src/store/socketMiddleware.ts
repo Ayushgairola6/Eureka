@@ -7,6 +7,7 @@ import {
   RoomNotification,
   Setroom_info,
   whoIsTyping,
+  SetChatRoomFile,
 } from "./websockteSlice.ts";
 import { NewUserNotification } from "./AuthSlice.ts";
 import { store } from "./reduxstore.ts";
@@ -38,6 +39,7 @@ const setupSocketListeners = (dispatch: any) => {
   socket.on("recieved_message", (data) => {
     // console.log("New message received:", data);
     dispatch(NewMessageReceived(data));
+    dispatch(whoIsTyping(""));
   });
 
   socket.on("Room_notification", (data) => {
@@ -46,6 +48,9 @@ const setupSocketListeners = (dispatch: any) => {
     }
   });
 
+  socket.on("NewFileForRoom", (fileFromServer) => {
+    dispatch(SetChatRoomFile(fileFromServer));
+  });
   socket.on("new_Notification", (data) => {
     dispatch(NewUserNotification(data));
   });
@@ -108,6 +113,14 @@ export const socketMiddleware =
           socket.off("recieved_message");
           socket.off("Room_notification");
           socket.off("room-info");
+        } else {
+          console.warn("Socket is not connected, unable to leave the chatroom");
+        }
+        break;
+      case "socket/ChooseFile":
+        const { file, room_id, username } = action.payload;
+        if (socket && socket.connected) {
+          socket.emit("NewFileSelected", { file, room_id, username });
         } else {
           console.warn("Socket is not connected, unable to leave the chatroom");
         }

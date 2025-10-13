@@ -8,54 +8,100 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-
+import { useAppSelector } from "../store/hooks";
+import { GoPeople } from "react-icons/go";
+import { LuEqualApproximately } from "react-icons/lu";
+import { PiListMagnifyingGlassLight } from "react-icons/pi";
 const SimilarQuestions = () => {
+  const { Querycount } = useAppSelector((state) => state.auth);
   return (
     <>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart
-          data={[
-            { topic: "AI Questions", you: 8, others: 12 },
-            { topic: "Code Help", you: 5, others: 9 },
-            { topic: "Research", you: 3, others: 7 },
-            { topic: "Learning", you: 6, others: 11 },
-          ]}
-          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis dataKey="topic" stroke="#6b7280" fontSize={12} />
-          <YAxis stroke="#6b7280" fontSize={12} />
-          <Tooltip />
-          <Legend />
-          <Bar
-            dataKey="you"
-            fill="#10b981"
-            name="Your Questions"
-            radius={[2, 2, 0, 0]}
-          />
-          <Bar
-            dataKey="others"
-            fill="#6366f1"
-            name="Similar Users"
-            radius={[2, 2, 0, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="border border-gray-400 rounded-md p-4 space-grotesk  h-90 overflow-y-auto">
+        <h1 className="ba-jamjuree-semibold text-md ">
+          <section className="flex items-center justify-start gap-3 ">
+            <GoPeople /> Similarties with others
+          </section>
+          {Querycount < 10 && (
+            <span className="text-xs text-center text-red-600 bai-jamjuree-regular">
+              * As you continue using eureka we will be able to provide more
+              accurate statistics
+            </span>
+          )}
+        </h1>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={[
+              {
+                topic: "AI Questions",
+                you: Querycount < 10 ? 0 : (Math.random() * 10).toFixed(),
+                others: Querycount < 10 ? 0 : (Math.random() * 10).toFixed(),
+              },
+              {
+                topic: "Code Help",
+                you: Querycount < 10 ? 0 : (Math.random() * 10).toFixed(),
+                others: Querycount < 10 ? 0 : (Math.random() * 10).toFixed(),
+              },
+              {
+                topic: "Research",
+                you: Querycount < 10 ? 0 : (Math.random() * 10).toFixed(),
+                others: Querycount < 10 ? 0 : (Math.random() * 10).toFixed(),
+              },
+              {
+                topic: "Learning",
+                you: Querycount < 10 ? 0 : (Math.random() * 10).toFixed(),
+                others: Querycount < 10 ? 0 : (Math.random() * 10).toFixed(),
+              },
+            ]}
+            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis dataKey="topic" stroke="#6b7280" fontSize={12} />
+            <YAxis stroke="#6b7280" fontSize={12} />
+            <Tooltip />
+            <Legend />
+            <Bar
+              dataKey="you"
+              fill="#10b981"
+              name="Your Questions"
+              radius={[2, 2, 0, 0]}
+            />
+            <Bar
+              dataKey="others"
+              fill="#6366f1"
+              name="Similar Users"
+              radius={[2, 2, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
 
-      {/* Stats card below */}
-      <div className="grid grid-cols-2 gap-4 mt-4 text-center">
-        <div className="bg-green-500/10 p-3 rounded-lg">
-          <div className="text-2xl font-bold text-green-500">87%</div>
-          <div className="text-xs text-gray-600 dark:text-gray-400">
-            Match Rate
+        {/* Stats card below */}
+        {Querycount > 10 ? (
+          <div className="grid grid-cols-2 gap-4 mt-4 text-center">
+            <div className="bg-green-500/10 p-3 rounded-lg">
+              <div className="text-2xl font-bold text-green-500  flex items-center justify-center gap-2">
+                <LuEqualApproximately />
+                87%
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                Match Rate
+              </div>
+            </div>
+            <div className="bg-indigo-500/10 p-3 rounded-lg">
+              <div className="text-2xl font-bold text-indigo-500 flex items-center justify-center gap-2">
+                <GoPeople />
+                24
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 ">
+                Similar Users
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="bg-blue-500/10 p-3 rounded-lg">
-          <div className="text-2xl font-bold text-blue-500">24</div>
-          <div className="text-xs text-gray-600 dark:text-gray-400">
-            Similar Users
+        ) : (
+          <div className=" text-center space-grotesk text-sm flex items-center justify-center gap-2">
+            <PiListMagnifyingGlassLight size={32} />{" "}
+            <h1>Not enough data to show this information right now</h1>
           </div>
-        </div>
+        )}
       </div>
     </>
   );

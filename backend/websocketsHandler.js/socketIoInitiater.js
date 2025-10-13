@@ -107,6 +107,7 @@ export const initializeSocketIo = (httpServer) => {
     }
     socket.on("Joining_a_chat_room", (room_information) => {
       const { username, room_id, room_name, user_id } = room_information;
+      console.log("Joining chat room");
       if (!room_id || !room_name || !username || !user_id) {
         socket.emit("Room_notification", {
           message: "An error occured while trying to joining the room",
@@ -147,6 +148,8 @@ export const initializeSocketIo = (httpServer) => {
 
     // leaving a chatRoom
     socket.on("leaving_chat_room", (data) => {
+      console.log("Leaving chat room");
+
       const { room_id, username } = data;
       if (!room_id || !username) {
         socket.emit("Room_notification", {
@@ -184,8 +187,8 @@ export const initializeSocketIo = (httpServer) => {
     socket.on("new_message", async (data) => {
       const { message_id, sent_by, message, room_id, users, sent_at } = data;
 
+      // console.log(data);
       if (
-        !sent_by ||
         !message ||
         !room_id ||
         typeof message !== "string" ||
@@ -202,7 +205,7 @@ export const initializeSocketIo = (httpServer) => {
       try {
         // do not store the sytem messages
         // Store message in database
-        if (sent_by !== "SYSTEM") {
+        if (users.username !== "SYSTEM") {
           const storeResult = await StoreMessage(
             sent_by,
             message,
@@ -212,7 +215,6 @@ export const initializeSocketIo = (httpServer) => {
           );
 
           if (storeResult?.error) {
-            console.log(storeResult.error);
             socket.emit("Room_notification", {
               message: "Something went wrong, please try again later!",
             });
@@ -221,13 +223,16 @@ export const initializeSocketIo = (httpServer) => {
         }
 
         // Broadcast the message
-        await UpdateTheRoomChatCache(
-          room_id,
-          message,
-          sent_at || new Date().toISOString,
-          sent_by,
-          users
-        );
+        if (users.username !== "SYSTEM") {
+          await UpdateTheRoomChatCache(
+            room_id,
+            message,
+            sent_at || new Date().toISOString,
+            sent_by,
+            users
+          );
+        }
+
         io.to(room_id).emit("recieved_message", {
           message_id,
           sent_by,
@@ -238,7 +243,6 @@ export const initializeSocketIo = (httpServer) => {
         });
         return;
       } catch (error) {
-        console.error("Error processing message:", error);
         socket.emit("Room_notification", { message: "Internal server error" });
       }
     });
@@ -254,7 +258,6 @@ export const initializeSocketIo = (httpServer) => {
       }
       const room_id = await CheckRoomIdAssociatedWithRoomCode(room_code);
       if (room_id.error || !room_id) {
-        console.log(room_id.error);
         socket.emit("Room_notification", { message: "Some error occurred !" });
         return { error: "Unable to store the message" };
       }
@@ -275,6 +278,17 @@ export const initializeSocketIo = (httpServer) => {
       return;
     });
 
+    // when a new file is selected for the room
+    socket.on("NewFileSelected", (data) => {
+      const { file, room_id, username } = data;
+      if (!file || !room_id || !username) {
+        socket.emit("Room_notification", {
+          message: "Either username or room_id not found",
+        });
+        return;
+      }
+      io.to(room_id).emit("NewFileForRoom", file);
+    });
     // send the some is typing event
     socket.on("isTyping", (data) => {
       const { room_id, username } = data;
@@ -305,7 +319,7 @@ export const getIo = () => {
 // find who is the admin of that room
 
 //Update the message in  the message in Cache
-const UpdateTheRoomChatCache = async (
+export const UpdateTheRoomChatCache = async (
   room_id,
   message,
   sent_at,

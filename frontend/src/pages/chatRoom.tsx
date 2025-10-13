@@ -4,13 +4,22 @@ import {
   FiPaperclip,
   FiUsers,
   FiFileText,
-  FiSearch,
   FiX,
   FiChevronDown,
 } from "react-icons/fi";
 import { IoMdClose, IoMdHourglass } from "react-icons/io";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
+import {
+  AddNewMessage,
+  AskAI,
+  ChooseFile,
+  SearchWeb,
+  SetChatRoomFile,
+  setFavicon,
+  whoIsTyping,
+} from "../store/websockteSlice.ts";
+
 import { useParams } from "react-router";
 import {
   sendMessage,
@@ -23,16 +32,23 @@ import {
 } from "../store/websockteSlice.ts";
 import { toast, Toaster } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { Streamdown } from "streamdown";
+import { FaInternetExplorer } from "react-icons/fa";
+import TypingIndicator from "@/components/TypingIndicator.tsx";
+import DocumentPanel from "@/components/DocumentPanel.tsx";
+import AiQuerySection from "@/components/AiQuerySection.tsx";
+import WebSearchPanel from "@/components/ChatRoomWebSearch.tsx";
+
 const ChatRoom = () => {
   const { id } = useParams();
   // State management
   // const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [showDocsPanel, setShowDocsPanel] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<Doc | null>();
   const [aiQuery, setAiQuery] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
   const data = useAppSelector((state) => state.socket.newMessage);
+  const [showDocsPanel, setShowDocsPanel] = useState(false);
+  const [showWebSearchPanel, setShowWebSearchPanel] = useState(false);
   // const [currentRoomName, setCurrentRoomName] = useState<any>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
@@ -41,7 +57,9 @@ const ChatRoom = () => {
   const notification = useAppSelector((state) => state.socket.response);
   const isConnected = useAppSelector((state) => state.socket.isConnected);
   const gettinChats = useAppSelector((state) => state.socket.gettingOldMessage);
-  const { whoistyping } = useAppSelector((state) => state.socket);
+  const { whoistyping, chatRoomFile, favicon } = useAppSelector(
+    (state) => state.socket
+  );
   const roomMembers = useAppSelector((state) => state.socket.membername);
   const [showRoomInfo, setShowRoomInfo] = useState(false);
 
@@ -146,13 +164,14 @@ const ChatRoom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [data]);
 
+  // send message handler
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
 
     const message = {
       message_id: uuidv4(),
       sent_at: currentTime,
-      sent_by: User?.id ?? "Anonymus",
+      sent_by: User?.id || null,
       message: newMessage,
       room_id: currentRoom?.room_id,
       users: { username: User?.username },
@@ -164,8 +183,13 @@ const ChatRoom = () => {
     dispatch(sendMessage(message));
   };
 
+  // selecting doc handler with event emitter
   const handleSelectDoc = (doc: any) => {
-    setSelectedDoc(doc);
+    if (showWebSearchPanel === true) {
+      setShowWebSearchPanel(false);
+    }
+    dispatch(SetChatRoomFile(doc));
+    dispatch(ChooseFile({ file: doc, room_id: id, username: User?.username }));
     // Notify room members about document selection
     const systemMessage = {
       message_id: uuidv4(),
@@ -175,38 +199,158 @@ const ChatRoom = () => {
       room_id: currentRoom?.room_id,
       users: { username: "SYSTEM" },
     };
+    setShowDocsPanel(!showDocsPanel);
     dispatch(sendMessage(systemMessage));
   };
 
+  // function to handle document queryin the chatroom
   const handleQueryDocument = async () => {
-    if (!aiQuery.trim() || !selectedDoc || isQuerying) return;
+    if (!User) {
+      toast.error("Please login to continue");
+      return;
+    }
+    if (!aiQuery.trim() || !chatRoomFile || isQuerying) {
+      toast.error(
+        !aiQuery.trim() ? "Please enter a question" : "Please select a document"
+      );
+      return;
+    }
+    // one time unique message id so that the id is similar accorss the users
+    const MessageId = uuidv4();
 
     setIsQuerying(true);
 
-    try {
-      // Mock API call - replace with actual implementation
-      const aiResponse = await mockQueryAI(selectedDoc.id, aiQuery);
+    const information = {
+      question: aiQuery,
+      document_id: chatRoomFile.document_id,
+      room_id: id,
+      user_id: User?.id,
+      MessageId: MessageId,
+    };
 
-      const responseMessage = {
+    // Send system message immediately
+    dispatch(
+      sendMessage({
         message_id: uuidv4(),
         sent_at: currentTime,
-        sent_by: "EUREKA",
-        message: aiResponse,
+        sent_by: null,
+        message: `${User?.username} asked question=${aiQuery} about ${chatRoomFile.feedback}`,
         room_id: currentRoom?.room_id,
-        users: { username: "EUREKA" },
-      };
+        users: { username: "SYSTEM" },
+      })
+    );
 
-      dispatch(sendMessage(responseMessage));
-      setAiQuery("");
-    } catch (error) {
-      console.error("AI query failed:", error);
-    } finally {
-      setIsQuerying(false);
+    await dispatch(AskAI(information))
+      .unwrap()
+      .then((res) => {
+        dispatch(
+          AddNewMessage({
+            message_id: MessageId,
+            sent_at: currentTime,
+            sent_by: null,
+            message: res.answer,
+            room_id: currentRoom?.room_id,
+            users: { username: "EUREKA" },
+          })
+        );
+
+        setIsQuerying(false);
+
+        setAiQuery("");
+        return res.answer;
+      })
+      .catch((_error) => {
+        dispatch(
+          AddNewMessage({
+            message_id: MessageId,
+            sent_at: currentTime,
+            sent_by: null,
+            message: _error,
+            room_id: currentRoom?.room_id,
+            users: { username: "EUREKA" },
+          })
+        );
+
+        setIsQuerying(false);
+        setAiQuery("");
+        return _error;
+      });
+  };
+
+  // web search handler
+  const handleRoomWebSearch = async () => {
+    if (!User) {
+      toast.error("Please login to continue");
+      return;
     }
+    if (!aiQuery.trim() || isQuerying) {
+      toast.error(!aiQuery.trim() && "Please enter a question");
+      return;
+    }
+    // one time unique message id so that the id is similar accorss the users
+    const MessageId = uuidv4();
+
+    setIsQuerying(true);
+
+    // info to send to the function
+    const information = {
+      room_id: id,
+      MessageId: MessageId,
+      query: aiQuery,
+    };
+
+    // Send system message immediately
+    dispatch(
+      sendMessage({
+        message_id: uuidv4(),
+        sent_at: currentTime,
+        sent_by: null,
+        message: `${User?.username} searched ${aiQuery} from the web`,
+        room_id: currentRoom?.room_id,
+        users: { username: "SYSTEM" },
+      })
+    );
+
+    // search web and get Results
+    dispatch(SearchWeb(information))
+      .unwrap()
+      .then((res) => {
+        dispatch(
+          AddNewMessage({
+            message_id: MessageId,
+            sent_at: currentTime,
+            sent_by: null,
+            message: res.answer,
+            room_id: currentRoom?.room_id,
+            users: { username: "EUREKA" },
+          })
+        );
+        dispatch(setFavicon(res.favicon));
+
+        setIsQuerying(false);
+
+        setAiQuery("");
+        return res.answer;
+      })
+      .catch((_error) => {
+        dispatch(
+          AddNewMessage({
+            message_id: MessageId,
+            sent_at: currentTime,
+            sent_by: null,
+            message: _error,
+            room_id: currentRoom?.room_id,
+            users: { username: "EUREKA" },
+          })
+        );
+
+        setIsQuerying(false);
+        setAiQuery("");
+        return _error;
+      });
   };
 
   const [timer, setTimer] = useState<any>(null);
-
   //   emitting the isTyping event to the room so that others can see someone is typing
   const HandleTypingIndicator = useCallback(() => {
     // Clear any existing timer to prevent sending multiple events
@@ -220,7 +364,7 @@ const ChatRoom = () => {
       dispatch(
         isTyping({ room_id: currentRoom?.room_id, username: User?.username })
       );
-    }, 3000);
+    }, 2000);
 
     // Store the timer ID in state so it can be cleared on the next call
     setTimer(newTimer);
@@ -246,12 +390,6 @@ const ChatRoom = () => {
                 showRoomInfo ? "rotate-180" : ""
               }`}
             />
-          </button>
-          <button
-            onClick={() => setShowDocsPanel(!showDocsPanel)}
-            className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"
-          >
-            <FiFileText size={20} />
           </button>
         </div>
       </div>
@@ -325,13 +463,13 @@ const ChatRoom = () => {
                     <FiUsers className="mr-2" />
                     Active now
                   </h4>
-                  <div className="space-y-2">
-                    {roomMembers.map((member, index) => (
+                  <div className=" flex items-center justify-evenly flex-wrap gap-2">
+                    {roomMembers.map((member: any, index: any) => (
                       <div
                         key={`${member.user}_at_${index}`}
                         className="flex items-center text-sm"
                       >
-                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs mr-2">
+                        <div className="w-6 h-6 rounded-full bg-teal-500 flex items-center justify-center text-white text-xs mr-2">
                           {member.user.charAt(0)}
                         </div>
                         <span className="flex items-center justify-center gap-3">
@@ -375,7 +513,7 @@ const ChatRoom = () => {
             </h3>
             <div className="space-y-2">
               <label htmlFor="active">Active now</label>
-              {roomMembers.map((member, index) => (
+              {roomMembers.map((member: any, index: any) => (
                 <div
                   key={`${member.user}_at_${index}`}
                   className="flex items-center "
@@ -391,28 +529,42 @@ const ChatRoom = () => {
               ))}
             </div>
           </div>
-
-          <button
-            onClick={() => setShowDocsPanel(!showDocsPanel)}
-            className="mt-auto flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition-colors bai-jamjuree-regular"
-          >
-            <FiFileText />
-            <span>{showDocsPanel ? "Hide Documents" : "My Documents"}</span>
-          </button>
+          {/* feature butttons */}
+          <section className="mt-auto w-full gap-2 flex flex-col justify-center items-center">
+            <button
+              onClick={() => {
+                if (chatRoomFile !== null) {
+                  dispatch(SetChatRoomFile(null));
+                }
+                setShowWebSearchPanel(!showWebSearchPanel);
+              }}
+              className="w-full flex items-center justify-center space-x-2 bg-black hover:bg-gray-900 dark:hover:bg-gray-400 text-white dark:bg-white dark:text-black py-2 px-4 rounded-lg transition-colors bai-jamjuree-regular"
+            >
+              <FaInternetExplorer />
+              <span>{showDocsPanel ? "Cancel" : "Web Search"}</span>
+            </button>
+            <button
+              onClick={() => setShowDocsPanel(!showDocsPanel)}
+              className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition-colors bai-jamjuree-regular"
+            >
+              <FiFileText />
+              <span>{showDocsPanel ? "Hide Documents" : "My Documents"}</span>
+            </button>
+          </section>
         </div>
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden space-grotesk">
           {/* Selected Document Banner */}
-          {selectedDoc && (
+          {chatRoomFile && (
             <div className="bg-blue-50 dark:bg-blue-900/30 p-3 border-b border-blue-200 dark:border-blue-800">
               <div className="max-w-6xl mx-auto flex justify-between items-center">
                 <div>
                   <h3 className="font-medium">Active Document:</h3>
-                  <p className="text-sm">{selectedDoc?.feedback}</p>
+                  <p className="text-sm">{chatRoomFile?.feedback}</p>
                 </div>
                 <button
-                  onClick={() => setSelectedDoc(null)}
+                  onClick={() => dispatch(SetChatRoomFile(null))}
                   className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1"
                 >
                   <IoMdClose size={18} />
@@ -422,31 +574,21 @@ const ChatRoom = () => {
           )}
 
           {/* AI Query Section */}
-          {selectedDoc && (
-            <div className="bg-gray-50 dark:bg-gray-800/50 p-3 border-b border-gray-200 dark:border-gray-700 bai-jamjuree-regular">
-              <div className="max-w-6xl mx-auto">
-                <div className="flex items-center gap-2">
-                  <FiSearch className="text-gray-500" />
-                  <input
-                    type="text"
-                    value={aiQuery}
-                    onChange={(e) => setAiQuery(e.target.value)}
-                    placeholder={`Ask anything about ${selectedDoc.feedback}...`}
-                    className="flex-1 bg-transparent border-none focus:outline-none"
-                    onKeyUp={(e) => e.key === "Enter" && handleQueryDocument()}
-                  />
-                  <button
-                    onClick={handleQueryDocument}
-                    disabled={isQuerying}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
-                  >
-                    {isQuerying ? "Analyzing..." : "Ask"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
+          <AiQuerySection
+            setAiQuery={setAiQuery}
+            isQuerying={isQuerying}
+            handleQueryDocument={handleQueryDocument}
+            aiQuery={aiQuery}
+          />
+          {/* web search panel section */}
+          <WebSearchPanel
+            setAiQuery={setAiQuery}
+            isQuerying={isQuerying}
+            aiQuery={aiQuery}
+            handleRoomWebSearch={handleRoomWebSearch}
+            showWebSearchPanel={showWebSearchPanel}
+          />
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-grotesk relative">
             {gettinChats === true && data.length === 0 ? (
@@ -458,110 +600,97 @@ const ChatRoom = () => {
               </div>
             ) : (
               data.map((message: any, index: any) => (
-                <motion.div
-                  key={`${message.room_id}_${message.sent_by}_${index}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`mb-4 flex items-center  bai-jamjuree-regular   ${
-                    message.sent_by === User?.id
-                      ? "text-right justify-start"
-                      : "text-left justify-end"
-                  }`}
-                >
-                  <div
-                    className={`${
-                      message.sent_by === "SYSTEM"
-                        ? "bg-gradient-to-br from-slate-600 to-slate-800 rounded-lg p-0.5"
-                        : message.sent_by === User?.id
-                        ? "bg-gradient-to-br from-purple-700 to-blue-600 rounded-lg p-0.5"
-                        : "bg-gradient-to-br from-pink-600 to-lime-600 rounded-lg p-0.5"
+                <>
+                  {/*  return (
+                            <>
+                              <img
+                                className="h-5 w-5 rounded-full"
+                                src={icon}
+                                alt=""
+                              />
+                            </>
+                          ); */}
+                  {favicon.length > 0 &&
+                    favicon.find((e) => e.MessageId === message.message_id) && (
+                      <section className="flex items-center justify-start gap-2 bai-jamjuree-semibold text-md my-6 px-3">
+                        From{" "}
+                        {
+                          favicon.find(
+                            (e: any) => e.MessageId === message.message_id
+                          )?.favicon.length
+                        }{" "}
+                        Sources
+                        {favicon
+                          .find((e) => e.MessageId === message.message_id)
+                          ?.favicon.map((icon, index) => {
+                            return (
+                              <>
+                                <img
+                                  key={`${message.message_id}_${index}`}
+                                  className="h-5 w-5 rounded-full"
+                                  src={icon}
+                                  alt="source favicon"
+                                />
+                              </>
+                            );
+                          })}
+                      </section>
+                    )}
+                  <motion.div
+                    key={`${message.room_id}_${message.sent_by}_${index}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`mb-4  flex bai-jamjuree-regular ${
+                      message.sent_by === User?.id
+                        ? "justify-end" // User's messages on right
+                        : message.sent_by === null
+                        ? "justify-center " // Eureka messages centered
+                        : "justify-start" // Other users on left
                     }`}
                   >
                     <div
                       className={`${
-                        message.sent_by === "SYSTEM"
-                          ? "bg-gray-800 text-gray-200 italic "
-                          : message.sent_by === User?.id
-                          ? "bg-gray-900 text-white "
-                          : "bg-gray-200 text-black "
-                      } rounded-lg rounded-bl-lg p-3 w-fit  `}
+                        message.sent_by === User?.id
+                          ? "border bg-gray-100 text-black dark:bg-white/5 dark:text-white rounded-lg rounded-br-none"
+                          : message.sent_by === null
+                          ? "bg-white text-black dark:bg-black dark:text-white border w-full rounded-lg"
+                          : "border bg-sky-600/10  dark:text-white  text-black rounded-lg rounded-bl-none"
+                      } p-3 max-w-[80%]`}
                     >
                       {/* username with timestamp */}
                       <div className="flex items-center justify-between mb-1 gap-2">
                         <p
-                          className={` font-medium text-sm  ${
-                            message.sent_by === "SYSTEM"
-                              ? "text-red-500"
-                              : message.sent_by === User?.id
+                          className={`bai-jamjuree-semibold text-sm ${
+                            message.sent_by === User?.id
                               ? "text-green-600"
+                              : message.sent_by === null
+                              ? "text-indigo-600"
                               : "text-sky-600"
-                          } t`}
-                        >
-                          {message.users?.username === User?.username
-                            ? "You"
-                            : message.users?.username}
-                          {message.sent_by === "SYSTEM" && " • System"}
-                        </p>
-                        <p
-                          className={`text-xs ${
-                            message.sent_by === "SYSTEM"
-                              ? "text-gray-100"
-                              : message.sent_by === User?.id
-                              ? "text-gray-400"
-                              : "text-black"
                           }`}
                         >
+                          {message.sent_by === User?.id
+                            ? "You"
+                            : message.users?.username || "• Eureka"}
+                          {/* {message.sent_by === null && " • Eureka"} */}
+                        </p>
+                        <p className="text-xs text-gray-700 dark:text-gray-400">
                           {message?.sent_at &&
-                            `at ${message.sent_at.split("|")[0]}
-                            `}
+                            `at ${message.sent_at.split("|")[0]}`}
                         </p>
                       </div>
 
-                      {/* Message text - main content */}
-                      <p className="text-sm leading-relaxed mb-2 text-left">
-                        {message.message}
-                      </p>
+                      {/* Message content */}
+                      {message.sent_by === null ? (
+                        <Streamdown className="">{message.message}</Streamdown>
+                      ) : (
+                        <p>{message.message}</p>
+                      )}
                     </div>
-                  </div>
-
-                  {whoistyping && whoistyping !== User?.username && (
-                    <div className="absolute bottom-2 left-2 flex items-center justify-center gap-2">
-                      {`${whoistyping
-                        .trim()
-                        .split("")[0]
-                        .toUpperCase()} is typing`}
-                      <span className="flex items-center justify-center gap-2">
-                        <motion.ul
-                          className="bg-gray-500 rounded-full h-2 w-2"
-                          animate={{ y: [0, -6, 0] }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: Infinity,
-                            delay: 0,
-                          }}
-                        />
-                        <motion.ul
-                          className="bg-gray-500 rounded-full h-2 w-2"
-                          animate={{ y: [0, -6, 0] }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: Infinity,
-                            delay: 1,
-                          }}
-                        />
-                        <motion.ul
-                          className="bg-gray-500 rounded-full h-2 w-2"
-                          animate={{ y: [0, -7, 0] }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: Infinity,
-                            delay: 2,
-                          }}
-                        />
-                      </span>
-                    </div>
-                  )}
-                </motion.div>
+                  </motion.div>
+                  {message === data[data.length - 1] &&
+                    whoistyping !== "" &&
+                    whoistyping !== User?.username && <TypingIndicator />}
+                </>
               ))
             )}
             <div ref={messagesEndRef} />
@@ -572,12 +701,24 @@ const ChatRoom = () => {
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center">
                 <button
+                  onClick={() => {
+                    if (chatRoomFile !== null) {
+                      dispatch(SetChatRoomFile(null));
+                    }
+                    setShowWebSearchPanel(!showWebSearchPanel);
+                  }}
+                  className="cursor-pointer p-2 mr-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                >
+                  <FaInternetExplorer />
+                </button>
+                <button
                   onClick={() => setShowDocsPanel(!showDocsPanel)}
-                  className="p-2 mr-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="cursor-pointer p-2 mr-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                 >
                   <FiPaperclip size={20} />
                 </button>
                 <input
+                  onFocus={() => dispatch(whoIsTyping(""))}
                   type="text"
                   value={newMessage}
                   onChange={(e) => {
@@ -589,6 +730,7 @@ const ChatRoom = () => {
                   className="flex-1 border border-gray-300 dark:border-gray-600 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800"
                 />
                 <button
+                  disabled={isQuerying === true}
                   onClick={handleSendMessage}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-r-lg transition-colors"
                 >
@@ -600,77 +742,14 @@ const ChatRoom = () => {
         </div>
 
         {/* Documents Panel */}
-        <AnimatePresence>
-          {showDocsPanel && (
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              className="fixed inset-0 z-50 bg-white dark:bg-gray-800 lg:relative lg:w-72 lg:border-l lg:border-gray-200 dark:lg:border-gray-700 overflow-y-auto bai-jamjuree-regular"
-            >
-              <div className="p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-lg">My Documents</h3>
-                  <button
-                    onClick={() => setShowDocsPanel(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1"
-                  >
-                    <IoMdClose size={24} />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {User?.Contributions_user_id_fkey ? (
-                    User?.Contributions_user_id_fkey.map((doc: any) => (
-                      <motion.div
-                        key={doc.id}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div
-                          onClick={() => handleSelectDoc(doc)}
-                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                            selectedDoc?.id === doc.id
-                              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
-                              : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <FiFileText className="mr-2 text-gray-500" />
-                            <span className="truncate">{doc.feedback}</span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))
-                  ) : (
-                    <div>
-                      <h1>You do not have any documents</h1>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <DocumentPanel
+          showDocsPanel={showDocsPanel}
+          setShowDocsPanel={setShowDocsPanel}
+          handleSelectDoc={handleSelectDoc}
+        />
       </div>
     </div>
   );
-};
-
-// Mock function - replace with actual API call
-const mockQueryAI = async (docId: string, query: string): Promise<string> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(
-        `AI response about document ${docId} for query: "${query}"\n\nThis would be the actual response from your server's AI processing.`
-      );
-    }, 1500);
-  });
-};
-
-type Doc = {
-  id: string;
-  feedback: string;
 };
 
 export default ChatRoom;

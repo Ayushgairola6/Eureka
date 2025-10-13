@@ -4,6 +4,8 @@ import {
   JoinARoom,
   GetDocumentChatHistory,
   GetMisallaneousChatHistory,
+  QueryDocWithEurekaInChatRoom,
+  QueryWebInEurekaChatRoom,
 } from "../controllers/ChatRoomController.js";
 import { VerifyToken } from "../Middlewares/AuthMiddleware.js";
 import express from "express";
@@ -17,6 +19,8 @@ ChatsRouter.post("/user/request/create-room", VerifyToken, CreateChatRooms)
     VerifyToken,
     GetDocumentChatHistory
   )
+  .post("/chat-room/ask-doc", VerifyToken, QueryDocWithEurekaInChatRoom)
+  .post("/chat-room/ask-web/:query", VerifyToken, QueryWebInEurekaChatRoom)
   .get(
     "/user/doc/misallaneous-history",
     VerifyToken,

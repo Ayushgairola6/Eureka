@@ -54,14 +54,11 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
               <motion.div
                 key={doc.id}
                 onClick={() => {
-                  console.log(doc);
-
                   dispatch(
                     setSelectedDoc(
                       selectedDoc === doc.document_id ? "" : doc.document_id
                     )
                   );
-                  console.log(selectedDoc);
 
                   dispatch(setShowDocs(!showDocs));
                 }}

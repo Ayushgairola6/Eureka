@@ -11,7 +11,8 @@ interface DocUsed {
   partial_upvotes: number;
 }
 interface favicon {
-  icon: any;
+  MessageId: string;
+  icon: any[];
 }
 interface messageInt {
   isComplete: boolean;
@@ -170,15 +171,15 @@ export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
     }
   }
 );
-export const WebSearchHandler = createAsyncThunk(
+export const WebSearchHandler = createAsyncThunk<any, any>(
   "query/web",
-  async (question: string, { rejectWithValue }) => {
+  async ({ question, MessageId }, { rejectWithValue }) => {
     const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
 
     try {
       const response = await axios.post(
         `${BaseApiUrl}/api/query/web-search`,
-        { question },
+        { question, MessageId },
         {
           withCredentials: true,
           headers: {
@@ -230,6 +231,9 @@ const interfaceSlice = createSlice({
       if (msg) {
         msg.message.isComplete = true;
       }
+    },
+    updateFavicon: (state, action) => {
+      state.favicon.push(action.payload);
     },
     setSelectedDoc: (state, action) => {
       state.selectedDoc = action.payload;
@@ -392,6 +396,7 @@ export const {
   UpdateDocUsed,
   MimicSSE,
   setSelectedDoc,
+  updateFavicon,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

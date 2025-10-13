@@ -19,9 +19,8 @@ export const SearchQueryResults = async (query) => {
 
     const response = await tvly.search(query, {
       searchDepth: "basic",
-      maxTokens: 20,
-      includeAnswer: true,
-      include_image_descriptions: true,
+      maxTokens: 10,
+      includeAnswer: "basic",
       includeFavicon: true,
     });
     if (!response) {
@@ -148,90 +147,155 @@ export const FormatForHumanFallback = (searchResult) => {
     searchResult.results.length === 0
   ) {
     return {
-      text: `❌ I couldn't find any relevant updates about your query.`,
+      text: `I couldn't find any relevant information about your query. Please try rephrasing your question or check if there are any spelling errors.`,
       favicons: [],
     };
   }
 
-  let fallbackText = `## 🔍 Search Results\n\n`;
+  let fallbackText = "";
   const favicons = [];
 
-  // Add Tavily's direct answer if available - as a highlighted section
+  // Always include the direct answer if available - as main heading
   if (searchResult.answer) {
-    fallbackText += `### 💡 Quick Summary\n${searchResult.answer}\n\n---\n\n`;
+    fallbackText += `## ${searchResult.answer}\n\n`;
   }
 
-  // Format each result with clean markdown
-  searchResult.results.forEach((res, index) => {
-    fallbackText += `### ${index + 1}. ${res.title || "Search Result"}\n\n`;
+  // Compile comprehensive content from all results
+  const contentSections = [];
 
+  searchResult.results.forEach((res, index) => {
     // Add favicon if available
     if (res.favicon && !favicons.includes(res.favicon)) {
       favicons.push(res.favicon);
     }
 
-    // Source link
-    if (res.url) {
-      fallbackText += `**Source:** [${new URL(res.url).hostname}](${
-        res.url
-      })\n\n`;
+    let resultContent = "";
+
+    // Include title as subheading
+    if (res.title) {
+      resultContent += `### ${res.title}\n\n`;
     }
 
-    // Score indicator (subtle)
-    if (res.score) {
-      const scorePercent = Math.round(res.score * 100);
-      fallbackText += `**Relevance:** ${scorePercent}%\n\n`;
-    }
-
-    // Clean and format content
+    // Include main content - preserve existing markdown
     if (res.content) {
       let cleanContent = res.content
-        .replace(/\s+/g, " ") // Normalize whitespace
-        .replace(/\*   ### /g, "\n**") // Convert bullet points to bold
-        .replace(/\*   /g, "\n• ") // Convert asterisks to proper bullets
-        .replace(/##### /g, "**") // Convert hashes to bold
+        .replace(/\s+/g, " ") // Normalize whitespace only
         .replace(/Image \d+/g, "") // Remove image placeholders
         .replace(/\[Skip to main content\]\([^)]+\)/g, "") // Remove skip links
         .replace(/Toggle navigation Menu/g, "") // Remove navigation text
         .replace(/\[S D\]\([^)]+\)/g, "") // Remove navigation icons
         .trim();
 
-      // Limit content length and ensure proper formatting
-      if (cleanContent.length > 400) {
-        cleanContent = cleanContent.substring(0, 400) + "...";
-      }
+      // Convert plain text paragraphs to markdown if no existing markdown
+      if (cleanContent.length > 50) {
+        if (
+          !cleanContent.includes("#") &&
+          !cleanContent.includes("*") &&
+          !cleanContent.includes("`")
+        ) {
+          // Convert to proper markdown paragraphs
+          const sentences = cleanContent
+            .split(". ")
+            .filter((s) => s.length > 10);
+          if (sentences.length > 0) {
+            resultContent +=
+              sentences
+                .map((sentence) =>
+                  sentence.endsWith(".") ? sentence : sentence + "."
+                )
+                .join(" ") + "\n\n";
+          } else {
+            resultContent += cleanContent.substring(0, 500) + "\n\n";
+          }
+        } else {
+          // Preserve existing markdown
+          resultContent += cleanContent.substring(0, 500) + "\n\n";
+        }
 
-      if (cleanContent) {
-        fallbackText += `**Summary:** ${cleanContent}\n\n`;
+        if (cleanContent.length > 500) {
+          resultContent += "...\n\n";
+        }
       }
     }
 
-    // Raw content as additional context (limited)
-    if (res.raw_content) {
-      const rawClean = res.raw_content
-        .replace(/\s+/g, " ")
-        .trim()
-        .substring(0, 200);
+    // Include raw_content if available and different from main content
+    if (res.raw_content && res.raw_content !== res.content) {
+      const cleanRawContent = res.raw_content.replace(/\s+/g, " ").trim();
 
-      if (rawClean && rawClean.length > 50) {
-        fallbackText += `**Additional Context:** ${rawClean}${
-          rawClean.length === 200 ? "..." : ""
-        }\n\n`;
+      if (
+        cleanRawContent.length > 50 &&
+        !resultContent.includes(cleanRawContent.substring(0, 100))
+      ) {
+        resultContent +=
+          "**Additional details:** " + cleanRawContent.substring(0, 300);
+        if (res.raw_content.length > 300) {
+          resultContent += "...";
+        }
+        resultContent += "\n\n";
       }
     }
 
-    if (index < searchResult.results.length - 1) {
-      fallbackText += "---\n\n";
+    // Add score as relevance indicator
+    if (res.score && res.score > 0.7) {
+      resultContent += `_Highly relevant source_\n\n`;
+    }
+
+    if (resultContent) {
+      contentSections.push(resultContent);
     }
   });
 
-  // Footer with helpful information
-  fallbackText += "\n---\n";
-  fallbackText +=
-    "\n💡 **Tip:** For the most accurate and verified information, try searching within our community-powered knowledge base where content is peer-reviewed.";
+  // Create flowing narrative from all content
+  if (contentSections.length > 0) {
+    if (!searchResult.answer) {
+      fallbackText += "## Research Findings\n\n";
+    } else {
+      fallbackText += "### Key Insights\n\n";
+    }
+
+    contentSections.forEach((content, index) => {
+      fallbackText += content;
+      if (index < contentSections.length - 1) {
+        fallbackText += "---\n\n";
+      }
+    });
+  }
+
+  // Include response time and metadata if available
+  if (searchResult.response_time) {
+    fallbackText += `> Search completed in ${searchResult.response_time}s\n\n`;
+  }
+
+  // Add comprehensive sources section
+  if (searchResult.results.length > 0) {
+    fallbackText += "### 📚 Sources Referenced\n\n";
+
+    searchResult.results.forEach((res, index) => {
+      const domain = res.url ? new URL(res.url).hostname : "Source";
+      const title = res.title || "Search Result";
+      const scorePercent = res.score ? Math.round(res.score * 100) : null;
+
+      fallbackText += `${index + 1}. **${title}**\n`;
+
+      if (res.url) {
+        fallbackText += `   - 🔗 [${domain}](${res.url})\n`;
+      }
+
+      if (scorePercent) {
+        fallbackText += `   - 📊 ${scorePercent}% relevance score\n`;
+      }
+
+      fallbackText += "\n";
+    });
+  }
+
+  // Include query information
+  if (searchResult.query) {
+    fallbackText += `_Search query: "${searchResult.query}"_`;
+  }
 
   return {
-    text: fallbackText,
+    text: fallbackText.trim(),
     favicons: favicons,
   };
 };

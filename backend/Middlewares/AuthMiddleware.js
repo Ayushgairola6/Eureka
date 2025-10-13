@@ -54,7 +54,7 @@ export const VerifyToken = async (req, res, next) => {
 
           if (error || !data) {
             // console.log(data, error)
-            console.log("No Refresh token in database");
+            // console.log("No Refresh token in database");
 
             return res
               .status(401)
@@ -68,7 +68,7 @@ export const VerifyToken = async (req, res, next) => {
             {
               expiration: {
                 type: "EX",
-                value: 600,
+                value: 800,
               },
             }
           );

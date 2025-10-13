@@ -542,9 +542,10 @@ export const GetPrivateDocResultss = async (req, res) => {
       return res.status(401).send({ message: "Please login to continue" });
     }
 
-    const { docId, question, query_type } = req.body;
+    const { docId, question, query_type, MessageId } = req.body;
 
     if (
+      !MessageId ||
       !docId ||
       typeof docId !== "string" ||
       !question ||
@@ -585,9 +586,11 @@ export const GetPrivateDocResultss = async (req, res) => {
       });
 
       if (response.result.hits.length === 0) {
-        return res
-          .status(400)
-          .send({ message: "Error while generating a response" });
+        return res.status(200).send({
+          message: "Response found",
+          Answer:
+            "I was unable to find anything related to you question in your document . If you could be more specific about what you want to know about this document I will be able to assist you properly.",
+        });
       }
     }
     // if the query is summary type
@@ -621,31 +624,28 @@ export const GetPrivateDocResultss = async (req, res) => {
     }
 
     if (response?.result?.hits) {
-      response.result.hits.forEach((e) => {
-        if (e) {
-          FoundData.push(e.fields.text);
-        } else {
+      response.result.hits.forEach((rest) => {
+        if (rest._score && rest.fields.text) {
+          FoundInformation.push({
+            _score: rest._score,
+            text: rest.fields.text,
+          });
         }
       });
     }
-    let WebResults;
+
     // geenrating the response based on the found context
-    let AnswerToUsersQuestion = await GenerateResponse(
+    const AnswerToUsersQuestion = await GenerateResponse(
       question,
       FoundData.length !== 0 ? FoundData : response,
       SYSTEM_PROMPT
     );
     // console.log(AnswerToUsersQuestion, "anser to qustion");
     if (AnswerToUsersQuestion?.error) {
-      await notifyMe(`Gemini response error ${AnswerToUsersQuestion?.error}`);
-
-      // console.log(AnswerToUsersQuestion.error);
-      WebResults = await SearchQueryResults(question);
-
-      const results = FormatForHumanFallback(WebResults.response, question);
-
-      AnswerToUsersQuestion = results.text;
-      // res.write(`event: Error while generating a response\n`);
+      return res.status(400).send({
+        message:
+          "The server is very busy right now , that is why I am having trouble while generating a response ,thank you for understanding.",
+      });
     }
 
     const storeResponse = await StoreQueryAndResponse(
@@ -680,7 +680,6 @@ export const GetPrivateDocResultss = async (req, res) => {
     return res.status(200).send({
       message: "Response found",
       Answer: AnswerToUsersQuestion,
-      favicon: WebResults.favicon || [],
     });
   } catch (err) {
     await notifyMe(`Error from Private doc result ${err}`);
@@ -693,9 +692,8 @@ export const PostTypeWebSearch = async (req, res) => {
     const user_id = req.user.user_id;
     if (!user_id)
       return res.status(401).send({ message: "Please login to continue" });
-    const { question } = req.body;
+    const { question, MessageId } = req.body;
     if (!question) return res.status(404).send({ message: "Invalid question" });
-    let favicon = [];
 
     const WebResults = await SearchQueryResults(question);
     if (WebResults.error) {
@@ -722,9 +720,8 @@ export const PostTypeWebSearch = async (req, res) => {
       // fallback response
       const results = await FormatForHumanFallback(WebResults.response);
       Answer = results.text;
-      favicon = [...results.favicons];
     }
-    favicon = [...WebResults.favicon];
+
     const StoreChats = await StoreQueryAndResponse(user_id, question, Answer);
     if (StoreChats.error) {
       await notifyMe(
@@ -753,10 +750,15 @@ export const PostTypeWebSearch = async (req, res) => {
       });
     }
 
+    const FormattedFavicon = {
+      MessageId,
+      icon: WebResults.favicon,
+    };
+    console.log(FormattedFavicon);
     return res.send({
       Answer: Answer,
       message: "Results found",
-      favicon: favicon,
+      favicon: { MessageId: MessageId, icon: WebResults.favicon || [] },
     });
   } catch (err) {
     await notifyMe(err);

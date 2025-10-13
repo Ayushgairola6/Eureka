@@ -31,6 +31,18 @@ interface leaveroom {
   room_id: string;
   username: string;
 }
+interface chatRoomFile {
+  chunk_count: string;
+  created_at: string;
+  document_id: string;
+  feedback: string;
+  id: string;
+  user_id: string;
+}
+interface Favicon {
+  MessageId: string;
+  favicon: any[];
+}
 // the states that we are gonna need for the user experience
 interface chatStates {
   isConnected: boolean;
@@ -41,6 +53,8 @@ interface chatStates {
   gettingOldMessage: boolean | null;
   whoistyping: string;
   membername: RoomMembers[];
+  chatRoomFile: chatRoomFile | null;
+  favicon: Favicon[];
 }
 const initialState: chatStates = {
   isConnected: false,
@@ -51,6 +65,8 @@ const initialState: chatStates = {
   gettingOldMessage: false,
   whoistyping: "",
   membername: [],
+  chatRoomFile: null,
+  favicon: [],
 };
 export const GetChatRoomHistory = createAsyncThunk(
   "room/history",
@@ -69,9 +85,65 @@ export const GetChatRoomHistory = createAsyncThunk(
       // console.log(response.data)
       return response.data.chats;
     } catch (err: any) {
-      console.error("Error getting room history:", err);
       return rejectWithValue(
         err instanceof Error ? err.message : "Failed to fetch history"
+      );
+    }
+  }
+);
+export const AskAI = createAsyncThunk<any, any>(
+  "Ai/AskEureka",
+  async (
+    { question, document_id, room_id, user_id, MessageId },
+    { rejectWithValue }
+  ) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const response = await axios.post(
+        `${BaseApiUrl}/api/chat-room/ask-doc`,
+        { question, document_id, room_id, user_id, MessageId },
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          "I was unable to find relevant information about the question you asked in this document"
+      );
+    }
+  }
+);
+
+//web search for chatrooms
+
+export const SearchWeb = createAsyncThunk<any, any>(
+  "Search/AskEureka-web",
+  async ({ room_id, MessageId, query }, { rejectWithValue }) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const response = await axios.post(
+        `${BaseApiUrl}/api/chat-room/ask-web/${query}`,
+        { room_id, MessageId },
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
+        }
+      );
+      return {
+        answer: response.data.answer,
+        favicon: response.data.favicon || [],
+      };
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          "I was unable to find relevant information about the question you asked in this document"
       );
     }
   }
@@ -82,10 +154,7 @@ const socketSlice = createSlice({
   initialState,
   reducers: {
     // Actions to trigger the middleware
-    connectSocket: () => {
-      // No state change here, the middleware will handle the connection
-      console.log("Attempting to connect to socket...");
-    },
+    connectSocket: () => {},
     disconnectSocket: () => {
       // No state change here, middleware will handle disconnection
     },
@@ -96,6 +165,15 @@ const socketSlice = createSlice({
     },
     setDisconnected: (state) => {
       state.isConnected = false;
+    },
+    AddNewMessage: (state, action) => {
+      // if the message is not already in the array
+      const ItIncludes = state.newMessage.find(
+        (msg) => msg.message_id === action.payload.message_id
+      );
+      if (!ItIncludes) {
+        state.newMessage.push(action.payload);
+      }
     },
     // update the array for local updates
     sendMessage: (state, action) => {
@@ -114,6 +192,9 @@ const socketSlice = createSlice({
     joinAChatRoom: (_state, _action: PayloadAction<RoomDataPayload>) => {},
     Setroom_info: (state, action) => {
       state.membername = [...action.payload];
+    },
+    setFavicon: (state, action) => {
+      state.favicon.push(action.payload);
     },
     leaveChatRoom: (_state, _action: PayloadAction<leaveroom>) => {},
 
@@ -143,6 +224,10 @@ const socketSlice = createSlice({
     whoIsTyping: (state, action) => {
       state.whoistyping = action.payload;
     },
+    ChooseFile: (_state, _action) => {},
+    SetChatRoomFile: (state, action) => {
+      state.chatRoomFile = action.payload;
+    },
   },
 
   //extrareducers
@@ -158,6 +243,9 @@ const socketSlice = createSlice({
       .addCase(GetChatRoomHistory.rejected, (state) => {
         state.gettingOldMessage = false;
       });
+    // ask ai function for chatrooms
+    // .addCase(AskAI.rejected, (state, action) => {
+    // })
   },
 });
 
@@ -177,5 +265,9 @@ export const {
   isTyping,
   whoIsTyping,
   setWhoIsTyping,
+  ChooseFile,
+  SetChatRoomFile,
+  AddNewMessage,
+  setFavicon,
 } = socketSlice.actions;
 export default socketSlice.reducer;

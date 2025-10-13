@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense, useRef, useState } from "react";
+import { useEffect, lazy, Suspense, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 const Interface = lazy(() => import("./pages/Interface.tsx"));
 const LandingPage = lazy(() => import("./pages/LandingPage.tsx"));
@@ -36,7 +36,7 @@ import Navbar from "./components/Navbar";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import "./App.css";
 import axios from "axios";
-import { toast, Toaster } from "sonner";
+import VerificationLink from "./components/VerficationLink.tsx";
 
 // import { BiError } from 'react-icons/bi';
 const DocumentationLayout = lazy(
@@ -55,16 +55,6 @@ const App = () => {
   );
   const themeInitialized = useRef(false);
 
-  useEffect(() => {
-    let time: any;
-    if (userStatus === "failed") {
-      toast.error("Failed to fetch your account details");
-      time = setTimeout(() => {
-        setUseStatus("idle");
-      }, 3000);
-    }
-    return () => clearTimeout(time);
-  }, [userStatus]);
   // when loggedIn get userdetails from the dasboard
   useEffect(() => {
     const fetchUserData = async () => {
@@ -74,6 +64,7 @@ const App = () => {
           dispatch(connectSocket());
         } catch (error) {
           console.error("Failed to fetch user data:", error);
+          setUseStatus("idle");
         } finally {
         }
       }
@@ -176,7 +167,6 @@ const App = () => {
       >
         <Router>
           <Navbar />
-          <Toaster />
           <Routes>
             <Route element={<LandingPage />} path="/"></Route>
             <Route element={<EmailVerification />} path="/user/verify-email" />
@@ -187,6 +177,8 @@ const App = () => {
             <Route element={<Feedback />} path="/Feedback" />
             <Route element={<EmailVerificationForm />} path="/ResetPassword" />
             <Route element={<ResetPassword />} path="/reset-password" />
+            <Route element={<VerificationLink />} path="/Verification" />
+
             <Route
               element={<ConversationDetail />}
               path="/User/document_chat_history/:id"

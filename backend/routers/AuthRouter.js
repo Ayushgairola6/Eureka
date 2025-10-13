@@ -9,6 +9,7 @@ import {
   ResetPassword,
   VerifyEmail,
   HandleUserLogout,
+  GetVerificationEmail,
 } from "../controllers/AuthController.js";
 export const AuthRouter = express.Router();
 import {
@@ -17,6 +18,7 @@ import {
 } from "../Middlewares/AuthMiddleware.js";
 
 AuthRouter.post("/user/register", HandleUserRegistration)
+  .post("/user/get-verification-email", GetVerificationEmail)
   .put("/user/verify-email/:verificationtoken", VerifyEmail)
   .post("/user/login", HandleUserLogin)
   .post("/user/session-logout", VerifyToken, HandleUserLogout)

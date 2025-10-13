@@ -289,7 +289,7 @@ const authSlice = createSlice({
         state.userStatus = "idle";
       })
       .addCase(GetUserDashboardData.rejected, (state) => {
-        state.userStatus = "failed";
+        state.userStatus = "idle";
       })
       // notificaiton handle
       .addCase(AcceptOrRejectRequest.pending, (state) => {

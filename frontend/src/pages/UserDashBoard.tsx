@@ -11,11 +11,8 @@ import {
   FaFilePdf,
   FaArrowDown,
   FaCloudSunRain,
-  FaThumbsDown,
-  FaThumbsUp,
   FaUserSecret,
   FaRocketchat,
-  FaExclamation,
 } from "react-icons/fa";
 import { TbSunset2 } from "react-icons/tb";
 import { IoSunnyOutline } from "react-icons/io5";
@@ -27,12 +24,10 @@ import { LogoutUser } from "../store/AuthSlice.ts";
 import { FaArrowUpRightDots } from "react-icons/fa6";
 // import {NewUserNotification} from '../store/AuthSlice.ts'
 const CreateRoom = lazy(() => import("@/components/createRoom.tsx"));
-const QuestionAskedChart = lazy(
-  () => import("@/components/UserQuestionAskedChart.tsx")
-);
-const UserFeedbackReport = lazy(
-  () => import("@/components/UserFeedbackReport.tsx")
-);
+import QuestionAskedChart from "@/components/UserQuestionAskedChart.tsx";
+import UserFeedbackReport from "@/components/UserFeedbackReport.tsx";
+import SimilarQuestions from "@/components/SimilarQueryChart.tsx";
+
 const UserDashboard = () => {
   // Mock user data
 
@@ -48,9 +43,6 @@ const UserDashboard = () => {
   const [IncreaseHeight, setIncreaseHeight] = useState(false);
   const { isDarkMode, isLoggingOut } = useAppSelector((state) => state.auth);
   // Mock conversations
-  const SimilarQuestions = lazy(
-    () => import("@/components/SimilarQueryChart.tsx")
-  );
 
   useEffect(() => {
     const totalVotes =
@@ -214,7 +206,13 @@ const UserDashboard = () => {
         {/* User  Conversations and documents */}
         <section
           className={`mb-8   p-2 rounded-lg ${
-            open === true ? "h-90 overflow-scroll" : "h-50 overflow-hidden"
+            open === true
+              ? "h-90 overflow-scroll"
+              : `${
+                  user && user?.Contributions_user_id_fkey?.length > 0
+                    ? "h-50"
+                    : "h-30"
+                } overflow-hidden`
           } transition-discrete ease-linear duration-500`}
         >
           <div className="flex justify-between items-center mb-4 bai-jamjuree-regular flex-wrap">
@@ -228,18 +226,20 @@ const UserDashboard = () => {
               >
                 Other chats <TbOctahedron />
               </Link>
-              <button
-                onClick={() => setOpen(!open)}
-                className="text-xs md:text-sm text-green-600 dark:text-green-400 cursor-pointer flex items-center justify-center gap-2"
-              >
-                View all
-                <FaArrowDown
-                  className={`${
-                    open === false ? "rotate-0" : "rotate-180"
-                  } transition-discrete duration-500`}
-                  size={10}
-                />
-              </button>
+              {user && user?.Contributions_user_id_fkey?.length > 0 && (
+                <button
+                  onClick={() => setOpen(!open)}
+                  className="text-xs md:text-sm text-green-600 dark:text-green-400 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  View all
+                  <FaArrowDown
+                    className={`${
+                      open === false ? "rotate-0" : "rotate-180"
+                    } transition-discrete duration-500`}
+                    size={10}
+                  />
+                </button>
+              )}
             </section>
           </div>
 
@@ -290,7 +290,7 @@ const UserDashboard = () => {
           className={`${
             IncreaseHeight === true
               ? "h-100 overflow-scroll"
-              : "h-60 overflow-hidden"
+              : `${chatrooms.length > 0 ? "h-60" : "h-30"} overflow-hidden`
           } transition-discrete ease-linear duration-300  rounded-md p-2`}
         >
           <div className="flex justify-between items-center mb-4 space-grotesk">
@@ -304,18 +304,20 @@ const UserDashboard = () => {
               >
                 Creat New +
               </button>
-              <button
-                className="text-xs md:text-sm text-green-500 cursor-pointer flex items-center justify-center gap-2"
-                onClick={() => setIncreaseHeight(!IncreaseHeight)}
-              >
-                {IncreaseHeight === true ? "Hide" : "View all"}{" "}
-                <FaArrowDown
-                  className={`${
-                    IncreaseHeight === false ? "rotate-0" : "rotate-180"
-                  } transition-discrete duration-500`}
-                  size={10}
-                />
-              </button>
+              {chatrooms.length > 0 && (
+                <button
+                  className="text-xs md:text-sm text-green-500 cursor-pointer flex items-center justify-center gap-2"
+                  onClick={() => setIncreaseHeight(!IncreaseHeight)}
+                >
+                  {IncreaseHeight === true ? "Hide" : "View all"}{" "}
+                  <FaArrowDown
+                    className={`${
+                      IncreaseHeight === false ? "rotate-0" : "rotate-180"
+                    } transition-discrete duration-500`}
+                    size={10}
+                  />
+                </button>
+              )}
             </section>
           </div>
 

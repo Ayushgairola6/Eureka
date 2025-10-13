@@ -23,9 +23,9 @@ export const GenerateRefreshTokens = (id, email, username) => {
       return { status: 400, error: "Error - Some arguments are missing !" };
     }
     const RefreshToken = jwt.sign(
-      { user_id: id, email: email, username: username },
+      { user_id: id, email: email, username: username, isVerified: true },
       process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: "30d" }
+      { expiresIn: "20d" }
     );
 
     return RefreshToken;
@@ -38,14 +38,15 @@ const GenerateEmailVerificationTokens = (username, email) => {
   try {
     const Secret = process.env.JWT_SECRET;
     const VerificationToken = jwt.sign(
-      { email: email, username: username },
+      { email: email, username: username, isVerified: false },
       Secret,
-      { expiresIn: "20min" }
+      { expiresIn: "24h" } // ← Use string format
     );
 
     return VerificationToken;
   } catch (error) {
-    return error;
+    console.error("Token generation error:", error);
+    return null; // Return null instead of error object
   }
 };
 export const GenerateAccessTokens = (id, email, username) => {
@@ -62,7 +63,7 @@ export const GenerateAccessTokens = (id, email, username) => {
     }
     const Secret = process.env.JWT_SECRET;
     const AccessToken = jwt.sign(
-      { user_id: id, email: email, username: username },
+      { user_id: id, email: email, username: username, isVerified: true },
       Secret,
       { expiresIn: "20min" }
     );
@@ -115,7 +116,7 @@ export const HandleUserRegistration = async (req, res) => {
 
     const NewUserAccount = await supabase.from("users").insert({
       username: username.trim(),
-      email: email,
+      email: email.toLowerCase(),
       password: HashedPassword,
     });
 
@@ -147,11 +148,12 @@ export const HandleUserRegistration = async (req, res) => {
   }
 };
 
+// User login Controller
 export const HandleUserLogin = async (req, res) => {
   try {
-    // console.log(req.body)
     const { email, password } = req.body;
 
+    // Input validation
     if (
       !email ||
       typeof email !== "string" ||
@@ -161,96 +163,180 @@ export const HandleUserLogin = async (req, res) => {
       return res.status(400).json({ message: "Invalid information" });
     }
 
-    const { data, error } = await supabase
+    // normalize the email Id
+    const normalizedEmail = email.toLowerCase();
+
+    // Extract user data from db
+    const { data: user, error: userError } = await supabase
       .from("users")
-      .select("email, id, username , password,isVerified")
-      .eq("email", email.toLowerCase())
+      .select(
+        "email, id, username, password, isVerified, Tokens(Refresh_Token)"
+      )
+      .eq("email", normalizedEmail)
       .single();
 
-    if (!data || error) {
-      return res.status(404).json({ message: "User not found " });
+    // if the user is not found in the database or some error occured
+    if (userError || !user) {
+      await notifyMe(
+        `User not found or error in login: ${JSON.stringify(userError)}`,
+        userError
+      );
+      return res.status(404).json({ message: "User not found" });
     }
-    // making the user verify their account
-    const isVerified = data.isVerified;
-    if (isVerified === false) {
+
+    // Check if user is verified
+    if (!user.isVerified) {
       return res
         .status(400)
-        .send({ message: "Please verify your Account first" });
+        .json({ message: "Please verify your account first" });
     }
-    const isMatching = await bcrypt.compare(password, data.password);
 
+    // Verify password
+    const isMatching = await bcrypt.compare(password, user.password);
+    // if the password does not match
     if (!isMatching) {
-      return res.status(400).send({ message: "Password did not match" });
+      return res.status(400).json({ message: "Password did not match" });
     }
 
-    const RefreshToken = GenerateRefreshTokens(
-      data.id,
-      data.email.toLowerCase(),
-      data.username.toLowerCase()
-    );
-    if (!RefreshToken) {
-      await notifyMe(`The Refresh token geenration controller is down`);
+    // genrate new tokens for the user
+    let authToken;
+    let refreshToken;
 
-      return res
-        .status(400)
-        .send({ message: "Error while creating a session" });
+    // Check if existing refresh token is valid and exists
+    const existingRefreshToken = user.Tokens?.[0]?.Refresh_Token;
+    // if the refreshToken exists so that means user is not new
+    if (existingRefreshToken) {
+      // verify that token
+      try {
+        const isValidRefreshToken = jwt.verify(
+          existingRefreshToken,
+          process.env.REFRESH_TOKEN_SECRET
+        );
+
+        // Generate new access token only for new session
+        authToken = GenerateAccessTokens(user.id, user.email, user.username);
+
+        if (!authToken) {
+          await notifyMe(
+            "Access token generation failed for existing session",
+            "No auth token"
+          );
+          return res
+            .status(400)
+            .json({ message: "Error while creating a session" });
+        }
+
+        // Update access token in database
+        const { error: tokenError } = await supabase
+          .from("Tokens")
+          .update({ Access_Token: authToken })
+          .eq("user_id", user.id);
+
+        if (tokenError) {
+          await notifyMe("token updation error", tokenError);
+          return res
+            .status(400)
+            .json({ message: "Error while creating a new session" });
+        }
+
+        // Cache the refresh token
+        await cacheRefreshToken(user, existingRefreshToken);
+      } catch (refreshTokenError) {
+        await notifyMe("RefreshToken error", refreshTokenError);
+        // Refresh token is invalid, proceed to generate new tokens
+      }
     }
-    const AuthToken = GenerateAccessTokens(
-      data.id,
-      data.email.toLowerCase(),
-      data.username.toLowerCase()
-    );
 
-    if (!AuthToken) {
-      await notifyMe(`The Access token geenration controller is down`);
-      return res
-        .status(400)
-        .send({ message: "Error while creating a session" });
+    // Generate new tokens if no valid refresh token exists
+    if (!authToken) {
+      refreshToken = GenerateRefreshTokens(user.id, user.email, user.username);
+      authToken = GenerateAccessTokens(user.id, user.email, user.username);
+
+      if (!refreshToken || !authToken) {
+        await notifyMe("Token generation failed for new session");
+        return res
+          .status(400)
+          .json({ message: "Error while creating a session" });
+      }
+
+      // Store new tokens in database
+      const store = await StoreTokens(
+        refreshToken,
+        authToken,
+        user.id,
+        user.username
+      );
+      if (store.error) {
+        await notifyMe(
+          `Unable to store user tokens: ${JSON.stringify(store.error)}`,
+          store.error
+        );
+        return res
+          .status(400)
+          .json({ message: "Error while creating a session" });
+      }
+
+      // Cache the new refresh token
+      await cacheRefreshToken(user, refreshToken);
     }
-    const store = await StoreTokens(RefreshToken, AuthToken, data.id);
-    if (store.error) {
-      await notifyMe(`Unable to store user tokens in the db`);
 
-      return res
-        .status(400)
-        .json({ message: "Error while creating a session" });
-    }
-
-    res.cookie("Eureka_eta_six_version1_AuthToken", AuthToken, {
+    // Set cookie
+    res.cookie("Eureka_eta_six_version1_AuthToken", authToken, {
       httpOnly: true,
       secure: true,
       sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    // sending login notification email
+    // Send login notification
+    // await sendLoginNotification(req, user);
+
+    return res.status(200).json({
+      message: "Login successful",
+      AuthToken: authToken,
+    });
+  } catch (error) {
+    console.error("Login controller error:", error);
+    await notifyMe(`Login controller error: ${JSON.stringify(error)}`);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+//google auth handler
+
+// Helper function to cache refresh token
+const cacheRefreshToken = async (user, refreshToken) => {
+  const refreshTokenKey = `user=${user.username}_userId=${user.id}`;
+  try {
+    await redisClient.set(refreshTokenKey, JSON.stringify(refreshToken), {
+      expiration: { type: "EX", value: 800 },
+    });
+  } catch (error) {
+    console.error("Error caching refresh token:", error);
+  }
+};
+
+// Helper function for login notification
+const sendLoginNotification = async (req, user) => {
+  try {
     const clientIp =
       req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;
 
-    const LoginEmail = await EmailServices.sendLoginNotification(data, {
+    await notifyMe(
+      `User ${user.username} logged into their Eureka account from IP: ${clientIp}`
+    );
+
+    // Uncomment if you want to send email notifications
+    await EmailServices.sendLoginNotification(user, {
       ip: clientIp,
       userAgent: req.headers["user-agent"],
       browser: req.headers["sec-ch-ua"],
       platform: req.headers["sec-ch-ua"],
       timestamp: new Date(),
     });
-    await notifyMe(
-      `New user ${data.username} Logged in into their eureka account`
-    );
-
-    return res
-      .status(200)
-      .json({ message: "Login successfull", AuthToken: AuthToken });
   } catch (error) {
-    await notifyMe(
-      `Something went wrong while in the login controller for user=${
-        req.user.username
-      } errordetails=${JSON.stringify(error)}`
-    );
-    return;
+    console.error("Error sending login notification:", error);
   }
 };
-
 export const HandleUserLogout = async (req, res) => {
   try {
     const user_id = req.user.user_id;
@@ -288,7 +374,9 @@ export const VerifyEmail = async (req, res) => {
     const token = req.params.verificationtoken;
 
     if (!token) {
-      console.log("while verifying token not found");
+      await notifyMe(
+        `Token for was not found in the parameters in verifyEmail controller`
+      );
       return res.status(400).send({ message: "Verification token not found" });
     }
     const Secret = process.env.JWT_SECRET;
@@ -297,51 +385,76 @@ export const VerifyEmail = async (req, res) => {
     try {
       decoded = jwt.verify(token, Secret);
     } catch (jwterror) {
-      console.log(jwterror);
-      return res.status(400).send({ message: jwterror });
+      await notifyMe("Email verifficationtoken expired");
+      return res.status(400).send({ message: "Link expired" });
     }
+
+    // check if the user is already verified
     const email = decoded.email;
+    const { data, error: dbError } = await supabase
+      .from("users")
+      .select("isVerified,username,email,id")
+      .eq("email", email)
+      .single();
+    if (dbError) {
+      await notifyMe(
+        `An error occured while checking the verfication start of a user in the db`,
+        dbError
+      );
+      return res.status(400).send({
+        message: "Error while verifying you account , please try again later!",
+      });
+    }
+
+    if (data.isVerified === true) {
+      console.log(data.isVerified);
+      return res
+        .status(200)
+        .send({ message: "Account already verified  Please login instead" });
+    }
+    // else update the user verification status
     const { error } = await supabase
       .from("users")
       .update({ isVerified: true })
       .eq("email", email);
-
     if (error) {
-      conosle.log("account verification error");
+      await notifyMe(
+        `account verification error ${JSON.stringify(error)} for user`,
+        error
+      );
       return res
         .status(400)
         .send({ message: "Error while verifying your account" });
     }
 
-    const { data, error: userdateerror } = await supabase
-      .from("users")
-      .select("username,isVerified,email,id")
-      .eq("email", email)
-      .single();
-
-    if (!data) {
-      console.log("user not found");
-      return res.status(404).send({ message: "User not found" });
-    }
     // logg the user in for the first time automatically;
     const AuthToken = GenerateAccessTokens(data.id, data.email, data.username);
 
     if (!AuthToken) {
-      console.error("Error while geenrating AccessToken");
       return res.status(400).send({ message: "An error occurred" });
     }
+
     const RefreshToken = GenerateRefreshTokens(
       data.id,
       data.email,
       data.username
     );
     if (!RefreshToken) {
-      console.error("Error while geenrating refreshtoken");
       return res.status(400).send({ message: "An error occurred" });
     }
-    const store = await StoreTokens(RefreshToken, AuthToken, data.id);
+
+    const store = await StoreTokens(
+      RefreshToken,
+      AuthToken,
+      data.id,
+      data.username
+    );
     if (store.error) {
-      console.log(store.error);
+      await notifyMe(
+        `Error while storing the tokens in the db for user= ${
+          data.username
+        } error message=${JSON.stringify(store.error)}`
+      );
       return res
         .status(400)
         .json({ message: "Error while logging in please try again later !" });
@@ -358,11 +471,76 @@ export const VerifyEmail = async (req, res) => {
       .status(200)
       .send({ message: "Account verified", AuthToken: AuthToken });
   } catch (error) {
-    console.log(error);
+    await notifyMe(`error in verifyemail function`, error);
     return res.status(500).send({ message: "Something went wrong " });
   }
 };
 // generate access token
+
+// Get a new email
+export const GetVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).send({ message: "Invalid email address" });
+    }
+    const { data, error } = await supabase
+      .from("users")
+      .select("isVerified,username")
+      .eq("email", email.toLowerCase())
+      .single();
+    if (!data) {
+      return res.status(404).send({ message: "No such user found" });
+    }
+    if (error) {
+      await notifyMe(
+        `${JSON.stringify(error)} Error while getting user info from the db`
+      );
+      return res.status(404).send({ message: "No such user found" });
+    }
+    if (data.isVerified === true) {
+      return res.status(200).send({ message: "Account already verified" });
+    }
+
+    const user = { username: data.username, email: email };
+    // send welcome email with verify account email
+    // const welcomeEmail = await EmailServices.sendWelcomeEmail(user).catch(error => console.error('Register email failed ;', error));
+    const verificationtoken = GenerateEmailVerificationTokens(
+      data.username,
+      email
+    );
+
+    if (!verificationtoken) {
+      return res.status(400).send({ message: "Please try again !" });
+    }
+    try {
+      const verificationEmail =
+        await EmailServices.sendAccountVerficicationEmail(
+          user,
+          verificationtoken
+        );
+    } catch (emailError) {
+      console.error(emailError);
+      if (!emailError) {
+        await notifyMe(
+          `Email services running down = ${JSON.stringify(emailError)}`
+        );
+        return res.status(400).send({ message: "Something went wrong" });
+      }
+    }
+
+    return res.send({
+      message: "An email has been sent to you with the verification link",
+    });
+  } catch (err) {
+    console.error(err);
+    await notifyMe(
+      `Error while sending the new verification Email to the user= ${JSON.stringify(
+        err
+      )}`
+    );
+  }
+};
 
 export const ResetPasswordRequest = async (req, res) => {
   try {
@@ -430,10 +608,8 @@ export const ResetPassword = async (req, res) => {
       typeof newpassword1 !== "string" ||
       typeof newpassword2 !== "string"
     ) {
-      console.log("password does not match");
       return res.status(400).send({ message: "Invalid password type" });
     } else if (newpassword2 !== newpassword1) {
-      console.log("auth headers not found");
       return res.status(401).send({ message: "Password did not match" });
     }
 
@@ -479,9 +655,23 @@ export const ResetPassword = async (req, res) => {
   }
 };
 // Store tokens in the database;
-const StoreTokens = async (RefreshToken, AuthToken, id) => {
+const StoreTokens = async (RefreshToken, AuthToken, user_id, username) => {
   try {
-    if (!RefreshToken || !AuthToken || !id || typeof id !== "string") {
+    if (
+      !RefreshToken ||
+      !AuthToken ||
+      !user_id ||
+      typeof user_id !== "string" ||
+      !username
+    ) {
+      console.log(
+        RefreshToken,
+        AuthToken,
+        user_id,
+        username,
+        "Data has reached the store token function"
+      );
+      await notifyMe(`Some data is not available at the store token function`);
       return { error: "No token found" };
     }
 
@@ -489,18 +679,25 @@ const StoreTokens = async (RefreshToken, AuthToken, id) => {
     const { data, error } = await supabase
       .from("Tokens")
       .select("user_id")
-      .eq("user_id", id)
+      .eq("user_id", user_id)
       .single();
 
-    // if the user_id is present in the database
-    //update the authToken and refreshToken
+    if (error && error.code !== "PGRST116") {
+      // PGRST116 is "not found" error
+      console.log(error, "Error from token check function");
+      return { error: error };
+    }
+
+    // If the user_id is present in the database, update the tokens
     if (data?.user_id) {
       // Update existing token record
       const { error: updateError } = await supabase
         .from("Tokens")
         .update({ Access_Token: AuthToken, Refresh_Token: RefreshToken })
-        .eq("user_id", id);
+        .eq("user_id", user_id);
+
       if (updateError) {
+        console.log("Token updation error", updateError);
         return { error: updateError };
       }
     } else {
@@ -508,16 +705,31 @@ const StoreTokens = async (RefreshToken, AuthToken, id) => {
       const { error: insertError } = await supabase.from("Tokens").insert({
         Refresh_Token: RefreshToken,
         Access_Token: AuthToken,
-        user_id: id,
+        user_id: user_id,
       });
+
       if (insertError) {
+        console.log("Token Insertion error", insertError);
         return { error: insertError };
       }
     }
 
+    // Add both tokens to the cache - FIXED THIS LINE
+    const RefreshTokenKey = `user=${username}'s_userId=${user_id}`;
+    await redisClient.set(
+      RefreshTokenKey,
+      JSON.stringify(RefreshToken), // Use the RefreshToken parameter directly
+      {
+        expiration: {
+          type: "EX",
+          value: 800,
+        },
+      }
+    );
+
     return { message: "Token stored successfully" };
   } catch (err) {
-    console.error(err);
+    await notifyMe("Error in store token function", err);
     return { error: err };
   }
 };
@@ -670,40 +882,40 @@ export const GetUserAccountDetails = async (req, res) => {
 
     // const userdata = await getUserDataFromCache(user_cache_key);
     const UserAccountDataKey = `user_id=${user_id}&username=${username}'s_dashboardData`;
-    // const userdata = await redisClient
-    //   .hGetAll(UserAccountDataKey)
-    //   .catch(
-    //     async (err) =>
-    //       await notifyMe(
-    //         `${err} this error occured while checking for user dashboard data in the cache`
-    //       )
-    //   );
+    const userdata = await redisClient
+      .hGetAll(UserAccountDataKey)
+      .catch(
+        async (err) =>
+          await notifyMe(
+            `${err} this error occured while checking for user dashboard data in the cache`
+          )
+      );
 
-    // // if there is cache info
-    // if (userdata) {
-    //   const hasCachedData =
-    //     userdata.userdata ||
-    //     userdata.Contributions ||
-    //     userdata.querycount ||
-    //     userdata.Jrooms;
-    //   userdata.notificationcount !== 0 ||
-    //     userdata.notification ||
-    //     userdata.feedbackcount;
+    // if there is cache info
+    if (userdata) {
+      const hasCachedData =
+        userdata.userdata ||
+        userdata.Contributions ||
+        userdata.querycount ||
+        userdata.Jrooms;
+      userdata.notificationcount !== 0 ||
+        userdata.notification ||
+        userdata.feedbackcount;
 
-    //   if (hasCachedData && !userdata.error) {
-    //     // console.log("Serving from cache");
-    //     return res.status(200).send({
-    //       user: JSON.parse(userdata.userdata),
-    //       Contributions_user_id_fkey: JSON.parse(userdata.Contributions),
-    //       Querycount: JSON.parse(userdata.querycount),
-    //       FeedbackCounts: JSON.parse(userdata.feedbackcount),
-    //       chatrooms: JSON.parse(userdata.rooms),
-    //       notificationcount: JSON.parse(userdata.notificationcount),
-    //       notification: JSON.parse(userdata.notification),
-    //       message: "User data found",
-    //     });
-    //   }
-    // }
+      if (hasCachedData && !userdata.error) {
+        // console.log("Serving from cache");
+        return res.status(200).send({
+          user: JSON.parse(userdata.userdata),
+          Contributions_user_id_fkey: JSON.parse(userdata.Contributions),
+          Querycount: JSON.parse(userdata.querycount),
+          FeedbackCounts: JSON.parse(userdata.feedbackcount),
+          chatrooms: JSON.parse(userdata.rooms),
+          notificationcount: JSON.parse(userdata.notificationcount),
+          notification: JSON.parse(userdata.notification),
+          message: "User data found",
+        });
+      }
+    }
 
     // Fetch all data in parallel to improve performance
     const [
