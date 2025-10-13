@@ -199,89 +199,44 @@ export const HandleUserLogin = async (req, res) => {
     }
 
     // genrate new tokens for the user
-    let authToken;
-    let refreshToken;
-
-    // Check if existing refresh token is valid and exists
-    const existingRefreshToken = user.Tokens?.[0]?.Refresh_Token;
-    // if the refreshToken exists so that means user is not new
-    if (existingRefreshToken) {
-      // verify that token
-      try {
-        const isValidRefreshToken = jwt.verify(
-          existingRefreshToken,
-          process.env.REFRESH_TOKEN_SECRET
-        );
-
-        // Generate new access token only for new session
-        authToken = GenerateAccessTokens(user.id, user.email, user.username);
-
-        if (!authToken) {
-          await notifyMe(
-            "Access token generation failed for existing session",
-            "No auth token"
-          );
-          return res
-            .status(400)
-            .json({ message: "Error while creating a session" });
-        }
-
-        // Update access token in database
-        const { error: tokenError } = await supabase
-          .from("Tokens")
-          .update({ Access_Token: authToken })
-          .eq("user_id", user.id);
-
-        if (tokenError) {
-          await notifyMe("token updation error", tokenError);
-          return res
-            .status(400)
-            .json({ message: "Error while creating a new session" });
-        }
-
-        // Cache the refresh token
-        await cacheRefreshToken(user, existingRefreshToken);
-      } catch (refreshTokenError) {
-        await notifyMe("RefreshToken error", refreshTokenError);
-        // Refresh token is invalid, proceed to generate new tokens
-      }
+    let ValidAuthToken;
+    // the default RefreshToken
+    let RefreshToken;
+    // check for the validity of older refreshToken
+    const isStillValid = await CheckPastToken(user);
+    // if the token is validated and a new authToken has been generated
+    if (!isStillValid?.error && isStillValid?.AuthToken) {
+      ValidAuthToken = isStillValid.AuthToken;
+      RefreshToken = user.Tokens[0].Refresh_Token;
+    } else {
+      // else generate a new session Token and refreshToken
+      ValidAuthToken = GenerateAccessTokens(user.id, user.email, user.email);
+      RefreshToken = GenerateRefreshTokens(user.id, user.email, user.username);
     }
-
     // Generate new tokens if no valid refresh token exists
-    if (!authToken) {
-      refreshToken = GenerateRefreshTokens(user.id, user.email, user.username);
-      authToken = GenerateAccessTokens(user.id, user.email, user.username);
 
-      if (!refreshToken || !authToken) {
-        await notifyMe("Token generation failed for new session");
-        return res
-          .status(400)
-          .json({ message: "Error while creating a session" });
-      }
-
-      // Store new tokens in database
-      const store = await StoreTokens(
-        refreshToken,
-        authToken,
-        user.id,
-        user.username
+    // Store new tokens in database
+    const store = await StoreTokens(
+      RefreshToken,
+      ValidAuthToken,
+      user.id,
+      user.username
+    );
+    if (store.error) {
+      await notifyMe(
+        `Unable to store user tokens: ${JSON.stringify(store.error)}`,
+        store.error
       );
-      if (store.error) {
-        await notifyMe(
-          `Unable to store user tokens: ${JSON.stringify(store.error)}`,
-          store.error
-        );
-        return res
-          .status(400)
-          .json({ message: "Error while creating a session" });
-      }
-
-      // Cache the new refresh token
-      await cacheRefreshToken(user, refreshToken);
+      return res
+        .status(400)
+        .json({ message: "Error while creating a session" });
     }
+
+    // Cache the new refresh token
+    await cacheRefreshToken(user, RefreshToken);
 
     // Set cookie
-    res.cookie("Eureka_eta_six_version1_AuthToken", authToken, {
+    res.cookie("Eureka_eta_six_version1_AuthToken", ValidAuthToken, {
       httpOnly: true,
       secure: true,
       sameSite: "none",
@@ -293,12 +248,63 @@ export const HandleUserLogin = async (req, res) => {
 
     return res.status(200).json({
       message: "Login successful",
-      AuthToken: authToken,
+      AuthToken: ValidAuthToken,
     });
   } catch (error) {
     console.error("Login controller error:", error);
     await notifyMe(`Login controller error: ${JSON.stringify(error)}`);
     return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+// checking for previous refreshtoken validity helper function
+const CheckPastToken = async (user) => {
+  // Check if existing refresh token is valid and exists
+  const existingRefreshToken = user.Tokens?.[0]?.Refresh_Token;
+  // if the refreshToken exists so that means user is not new
+  if (existingRefreshToken) {
+    // verify that token
+    try {
+      const isValidRefreshToken = jwt.verify(
+        existingRefreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+      );
+
+      // Generate new access token only for new session
+      const authToken = GenerateAccessTokens(
+        user.id,
+        user.email,
+        user.username
+      );
+
+      if (!authToken) {
+        await notifyMe(
+          "Access token generation failed for existing session",
+          "No auth token"
+        );
+        return { error: "Failed to create a new session token" };
+      }
+
+      // Update access token in database
+      const { error: tokenError } = await supabase
+        .from("Tokens")
+        .update({ Access_Token: authToken })
+        .eq("user_id", user.id);
+
+      if (tokenError) {
+        await notifyMe("token updation error", tokenError);
+        return { error: tokenError };
+      }
+
+      // Cache the already created refresh token
+      await cacheRefreshToken(user, existingRefreshToken);
+      // return the new auth/session token to the user
+      return { AuthToken: authToken };
+    } catch (refreshTokenError) {
+      await notifyMe("RefreshToken error", refreshTokenError);
+      // Refresh token is invalid, proceed to generate new tokens
+      return { error: refreshTokenError };
+    }
   }
 };
 //google auth handler
@@ -337,6 +343,7 @@ const sendLoginNotification = async (req, user) => {
     console.error("Error sending login notification:", error);
   }
 };
+// user logout handler
 export const HandleUserLogout = async (req, res) => {
   try {
     const user_id = req.user.user_id;

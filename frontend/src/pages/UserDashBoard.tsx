@@ -117,7 +117,7 @@ const UserDashboard = () => {
             disabled={isLoggingOut}
             onClick={() => dispatch(LogoutUser())}
             className={`
-    relative flex items-center justify-center gap-4 px-4 py-2 w-full rounded-md
+    relative flex items-center justify-center gap-4 px-3 py-1 w-3/5 rounded-md
     text-white font-semibold transition-all duration-300
     ${
       isLoggingOut
@@ -429,13 +429,13 @@ const UserDashboard = () => {
             </button>
           </div>
         </section>
-        <section className="w-1/3 md:hidden block my-6">
+        <section className=" md:hidden block my-6 w-full">
           <button
             disabled={isLoggingOut}
             onClick={() => dispatch(LogoutUser())}
             className={`
-    relative flex items-center justify-center gap-4 px-4 py-2 w-full rounded-md
-    text-white font-semibold transition-all duration-300
+    relative flex items-center justify-center justify-self-end gap-4 px-3 py-1 rounded-md
+    text-white font-semibold transition-all duration-300 
     ${
       isLoggingOut
         ? "cursor-not-allowed bg-red-400"

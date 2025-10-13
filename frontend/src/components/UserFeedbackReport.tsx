@@ -63,8 +63,12 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
                     className="text-lg font-bold"
                   >
                     {FeedbackCounts.partial_upvotes +
-                      FeedbackCounts.downvotes +
-                      FeedbackCounts.upvotes}
+                    FeedbackCounts.downvotes +
+                    FeedbackCounts.upvotes
+                      ? FeedbackCounts.partial_upvotes +
+                        FeedbackCounts.downvotes +
+                        FeedbackCounts.upvotes
+                      : 0}
                   </text>
                   <text
                     x="50%"

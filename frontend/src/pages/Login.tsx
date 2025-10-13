@@ -9,6 +9,7 @@ import { IoIosHourglass } from "react-icons/io";
 import { MdEmail, MdPassword } from "react-icons/md";
 import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
 import { setIsLogin } from "../store/AuthSlice.ts";
+import { LuEye, LuEyeClosed } from "react-icons/lu";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 const Login = () => {
@@ -54,9 +55,9 @@ const Login = () => {
           headers: {},
         }
       );
-      // console.log(response.data)
+      console.log(response.data);
 
-      if (response.data.message === "Login successfull") {
+      if (response.data.message.includes("Login successful")) {
         setIsPending("success");
         dispatch(setIsLogin(true));
         setTimeout(() => {
@@ -71,25 +72,14 @@ const Login = () => {
     } catch (error: any) {
       setIsPending("failed");
 
-      toast.error(error.response.data.message);
+      console.log(error);
+      toast.error(error?.response?.data?.message);
 
       setTimeout(() => {
         setIsPending("idle");
       }, 3000);
     }
   };
-
-  // checking password strength
-  // const CheckPasswordStrength = () => {
-  //   if (Password?.current?.value) {
-  //     // Check if password contains at least one symbol from PasswordMustSymbols
-  //     const hasSymbol = PasswordMustSymbols.some((symbol) =>
-  //       Password?.current?.value.includes(symbol)
-  //     );
-
-  //     setIsWeak(!hasSymbol);
-  //   }
-  // };
 
   return (
     <>
@@ -145,29 +135,28 @@ const Login = () => {
               </Link>
             </label>
 
-            <input
-              // onChange={CheckPasswordStrength}
-              ref={Password}
-              spellCheck
-              className={`border px-2 py-1 rounded-lg space-grotesk transition-colors duration-200
-                     border-gray-300`}
-              type={type}
-              placeholder="Choose a strong password"
-            />
-          </span>
-          <section className="flex items-center justify-end p-2 gap-4 bai-jamjuree-regular text-xs">
-            <input
-              onClick={() => {
-                if (type === "text") {
-                  setType("password");
-                } else {
-                  setType("text");
+            <section className="relative ">
+              <input
+                ref={Password}
+                spellCheck
+                className="w-full border border-gray-300 px-2 py-1 rounded-lg space-grotesk"
+                type={type}
+                placeholder="Choose a strong password"
+              />
+              <button
+                onClick={() =>
+                  setType((prev) => (prev === "text" ? "password" : "text"))
                 }
-              }}
-              type="checkbox"
-            />
-            <label htmlFor="Show password">Show Password</label>
-          </section>
+                className="absolute right-2 top-2 cursor-pointer"
+              >
+                {type === "password" ? (
+                  <LuEyeClosed size={20} />
+                ) : (
+                  <LuEye size={20} />
+                )}
+              </button>
+            </section>
+          </span>
 
           <span className="flex items-center justfify-center py-4 flex-col gap-2">
             {/*normal button */}

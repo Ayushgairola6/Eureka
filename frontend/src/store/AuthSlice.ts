@@ -200,6 +200,8 @@ export const LogoutUser = createAsyncThunk(
       );
       if (response.data.message === "Session revoked") {
         localStorage.removeItem("Eureka_six_eta_v1_Authtoken");
+        document.cookie =
+          "Eureka_eta_six_version1_AuthToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         return response.data;
       }
       console.log(response.data);
