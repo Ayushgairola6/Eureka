@@ -42,27 +42,45 @@ export const SearchQueryResults = async (query) => {
 
 // formatting search result for AI
 export function formatForGemini(results) {
-  let combinedContent =
-    "Here is some information from the internet to help you answer the user's question:\n\n";
-
   if (!results || results.results.length === 0) {
-    combinedContent += "No relevant information was found.";
-  } else {
-    // the tavily web search answer
-    combinedContent += `Answer from web search : ${results.answer}`;
-
-    results.results.forEach((res, index) => {
-      combinedContent += `### Source ${index + 1}: ${res.title}\n`;
-      combinedContent += `URL: ${res.url}\n`;
-      combinedContent += `Content: ${res.content}\n\n`;
-    });
+    return [
+      {
+        role: "model",
+        parts: [{ text: "NO_WEB_RESULTS: No relevant search results found." }],
+      },
+    ];
   }
+
+  const parts = [];
+
+  // 1. Direct answer (if available)
   if (results.answer) {
-    combinedContent += results.answer;
+    parts.push(`DIRECT_ANSWER: ${results.answer}`);
   }
 
-  // The model's conversation history must alternate between "user" and "model" roles.
-  // The context from search results should be treated as part of the user's turn.
+  // 2. Key insights from top results
+  const keyInsights = [];
+  results.results.slice(0, 3).forEach((res, index) => {
+    if (res.content) {
+      const insight = res.content.replace(/\s+/g, " ").substring(0, 300).trim();
+      keyInsights.push(`${index + 1}. ${insight}`);
+    }
+  });
+
+  if (keyInsights.length > 0) {
+    parts.push(`KEY_INSIGHTS:\n${keyInsights.join("\n")}`);
+  }
+
+  // 3. Sources reference
+  const sources = results.results.map(
+    (res, index) =>
+      `[${index + 1}] ${res.title || "No title"} - ${res.url || "No URL"}`
+  );
+
+  parts.push(`SOURCES:\n${sources.join("\n")}`);
+
+  const combinedContent = parts.join("\n\n");
+
   return [
     {
       role: "model",

@@ -754,7 +754,6 @@ export const PostTypeWebSearch = async (req, res) => {
       MessageId,
       icon: WebResults.favicon,
     };
-    console.log(FormattedFavicon);
     return res.send({
       Answer: Answer,
       message: "Results found",

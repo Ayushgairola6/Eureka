@@ -5,10 +5,11 @@ import axios from "axios";
 import { toast, Toaster } from "sonner";
 import { FaUserPlus, FaUser } from "react-icons/fa";
 import { MdEmail, MdPassword } from "react-icons/md";
-import { LuEyeClosed, LuEye } from "react-icons/lu";
+import { LuEyeClosed, LuEye, LuLogIn } from "react-icons/lu";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 import { IoIosHourglass } from "react-icons/io";
+import { PiArrowUpRight } from "react-icons/pi";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -283,22 +284,31 @@ const Register = () => {
               onClick={handleGoogleAuth}
               whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px black" }}
               transition={{ duration: 0.2 }}
-              className="bg-indigo-300 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint "
+              className="bg-indigo-400 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint "
             >
               Continue with Google
               <img src="/googleLogo.png" alt="Google" width="20" height="20" />
             </motion.button>
           </span>
-          <ul className="space-grotesk  text-sm text-center ">
-            Have an Account ?
+          <div className="flex items-center justify-end gap-3">
+            {/* Register Button - Glass */}
             <Link
-              className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 font-semibold"
               to="/Login"
+              className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl backdrop-blur-sm bg-black/5 dark:bg-white/5 border border-white/20 dark:border-gray-600/30 text-gray-800 dark:text-gray-200 font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
             >
-              {" "}
-              Login
+              <span>Login</span>
+              <LuLogIn className="w-4 h-4" />
             </Link>
-          </ul>
+
+            {/* Get Verified Button - Glass */}
+            <Link
+              to="/Verification"
+              className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl backdrop-blur-sm bg-black/5 dark:bg-white/5 border border-white/20 dark:border-gray-600/30 text-gray-800 dark:text-gray-200 font-medium text-sm transition-all duration-300 hover:bg-sky-500/20 hover:border-sky-500/30 hover:text-sky-700 dark:hover:text-sky-300 hover:shadow-lg hover:scale-105"
+            >
+              <span>Get Verified</span>
+              <PiArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+            </Link>
+          </div>
         </motion.div>
         <Toaster />
       </div>

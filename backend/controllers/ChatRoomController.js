@@ -454,7 +454,7 @@ export const GetRoomChatHistory = async (req, res) => {
       )
       .eq("room_id", room_id)
       .order("sent_at", { ascending: true })
-      .limit(10);
+      .limit(5);
 
     if (!data || data.length === 0) {
       return res.status(200).send({ chats: [], message: "No messages found" });
@@ -757,10 +757,10 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
 
     if (!AnswerToQuestion || AnswerToQuestion.error) {
       AnswerToQuestion = FormatForHumanFallback(webResults.response).text;
-      // return res.status(400).send({
-      //   message:
-      //     "The server is quite loaded right now so i am having trouble generating a response right now. ",
-      // });
+      return res.status(400).send({
+        message:
+          "The server is quite loaded right now so i am having trouble generating a response right now. ",
+      });
     }
     // emitting the response throughout the room
     const io = getIo();
@@ -803,6 +803,8 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
       answer: AnswerToQuestion,
       favicon: FormattedFavIcon,
     });
+    console.log(Formattedresult);
+    return;
   } catch (error) {
     await notifyMe(error);
 

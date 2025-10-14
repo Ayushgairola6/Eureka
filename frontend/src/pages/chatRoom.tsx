@@ -680,11 +680,11 @@ const ChatRoom = () => {
                       </div>
 
                       {/* Message content */}
-                      {message.sent_by === null ? (
-                        <Streamdown className="">{message.message}</Streamdown>
-                      ) : (
-                        <p>{message.message}</p>
-                      )}
+                      {/* {message.sent_by === null ? ( */}
+                      <Streamdown className="">{message.message}</Streamdown>
+                      {/* ) : ( */}
+                      {/* <p>{message.message}</p> */}
+                      {/* )} */}
                     </div>
                   </motion.div>
                   {message === data[data.length - 1] &&

@@ -15,7 +15,7 @@ const Mode_prompt = process.env.SYSTEM_PROMPT;
 
 export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
   try {
-    if (!question || !data) {
+    if (!question || !data || !SYSTEM_PROMPT) {
       console.error("Not all the data was given to the model");
       return { error: "Error while generating a response" };
     }
@@ -25,17 +25,16 @@ export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
         role: "user",
         parts: [{ text: question }],
       },
-      {
-        role: "model",
-        parts: [
-          {
-            text: JSON.stringify(
-              { ...data },
-              SYSTEM_PROMPT ? SYSTEM_PROMPT : Mode_prompt
-            ),
-          },
-        ],
-      },
+      ...data, // Spread the formatted context
+      // Optional: Add system prompt as additional context
+      ...(SYSTEM_PROMPT
+        ? [
+            {
+              role: "user",
+              parts: [{ text: `System: ${SYSTEM_PROMPT}` }],
+            },
+          ]
+        : []),
     ];
     const result = await genAI.models.generateContent({
       model: "gemini-2.0-flash-lite-001",
@@ -50,7 +49,10 @@ export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
 
     const responseText = result.text;
     if (!responseText) {
-      await notifyMe(`Error while generating a response :${result}`);
+      await notifyMe(
+        `Error while generating a response , the code execution results are these`,
+        result.codeExecutionResult
+      );
       return { error: "The server is very busy , please try again !" };
     }
 

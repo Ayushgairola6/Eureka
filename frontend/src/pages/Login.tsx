@@ -8,7 +8,8 @@ import { IoIosHourglass } from "react-icons/io";
 import { MdEmail, MdPassword } from "react-icons/md";
 import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
 import { setIsLogin } from "../store/AuthSlice.ts";
-import { LuEye, LuEyeClosed } from "react-icons/lu";
+import { LuEye, LuEyeClosed, LuUserPlus } from "react-icons/lu";
+import { PiArrowUpRight } from "react-icons/pi";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 const Login = () => {
@@ -86,7 +87,7 @@ const Login = () => {
 
   return (
     <>
-      <div className="h-screen flex items-center justify-center relative z-[2]  dark:bg-black ">
+      <div className="relative h-screen flex items-center justify-center  z-[2]  dark:bg-black ">
         <Toaster />
 
         {/* gradient accent background */}
@@ -98,7 +99,7 @@ const Login = () => {
           drag
           whileDrag={{ scale: 0.9 }}
           dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
-          className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white/10 dark:to-indigo-900/20 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400"
+          className="relative bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white/10 dark:to-indigo-900/20 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400"
         >
           <h1 className="text-center space-grotesk font-bold  text-2xl">
             Welcome back{" "}
@@ -205,21 +206,25 @@ const Login = () => {
               <img className="h-6 w-6" src="/googleLogo.png" alt="" />
             </motion.button>
           </span>
-          <div>
-            <ul className="space-grotesk  text-sm text-center ">
-              New Here ?
-              <Link className="text-teal-600" to="/Register">
-                {" "}
-                Register
-              </Link>
-            </ul>
-            <ul className="space-grotesk  text-xs text-center ">
-              Need to verify account ?
-              <Link className="text-sky-600" to="/Verification">
-                {" "}
-                Get link
-              </Link>
-            </ul>
+          {/* links to other pages */}
+          <div className="flex items-center justify-end gap-3">
+            {/* Register Button - Glass */}
+            <Link
+              to="/Register"
+              className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl backdrop-blur-sm bg-black/5 dark:bg-white/5 border border-white/20 dark:border-gray-600/30 text-gray-800 dark:text-gray-200 font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
+            >
+              <span>Register</span>
+              <LuUserPlus className="w-4 h-4" />
+            </Link>
+
+            {/* Get Verified Button - Glass */}
+            <Link
+              to="/Verification"
+              className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl backdrop-blur-sm bg-black/5 dark:bg-white/5 border border-white/20 dark:border-gray-600/30 text-gray-800 dark:text-gray-200 font-medium text-sm transition-all duration-300 hover:bg-sky-500/20 hover:border-sky-500/30 hover:text-sky-700 dark:hover:text-sky-300 hover:shadow-lg hover:scale-105"
+            >
+              <span>Get Verified</span>
+              <PiArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+            </Link>
           </div>
         </motion.div>
       </div>
