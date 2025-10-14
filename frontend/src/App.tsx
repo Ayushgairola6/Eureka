@@ -37,6 +37,7 @@ const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import "./App.css";
 import axios from "axios";
 import VerificationLink from "./components/VerficationLink.tsx";
+import OAuthCallbackHandler from "./pages/OauthCallbackHandlers.tsx";
 
 // import { BiError } from 'react-icons/bi';
 const DocumentationLayout = lazy(
@@ -55,34 +56,6 @@ const App = () => {
   );
   const themeInitialized = useRef(false);
 
-  // when loggedIn get userdetails from the dasboard
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (isLoggedIn === true) {
-        try {
-          dispatch(GetUserDashboardData());
-          dispatch(connectSocket());
-        } catch (error) {
-          console.error("Failed to fetch user data:", error);
-          setUseStatus("idle");
-        } finally {
-        }
-      }
-    };
-
-    fetchUserData();
-  }, [isLoggedIn, dispatch]);
-
-  // if user logs out
-
-  // Cleanup socket on unmount
-  useEffect(() => {
-    return () => {
-      dispatch(disconnectSocket());
-    };
-  }, [dispatch]);
-
-  // onMount verify the userstate
   useEffect(() => {
     const controller = new AbortController();
     const VerifyLoginState: () => Promise<void> = async () => {
@@ -107,6 +80,24 @@ const App = () => {
     return () => controller.abort();
   }, []);
 
+  // now if the user is loggedIn
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (isLoggedIn === true) {
+        try {
+          dispatch(GetUserDashboardData());
+          dispatch(connectSocket());
+        } catch (error) {
+          console.error("Failed to fetch user data:", error);
+          setUseStatus("idle");
+        } finally {
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [isLoggedIn]);
+  // re append the user chosen theme
   useEffect(() => {
     // Only run once on mount
     if (themeInitialized.current) return;
@@ -143,6 +134,12 @@ const App = () => {
     }
   }, [isDarkMode]);
 
+  // socket disconnect cleanup function
+  useEffect(() => {
+    return () => {
+      dispatch(disconnectSocket());
+    };
+  }, [dispatch]);
   return (
     <>
       {/* Global Loading Overlay */}
@@ -168,6 +165,10 @@ const App = () => {
         <Router>
           <Navbar />
           <Routes>
+            <Route
+              element={<OAuthCallbackHandler />}
+              path="/client/OAuthCallback"
+            />
             <Route element={<LandingPage />} path="/"></Route>
             <Route element={<EmailVerification />} path="/user/verify-email" />
             <Route element={<Interface />} path="/Interface"></Route>

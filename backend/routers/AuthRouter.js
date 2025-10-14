@@ -16,6 +16,10 @@ import {
   UpdateUserLoginState,
   VerifyToken,
 } from "../Middlewares/AuthMiddleware.js";
+import {
+  HandleGoogleCallback,
+  InitiateGoogleAuth,
+} from "../controllers/GoogleAuthController.js";
 
 AuthRouter.post("/user/register", HandleUserRegistration)
   .post("/user/get-verification-email", GetVerificationEmail)
@@ -35,4 +39,6 @@ AuthRouter.post("/user/register", HandleUserRegistration)
     DeleteNotification
   )
   .post("/user/reset-password", ResetPasswordRequest)
-  .put("/user/reset-password/confirm", ResetPassword);
+  .put("/user/reset-password/confirm", ResetPassword)
+  .get("/auth/google", InitiateGoogleAuth)
+  .get("/auth/google/callback", HandleGoogleCallback);

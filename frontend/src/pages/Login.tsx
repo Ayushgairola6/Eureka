@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast, Toaster } from "sonner";
-import { FaGoogle } from "react-icons/fa";
 import { CiLogin } from "react-icons/ci";
 import { IoIosHourglass } from "react-icons/io";
 import { MdEmail, MdPassword } from "react-icons/md";
@@ -27,6 +26,12 @@ const Login = () => {
     }
   }, [isPending]);
 
+  // google auth
+  const handleGoogleAuth = () => {
+    window.location.href = `${BaseApiUrl}/api/auth/google`;
+  };
+
+  // manual auth
   const HandleUserLogin = async () => {
     try {
       setIsPending("pending");
@@ -55,7 +60,6 @@ const Login = () => {
           headers: {},
         }
       );
-      console.log(response.data);
 
       if (response.data.message.includes("Login successful")) {
         setIsPending("success");
@@ -72,7 +76,6 @@ const Login = () => {
     } catch (error: any) {
       setIsPending("failed");
 
-      console.log(error);
       toast.error(error?.response?.data?.message);
 
       setTimeout(() => {
@@ -186,8 +189,10 @@ const Login = () => {
               )}
             </motion.button>
 
+            <span className="text-xs space-grotesk">OR</span>
             {/* google button */}
             <motion.button
+              onClick={handleGoogleAuth}
               whileHover={{
                 boxShadow: "2px 2px 2px black",
                 transform: "translateY(-3px)",
@@ -196,7 +201,8 @@ const Login = () => {
               transition={{ duration: 0.2 }}
               className="bg-indigo-400 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint "
             >
-              Login with Google <FaGoogle />
+              Login with Google
+              <img className="h-6 w-6" src="/googleLogo.png" alt="" />
             </motion.button>
           </span>
           <div>

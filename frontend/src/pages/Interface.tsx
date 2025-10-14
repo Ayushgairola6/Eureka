@@ -41,11 +41,19 @@ import { v4 as uuid } from "uuid";
 import axios from "axios";
 import UserForm from "@/components/ui/userDetail.tsx";
 import { FaFileUpload } from "react-icons/fa";
+import { useSearchParams } from "react-router";
 const PublicQueryOptions = lazy(
   () => import("@/components/PublicQueryOptions.tsx")
 );
 // import { HandleSSEConnection } from "../store/SSEHandler.tsx";
 function Interface() {
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const SessionId = searchParams.get("SessionId");
+    if (SessionId) {
+      localStorage.setItem("Eureka_six_eta_v1_Authtoken", SessionId);
+    }
+  }, []);
   const dispatch = useAppDispatch();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);

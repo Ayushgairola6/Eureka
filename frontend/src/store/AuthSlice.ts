@@ -107,9 +107,6 @@ export const GetUserDashboardData = createAsyncThunk<AuthState, void>(
   async (_, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      if (!AuthToken) {
-        return rejectWithValue("Authentication token not found.");
-      }
 
       const response = await axios.get(
         `${BaseApiUrl}/api/user/account-details`,
@@ -123,7 +120,6 @@ export const GetUserDashboardData = createAsyncThunk<AuthState, void>(
 
       return response.data;
     } catch (err) {
-      console.error("Error fetching dashboard data:", err);
       return rejectWithValue(
         err instanceof Error ? err.message : "Failed to fetch dashboard data"
       );
@@ -187,7 +183,9 @@ export const LogoutUser = createAsyncThunk(
   "user/logout",
   async (_, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem(
+        "Eureka_eta_six_version1_AuthToken"
+      );
       const response = await axios.post(
         `${BaseApiUrl}/api/user/session-logout`,
         {},
@@ -199,12 +197,11 @@ export const LogoutUser = createAsyncThunk(
         }
       );
       if (response.data.message === "Session revoked") {
-        localStorage.removeItem("Eureka_six_eta_v1_Authtoken");
+        localStorage.removeItem("Eureka_eta_six_version1_AuthToken");
         document.cookie =
           "Eureka_eta_six_version1_AuthToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         return response.data;
       }
-      console.log(response.data);
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to logout"

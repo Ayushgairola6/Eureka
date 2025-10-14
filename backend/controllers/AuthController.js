@@ -414,7 +414,6 @@ export const VerifyEmail = async (req, res) => {
     }
 
     if (data.isVerified === true) {
-      console.log(data.isVerified);
       return res
         .status(200)
         .send({ message: "Account already verified  Please login instead" });
@@ -662,7 +661,12 @@ export const ResetPassword = async (req, res) => {
   }
 };
 // Store tokens in the database;
-const StoreTokens = async (RefreshToken, AuthToken, user_id, username) => {
+export const StoreTokens = async (
+  RefreshToken,
+  AuthToken,
+  user_id,
+  username
+) => {
   try {
     if (
       !RefreshToken ||
@@ -910,7 +914,7 @@ export const GetUserAccountDetails = async (req, res) => {
         userdata.feedbackcount;
 
       if (hasCachedData && !userdata.error) {
-        // console.log("Serving from cache");
+        console.log("Serving from cache");
         return res.status(200).send({
           user: JSON.parse(userdata.userdata),
           Contributions_user_id_fkey: JSON.parse(userdata.Contributions),

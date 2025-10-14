@@ -3,18 +3,22 @@ import { Link, useNavigate } from "react-router";
 import axios from "axios";
 import { toast, Toaster } from "sonner";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
-import { useAppDispatch } from "../store/hooks";
-import { GetUserDashboardData } from "../store/AuthSlice";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { GetUserDashboardData, setIsLogin } from "../store/AuthSlice";
 import { connectSocket } from "../store/websockteSlice";
-
 const EmailVerification = () => {
   const dispatch = useAppDispatch();
+  const { isLoggedIn } = useAppSelector((state) => state.auth);
   const [isPending, setIsPending] = useState("idle");
   const [response, setResponse] = useState<string>("Verifying yout account");
   const navigate = useNavigate();
   //   const { isLoggedIn } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
+    if (isLoggedIn === true) {
+      navigate("/Interface");
+      return;
+    }
     const verifyEmail = async () => {
       if (typeof window === "undefined") return;
 
@@ -42,23 +46,30 @@ const EmailVerification = () => {
           }
         );
 
-        // If this is a new verification (not already verified), load user data and navigate
-        if (!response.data.alreadyVerified) {
-          // Wait for user data before navigating
-          try {
-            await dispatch(GetUserDashboardData()).unwrap();
-            dispatch(connectSocket());
-          } catch (accerror) {
-            setResponse(response.data.message);
-            return;
-          }
-
-          navigate("/");
+        if (
+          response.data.message.includes(
+            "Account already verified  Please login instead"
+          )
+        ) {
+          navigate("/Login");
+          // reload the app to get user data
+        } else {
+          localStorage.setItem(
+            "Eureka_eta_six_version1_AuthToken",
+            response.data.AuthToken
+          );
+          dispatch(GetUserDashboardData());
+          dispatch(setIsLogin(true));
+          dispatch(connectSocket());
+          navigate("/Interface");
         }
         setResponse(response.data.message);
 
+        console.log(response);
         setIsPending("success");
       } catch (error: any) {
+        console.log(error);
+
         setIsPending("failed");
         setResponse(error?.response?.data?.message || "Verification failed");
 
@@ -150,13 +161,24 @@ const EmailVerification = () => {
             <p className="text-green-600 dark:text-green-400">{response}...</p>
           )}
 
-          {isPending === "success" && (
-            <div className="text-green-600 dark:text-green-400">
-              <p>✓ Success! Your email has been verified.</p>
-              <p className="text-sm mt-2">
-                Redirecting you to the application...
-              </p>
-            </div>
+          {isPending === "success" && response.includes("Account verified") && (
+            <>
+              <div className="text-green-600 dark:text-green-400">
+                <p>✓ Success! Your email has been verified.</p>
+              </div>
+              <div className="text-sky-600 dark:text-sky-400">
+                <p>{response}</p>
+                <button
+                  onClick={() => {
+                    window.location.reload();
+                    console.log(response);
+                  }}
+                  className="mt-4 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-sky-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                >
+                  LOGIN
+                </button>
+              </div>
+            </>
           )}
 
           {isPending === "failed" && (
