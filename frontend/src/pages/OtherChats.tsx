@@ -18,10 +18,10 @@ import {
   FaRobot,
   FaUser,
 } from "react-icons/fa";
-import SearchBox from "@/components/searchbox";
+// import SearchBox from "@/components/searchbox";
 import Filters from "@/components/Filters";
 import { Streamdown } from "streamdown";
-import { CiSettings } from "react-icons/ci";
+// import { CiSettings } from "react-icons/ci";
 import { BiHourglass } from "react-icons/bi";
 
 const OtherChats = () => {
