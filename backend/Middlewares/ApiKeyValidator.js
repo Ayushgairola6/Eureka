@@ -1,32 +1,62 @@
 import { supabase } from "../controllers/supabaseHandler.js";
+import { redisClient } from "../CachingHandler/redisClient.js";
 
+// Apikey validation and caching handler middleware for ratelimit and performance
 export const ValidateApiKey = async (req, res, next) => {
-    try {
-        // check for headers if present
-        const Authheaders = req.headers.authorization;
-        // extract the api key from headers `Bearer ${API_KEY}`
-        const user_api_key = Authheaders?.split(" ")[1];
+  try {
+    const Authheaders = req.headers.authorization;
+    const user_api_key = Authheaders?.split(" ")[1];
 
-        if (!Authheaders || !user_api_key) {
-            console.log("NO api key in headers")
-            return res.status(400).json({ message: "Invalid API key" });
-        }
-
-        // check if the api key is present in the database and matches any user in the database
-
-        const { data, error } = await supabase.from("API_KEYS").select("user_id").eq("API_KEY", user_api_key);
-
-        // if some error occurs while looking or validating the apikey an error is returned
-        if (error || !data || data.length === 0) {
-            console.log(error, 'error while looking for user_id matching the api_key')
-            return res.status(404).json({ message: "Invalid API_KEY" });
-        }
-
-        // continue to the main function
-        req.user = data[0].user_id;
-        next();
-    } catch (validateApiKeyError) {
-        console.error(validateApiKeyError);
-        return res.status(500).json({ message: "Internal server error" })
+    if (!Authheaders || !user_api_key) {
+      return res.status(400).json({ message: "Invalid API key" });
     }
-}
+
+    const UserCachedAPIredisKey = `api_key:${user_api_key}`; //for quick lookups
+    const rateLimitKey = `rate_limit:${user_api_key}`; //for rate limit quick lookups
+
+    // Rate limiting check
+    const currentRequests = await redisClient.incr(rateLimitKey);
+    if (currentRequests === 1) {
+      console.log("Rate limiting working");
+      await redisClient.expire(rateLimitKey, 60);
+    }
+
+    if (currentRequests > 100) {
+      return res.status(429).json({
+        error: "Too Many Requests",
+        message: "Rate limit exceeded. Maximum 30 requests per minute.",
+        retryAfter: 60,
+        currentlimit: 30,
+        window: "1 minute",
+      });
+    }
+
+    // Cache lookup
+    const cachedUserInfo = await redisClient.get(UserCachedAPIredisKey);
+    if (cachedUserInfo) {
+      req.user = JSON.parse(cachedUserInfo);
+      return next();
+    }
+
+    // Database lookup with shorter cache time for frequently changing data
+    const { data, error } = await supabase
+      .from("API_KEYS")
+      .select("user_id, users(email,username)")
+      .eq("API_KEY", user_api_key)
+      .single();
+
+    if (error || !data || data.length === 0) {
+      return res.status(404).json({ message: "Invalid API_KEY" });
+    }
+
+    await redisClient.set(UserCachedAPIredisKey, JSON.stringify(data), {
+      expiration: { type: "EX", value: 120 },
+    });
+
+    req.user = data;
+    next();
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

@@ -1,11 +1,6 @@
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import {
-  setCategory,
-  setShowOptions,
-  setSubCategory,
-} from "../store/InterfaceSlice";
+import { setCategory, setSubCategory } from "../store/InterfaceSlice";
 import { useState } from "react";
-import { IoMdArrowDropright } from "react-icons/io";
 import { Categories, SubCategories } from "../../utlis/Info";
 const PublicQueryOptions = () => {
   const dispatch = useAppDispatch();
@@ -16,99 +11,70 @@ const PublicQueryOptions = () => {
 
   return (
     <>
-      <div className="relative z-50">
-        {/* Main Options Container */}
-        <div
-          className={`bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-md shadow-lg p-3 absolute -bottom-30 left-8 min-w-[220px] ${
-            shwoOptions
-              ? "opacity-100 translate-y-0 pointer-events-auto"
-              : "opacity-0 translate-y-2 pointer-events-none"
-          } transition-all duration-200 flex gap-3`}
-        >
-          {/* Categories Section */}
-          <div className="">
-            <div className="relative group">
-              <div className="text-sm font-medium px-2 py-1 text-gray-700 dark:text-gray-300">
-                Categories
-              </div>
-              <div className="mt-1 space-y-0.2 ">
-                {Categories.map((cat, index) => (
-                  <div
-                    key={index}
-                    className="relative group/item"
-                    onMouseEnter={() => setHoveredCategory(cat.name)}
-                  >
-                    <div className="flex items-center justify-between px-2 py-1.5 text-sm rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors">
-                      <span className="flex items-center gap-2">
-                        <input
-                          onChange={(e) =>
-                            dispatch(setCategory(e.target.value))
-                          }
-                          value={cat.name}
-                          name="category"
-                          type="radio"
-                          checked={category === cat.name}
-                          className="w-3 h-3"
-                        />
-                        {cat.name}
-                      </span>
-                      {SubCategories.some((sc) => sc.parent === cat.name) && (
-                        <IoMdArrowDropright
-                          size={14}
-                          className="text-gray-400"
-                        />
-                      )}
-                    </div>
-
-                    {/* Subcategories appear on hover */}
-                    {SubCategories.some((sc) => sc.parent === cat.name) &&
-                      hoveredCategory === cat.name && (
-                        <div className="absolute top-0 left-full ml-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg min-w-[180px] p-2 z-50 max-h-[300px] overflow-y-auto">
-                          <div className="text-xs font-medium px-2 py-1 text-gray-500 dark:text-gray-400">
-                            Subcategories
-                          </div>
-                          {SubCategories.find(
-                            (sc) => sc.parent === cat.name
-                          )?.subcategories.map((sub, subIndex) => (
-                            <div
-                              key={subIndex}
-                              className="flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors"
-                              onClick={() => {
-                                dispatch(setSubCategory(sub));
-                                const ParentCategory = SubCategories.filter(
-                                  (e) => e.subcategories.includes(sub)
-                                );
-                                const category = ParentCategory[0].parent;
-                                dispatch(setCategory(category));
-                                dispatch(setShowOptions(!shwoOptions));
-                                setHoveredCategory(null);
-                              }}
-                            >
-                              <input
-                                type="radio"
-                                name="subcategory"
-                                checked={subCategory === sub}
-                                onChange={() => {}}
-                                className="w-3 h-3"
-                              />
-                              {sub}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                  </div>
-                ))}
-              </div>
-            </div>
+      <div
+        className={`${
+          shwoOptions === true
+            ? " opacity-100 pointer-events-auto"
+            : "pointer-events-none opacity-0"
+        } absolute bottom-20 left-12 z-[99] w-40 border rounded-lg transition-all duration-150 `}
+      >
+        <div className=" bg-black dark:bg-gray-100 space-grotesk  rounded-lg shadow-xl overflow-hidden ">
+          <div className="p-3 dark:text-black text-white bai-jamjuree-semibold">
+            <h3 className="text-sm">Select Category</h3>
           </div>
 
-          {/* Vertical Separator */}
-          <div className="w-px bg-gray-200 dark:bg-gray-700"></div>
-
-          {/* Other Options (DropDown) */}
-          {/* <div className="flex-1">
-            <DropDown />
-          </div> */}
+          <div className="max-h-60 h-60 overflow-y-auto scrollbar-thin  space-grotesk cursor-pointer relative">
+            {Categories.map((e, i) => (
+              <button
+                onMouseOver={() => setHoveredCategory(e.name)}
+                // onMouseLeave={() => setHoveredCategory(null)}
+                onClick={() => dispatch(setCategory(e.name))}
+                key={i}
+                className={`hover:bg-teal-400/20  w-full py-1 px-4  transition-colors duration-200 text-left     ${
+                  category === e.name
+                    ? "bg-green-400/15 text-green-500"
+                    : "dark:text-black text-white"
+                } text-xs md:text-sm`}
+              >
+                <span className="  ">{e.name}</span>
+              </button>
+            ))}
+          </div>
+          {hoveredCategory && (
+            <div className="max-h-60 h-60 overflow-y-auto scrollbar-thin  bai-jamjuree-regular cursor-pointer absolute bg-black w-40 dark:bg-gray-100  -right-41 top-5 grid grid-cols-1 rounded-lg">
+              <div className="p-3 dark:text-black text-white bai-jamjuree-semibold">
+                <h3 className=" text-sm">Subcategory</h3>
+              </div>
+              {SubCategories.find(
+                (elem) => elem.parent === hoveredCategory
+              )?.subcategories.map((sub, ind) => {
+                return (
+                  <>
+                    <button
+                      onClick={() => {
+                        dispatch(setSubCategory(sub));
+                        const Parent = SubCategories.find((elem) =>
+                          elem.subcategories.includes(sub)
+                        );
+                        setHoveredCategory(null);
+                        dispatch(setCategory(Parent?.parent));
+                      }}
+                      onMouseEnter={() => setHoveredCategory(hoveredCategory)}
+                      onMouseLeave={() => setHoveredCategory(null)}
+                      className={`hover:bg-teal-400/20  w-full py-1 px-4  transition-colors duration-200 text-left  bai-jamjuree-regular    ${
+                        subCategory === sub
+                          ? "bg-purple-400/15 text-purple-500"
+                          : "text-white dark:text-gray-900"
+                      } text-xs md:text-sm `}
+                      key={ind}
+                    >
+                      {sub}
+                    </button>
+                  </>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </>

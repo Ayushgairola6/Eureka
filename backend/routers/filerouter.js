@@ -5,6 +5,7 @@ import {
   PostTypeWebSearch,
   GetPublicRecords,
   GetPrivateDocResultss,
+  DeleteFileHandle,
 } from "../controllers/fileControllers.js";
 import {
   FindMatchingResponse,
@@ -25,6 +26,7 @@ Router.post(
   FileUploadHandle
 )
   .post("/ask-docs", VerifyToken, GetPublicRecords)
+  .delete("/user/private-docs/delete", VerifyToken, DeleteFileHandle)
   .post("/privateDocs/ask-docs", VerifyToken, GetPrivateDocResultss)
   .post("/query/web-search", VerifyToken, PostTypeWebSearch)
   .get("/new-sseToken", VerifyToken, GenerateSSEspecificTokens)

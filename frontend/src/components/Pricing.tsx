@@ -5,7 +5,7 @@ import { Link } from "react-router";
 import { useAppSelector } from "../store/hooks.tsx";
 
 import { MdScale, MdArrowForward } from "react-icons/md";
-
+import { BiPurchaseTag } from "react-icons/bi";
 const Pricing = () => {
   // const stripePromise = loadStripe('your-publishable-key-here');
   const isDarkMode = useAppSelector((state) => state.auth.isDarkMode);
@@ -53,25 +53,25 @@ const Pricing = () => {
       >
         {/* Gradient background elements */}
         {!isDarkMode && (
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-600/20 to-lime-800/20 blur-3xl z-[-1]" />
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-sky-600/20 to-indigo-800/20 blur-3xl z-[-1]" />
         )}
 
         {/* Section header */}
         <div className="max-w-4xl mx-auto text-center mb-16 relative">
           <h2 className="text-3xl sm:text-4xl bai-jamjuree-medium mb-4">
             Simple,{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-sky-500">
               Transparent
             </span>{" "}
             Pricing
           </h2>
           <p
-            className={`"space-grotesk ${
+            className={` ${
               isDarkMode ? "text-gray-100" : "text-gray-600"
-            } max-w-2xl mx-auto text-xs md:text-sm space-grotesk"`}
+            } max-w-2xl mx-auto text-xs md:text-sm space-grotesk`}
           >
-            Choose the plan that fits your needs. Open-source forever, premium
-            options for teams.
+            Choose the plan that fits your needs. SDK and other premium features
+            for teams.
           </p>
           {/* <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-70"></div> */}
         </div>
@@ -80,21 +80,21 @@ const Pricing = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {/* Free Tier */}
           <div
-            className={`"group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}
+            className={`group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border  group-hover:border-indigo-500`}
           >
             {/* accent gradient background */}
 
             {/* rest of the info */}
-            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-purple-500/30 transition-all duration-500 pointer-events-none"></div>
+            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-purple-500/30 transition-all duration-500 pointer-events-none "></div>
 
             <div className="mb-6">
               <h3 className="bai-jamjuree-semibold text-2xl mb-2">Community</h3>
               <p
-                className={`"space-grotesk ${
+                className={`space-grotesk ${
                   isDarkMode ? "text-gray-100" : "text-gray-600"
-                } text-xs"`}
+                } text-sm`}
               >
-                Free access to public knowledgebase and Unlimited contributions
+                Good for casual use and basic information gathering.
               </p>
             </div>
 
@@ -117,18 +117,34 @@ const Pricing = () => {
                 <FiCheckCircle className="text-green-500" />
                 Community contributions
               </li>
+              <li className="flex items-center gap-2 ">
+                <FiCheckCircle className="text-green-500" />
+                Web Search
+              </li>
               <li className="flex items-center gap-2">
-                <FiLock className="text-gray-500" />
+                <FiCheckCircle className="text-green-500" />
+                Customer support
+              </li>
+              <li className="flex items-center gap-2 text-gray-400">
+                <FiLock className="text-gray-400" />
                 Unlimited questions
               </li>
               <li className="flex items-center gap-2 text-gray-400">
                 <FiLock className="text-gray-400" />
-                Private documents
+                AI powered ChatRooms
+              </li>
+              <li className="flex items-center gap-2 text-gray-400">
+                <FiLock className="text-gray-400" />
+                Limited Private documents
+              </li>
+              <li className="flex items-center gap-2 text-gray-400">
+                <FiLock className="text-gray-400" />
+                Developer API
               </li>
             </ul>
             <Link to="/Interface">
               <button
-                className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer dark:bg-white dark:text-black bg-black text-white`}
+                className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer dark:bg-white dark:text-black bg-black text-white bai-jamjuree-bold`}
               >
                 Get Started
                 <MdArrowForward />
@@ -138,28 +154,29 @@ const Pricing = () => {
 
           {/* Pro Tier (Featured) */}
           <div
-            className={`"group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}
+            className={`group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border `}
           >
             {/* accent gradient background */}
 
             {/* rest of the info */}
-            <div className="absolute -top-3 right-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs bai-jamjuree-medium px-3 py-1 rounded-full">
+            <div className="group-hover:border-green-500 absolute -top-3 right-6 bg-gradient-to-r from-teal-500 to-green-500 text-white text-xs bai-jamjuree-medium px-3 py-1 rounded-full">
               Most Popular
             </div>
 
             <div className="mb-6">
               <h3 className="bai-jamjuree-semibold text-2xl mb-2">Pro</h3>
               <p
-                className={`"space-grotesk ${
+                className={`space-grotesk ${
                   isDarkMode ? "text-gray-100" : "text-gray-600"
-                } text-xs"`}
+                } text-sm`}
               >
-                For professionals , small teams , students and other Individuals{" "}
+                Good for Professionals, Teams, Students, Friends group and other
+                Individuals{" "}
               </p>
             </div>
 
             <div className="mb-8">
-              <span className="text-4xl bai-jamjuree-bold">$20</span>
+              <span className="text-4xl bai-jamjuree-bold">$30</span>
               <span className="space-grotesk text-gray-500">/month</span>
             </div>
 
@@ -178,25 +195,45 @@ const Pricing = () => {
               </li>
               <li className="flex items-center gap-2">
                 <FiCheckCircle className="text-green-500" />
+                Web Search
+              </li>
+              <li className="flex items-center gap-2">
+                <FiCheckCircle className="text-green-500" />
                 Priority support
               </li>
               <li className="flex items-center gap-2">
                 <FiCheckCircle className="text-green-500" />
                 Custom knowledge bases
               </li>
+              <li className="flex items-center gap-2">
+                <FiCheckCircle className="text-green-500" />
+                Developer API
+              </li>
+              <li className="flex items-center gap-2">
+                <FiCheckCircle className="text-green-500" />
+                AI powered chatrooms
+              </li>
+              <li className="flex items-center gap-2">
+                <FiCheckCircle className="text-green-500" />
+                24/7 Customer support
+              </li>
             </ul>
-
-            {/* <button className={`dark:bg-white  dark:text-black bg-black text-white w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer`}>
-                        Subscribe <BiPurchaseTag />
-                    </button> */}
-            {/* <Elements stripe={stripePromise}>
-                        <CheckoutForm />
-                    </Elements> */}
+            <button
+              onClick={() => {
+                toast(
+                  "Thanks for your intereset but , this feature is currently not active !"
+                );
+              }}
+              className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer dark:bg-white dark:text-black bg-black text-white`}
+            >
+              Subscribe
+              <BiPurchaseTag />
+            </button>
           </div>
 
           {/* Enterprise Tier */}
           <div
-            className={`"group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 "`}
+            className={`group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border`}
           >
             {/* accent gradient background */}
 
@@ -204,13 +241,17 @@ const Pricing = () => {
             <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-blue-500/30 transition-all duration-500 pointer-events-none"></div>
 
             <div className="mb-6">
-              <h3 className="bai-jamjuree-semibold text-2xl mb-2">
+              <h3 className="bai-jamjuree-semibold text-2xl mb-2 flex items-center gap-3">
                 Enterprise
+                <span className="text-gray-400 text-sm space-grotesk">
+                  (Will be active soon)
+                </span>
               </h3>
+
               <p
-                className={`"space-grotesk ${
+                className={`space-grotesk ${
                   isDarkMode ? "text-gray-100" : "text-gray-600"
-                } text-xs"`}
+                } text-xs`}
               >
                 For large teams & organizations
               </p>
@@ -251,7 +292,7 @@ const Pricing = () => {
               }}
               className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer dark:bg-white dark:text-black bg-black text-white`}
             >
-              Contact Sales
+              Live Soon
               <MdScale />
             </button>
           </div>

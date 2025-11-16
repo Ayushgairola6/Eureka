@@ -7,9 +7,9 @@ import { FaUserPlus, FaUser } from "react-icons/fa";
 import { MdEmail, MdPassword } from "react-icons/md";
 import { LuEyeClosed, LuEye, LuLogIn } from "react-icons/lu";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
-
 import { IoIosHourglass } from "react-icons/io";
 import { PiArrowUpRight } from "react-icons/pi";
+import FloatingStars from "@/components/FloatingStars";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -20,6 +20,7 @@ const Register = () => {
   const Password = useRef<HTMLInputElement>(null);
   const [type, setType] = useState<string>("password");
   const [isPending, setIsPending] = useState("idle");
+  const [HasAccepted, setHasAccepted] = useState(false);
   // google auth handler
   const handleGoogleAuth = () => {
     window.location.href = `${BaseApiUrl}/api/auth/google`;
@@ -59,6 +60,14 @@ const Register = () => {
   const HandleRegister = async () => {
     setIsPending("pending");
 
+    if (HasAccepted === false) {
+      toast.message(
+        "You need to accept our terms and conditions in order to continue"
+      );
+      setIsPending("idle");
+
+      return;
+    }
     if (Strength < 7) {
       toast.message("Please choose a stronger password");
       setIsPending("idle");
@@ -122,16 +131,31 @@ const Register = () => {
 
   return (
     <>
-      <div className="h-screen flex items-center justify-center relative z-[2] dark:bg-black dark:text-white">
+      <div className="h-screen flex items-center justify-center relative z-[2] dark:bg-black dark:text-white overflow-hidden">
         {/* gradient accent background */}
-        <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 dark:from-black dark:to-black blur-2xl z-[-1]"></div>
+        <FloatingStars />
+
+        <div className="absolute flex h-full w-full top-0 left-0 blur-2xl  z-[-1] ">
+          <div
+            className="w-[90%] h-[80%] md:w-[50%] m-auto rounded-t-xl    rounded-br-md rounded-bl-sm  opacity-100 Indicator"
+            style={{
+              background: `
+                  radial-gradient(circle at 30% 30%, purple 0%, transparent 50%),
+                  radial-gradient(circle at 70% 20%, yellow 10%, transparent 50%),
+                  radial-gradient(circle at 50% 70%, #F59E0B 15%, transparent 50%),
+                  radial-gradient(circle at 80% 60%, #EC4899 20%, transparent 50%),
+                  radial-gradient(circle at 20% 50%, #10B981 25%, transparent 50%)
+                `,
+              backgroundBlendMode: "screen",
+            }}
+          />
+        </div>
 
         <motion.div
           drag
           whileDrag={{ scale: 0.9 }}
           dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
-          className="bg-gradient-to-br from-gray-100 to-gray-200
-            dark:from-black dark:to-white/15 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black border dark:border-gray-400 cursor-grab relative"
+          className="bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black border dark:border-gray-400 cursor-grab relative"
         >
           <h1 className="text-center space-grotesk font-bold  text-2xl">
             Welcome to Eureka !{" "}
@@ -250,6 +274,22 @@ const Register = () => {
                 />
               </div>
             )}
+            <section className=" flex items-center justify-center w-full space-grotesk text-xs gap-2 p-2">
+              <input
+                spellCheck
+                onClick={() =>
+                  setHasAccepted((prev) => (prev === true ? false : true))
+                }
+                type="checkbox"
+              />
+              <span>
+                By clicking this you agree to our
+                <Link className="text-blue-600" to="/terms-and-conditions">
+                  {" "}
+                  terms-and-conditions
+                </Link>
+              </span>
+            </section>
           </span>
           <span className="flex items-center justfify-center py-4 flex-col gap-2">
             <motion.button
@@ -290,27 +330,27 @@ const Register = () => {
               <img src="/googleLogo.png" alt="Google" width="20" height="20" />
             </motion.button>
           </span>
-          <div className="flex items-center justify-end gap-3">
-            {/* Register Button - Glass */}
-            <Link
-              to="/Login"
-              className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl backdrop-blur-sm bg-black/5 dark:bg-white/5 border border-white/20 dark:border-gray-600/30 text-gray-800 dark:text-gray-200 font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
-            >
-              <span>Login</span>
-              <LuLogIn className="w-4 h-4" />
-            </Link>
-
-            {/* Get Verified Button - Glass */}
-            <Link
-              to="/Verification"
-              className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl backdrop-blur-sm bg-black/5 dark:bg-white/5 border border-white/20 dark:border-gray-600/30 text-gray-800 dark:text-gray-200 font-medium text-sm transition-all duration-300 hover:bg-sky-500/20 hover:border-sky-500/30 hover:text-sky-700 dark:hover:text-sky-300 hover:shadow-lg hover:scale-105"
-            >
-              <span>Get Verified</span>
-              <PiArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-            </Link>
-          </div>
         </motion.div>
         <Toaster />
+        <div className="flex items-center justify-end gap-3 absolute bottom-10 mt-8">
+          {/* Register Button - Glass */}
+          <Link
+            to="/Login"
+            className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl dark:bg-white/20 bg-black/20  border border-white/20 dark:border-gray-600/30 dark:text-gray-50 text-black font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
+          >
+            <span>Login</span>
+            <LuLogIn className="w-4 h-4" />
+          </Link>
+
+          {/* Get Verified Button - Glass */}
+          <Link
+            to="/Verification"
+            className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl dark:bg-white/20 bg-black/20 border border-white/20 dark:border-gray-600/30 dark:text-gray-50 text-black font-medium text-sm transition-all duration-300 hover:bg-sky-500/20 hover:border-sky-500/30 hover:text-sky-700 dark:hover:text-sky-300 hover:shadow-lg hover:scale-105"
+          >
+            <span>Get Verified</span>
+            <PiArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+          </Link>
+        </div>
       </div>
     </>
   );

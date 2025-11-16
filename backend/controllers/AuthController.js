@@ -10,7 +10,7 @@ import { EmailServices } from "../EmailHandlers/EmailTemplates.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 
-export const GenerateRefreshTokens = (id, email, username) => {
+export const GenerateRefreshTokens = (id, email, username, PaymentStatus) => {
   try {
     if (
       !id ||
@@ -23,7 +23,13 @@ export const GenerateRefreshTokens = (id, email, username) => {
       return { status: 400, error: "Error - Some arguments are missing !" };
     }
     const RefreshToken = jwt.sign(
-      { user_id: id, email: email, username: username, isVerified: true },
+      {
+        user_id: id,
+        email: email,
+        username: username,
+        isVerified: true,
+        PaymentStatus: PaymentStatus,
+      },
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "20d" }
     );
@@ -49,7 +55,7 @@ const GenerateEmailVerificationTokens = (username, email) => {
     return null; // Return null instead of error object
   }
 };
-export const GenerateAccessTokens = (id, email, username) => {
+export const GenerateAccessTokens = (id, email, username, PaymentStatus) => {
   try {
     if (
       !id ||
@@ -63,7 +69,13 @@ export const GenerateAccessTokens = (id, email, username) => {
     }
     const Secret = process.env.JWT_SECRET;
     const AccessToken = jwt.sign(
-      { user_id: id, email: email, username: username, isVerified: true },
+      {
+        user_id: id,
+        email: email,
+        username: username,
+        isVerified: true,
+        PaymentStatus: PaymentStatus,
+      },
       Secret,
       { expiresIn: "20min" }
     );
@@ -170,7 +182,7 @@ export const HandleUserLogin = async (req, res) => {
     const { data: user, error: userError } = await supabase
       .from("users")
       .select(
-        "email, id, username, password, isVerified, Tokens(Refresh_Token)"
+        "email, id, username, password, isVerified,IsPremiumUser, Tokens(Refresh_Token)"
       )
       .eq("email", normalizedEmail)
       .single();
@@ -210,8 +222,18 @@ export const HandleUserLogin = async (req, res) => {
       RefreshToken = user.Tokens[0].Refresh_Token;
     } else {
       // else generate a new session Token and refreshToken
-      ValidAuthToken = GenerateAccessTokens(user.id, user.email, user.email);
-      RefreshToken = GenerateRefreshTokens(user.id, user.email, user.username);
+      ValidAuthToken = GenerateAccessTokens(
+        user.id,
+        user.email,
+        user.email,
+        user.IsPremiumUser
+      );
+      RefreshToken = GenerateRefreshTokens(
+        user.id,
+        user.email,
+        user.username,
+        user.IsPremiumUser
+      );
     }
     // Generate new tokens if no valid refresh token exists
 
@@ -274,7 +296,8 @@ const CheckPastToken = async (user) => {
       const authToken = GenerateAccessTokens(
         user.id,
         user.email,
-        user.username
+        user.username,
+        PaymentStatus
       );
 
       if (!authToken) {
@@ -526,7 +549,6 @@ export const GetVerificationEmail = async (req, res) => {
           verificationtoken
         );
     } catch (emailError) {
-      console.error(emailError);
       if (!emailError) {
         await notifyMe(
           `Email services running down = ${JSON.stringify(emailError)}`
@@ -751,7 +773,7 @@ export const GetUserData = async (user_id) => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select(`username, created_at, email, id,isVerified`)
+      .select(`username, created_at, email, id,isVerified,IsPremiumUser`)
       .eq("id", user_id)
       .single();
 
@@ -845,22 +867,22 @@ export const GetUserChatRooms = async (user_id) => {
     return { error };
   }
 };
-export const CountNotifications = async (user_id) => {
-  try {
-    const { count, error } = await supabase
-      .from("notifications")
-      .select("user_id", { count: "exact", head: true })
-      .eq("user_id", user_id);
-    if (error) {
-      console.error("Supabase error (CountNotifications):", error);
-      return { error: error };
-    }
-    return { notificationcount: count || 0 };
-  } catch (error) {
-    console.error(error);
-    return { error };
-  }
-};
+// export const CountNotifications = async (user_id) => {
+//   try {
+//     const { count, error } = await supabase
+//       .from("notifications")
+//       .select("user_id", { count: "exact", head: true })
+//       .eq("user_id", user_id);
+//     if (error) {
+//       console.error("Supabase error (CountNotifications):", error);
+//       return { error: error };
+//     }
+//     return { notificationcount: count || 0 };
+//   } catch (error) {
+//     console.error(error);
+//     return { error };
+//   }
+// };
 
 export const GetNotificationsInformations = async (user_id) => {
   try {
@@ -869,7 +891,7 @@ export const GetNotificationsInformations = async (user_id) => {
       .select("*")
       .eq("user_id", user_id);
     if (error) {
-      console.error("Supabase error (CountNotifications):", error);
+      // console.error("Supabase error (CountNotifications):", error);
       return { error: error };
     }
 
@@ -888,46 +910,27 @@ export const GetUserAccountDetails = async (req, res) => {
       return res.status(401).json({ message: "Invalid user id" });
     }
     const username = req.user.username ? req.user.username : "unkown1";
-    // unique userKye for caching
-    const user_cache_key = `username=${username}&user_id=${user_id}`;
 
-    // const userdata = await getUserDataFromCache(user_cache_key);
     const UserAccountDataKey = `user_id=${user_id}&username=${username}'s_dashboardData`;
-    const userdata = await redisClient
-      .hGetAll(UserAccountDataKey)
-      .catch(
-        async (err) =>
-          await notifyMe(
-            `${err} this error occured while checking for user dashboard data in the cache`
-          )
-      );
-
-    // if there is cache info
-    if (userdata) {
-      const hasCachedData =
-        userdata.userdata ||
-        userdata.Contributions ||
-        userdata.querycount ||
-        userdata.Jrooms;
-      userdata.notificationcount !== 0 ||
-        userdata.notification ||
-        userdata.feedbackcount;
-
-      if (hasCachedData && !userdata.error) {
-        console.log("Serving from cache");
-        return res.status(200).send({
-          user: JSON.parse(userdata.userdata),
-          Contributions_user_id_fkey: JSON.parse(userdata.Contributions),
-          Querycount: JSON.parse(userdata.querycount),
-          FeedbackCounts: JSON.parse(userdata.feedbackcount),
-          chatrooms: JSON.parse(userdata.rooms),
-          notificationcount: JSON.parse(userdata.notificationcount),
-          notification: JSON.parse(userdata.notification),
-          message: "User data found",
-        });
-      }
+    // await redisClient.del(UserAccountDataKey);
+    //  if this cache key exists in the memory return the info from it after parsing to original values
+    const CacheExists = await redisClient.exists(UserAccountDataKey);
+    if (CacheExists) {
+      const userdata = await redisClient.hGetAll(UserAccountDataKey);
+      // console.log("Servving from cache");
+      return res.status(200).send({
+        user: JSON.parse(userdata.userdata),
+        Contributions_user_id_fkey: JSON.parse(userdata.Contributions),
+        Querycount: JSON.parse(userdata.querycount),
+        FeedbackCounts: JSON.parse(userdata.feedbackcount),
+        chatrooms: JSON.parse(userdata.rooms),
+        notificationcount: JSON.parse(userdata.notificationcount),
+        notifications: JSON.parse(userdata.notification),
+        message: "User data found",
+      });
     }
 
+    // await redisClient.del(UserAccountDataKey);
     // Fetch all data in parallel to improve performance
     const [
       userData,
@@ -935,7 +938,6 @@ export const GetUserAccountDetails = async (req, res) => {
       votesData,
       chatroomsData,
       Contributions_user_id_fkey,
-      notificationcount,
       notifications,
     ] = await Promise.all([
       GetUserData(user_id),
@@ -943,7 +945,6 @@ export const GetUserAccountDetails = async (req, res) => {
       GetUserLikeCount(user_id),
       GetUserChatRooms(user_id),
       GetUserContributions(user_id),
-      CountNotifications(user_id),
       GetNotificationsInformations(user_id),
     ]);
 
@@ -957,13 +958,15 @@ export const GetUserAccountDetails = async (req, res) => {
     const StoreInCache = await StoreUserDataInTheCache(
       user_id,
       username,
-      user_cache_key,
+      UserAccountDataKey,
       userData.data,
       Contributions_user_id_fkey.data,
       countData.count,
-      votesData?.data?.length > 0 ? votesData.data[0].Doc_Feedback : 0,
+      votesData?.data && votesData.data.length
+        ? votesData.data
+        : { upvotes: 0, downvotes: 0, partial_upvotes: 0 },
       chatroomsData.data,
-      notificationcount.notificationcount,
+      notifications.notifications.length,
       notifications.notifications
     );
 
@@ -978,9 +981,11 @@ export const GetUserAccountDetails = async (req, res) => {
       Contributions_user_id_fkey: Contributions_user_id_fkey.data || [],
       Querycount: countData.count,
       FeedbackCounts:
-        votesData?.data?.length > 0 ? votesData.data[0].Doc_Feedback : 0,
+        votesData.data.length && votesData?.data?.length > 0
+          ? votesData.data
+          : { upvotes: 0, downvotes: 0, partial_upvotes: 0 },
       chatrooms: chatroomsData.data,
-      notificationcount: notificationcount.notificationcount,
+      notificationcount: notifications.notifications.length,
       notifications: notifications.notifications,
       message: "User data found",
     });
@@ -997,7 +1002,7 @@ export const GetUserAccountDetails = async (req, res) => {
 const StoreUserDataInTheCache = async (
   user_id,
   username,
-  base_key,
+  UserAccountDataKey,
   userdata,
   Contributions,
   querycount,
@@ -1006,32 +1011,30 @@ const StoreUserDataInTheCache = async (
   notifycount,
   notify
 ) => {
-  if (!base_key) {
-    return { error: "Invalid base_key" };
+  if (!UserAccountDataKey) {
+    return { error: "Invalid UserAccountDataKey" };
   }
 
   try {
     const UserAccountDataKey = `user_id=${user_id}&username=${username}'s_dashboardData`;
-    // await redisClient.del(UserAccountDataKey);
     await redisClient
       .hSet(UserAccountDataKey, {
-        ["userdata"]: JSON.stringify(userdata),
-        ["Contributions"]: JSON.stringify(Contributions),
-        ["querycount"]: JSON.stringify(querycount),
-        ["feedbackcount"]: JSON.stringify(feedbackcount),
-        ["rooms"]: JSON.stringify(rooms),
-        ["notificationcount"]: JSON.stringify(notifycount),
-        ["notification"]: JSON.stringify(notify),
+        userdata: JSON.stringify(userdata ? userdata : []),
+        Contributions: JSON.stringify(Contributions ? Contributions : []),
+        querycount: JSON.stringify(querycount ? querycount : 0),
+        feedbackcount: JSON.stringify(feedbackcount ? feedbackcount : {}),
+        rooms: JSON.stringify(rooms ? rooms : []),
+        notificationcount: JSON.stringify(notifycount ? notifycount : 0),
+        notification: JSON.stringify(notify ? notify : []),
       })
-      .catch(
-        async (err) =>
-          await notifyMe(
-            `Error ${err} while caching user dashboard information `
-          )
+      .catch((err) =>
+        console.log(
+          err,
+          "an error occured while caching the user dashboard information"
+        )
       );
-    await redisClient.expire(UserAccountDataKey, 50);
+    await redisClient.expire(UserAccountDataKey, 3600); //wait for a while before deleting user account data
   } catch (error) {
-    console.error(`Error while Storing information in the cache ${error}`);
     return { error };
   }
 };
@@ -1181,7 +1184,8 @@ export const StoreNotifications = async (
         title: "Room-joining-request",
         metadata: metadata,
       })
-      .select("*");
+      .select("*")
+      .single();
 
     if (insertError) {
       return [];
@@ -1192,6 +1196,7 @@ export const StoreNotifications = async (
   }
 };
 
+// deleting notificaiton from db and cache if exists
 export const DeleteNotification = async (req, res) => {
   try {
     const user_id = req.user.user_id;
@@ -1202,6 +1207,33 @@ export const DeleteNotification = async (req, res) => {
 
     const { notification_id } = req.params;
 
+    const key = `user_id=${user_id}&username=${req.user.username}'s_dashboardData`;
+
+    // if the data of the key exists in the cache
+    const exists = await redisClient.exists(key);
+    if (exists) {
+      // get the notifications then remove the notification from it
+      const AllNotitifications = await redisClient.hGet(key, "notification");
+      if (AllNotitifications) {
+        const ParsedNotifications = JSON.parse(AllNotitifications);
+        const indexOfId = ParsedNotifications.find(
+          (e) => e.id === notification_id
+        );
+        // delete the items from it and update the cache
+        ParsedNotifications.splice(indexOfId, 1);
+        await redisClient.hSet(
+          key,
+          "notification",
+          JSON.stringify(ParsedNotifications)
+        );
+        // the length of the new array is the new notificatins count
+        await redisClient.hSet(
+          key,
+          "notificationcount",
+          JSON.stringify(ParsedNotifications.length)
+        );
+      }
+    }
     const { data, error } = await supabase
       .from("notifications")
       .delete("*")

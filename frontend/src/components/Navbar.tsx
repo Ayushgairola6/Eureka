@@ -20,8 +20,9 @@ const Navbar = () => {
   const notificationcount = useAppSelector(
     (state) => state.auth.notificationcount
   );
-  const User = useAppSelector((state) => state.auth.user);
-  const { isLoggedIn, isDarkMode } = useAppSelector((state) => state.auth);
+  const { isLoggedIn, isDarkMode, user } = useAppSelector(
+    (state) => state.auth
+  );
   const isOpen = useAppSelector((state) => state.chats.isOpen);
   // const {isOpen} = useAppSelector(state=>state.chats)
   const { currTab } = useAppSelector((state) => state.auth);
@@ -29,12 +30,12 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`relative bg-gray-100 py-1 px-6 flex items-center justify-between z-[3] oveflow-visible dark:text-white text-black dark:bg-black `}
+        className={`sticky top-0 left-0 bg-gray-50 border  py-1 px-6 flex items-center justify-between z-[3] oveflow-visible dark:text-white text-black dark:bg-black `}
       >
         {/* top scroll indicator */}
         <motion.div
           style={{ scaleX: scrollYProgress }}
-          className="bg-indigo-500 w-full fixed py-1 origin-left top-0 left-0 z-[99]"
+          className="bg-orange-500 w-full fixed py-0.5 origin-left top-0 left-0 z-[9]"
         ></motion.div>
 
         {/* navlinks */}
@@ -44,7 +45,13 @@ const Navbar = () => {
         >
           {/* EUREKA */}
 
-          <span className="bebas-neue-regular text-xl">Ask?EUREKA</span>
+          {/* <span className="bebas-neue-regular text-xl">Ask?EUREKA</span> */}
+
+          <img
+            className="h-12 w-12 rotate-9 "
+            src={isDarkMode === false ? "/Light.png" : "/Dark.png"}
+            alt="AskEuekaLogo"
+          />
         </Link>
 
         <div
@@ -52,7 +59,7 @@ const Navbar = () => {
         >
           <Link
             onClick={() => dispatch(setCurrTab("Home"))}
-            className={` rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 ${
+            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
               currTab === "Home" ? " slider" : " "
             } z-[1]`}
             to="/"
@@ -61,7 +68,7 @@ const Navbar = () => {
           </Link>
           <Link
             onClick={() => dispatch(setCurrTab("Try"))}
-            className={` rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 ${
+            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
               currTab === "Try" ? "slider" : "bg-transparent "
             }`}
             to="/Interface"
@@ -78,33 +85,33 @@ const Navbar = () => {
           >
             Quick start
           </Link> */}
+
+          <Link
+            onClick={() => dispatch(setCurrTab("API"))}
+            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
+              currTab === "API" ? "slider" : "bg-transparent "
+            }`}
+            to="/Api/introduction"
+          >
+            API
+          </Link>
           <Link
             onClick={() => dispatch(setCurrTab("Feedback"))}
-            className={` rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 ${
+            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
               currTab === "Feedback" ? "slider" : "bg-transparent "
             }`}
             to="/Feedback"
           >
             Feedback
           </Link>
-          <Link
-            onClick={() => dispatch(setCurrTab("API"))}
-            className={` rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 ${
-              currTab === "API" ? "slider" : "bg-transparent "
-            }`}
-            to="/API/featured"
-          >
-            API
-          </Link>
-
           {/* only render if the user is not logged In */}
           {isLoggedIn === true && (
             <Link
               onClick={() => dispatch(setCurrTab("DashBoard"))}
-              className={` rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 ${
+              className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
                 currTab === "DashBoard" ? "slider" : "bg-transparent "
               }`}
-              to="/User/dashboard"
+              to="/user/dashboard"
             >
               DashBoard
             </Link>
@@ -120,7 +127,7 @@ const Navbar = () => {
               className={`cursor-pointer md:block hidden p-1  ${
                 showSettings
                   ? "text-red-600 bg-red-100 dark:bg-red-900/30"
-                  : "text-black dark:text-sky-600 bg-indigo-600/20 dark:bg-white/10"
+                  : "text-green-500 bg-green-600/10 "
               } rounded-full transition-all duration-300 hover:scale-110`}
               onClick={() => setShowSettings(!showSettings)}
             >
@@ -133,14 +140,21 @@ const Navbar = () => {
             </button>
 
             {/* Tooltip */}
-            <div className="absolute  top-7 right-4  z-[9999]   hidden md:flex px-2 py-1 bg-black text-white border border-gray-400 text-xs rounded pointer-events-none  opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              Options
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
-            </div>
+            {showSettings === false && (
+              <div className="absolute  top-7 right-4  z-[9999]   hidden md:flex px-2 py-1 bg-black dark:bg-white text-white dark:text-black border  text-xs rounded pointer-events-none  opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Options
+                <div className="absolute -top-1 right-2 transform -translate-x-1/2 w-2 h-2 bg-black dark:bg-white rotate-45"></div>
+              </div>
+            )}
+            <Settings
+              showSettings={showSettings}
+              setShowSettings={setShowSettings}
+              isLoggedIn={isLoggedIn}
+            />
           </div>
 
           {/* notificaiton icon */}
-          {isLoggedIn === true && (
+          {user.username !== "" && (
             <ul
               onClick={() => dispatch(setOpen(!isOpen))}
               className="cursor-pointer  rounded-full p-1 relative "
@@ -149,6 +163,7 @@ const Navbar = () => {
               <span className=" absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-medium text-white bg-red-600 rounded-full border-2 border-white dark:border-gray-900">
                 {notificationcount}
               </span>
+              <NotificationPanel />
             </ul>
           )}
           {/* small screen theme icon */}
@@ -170,14 +185,14 @@ const Navbar = () => {
           </ul>
 
           {/* rest of the items */}
-          {isLoggedIn === true ? (
+          {user.username !== "" && (
             <Link to="user/dashboard">
               {" "}
               <ul className="cursor-pointer uppercase bg-emerald-500 rounded-full h-6 w-6  text-lg p-1 flex items-center justify-center  text-white bai-jamjuree-regular  font-bold">
-                {User?.username.trim().split("")[0].toUpperCase()}
+                {user?.username.trim().split("_")[0].charAt(0).toUpperCase()}
               </ul>
             </Link>
-          ) : null}
+          )}
           {isVisible === false ? (
             <BiMenuAltRight
               onClick={() => setIsVisible(!isVisible)}
@@ -194,12 +209,6 @@ const Navbar = () => {
         </div>
       </nav>
       <Sidebar isVisble={isVisible} setIsVisible={setIsVisible} />
-      <NotificationPanel />
-      <Settings
-        showSettings={showSettings}
-        setShowSettings={setShowSettings}
-        isLoggedIn={isLoggedIn}
-      />
     </>
   );
 };

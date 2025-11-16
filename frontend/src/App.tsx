@@ -2,7 +2,7 @@ import { useEffect, lazy, Suspense, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 const Interface = lazy(() => import("./pages/Interface.tsx"));
 const LandingPage = lazy(() => import("./pages/LandingPage.tsx"));
-const About = lazy(() => import("./pages/About.tsx"));
+// const About = lazy(() => import("./pages/About.tsx"));
 const Login = lazy(() => import("./pages/Login.tsx"));
 const Register = lazy(() => import("./pages/Register.tsx"));
 const Feedback = lazy(() => import("./pages/FeedbackPage.tsx"));
@@ -31,6 +31,9 @@ import {
   setIsLogin,
   setTheme,
   setUseStatus,
+  StoreInIndexDb,
+  StoreLocalCache,
+  UpdateFromLocalCache,
 } from "./store/AuthSlice.ts";
 import Navbar from "./components/Navbar";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
@@ -39,27 +42,64 @@ import axios from "axios";
 import VerificationLink from "./components/VerficationLink.tsx";
 import OAuthCallbackHandler from "./pages/OauthCallbackHandlers.tsx";
 
-// import { BiError } from 'react-icons/bi';
 const DocumentationLayout = lazy(
   () => import("./pages/DocumentationLayout.tsx")
 );
+import TermsAndConditions from "./pages/TermsAndConditions.tsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
+import RefundPolicy from "./pages/RefundPolicy.tsx";
 
-// const [loadValue, setLoadValue] = useState<number>(0);
-// useEffect(()=>{
-
-// },)
+// stripe api
+// const stripePromise = loadStripe(
+//   "pk_test_51BTUDGJAJfZb9HEBwDg86TN1KNprHjkfipXmEDMb0gSCassK5T3ZfxsAbcgKVmAIXF7oZ6ItlZZbXO6idTHE67IM007EwQ4uN3"
+// );
 const App = () => {
-  // const [currTab, setCurrTab] = useState("Home");
   const dispatch = useAppDispatch();
   const { isDarkMode, isLoggedIn, userStatus } = useAppSelector(
     (state) => state.auth
   );
+
+  // updating the local states from local cache
+  useEffect(() => {
+    const request = StoreInIndexDb();
+
+    request.onerror = () => {
+      return;
+    };
+
+    request.onsuccess = (event: any) => {
+      let db = event.target.result;
+
+      // if this table does not exist return simply
+
+      let transaction = db.transaction(["userinfo"], "readwrite");
+      let objectStore = transaction.objectStore("userinfo");
+
+      let getRequest = objectStore.get("currentUser");
+
+      getRequest.onsuccess = function () {
+        dispatch(UpdateFromLocalCache(getRequest.result)); //update the localstates
+      };
+    };
+
+    // if the database is new create a new table
+    request.onupgradeneeded = function (event: any) {
+      let db = event?.target?.result;
+      if (!db.objectStoreNames.contains("userinfo")) {
+        db.createObjectStore("userinfo", {
+          keypath: "ssn",
+          autoIncrement: true,
+        });
+      }
+    };
+  }, []);
   const themeInitialized = useRef(false);
 
   useEffect(() => {
     const controller = new AbortController();
-    const VerifyLoginState: () => Promise<void> = async () => {
+    const VerifyLoginState: () => Promise<any> = async () => {
       try {
+        setUseStatus("pending");
         const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
         const response = await axios.get(`${BaseApiUrl}/api/verify/userstate`, {
           // signal: controller.signal,
@@ -70,10 +110,17 @@ const App = () => {
         });
         if (response.data.message === "verified") {
           dispatch(setIsLogin(true));
+          setUseStatus("idle");
           return;
         }
       } catch (error) {
         // console.log(error);
+        setUseStatus("failed");
+
+        const time = setTimeout(() => {
+          setUseStatus("idle");
+        }, 3000);
+        return () => clearTimeout(time);
       }
     };
     VerifyLoginState();
@@ -85,12 +132,18 @@ const App = () => {
     const fetchUserData = async () => {
       if (isLoggedIn === true) {
         try {
-          dispatch(GetUserDashboardData());
+          dispatch(GetUserDashboardData())
+            .unwrap()
+            .then((res) => {
+              if (res) {
+                // updates the local cache
+                console.log(res);
+                StoreLocalCache(res.user);
+              }
+            });
           dispatch(connectSocket());
         } catch (error) {
-          console.error("Failed to fetch user data:", error);
           setUseStatus("idle");
-        } finally {
         }
       }
     };
@@ -144,25 +197,31 @@ const App = () => {
     <>
       {/* Global Loading Overlay */}
       {userStatus === "pending" && (
-        <LoadingIndicator text={"Setting up your dashboard"} />
+        <LoadingIndicator
+          text={
+            userStatus === "pending"
+              ? "Setting up your dashboard"
+              : userStatus === "failed"
+              ? "Failed to get your details please logIn instead"
+              : "Nothing for you here"
+          }
+        />
       )}
 
       {/* main routers */}
       <Suspense
         fallback={
-          <div className="h-screen bg-black flex items-center justify-center     text-6xl ">
-            <section className="text-center bg-gray-50 p-3 rounded-md text-black flex flex-col items-center justify-center gap-2">
-              <img
-                src="/Group 1.svg"
-                alt="Eureka logo"
-                className="rounded-full h-18 w-18"
-              />
-              <span className="bebas-neue-regular text-xl">Ask?EUREKA</span>
-            </section>
+          <div className="h-screen bg-black flex items-center justify-center     ">
+            <img
+              src="/Dark.png"
+              alt="Eureka logo"
+              className="  h-30 w-30  m-auto"
+            />
           </div>
         }
       >
         <Router>
+          {/* <Elements stripe={stripePromise} options={options}> */}
           <Navbar />
           <Routes>
             <Route
@@ -172,14 +231,19 @@ const App = () => {
             <Route element={<LandingPage />} path="/"></Route>
             <Route element={<EmailVerification />} path="/user/verify-email" />
             <Route element={<Interface />} path="/Interface"></Route>
-            <Route element={<About />} path="/About" />
+            {/* <Route element={<About />} path="/About" /> */}
             <Route element={<Login />} path="/Login" />
             <Route element={<Register />} path="/Register" />
             <Route element={<Feedback />} path="/Feedback" />
             <Route element={<EmailVerificationForm />} path="/ResetPassword" />
             <Route element={<ResetPassword />} path="/reset-password" />
             <Route element={<VerificationLink />} path="/Verification" />
-
+            <Route
+              element={<TermsAndConditions />}
+              path="/terms-and-conditions"
+            />
+            <Route element={<PrivacyPolicy />} path="/Privacy" />
+            <Route element={<RefundPolicy />} path="/Refund-Policy" />
             <Route
               element={<ConversationDetail />}
               path="/User/document_chat_history/:id"
@@ -189,16 +253,29 @@ const App = () => {
             <Route element={<OtherChats />} path="/user/misallaneous-chats" />
 
             <Route element={<DocumentationLayout />}>
-              <Route element={<API />} path="/API/featured" />
-              <Route element={<DocsPage2 />} path="/docs/page2" />
-              <Route element={<Privacy />} path="/docs/page3" />
-              <Route element={<API_functions />} path="/docs/page4" />
-              <Route element={<Query_Doc />} path="/docs/page5" />
-              <Route element={<UploadDocuments />} path="/docs/page6" />
+              <Route element={<API />} path="/Api/introduction" />
+              <Route element={<DocsPage2 />} path="/Api/AskEureka/Know-How" />
+              <Route
+                element={<Privacy />}
+                path="/Api/AskEureka/Managaging-PrivateDocs"
+              />
+              <Route
+                element={<API_functions />}
+                path="/Api/AskEureka/GettingAllDocuments"
+              />
+              <Route
+                element={<Query_Doc />}
+                path="/Api/AskEureka/QueryIng-Documents"
+              />
+              <Route
+                element={<UploadDocuments />}
+                path="/Api/AskEureka/Uploading_Documents"
+              />
 
               {/* Add more documentation routes here */}
             </Route>
           </Routes>
+          {/* </Elements> */}
         </Router>
       </Suspense>
     </>

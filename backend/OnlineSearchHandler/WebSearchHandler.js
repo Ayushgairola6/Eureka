@@ -51,24 +51,24 @@ export function formatForGemini(results) {
     ];
   }
 
-  const parts = [];
+  let FormattedSttring = `These are the websearch results for the users question,`;
 
   // 1. Direct answer (if available)
   if (results.answer) {
-    parts.push(`DIRECT_ANSWER: ${results.answer}`);
+    FormattedSttring += `SearchEngineAnswer=${results.answer}`;
   }
 
   // 2. Key insights from top results
   const keyInsights = [];
   results.results.slice(0, 3).forEach((res, index) => {
     if (res.content) {
-      const insight = res.content.replace(/\s+/g, " ").substring(0, 300).trim();
+      const insight = res.content;
       keyInsights.push(`${index + 1}. ${insight}`);
     }
   });
 
   if (keyInsights.length > 0) {
-    parts.push(`KEY_INSIGHTS:\n${keyInsights.join("\n")}`);
+    FormattedSttring += `KEY_INSIGHTS:\n${keyInsights.join("\n")}`;
   }
 
   // 3. Sources reference
@@ -77,16 +77,10 @@ export function formatForGemini(results) {
       `[${index + 1}] ${res.title || "No title"} - ${res.url || "No URL"}`
   );
 
-  parts.push(`SOURCES:\n${sources.join("\n")}`);
+  // parts.push(`SOURCES:\n${sources.join("\n")}`);
+  FormattedSttring += `SOURCES:\n${sources.join("\n")}`;
 
-  const combinedContent = parts.join("\n\n");
-
-  return [
-    {
-      role: "model",
-      parts: [{ text: combinedContent }],
-    },
-  ];
+  return FormattedSttring;
 }
 
 // Searhc the web and write the message for client

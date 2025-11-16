@@ -1,0 +1,528 @@
+import type React from "react";
+import { motion } from "framer-motion";
+import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
+import WebSearch from "./webSearch.tsx";
+import QueryType from "./Query_type.tsx";
+import { v4 as uuid } from "uuid";
+import axios from "axios";
+import { FaFileUpload } from "react-icons/fa";
+import { IoOptions } from "react-icons/io5";
+import { IoDocument } from "react-icons/io5";
+import { BiHourglass } from "react-icons/bi";
+import { BsStars } from "react-icons/bs";
+import { GoZap } from "react-icons/go";
+import {
+  UpdateChats,
+  setShowDocs,
+  setShowOptions,
+  setShowType,
+  QueryPrivateDocuments,
+  setQuestion,
+  QueryAIQuestions,
+  WebSearchHandler,
+  MimicSSE,
+  setQueryType,
+  setSelectedDoc,
+  setShowUserForm,
+  setLoading,
+  updateFavicon,
+} from "../store/InterfaceSlice.ts";
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
+import { toast } from "sonner";
+import { useNavigate } from "react-router";
+type InputProps = {
+  textareaRef: React.Ref<HTMLInputElement>;
+  isActive: boolean;
+  setIsActive: React.Dispatch<React.SetStateAction<boolean>>;
+};
+const InputSection: React.FC<InputProps> = ({
+  textareaRef,
+  isActive,
+  setIsActive,
+}) => {
+  const dispatch = useAppDispatch();
+  const {
+    question,
+    loading,
+    category,
+    showDocs,
+    showType,
+    shwoOptions,
+    subCategory,
+    queryType,
+    selectedDoc,
+    shhowUserForm,
+  } = useAppSelector((state) => state.interface);
+  const navigate = useNavigate();
+  const { user, isLoggedIn } = useAppSelector((state) => state.auth);
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+
+  // Array of month names for clarity
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  // Array of day names
+  const dayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  const dayOfMonth = now.getDate();
+  const dayOfWeek = dayNames[now.getDay()];
+  const year = now.getFullYear();
+  const month = monthNames[now.getMonth()];
+
+  // Format time in 12-hour format with AM/PM
+  const formattedTime = `${hour > 12 ? hour - 12 : hour}:${minute
+    .toString()
+    .padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
+
+  // Combine all parts into a single string using a delimiter
+  const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
+
+  // getting sse token before sending a request
+  const GetSSEToken = async () => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+
+      const response = await axios.get(`${BaseApiUrl}/api/new-sseToken`, {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${AuthToken}`,
+        },
+      });
+      if (response.data.token) {
+        return response.data.token;
+      }
+    } catch (err: any) {
+      console.log(err);
+      toast.error(err.response.data.message || "Something went wrong");
+    }
+  };
+  // private documents querying
+  const QueryPrivateDocument = async () => {
+    try {
+      if (!question) {
+        toast.info("Question cannot be empty !");
+        return;
+      }
+      if (!selectedDoc) {
+        toast.info("Please select a document before querying");
+        return;
+      }
+      if (!queryType) {
+        toast.info("Please select a query type");
+        return;
+      }
+      if (queryType === "Summary" && user?.IsPremiumUser === false) {
+        toast.info("Get our premium membership to access this feature.");
+        return;
+      }
+      // get a session only token
+      // const SseToken = await GetSSEToken();
+      // if (!SseToken) {
+      //   toast.error("Something went wrong");
+      //   return;
+      // }
+      const user_id = uuid();
+      const AiId = uuid();
+
+      // Insert user message
+      dispatch(
+        UpdateChats({
+          id: user_id,
+          sent_at: currentTime,
+          sent_by: "You",
+          message: {
+            isComplete: true,
+            content: question,
+          },
+        })
+      );
+
+      // Insert empty AI message
+      dispatch(
+        UpdateChats({
+          id: AiId,
+          sent_at: currentTime,
+          sent_by: "Eureka",
+          message: {
+            isComplete: false,
+            content: "",
+          },
+        })
+      );
+
+      // const Url = `${BaseApiUrl}/api/privateDocs/ask?question=${encodeURIComponent(
+      //   question
+      // )}&AccessToken=${SseToken}&docId=${encodeURIComponent(
+      //   selectedDoc
+      // )}&query_type=${encodeURIComponent(queryType)}`;
+      // const SSe = HandleSSEConnection(Url, AiId, dispatch);
+      // return SSe;
+      const data = {
+        docId: selectedDoc,
+        question,
+        query_type: queryType,
+        MessageId: AiId,
+      };
+      if (!data.docId || !data.question || !data.query_type) {
+        toast.error(`Some fields are missing`);
+        return;
+      }
+      dispatch(QueryPrivateDocuments(data))
+        .unwrap()
+        .then((res) => {
+          if (res.message) {
+            console.log(res);
+            dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
+          }
+        })
+        .catch(() => {
+          dispatch(MimicSSE({ id: AiId, delta: "Server busy" }));
+
+          toast.error("Server busy");
+        });
+    } catch (err) {
+      toast.error("Something went wrong");
+    }
+  };
+  //web search handler
+  const SearchWeb = async () => {
+    try {
+      if (!question || question === "") {
+        toast.error("Please type a message first");
+        return;
+      }
+      const SseToken = await GetSSEToken();
+      if (!SseToken) {
+        toast.error("Please try again !");
+        return;
+      }
+      const user_id = uuid();
+      const AiId = uuid();
+
+      // Insert user message
+      dispatch(
+        UpdateChats({
+          id: user_id,
+          sent_at: currentTime,
+          sent_by: "You",
+          message: {
+            isComplete: true,
+            content: question,
+          },
+        })
+      );
+
+      // Insert empty AI message
+      dispatch(
+        UpdateChats({
+          id: AiId,
+          sent_at: currentTime,
+          sent_by: "Eureka",
+          message: {
+            isComplete: false,
+            content: "",
+          },
+        })
+      );
+
+      // const Url = `${BaseApiUrl}/api/user/web-search?question=${question}&AccessToken=${SseToken}`;
+      // const SSe = HandleSSEConnection(Url, AiId, dispatch);
+      // return SSe;
+      dispatch(WebSearchHandler({ question, MessageId: AiId }))
+        .unwrap()
+        .then((res) => {
+          console.log(res);
+          if (res.message === "Results found") {
+            dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
+            dispatch(updateFavicon(res.favicon));
+          }
+        })
+        .catch(() => {
+          dispatch(
+            MimicSSE({
+              id: AiId,
+              delta:
+                "I was unable to find anything related to you question in your document . If you could be more specific about what you want to know about this document I will be able to assist you properly.",
+            })
+          );
+        });
+      dispatch(setQuestion(""));
+    } catch (err: any) {
+      toast.error(err.response.data.message);
+    }
+  };
+  // centeral function that manages when to call which function
+  const handleAsk = async () => {
+    try {
+      if (isLoggedIn === false) {
+        navigate("/Login");
+        return;
+      }
+      // if the dropdown menu is visible
+      if (shwoOptions === true) {
+        dispatch(setShowOptions(false));
+      }
+      // if the doc is selected then the query is going to be not web search
+      if (selectedDoc && selectedDoc !== "" && queryType !== "Web Search") {
+        await QueryPrivateDocument();
+        return;
+      }
+      // if private doc is not selected and query type web search is chosen
+      else if (!selectedDoc && queryType === "Web Search") {
+        await SearchWeb();
+        return;
+      }
+
+      if (!question.trim() || !category || category === "") {
+        toast.message(
+          !question
+            ? "❌ Please enter a question."
+            : "❌ Please choose a category!"
+        );
+        return;
+      }
+
+      // get a session only token
+      // const SseToken = await GetSSEToken();
+      // if (!SseToken) {
+      //   toast.error("Something went wrong");
+      //   return;
+      // }
+      const user_id = uuid();
+      const AiId = uuid();
+
+      // // Insert user message
+      dispatch(
+        UpdateChats({
+          id: user_id,
+          sent_at: currentTime,
+          sent_by: "You",
+          message: {
+            isComplete: true,
+            content: question,
+          },
+        })
+      );
+
+      // Insert empty AI message
+      dispatch(
+        UpdateChats({
+          id: AiId,
+          sent_at: currentTime,
+          sent_by: "Eureka",
+          message: {
+            isComplete: false,
+            content: "",
+          },
+        })
+      );
+
+      // const Url = `${BaseApiUrl}/api/ask-pdf?question=${encodeURIComponent(
+      //   question
+      // )}&AccessToken=${SseToken}&subCategory=${encodeURIComponent(
+      //   subCategory
+      // )}&category=${encodeURIComponent(category)}`;
+
+      // const SSe = HandleSSEConnection(Url, AiId, dispatch);
+      // return SSe;
+      const data = {
+        question: question,
+        category: category,
+        subCategory: subCategory,
+      };
+      // get answers
+      dispatch(QueryAIQuestions(data))
+        .unwrap()
+        .then((res) => {
+          if (res.message) {
+            dispatch(MimicSSE({ id: AiId, delta: res.answer }));
+          }
+        })
+        .catch(() => {
+          dispatch(setLoading(false));
+          dispatch(MimicSSE({ id: AiId, delta: "Server busy" }));
+
+          toast.error("Server busy");
+        });
+    } catch (err) {
+      toast.error("Something went wrong");
+    }
+  };
+
+  return (
+    <>
+      {/* input section body */}
+      <motion.section
+        className={`relative overflow-y-visible  w-full  px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border  bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3]  ${
+          isActive === true
+            ? "h-auto w-full "
+            : "w-[90%] h-18 overflow-hidden mx-auto "
+        } transition-all duration-150 ease-linear`}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+      >
+        {" "}
+        {/* input section */}
+        <input
+          value={question}
+          onFocus={() => setIsActive(true)}
+          onChange={(e) => {
+            dispatch(setQuestion(e.target.value));
+          }}
+          onKeyUp={(e) => e.key === "Enter" && handleAsk()}
+          ref={textareaRef}
+          name="input"
+          placeholder="What would you like to research today ... ?"
+          className="w-full dark:text-white text-black rounded-lg px-2 py-3 focus:border-none active:border-none transition-all duration-200 "
+        />
+        {/* the other options section */}
+        <div
+          className={`${
+            isActive === true ? "flex" : "hidden"
+          } items-center justify-between `}
+        >
+          <section className="flex items-center justify-center gap-2 my-2">
+            {/* show options icon */}
+
+            <section className="relative group">
+              <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-auto">
+                Options
+              </ul>
+              <ul
+                onClick={() => {
+                  if (selectedDoc) dispatch(setSelectedDoc(""));
+                  dispatch(setShowOptions(!shwoOptions));
+                  dispatch(setQueryType(""));
+                }}
+                className={` cursor-pointer  ${
+                  shwoOptions === true
+                    ? "bg-green-300  text-black"
+                    : "dark:bg-gray-600  bg-gray-200"
+                } rounded-full p-1  h-auto `}
+              >
+                <IoOptions size={18} />
+              </ul>
+            </section>
+
+            {/* query type for personal documents */}
+            {selectedDoc && (
+              <ul
+                onClick={() => dispatch(setShowType(!showType))}
+                className={`  cursor-pointer ${
+                  selectedDoc ? "bg-indigo-600" : "bg-gray-200"
+                } rounded-full p-1  h-auto relative`}
+              >
+                <GoZap size={18} />
+                <QueryType />
+              </ul>
+            )}
+
+            <div className="relative group">
+              <WebSearch
+                selectedDoc={selectedDoc}
+                setSelectedDoc={setSelectedDoc}
+              />
+              <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-20">
+                Web Search
+              </ul>
+            </div>
+
+            <ul
+              onClick={() => {
+                dispatch(setShowUserForm(!shhowUserForm));
+              }}
+              className="cursor-pointer dark:bg-white/10 bg-black/10 rounded-full p-2  h-auto relative group"
+            >
+              <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-auto">
+                Upload
+              </ul>
+              <FaFileUpload />
+            </ul>
+          </section>
+
+          {/* private documents of the user */}
+
+          <ul
+            className={`space-groesk font-semibold text-sm flex items-center justify-end gap-2 CustPoint dark:text-gray-200 text-black`}
+            onClick={() => {
+              dispatch(setShowDocs(!showDocs));
+              dispatch(setShowOptions(false));
+            }}
+          >
+            <IoDocument />
+
+            {(() => {
+              if (!selectedDoc) return "MyDocs";
+
+              // Find document name from user contributions
+              const foundDoc = user?.Contributions_user_id_fkey?.find(
+                (contribution: any) => contribution.document_id === selectedDoc
+              );
+
+              return foundDoc?.feedback || "MyDocs";
+            })()}
+          </ul>
+        </div>
+        {/* query type and send button container */}
+        <div className="flex items-center justify-between mt-4">
+          <ul className="  bai-jamjuree-semibold text-sm text-transparent bg-clip-text bg-gradient-to-bl from-purple-600 via-sky-600 to-pink-600 ">
+            {queryType ? (
+              <>Query-Type - {queryType}</>
+            ) : category ? (
+              <>Category - {category}</>
+            ) : null}
+          </ul>
+          {/* query send button at bottom right */}
+          <motion.button
+            disabled={!question || loading === true}
+            whileTap={{ scale: 1.03 }}
+            whileHover={{ scaleX: 1.05 }}
+            transition={{ duration: 0.3, ease: "circIn" }}
+            onClick={handleAsk}
+            className={`cursor-pointer ${
+              loading === true
+                ? "bg-green-600  animate-pulse "
+                : ` ${
+                    question === ""
+                      ? "dark:bg-gray-600 bg-gray-400"
+                      : "bg-black dark:bg-gray-100"
+                  }   dark:text-black`
+            } text-white  p-2  rounded-full space-grotesk   text-sm flex items-center justify-center gap-2  `}
+          >
+            {loading === false ? (
+              <>
+                <BsStars size={18} />
+              </>
+            ) : (
+              <>
+                <BiHourglass className="animate-spin" size={18} />
+              </>
+            )}
+          </motion.button>
+        </div>
+      </motion.section>
+    </>
+  );
+};
+
+export default InputSection;

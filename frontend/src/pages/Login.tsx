@@ -6,10 +6,11 @@ import { toast, Toaster } from "sonner";
 import { CiLogin } from "react-icons/ci";
 import { IoIosHourglass } from "react-icons/io";
 import { MdEmail, MdPassword } from "react-icons/md";
-import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
+import { useAppDispatch } from "../store/hooks.tsx";
 import { setIsLogin } from "../store/AuthSlice.ts";
 import { LuEye, LuEyeClosed, LuUserPlus } from "react-icons/lu";
 import { PiArrowUpRight } from "react-icons/pi";
+import FloatingStars from "@/components/FloatingStars.tsx";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 const Login = () => {
@@ -18,7 +19,7 @@ const Login = () => {
   const navigate = useNavigate();
   const Email = useRef<HTMLInputElement>(null);
   const Password = useRef<HTMLInputElement>(null);
-  const { isDarkMode } = useAppSelector((state) => state.auth);
+
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -87,19 +88,32 @@ const Login = () => {
 
   return (
     <>
-      <div className="relative h-screen flex items-center justify-center  z-[2]  dark:bg-black ">
+      <div className="relative h-screen flex items-center justify-center  z-[2]  dark:bg-black overflow-hidden">
         <Toaster />
+        <FloatingStars />
 
-        {/* gradient accent background */}
-        {!isDarkMode && (
-          <div className="absolute h-full w-full top-0 left-0  blur-2xl z-[-1] bg-gradient-to-br from-pink-600/30 to-fuchsia-600/30 "></div>
-        )}
+        <div className="absolute flex h-full w-full top-0 left-0 blur-2xl  z-[-1] ">
+          <div
+            className="w-[70%] h-[80%] md:w-[40%] m-auto rounded-t-xl    rounded-br-md rounded-bl-sm  opacity-100 Indicator"
+            style={{
+              background: `
+          radial-gradient(circle at 30% 30%, #8B5CF6 0%, transparent 50%),
+          radial-gradient(circle at 70% 20%, #3B82F6 10%, transparent 50%),
+          radial-gradient(circle at 50% 70%, #F59E0B 15%, transparent 50%),
+          radial-gradient(circle at 80% 60%, #EC4899 20%, transparent 50%),
+          radial-gradient(circle at 20% 50%, #10B981 25%, transparent 50%)
+        `,
+              backgroundBlendMode: "screen",
+            }}
+          />
+        </div>
+        {/* )} */}
 
         <motion.div
           drag
           whileDrag={{ scale: 0.9 }}
           dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
-          className="relative bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white/10 dark:to-indigo-900/20 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400"
+          className="relative bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400"
         >
           <h1 className="text-center space-grotesk font-bold  text-2xl">
             Welcome back{" "}
@@ -207,26 +221,26 @@ const Login = () => {
             </motion.button>
           </span>
           {/* links to other pages */}
-          <div className="flex items-center justify-end gap-3">
-            {/* Register Button - Glass */}
-            <Link
-              to="/Register"
-              className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl backdrop-blur-sm bg-black/5 dark:bg-white/5 border border-white/20 dark:border-gray-600/30 text-gray-800 dark:text-gray-200 font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
-            >
-              <span>Register</span>
-              <LuUserPlus className="w-4 h-4" />
-            </Link>
-
-            {/* Get Verified Button - Glass */}
-            <Link
-              to="/Verification"
-              className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl backdrop-blur-sm bg-black/5 dark:bg-white/5 border border-white/20 dark:border-gray-600/30 text-gray-800 dark:text-gray-200 font-medium text-sm transition-all duration-300 hover:bg-sky-500/20 hover:border-sky-500/30 hover:text-sky-700 dark:hover:text-sky-300 hover:shadow-lg hover:scale-105"
-            >
-              <span>Get Verified</span>
-              <PiArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-            </Link>
-          </div>
         </motion.div>
+        <div className="flex items-center justify-end gap-3 absolute bottom-10 mt-3">
+          {/* Register Button - Glass */}
+          <Link
+            to="/Register"
+            className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl dark:bg-white/20 bg-black/20  border border-white/20 dark:border-gray-600/30 dark:text-gray-50 text-black font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
+          >
+            <span>Register</span>
+            <LuUserPlus className="w-4 h-4" />
+          </Link>
+
+          {/* Get Verified Button - Glass */}
+          <Link
+            to="/Verification"
+            className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl dark:bg-white/20 bg-black/20  border border-white/20 dark:border-gray-600/30 dark:text-gray-50 text-black font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
+          >
+            <span>Get Verified</span>
+            <PiArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+          </Link>
+        </div>
       </div>
     </>
   );

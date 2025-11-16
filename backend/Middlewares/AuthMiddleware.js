@@ -96,7 +96,8 @@ export const VerifyToken = async (req, res, next) => {
         const newAccessToken = GenerateAccessTokens(
           refreshDecoded.user_id,
           refreshDecoded.email,
-          refreshDecoded.username
+          refreshDecoded.username,
+          refreshDecoded.PaymentStatus
         );
 
         // Update the access token in DB
@@ -196,7 +197,8 @@ export async function authenticateStream(req, res) {
     const newAccessToken = GenerateAccessTokens(
       refreshDecoded.user_id,
       refreshDecoded.email,
-      refreshDecoded.username
+      refreshDecoded.username,
+      refreshDecoded.PaymentStatus
     );
 
     // Update DB

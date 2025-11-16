@@ -32,7 +32,7 @@ const Settings: React.FC<settingProps> = ({
           showSettings
             ? "translate-y-0 opacity-100"
             : "translate-y-full opacity-0 pointer-events-none"
-        } dark:bg-black bg-white text-black dark:text-white border border-gray-300 absolute right-8 top-12
+        } dark:bg-black bg-white text-black dark:text-white border border-gray-300 absolute right-3 top-6
        transition-all duration-300 bai-jamjuree-semibold z-50 rounded-sm shadow-lg hidden md:block`}
       >
         <div className="flex flex-col ">
@@ -42,16 +42,16 @@ const Settings: React.FC<settingProps> = ({
               e.stopPropagation(); // Prevent the parent div's onClick
               dispatch(toggleTheme());
             }}
-            className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:dark:bg-gray-400 hover:bg-gray-600 hover:text-white  rounded-sm transition-colors"
+            className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:dark:bg-gray-700 hover:bg-gray-600 hover:text-white  rounded-sm transition-colors"
           >
             {isDarkMode ? (
               <>
-                <span className="flex-grow">Light Mode</span>
+                <span className="flex-grow">Light </span>
                 <IoBulbOutline size={18} />
               </>
             ) : (
               <>
-                <span className="flex-grow">Dark Mode</span>
+                <span className="flex-grow">Dark</span>
                 <IoMoonOutline size={18} />
               </>
             )}
@@ -59,7 +59,7 @@ const Settings: React.FC<settingProps> = ({
 
           {/* User-specific links (Login, Register, Logout) */}
           <hr className="border-gray-400" />
-          {isLoggedIn ? (
+          {isLoggedIn === true ? (
             <>
               <Link to="/user/dashboard" onClick={() => setShowSettings(false)}>
                 <ul className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:dark:bg-gray-400 hover:bg-gray-600 hover:text-white  rounded-sm transition-colors">
@@ -72,7 +72,7 @@ const Settings: React.FC<settingProps> = ({
                   // dispatch(logout()); // Assuming you have a logout action
                   setShowSettings(false);
                 }}
-                className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:bg-gray-400  rounded-md hover:text-white transition-colors"
+                className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:bg-gray-400  rounded-md text-red-500 transition-colors"
               >
                 <button
                   onClick={() => dispatch(LogoutUser())}
@@ -90,13 +90,13 @@ const Settings: React.FC<settingProps> = ({
           ) : (
             <>
               <Link to="/Login" onClick={() => setShowSettings(false)}>
-                <ul className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:bg-gray-700 rounded-sm hover:text-white  transition-colors">
+                <ul className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:bg-gray-700 rounded-sm text-green-500  transition-colors">
                   <span className="flex-grow">Login</span>
                   <IoLogInSharp size={18} />
                 </ul>
               </Link>
               <Link to="/Register" onClick={() => setShowSettings(false)}>
-                <ul className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:bg-gray-700 hover:text-white   rounded-sm transition-colors">
+                <ul className="cursor-pointer px-4 py-1 flex items-center justify-between gap-3 hover:bg-gray-700 text-sky-400  mb-1 rounded-sm transition-colors">
                   <span className="flex-grow">Register</span>
                   <BiUserPlus size={18} />
                 </ul>

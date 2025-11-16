@@ -25,9 +25,9 @@ const WebSearch: React.FC<WebSearchProps> = ({
           if (selectedDoc) dispatch(setSelectedDoc(""));
           if (shwoOptions === true) dispatch(setShowOptions(!shwoOptions));
         }}
-        className={`rounded-full p-2 ${
+        className={` rounded-full p-2 ${
           queryType === "Web Search"
-            ? "bg-green-500 "
+            ? "bg-amber-700 "
             : "dark:bg-white/15 bg-black/15"
         } cursor-pointer`}
       >

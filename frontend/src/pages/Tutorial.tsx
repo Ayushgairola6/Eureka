@@ -79,7 +79,7 @@ const Tutorial = () => {
               Watch Tutorial
             </button>
             <Link
-              to="/API/featured"
+              to="/Api/introduction"
               className="px-8 py-3.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-2xl font-medium hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-500 inline-flex items-center gap-3 text-sm sm:text-base group hover:scale-105 backdrop-blur-sm"
             >
               <FiBookOpen className="text-lg transition-transform duration-300 group-hover:scale-110" />

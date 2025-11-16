@@ -16,19 +16,19 @@ const SimilarQuestions = () => {
   const { Querycount } = useAppSelector((state) => state.auth);
   return (
     <>
-      <div className="border border-gray-400 rounded-md p-4 space-grotesk  h-90 overflow-y-auto">
+      <div className="border border-gray-400 rounded-md  space-grotesk  h-90 overflow-y-auto">
         <h1 className="ba-jamjuree-semibold text-md ">
-          <section className="flex items-center justify-start gap-3 ">
+          <section className="flex items-center justify-start gap-3 p-3 ">
             <GoPeople /> Similarties with others
           </section>
           {Querycount < 10 && (
-            <span className="text-xs text-center text-red-600 bai-jamjuree-regular">
+            <ul className="text-xs text-center  bai-jamjuree-regular px-4 w-full text-red-600">
               * As you continue using eureka we will be able to provide more
-              accurate statistics
-            </span>
+              data
+            </ul>
           )}
         </h1>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer className=" w-auto h-auto">
           <BarChart
             data={[
               {
@@ -76,11 +76,11 @@ const SimilarQuestions = () => {
 
         {/* Stats card below */}
         {Querycount > 10 ? (
-          <div className="grid grid-cols-2 gap-4 mt-4 text-center">
+          <div className="grid grid-cols-2 gap-4 mt-4 text-center p-3">
             <div className="bg-green-500/10 p-3 rounded-lg">
               <div className="text-2xl font-bold text-green-500  flex items-center justify-center gap-2">
                 <LuEqualApproximately />
-                87%
+                {(Math.random() * 50).toFixed()}%
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400">
                 Match Rate
@@ -89,7 +89,7 @@ const SimilarQuestions = () => {
             <div className="bg-indigo-500/10 p-3 rounded-lg">
               <div className="text-2xl font-bold text-indigo-500 flex items-center justify-center gap-2">
                 <GoPeople />
-                24
+                {(Math.random() * 30).toFixed()}%
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400 ">
                 Similar Users
@@ -97,7 +97,7 @@ const SimilarQuestions = () => {
             </div>
           </div>
         ) : (
-          <div className=" text-center space-grotesk text-sm flex items-center justify-center gap-2">
+          <div className=" text-center space-grotesk text-sm flex items-center justify-center gap-2 p-2">
             <PiListMagnifyingGlassLight size={32} />{" "}
             <h1>Not enough data to show this information right now</h1>
           </div>

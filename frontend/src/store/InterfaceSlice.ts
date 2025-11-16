@@ -47,6 +47,8 @@ interface InterfaceState {
   favicon: favicon[];
   selectedDoc: string;
   uploading: boolean;
+  deleting: boolean;
+  NeedToRefresh: boolean;
 }
 
 const initialState: InterfaceState = {
@@ -72,6 +74,8 @@ const initialState: InterfaceState = {
   favicon: [],
   selectedDoc: "",
   uploading: false,
+  deleting: false,
+  NeedToRefresh: false,
 };
 
 // Async Thunks
@@ -121,6 +125,32 @@ export const QueryAIQuestions = createAsyncThunk<any, any>(
   }
 );
 
+// deelting a document
+export const DeleteDocuments = createAsyncThunk<string, any>(
+  "delete/documents",
+  async (document_id, { rejectWithValue }) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+
+      const response = await axios.delete(
+        `${BaseApiUrl}/api/user/private-docs/delete/?document_id=${document_id}`,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error(`Error file deleting document`);
+      return rejectWithValue(
+        error?.response.data.message ||
+          "An error occured while processing your request"
+      );
+    }
+  }
+);
 export const QueryPrivateDocuments = createAsyncThunk<any, any>(
   "private-doc/queryAI",
   async (data, { rejectWithValue }) => {
@@ -246,6 +276,9 @@ const interfaceSlice = createSlice({
         msg.message.content = (msg.message.content || "") + delta; // append instead of replace
       }
     },
+    setNeedToRefresh: (state, action) => {
+      state.NeedToRefresh = action.payload;
+    },
     UpdateDocUsed: (state, action) => {
       state.docUsed = [...action.payload];
     },
@@ -368,6 +401,17 @@ const interfaceSlice = createSlice({
       .addCase(WebSearchHandler.rejected, (state) => {
         state.sendingFeedback = false;
         state.loading = false;
+      })
+      //deleting a document handler
+      .addCase(DeleteDocuments.pending, (state) => {
+        state.deleting = true;
+      })
+      .addCase(DeleteDocuments.rejected, (state) => {
+        state.deleting = false;
+      })
+      .addCase(DeleteDocuments.fulfilled, (state) => {
+        state.deleting = false;
+        state.NeedToRefresh = true;
       });
   },
 });
@@ -397,6 +441,7 @@ export const {
   MimicSSE,
   setSelectedDoc,
   updateFavicon,
+  setNeedToRefresh,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

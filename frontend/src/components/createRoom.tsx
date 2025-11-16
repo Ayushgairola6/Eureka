@@ -18,8 +18,10 @@ type RoomProps = {
 
 const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const [participantCount, setParticipantCount] = useState(0);
   const [isActive, setIsActive] = useState(false);
+  const [room_type, setRoomType] = useState("public");
   const isPending = useAppSelector(
     (state) => state.chats.RoomCreationIspending
   );
@@ -37,12 +39,23 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
       toast.error("All fields are mandatory!");
       return;
     }
-
+    if (!user?.IsPremiumUser) {
+      if (room_type === "private") {
+        toast.info("Only premium members can create Private chatRooms");
+        return;
+      }
+      if (participantCount > 2) {
+        toast.info(
+          "Only premium users can create rooms with more than 2 members."
+        );
+        return;
+      }
+    }
     // 2. Create properly typed data object
     const Data = {
       Room_name: RoomNameRef.current.value,
       participant_count: Number(participantCount),
-      Room_type: RoomTypeRef.current.value,
+      Room_type: room_type,
       Description: RoomDescriptions.current.value,
     };
 
@@ -171,6 +184,7 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
                   <label className="inline-flex items-center p-3 border  rounded-lg cursor-pointer  dark:white/5">
                     <input
                       ref={RoomTypeRef}
+                      onClick={() => setRoomType("public")}
                       type="radio"
                       name="roomType"
                       value="public"
@@ -183,6 +197,7 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
                   </label>
                   <label className="inline-flex items-center p-3 border  rounded-lg cursor-pointer  dark:white/5">
                     <input
+                      onClick={() => setRoomType("private")}
                       ref={RoomTypeRef}
                       type="radio"
                       name="roomType"

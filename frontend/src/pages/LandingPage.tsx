@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BsLightningChargeFill } from "react-icons/bs";
 import study from "../assets/study.jpg";
 import research from "../assets/research.jpg";
@@ -10,14 +10,27 @@ import { Link } from "react-router";
 import { motion } from "framer-motion";
 import Marquee from "@/components/marquee";
 import { useAppSelector } from "../store/hooks.tsx";
+import InstallPWA from "@/components/InstallationGuide.tsx";
 
 const LandingPage = () => {
   const isDarkMode = useAppSelector((state) => state.auth.isDarkMode);
+  const [isNew, setIsNew] = useState<string>("True");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const IsUserNew = localStorage.getItem("Eureka-Installation-key");
+      if (IsUserNew) {
+        setIsNew("False");
+      }
+    }
+  }, []);
+
   return (
     <>
       <div
         className={`dark:bg-black dark:text-white bg-white text-black relative flex items-center justify-center flex-wrap max-w-screen min-h-screen w-full overflow-hidden  z-[1] `}
       >
+        <InstallPWA isNew={isNew} setIsNew={setIsNew} />
         {!isDarkMode && (
           <div className="h-full w-full absolute z-[-1] bg-gradient-to-br from-white to-emerald-600/20 blur-3xl"></div>
         )}
@@ -84,7 +97,7 @@ const LandingPage = () => {
           <section className="text-center flex items-center justify-center flex-col gap-2 relative">
             {/* <img className='absolute top-0 -right-10 h-1/2 rotate-60 w-full z-[-1] rounded-full h-' src="/bolt.png" alt="" /> */}
 
-            <h1 className="space-grotesk text-5xl md:text-6xl lg:text-7xl font-bold text-center ">
+            <h1 className="bai-jamjuree-semibold text-3xl md:text-4xl lg:text-6xl  text-center ">
               The collaborative,{" "}
               <span className="cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-sky-600">
                 Community-powered
@@ -93,33 +106,29 @@ const LandingPage = () => {
             </h1>
             <h2 className="space-grotesk text-xs md:text-sm text-center  ">
               With{" "}
-              <Link
-                to="/Interface"
-                className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-sky-600 font-bold"
-              >
+              <Link to="/Interface" className="text-green-300">
                 EUREKA
               </Link>
-              , anyone can access reliable information on any topic, curated and
-              verified by the community,Collborate for Study-Research-Discussion
-              and more. Effortlessly share, discover, and manage
-              knowledge—including your own private documents—for faster, smarter
-              learning.
+              , Access verified - Community contributed - Authentic Information,
+              Perform Research on private documents create rooms for
+              collaborative AI powered discussions with the power of web and
+              private document analysis
             </h2>
-            <motion.ul
+            <motion.button
               whileHover={{ scale: 1.05, transform: "translateX(50px)" }}
               transition={{ duration: 0.6, ease: "circInOut" }}
               whileTap={{ scale: 1.09, transform: "translateX(40px)" }}
             >
               <Link
                 to="/Interface"
-                className={`' p-3  overflow-x-hidden  rounded-lg dark:bg-white dark:text-black bg-black text-white  space-grotesk flex items-center justify-center gap-2 mt-10 CustPoint     transition-all duration-500 '`}
+                className={` px-3 py-2  overflow-x-hidden  rounded-lg dark:bg-white  dark:text-black bg-black text-white  bai-jamjuree-semibold flex items-center justify-center gap-2 mt-10 CustPoint     transition-all duration-500 `}
               >
                 Try for free
                 <ul>
                   <BsLightningChargeFill />
                 </ul>
               </Link>
-            </motion.ul>
+            </motion.button>
           </section>
         </div>
       </div>

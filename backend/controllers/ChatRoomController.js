@@ -90,6 +90,13 @@ export const CreateChatRooms = async (req, res) => {
   try {
     const user_id = req.user.user_id;
     const user_name = req.user.username;
+    const IsPremiumUser = req.user.PaymentStatus;
+    if (IsPremiumUser === undefined) {
+      return res.status(400).send({
+        message:
+          "Please log out and Log In again to be able to access new features",
+      });
+    }
     if (
       !user_id ||
       !user_name ||
@@ -98,6 +105,7 @@ export const CreateChatRooms = async (req, res) => {
     ) {
       return res.status(400).send({ message: "Please Login to continue" });
     }
+
     const { Room_name, participant_count, Room_type, Description } = req.body;
 
     if (
@@ -112,6 +120,37 @@ export const CreateChatRooms = async (req, res) => {
     ) {
       return res.status(400).send({ messaeg: "Invalid arguments type" });
     }
+
+    //checking the user payment status and based on that allowing chat Rooms with only 2 members worth limit
+    if (IsPremiumUser === false) {
+      // if the user is not a paid member
+      const { data, error } = await supabase
+        .from("chat_rooms")
+        .select("created_by")
+        .eq("user_id", user_id)
+        .single();
+
+      if (error) {
+        return res.status(400).send({ message: "Something went wrong." });
+      }
+      // if the user already has a room
+      if (data.created_by) {
+        return res.status(403).send({
+          message: "On the free tier you can not create more than 1 more room.",
+        });
+      } else if (Room_type === "Private") {
+        return res.status(400).send({
+          message:
+            "We currently only allow premium users to create private rooms.",
+        });
+      } else if (participant_count > 2) {
+        return res.status(400).send({
+          message:
+            "On free tier you can only create a room with 2 participants worth limit.",
+        });
+      }
+    }
+
     // creating a unique room id
     const Room_id = `Name=${Room_name.trim()}_unique-id=${uuidv4()}_created-by=${user_name.trim()}`;
 
@@ -135,9 +174,10 @@ export const CreateChatRooms = async (req, res) => {
     });
 
     if (error) {
-      console.warn(error);
+      await notifyMe("Something went wrong while creating a chatRoom", error);
+
       return res
-        .status(403)
+        .status(400)
         .send({ message: "Error while processing your request " });
     }
     // update the room and members table as well to insert a new member
@@ -152,7 +192,7 @@ export const CreateChatRooms = async (req, res) => {
     }
     return res.status(200).send({ message: "Room created Successfully !" });
   } catch (roomcreationError) {
-    console.log(roomcreationError);
+    await notifyMe("Room creation controller error", roomcreationError);
     return res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -427,7 +467,8 @@ export const checkRoomMemberLimit = async (room_id) => {
 
 export const GetRoomChatHistory = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
+    const user_id = req.user;
+    const IsPremiumUser = req.user.PaymentStatus;
     if (!user_id)
       return res.status(400).send({ message: "Please login to continue" });
     const room_id = req.params.room_id;
@@ -454,7 +495,7 @@ export const GetRoomChatHistory = async (req, res) => {
       )
       .eq("room_id", room_id)
       .order("sent_at", { ascending: true })
-      .limit(5);
+      .limit(IsPremiumUser === true ? 10 : 3);
 
     if (!data || data.length === 0) {
       return res.status(200).send({ chats: [], message: "No messages found" });
@@ -474,7 +515,7 @@ export const GetRoomChatHistory = async (req, res) => {
     }
     return res.send({ chats: data });
   } catch (error) {
-    console.error(error);
+    await notifyMe("GetRoommChatHistory controller error", error);
     return res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -484,8 +525,16 @@ export const GetRoomChatHistory = async (req, res) => {
 export const GetDocumentChatHistory = async (req, res) => {
   try {
     const user_id = req.user.user_id;
+    const IsPremiumUser = req.user.PaymentStatus;
+
     if (!user_id)
       return res.status(400).send({ message: "Please login to continue" });
+
+    if (IsPremiumUser === false) {
+      return res.staus(403).send({
+        message: "You need an active subscription to access this feature.",
+      });
+    }
     const document_id = req.params.document_id;
     if (!document_id)
       return res.status(400).send({ message: "Invalid document_id " });
@@ -522,11 +571,13 @@ export const GetDocumentChatHistory = async (req, res) => {
   }
 };
 
-// get misallaneous chat history for all the asked questions by the user
+// get misallaneous chat history for all the asked questions by the user related to non category specific domains and subdomains
 
 export const GetMisallaneousChatHistory = async (req, res) => {
   try {
     const user_id = req.user.user_id;
+    const IsPremiumUser = req.user.PaymentStatus;
+
     if (!user_id) {
       return res.status(402).send({ message: "Please login to continue" });
     }
@@ -581,6 +632,9 @@ export const GetMisallaneousChatHistory = async (req, res) => {
 export const QueryDocWithEurekaInChatRoom = async (req, res) => {
   try {
     const userId = req.user.user_id;
+    const IsPremiumUser = req.user.PaymentStatus;
+    const io = getIo();
+
     if (!userId)
       return res.status(401).send({ message: "Please login to continue" });
 
@@ -596,6 +650,26 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
       typeof document_id !== "string"
     ) {
       return res.status(400).send({ message: "Some fields are missing" });
+    }
+
+    // if user is not a paid member
+    if (IsPremiumUser === false) {
+      if (io) {
+        io.to(room_id).emit("recieved_message", {
+          message_id: MessageId,
+          sent_by: null,
+          message: `${
+            req.user.username || "User"
+          } needs to have an active subscription in order to be able to use Eureka AI in a chat room.`,
+          room_id: room_id,
+          users: { username: "EUREKA" },
+          sent_at: currentTime || new Date().toISOString(),
+        });
+      }
+      return res.status(200).send({
+        answer:
+          "You need to have an active subscription in order to be able to use Eureka AI in a chat room.",
+      });
     }
     // check for matching results from db
     const DbResults = await index.searchRecords({
@@ -675,7 +749,6 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
     // `;
 
     // broadcast the message to the room so that the message is synchrnus
-    const io = getIo();
 
     if (io) {
       io.to(room_id).emit("recieved_message", {
@@ -720,6 +793,27 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
 export const QueryWebInEurekaChatRoom = async (req, res) => {
   try {
     const user_id = req.user.user_id;
+    const IsPremiumUser = req.user.PaymentStatus;
+    const io = getIo();
+
+    if (IsPremiumUser === false) {
+      if (io) {
+        io.to(room_id).emit("recieved_message", {
+          message_id: MessageId,
+          sent_by: null,
+          message: `${
+            req.user.username || "User"
+          } needs to have an active subscription in order to be able to use Eureka AI in a chat room.`,
+          room_id: room_id,
+          users: { username: "EUREKA" },
+          sent_at: currentTime || new Date().toISOString(),
+        });
+      }
+      return res.status(200).send({
+        answer:
+          "You need to have an active subscription in order to be able to use Eureka AI in a chat room.",
+      });
+    }
     if (!user_id) {
       return res.status(401).send({ message: "Please login to continue" });
     }
@@ -731,7 +825,6 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
     if (!room_id || !MessageId) {
       await notifyMe("Something is wrong in the chatRoomWebSearchHandler");
       return res.status(400).send({ message: "Something went wrong" });
-      F;
     }
 
     const webResults = await SearchQueryResults(query);
@@ -763,7 +856,6 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
       });
     }
     // emitting the response throughout the room
-    const io = getIo();
     if (io) {
       io.to(room_id).emit("recieved_message", {
         message_id: MessageId,
@@ -806,7 +898,7 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
     console.log(Formattedresult);
     return;
   } catch (error) {
-    await notifyMe(error);
+    await notifyMe("Error in quey web in chatRoomController.js", error);
 
     return res.satus(500).send({ message: "Something went wrong" });
   }

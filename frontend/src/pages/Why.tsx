@@ -1,15 +1,10 @@
-import { Link } from "react-router";
-
 import { FiZap } from "react-icons/fi";
 import { FaGitAlt } from "react-icons/fa";
 import { MdOutlineHourglassEmpty } from "react-icons/md";
-import { motion } from "framer-motion";
 import { FiUploadCloud } from "react-icons/fi";
-import { useAppSelector } from "../store/hooks.tsx";
+import { BsPeople } from "react-icons/bs";
 
 const Why = () => {
-  const isDarkMode = useAppSelector((state) => state.auth.isDarkMode);
-
   function HandleCardTiltEffect(e: any) {
     const rect = e.currentTarget.getBoundingClientRect();
     // current position of the mouse
@@ -24,193 +19,117 @@ const Why = () => {
 
     e.currentTarget.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
   }
+  const cardsData = [
+    {
+      id: 1,
+      title: "Purpose",
+      subtitle: "Authenticity",
+      description:
+        "Misinformation has been on this planet since millenia we can't end it but creating filters to protect our brains is necessary, and only we can do that.",
+      icon: <FiZap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
+      gradient: "from-indigo-500 to-sky-500",
+      badgeColor: "bg-teal-500/10",
+      border: "border-teal-500",
+    },
+    {
+      id: 2,
+      title: "Problem we solve?",
+      subtitle: "Misinformation",
+      description:
+        "Traditional knowledge sources are siloed and filled with all types of information but, what you need is the trueh not the typical web search result but actual human verified data.",
+      icon: <FaGitAlt className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
+      gradient: "from-emerald-500 to-teal-500",
+      badgeColor: "bg-amber-500/10",
+      border: "border-amber-500",
+    },
+    {
+      id: 3,
+      title: "How Eureka is different?",
+      subtitle: "Differentiator",
+      description:
+        "Eureka uses Community contributions as knowledge base and trusts  👉you👈 to verify information through voting, reducing false information.",
+      icon: (
+        <MdOutlineHourglassEmpty className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+      ),
+      gradient: "from-amber-500 to-red-500",
+      badgeColor: "bg-purple-500/10",
+      border: "border-purple-500",
+    },
+    {
+      id: 4,
+      title: "How to use it!",
+      subtitle: "Know-how",
+      description:
+        "1. Choose category → 2. Select subdomain → 3. Ask question → 4. Get AI response from community knowledge → 5. Missing info? Upload a file to teach Eureka and build an authentic knowledge hub.",
+      icon: <FiUploadCloud className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
+      gradient: "from-yellow-500 to-pink-500",
+      badgeColor: "bg-orange-500/10",
+      border: "border-orange-500",
+    },
+    {
+      id: 5,
+      title: "Collbarotive sessions",
+      subtitle: "Doing stuff together",
+      description:
+        "With Eureka Rooms you can create collborative AI powered research/study/chat rooms and can surf the web and private documents of the members together .",
+      icon: <BsPeople className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
+      gradient: "from-pink-500 to-red-500",
+      badgeColor: "bg-red-500/20",
+      border: "border-red-500",
+    },
+  ];
   return (
     <>
-      <motion.div
-        className={`relative min-h-screen py-16 px-4 sm:px-6 z-[1] overflow-hidden bg-white text-black dark:bg-black dark:text-white`}
-      >
-        {/* Enhanced gradient background */}
-        {!isDarkMode && (
-          <div className="z-[-2] absolute inset-0 bg-gradient-to-br from-sky-600/20 via-purple-600/15 to-red-400/20 blur-3xl"></div>
-        )}
-
-        {/* Animated gradient dots */}
-        <div className="z-[-1] absolute top-0 left-0 w-full h-full overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full bg-purple-600/10 blur-3xl animate-float"></div>
-          <div className="absolute top-3/4 left-3/4 w-40 h-40 rounded-full bg-blue-600/10 blur-3xl animate-float-delay"></div>
-        </div>
-
-        {/* Section header */}
-        <div className="max-w-4xl mx-auto text-center mb-12">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl bai-jamjuree-semibold py-4 relative">
-            Why
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-sky-600 font-bold">
-              {" "}
-              EUREKA{" "}
-            </span>
-            ?
+      <div className=" bg-gray dark:bg-black text-black dark:text-white relative p-4 ">
+        <div className="z-[-1] absolute top-0 left-0 h-full w-full bg-gradient-to-br from-blue-600/10 to-pink-600/10 blur-3xl"></div>
+        <section className="p-2 text-center mt-4 mb-8">
+          <h1 className="bai-jamjuree-bold text-3xl md:text-4xl">
+            Why AskEureka ?
           </h1>
-          <p className="text-center text-xs md:text-sm space-grotesk text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Reason for existence of such a tool, even though there are multiple
-            AI knowledge based tools already in the market!
+          <p className="bai-jamjuree-regular text-xs">
+            Find why there is need for a tool like AskEureka
           </p>
+        </section>
+        {/* cards ssection rendering */}
+        <div className="flex items-center justify-center flex-wrap gap-6 p-4">
+          {cardsData.map((data, index) => {
+            return (
+              <>
+                <div
+                  onMouseOver={(e) => HandleCardTiltEffect(e)}
+                  key={`${data.id}+${index}_${data.title}`}
+                  className="border bg-gradient-to-br from-gray-50 to-gray-100 dark:from-white/10 dark:to-black  rounded-sm w-full md:w-100 h-auto md:h-50 p-2"
+                >
+                  {/* heading section with icon */}
+                  <div className=" px-4 py-2 flex items-center justify-start gap-2 rounded-lg">
+                    <ul
+                      className={`bg-gradient-to-br ${data.gradient} rounded-md p-1`}
+                    >
+                      {data.icon}
+                    </ul>
+                    <h2 className="bai-jamjuree-semibold text-xl">
+                      {data.title}
+                    </h2>
+                  </div>
+
+                  <p className="px-4 py-2 space-grotesk text-sm">
+                    {data.description}
+                  </p>
+                  <section className="p-2 justify-self-end">
+                    <h6
+                      className={`text-xs bai-jamjuree-regular text-center w-fit mx-auto 
+                      ${data.badgeColor}
+                      rounded-xl px-2 py-1 border ${data.border}`}
+                    >
+                      {data.subtitle}
+                    </h6>
+                  </section>
+                </div>
+              </>
+            );
+          })}
         </div>
-
-        {/* Modern feature cards grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto px-4">
-          {/* Card 1: Purpose */}
-          <motion.div
-            onMouseOver={(e) => {
-              HandleCardTiltEffect(e);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform =
-                "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            whileHover={{}}
-            className="group relative p-8 rounded-2xl bg-gradient-to-br from-white/80 to-white/40 dark:from-white/10 dark:to-black backdrop-blur-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02]"
-          >
-            {/* Gradient border effect on hover */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-            <div className="relative flex items-start gap-6">
-              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg group-hover:shadow-purple-500/25 transition-shadow duration-500">
-                <FiZap className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <div className="flex-1">
-                <h2 className="bai-jamjuree-semibold text-xl mb-3 flex items-center gap-2">
-                  Purpose
-                  <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 rounded-full">
-                    Authenticity
-                  </span>
-                </h2>
-                <p className="space-grotesk text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                  Creating a means for authentic information sharing and
-                  gathering platform in the age of AI and misinformation for
-                  studies, research, curiosity and any other purpose.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 2: Problem Solved */}
-          <motion.div
-            onMouseOver={(e) => {
-              HandleCardTiltEffect(e);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform =
-                "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="group relative p-8 rounded-2xl bg-gradient-to-br from-white/80 to-white/40 dark:from-white/10 dark:to-black backdrop-blur-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02]"
-          >
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-            <div className="relative flex items-start gap-6">
-              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg group-hover:shadow-orange-500/25 transition-shadow duration-500">
-                <FaGitAlt className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <div className="flex-1">
-                <h2 className="bai-jamjuree-semibold text-xl mb-3 flex items-center gap-2">
-                  Problem we solve?
-                  <span className="text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 rounded-full">
-                    Misinformation
-                  </span>
-                </h2>
-                <p className="space-grotesk text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                  Traditional knowledge sources are siloed and filled with false
-                  information which makes learning 10x slower, and LLMs suffer
-                  from hallucinations.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 3: How Eureka is different */}
-          <motion.div
-            onMouseOver={(e) => {
-              HandleCardTiltEffect(e);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform =
-                "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="group relative p-8 rounded-2xl bg-gradient-to-br from-white/80 to-white/40 dark:from-white/10 dark:to-black backdrop-blur-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02]"
-          >
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-            <div className="relative flex items-start gap-6">
-              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center shadow-lg group-hover:shadow-amber-500/25 transition-shadow duration-500">
-                <MdOutlineHourglassEmpty className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <div className="flex-1">
-                <h2 className="bai-jamjuree-semibold text-xl mb-3 flex items-center gap-2">
-                  How Eureka is different?
-                  <span className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 rounded-full">
-                    Differentiator
-                  </span>
-                </h2>
-                <p className="space-grotesk text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                  Eureka uses public contributions as knowledge base and trusts
-                  YOU to verify information through voting, reducing false
-                  information by up to 89% with community-verified AI responses.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 4: How to use it */}
-          <motion.div
-            onMouseOver={(e) => {
-              HandleCardTiltEffect(e);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform =
-                "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="group relative p-8 rounded-2xl bg-gradient-to-br from-white/80 to-white/40 dark:from-white/10 dark:to-black backdrop-blur-xl border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02]"
-          >
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-            <div className="relative flex items-start gap-6">
-              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg group-hover:shadow-green-500/25 transition-shadow duration-500">
-                <FiUploadCloud className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <div className="flex-1">
-                <h2 className="bai-jamjuree-semibold text-xl mb-3 flex items-center gap-2">
-                  How to use it!
-                  <span className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded-full">
-                    Know-how
-                  </span>
-                </h2>
-                <p className="space-grotesk text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                  1. Choose category → 2. Select subdomain → 3. Ask question →
-                  4. Get AI response from community knowledge → 5. Missing info?{" "}
-                  <Link
-                    to="/Interface"
-                    className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-sky-600 underline hover:from-purple-700 hover:to-sky-700 transition-colors"
-                  >
-                    Upload a file
-                  </Link>{" "}
-                  to teach Eureka and build an authentic knowledge hub.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </motion.div>
+      </div>
     </>
   );
 };

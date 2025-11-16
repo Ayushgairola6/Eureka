@@ -13,37 +13,40 @@ const pc = new Pinecone({
 });
 const Mode_prompt = process.env.SYSTEM_PROMPT;
 
-export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
+export const GenerateResponse = async (
+  question,
+  FormattedString,
+  SYSTEM_PROMPT,
+  PaymentStatus
+) => {
   try {
-    if (!question || !data || !SYSTEM_PROMPT) {
-      console.error("Not all the data was given to the model");
-      return { error: "Error while generating a response" };
+    if (!question || !FormattedString || !SYSTEM_PROMPT) {
+      return { error: "Some parameters are missing" };
     }
 
-    const FormattedData = [
-      {
-        role: "user",
-        parts: [{ text: question }],
-      },
-      ...data, // Spread the formatted context
-      // Optional: Add system prompt as additional context
-      ...(SYSTEM_PROMPT
-        ? [
-            {
-              role: "user",
-              parts: [{ text: `System: ${SYSTEM_PROMPT}` }],
-            },
-          ]
-        : []),
-    ];
+    const FinalString = SYSTEM_PROMPT + FormattedString;
+    // calculating the tokens the stirng will cost
+    const EstimattedTokens = await genAI.models.countTokens({
+      model: "gemini-2.0-flash-lite-001",
+      contents: FinalString,
+    });
+
+    if (!EstimattedTokens) {
+      return { message: "An error occured while generating a response" };
+    }
+    // send the results to me for
+    await notifyMe(
+      `New repsonse generated with token cose of =`,
+      EstimattedTokens.totalTokens
+    );
     const result = await genAI.models.generateContent({
       model: "gemini-2.0-flash-lite-001",
-      contents: FormattedData,
+      contents: [{ role: "user", parts: [{ text: FinalString }] }],
       generationConfig: {
-        temperature: 0.8,
+        temperature: 0.4,
         topP: 0.95,
         topK: 40,
-        maxOutputTokens: 400,
+        maxOutputTokens: PaymentStatus === false ? 400 : 1000,
       },
     });
 
@@ -51,14 +54,14 @@ export const GenerateResponse = async (question, data, SYSTEM_PROMPT) => {
     if (!responseText) {
       await notifyMe(
         `Error while generating a response , the code execution results are these`,
-        result.codeExecutionResult
+        JSON.stringify(result.codeExecutionResult)
       );
       return { error: "The server is very busy , please try again !" };
     }
-
     // return { error: "Testing out the error fallback function" };
     return responseText;
   } catch (error) {
+    console.log(error);
     return { error: "Error while generating a response by the model" };
   }
 };
@@ -117,3 +120,17 @@ const createIndex = async () => {
   }
 };
 // createIndex()
+
+// export const FormattingVectorResultsForGemin = (ResultsArray) => {
+//   if (ResultsArray.length === 0) {
+//     return { message: "The cannot be empty" };
+//   }
+
+//   ResultsArray.map((chunks) => {
+//     return {
+//       role:"user",parts:[{
+//         text:chunks.text,score:
+//       }]
+//     }
+//   });
+// };

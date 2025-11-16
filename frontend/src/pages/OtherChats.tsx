@@ -10,7 +10,7 @@ import {
   FiFilter,
 } from "react-icons/fi";
 import { useNavigate } from "react-router";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import {
   FaArrowDown,
   FaArrowUp,
@@ -31,6 +31,7 @@ const OtherChats = () => {
   const { Misallaneouschats, cursor, gettingChats } = useAppSelector(
     (state) => state.chats
   );
+  const { user } = useAppSelector((state) => state.auth);
   const [SearchResult, SetSearchResult] = useState<SearchResultData[]>([]);
   const [filtercategory, setfiltercategory] = useState<string>("");
   const [subCategory, setSubCategory] = useState<string>("");
@@ -39,6 +40,10 @@ const OtherChats = () => {
   const apiCallRef = useRef(false);
 
   useEffect(() => {
+    if (user?.IsPremiumUser === false) {
+      toast.info("Become our premiumUser to Access this feature");
+      return;
+    }
     if (Misallaneouschats.length === 0 && !apiCallRef.current) {
       apiCallRef.current = true;
       dispatch(GetMisallaneousChatHistory(cursor))
@@ -48,6 +53,10 @@ const OtherChats = () => {
   }, [dispatch]);
 
   useEffect(() => {
+    if (user?.IsPremiumUser === false) {
+      toast.info("Become our premiumUser to Access this feature");
+      return;
+    }
     if (Misallaneouschats.length > 0) {
       SetSearchResult(() => [...Misallaneouschats]);
     }
@@ -58,6 +67,7 @@ const OtherChats = () => {
     toast.success("Copied to clipboard");
   };
 
+  // search results handler
   const handleSearchResults = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const searchValue = e.target.value.toLowerCase().trim();
@@ -103,8 +113,6 @@ const OtherChats = () => {
         HandleFilterApplication={HandleFilterApplication}
         ResetFilters={ResetFilters}
       />
-
-      <Toaster position="top-center" />
 
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-700/50">

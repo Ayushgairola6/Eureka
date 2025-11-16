@@ -5,12 +5,17 @@
 @import "tw-animate-css";
 
 .CustPoint {
-
   cursor: url("./assets/hand-pointer.svg"), pointer;
-  
 }
 /* @custom-variant dark (&:is(.dark *)); */
-
+@keyframes progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -153,8 +158,9 @@ html {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: hsl(0 0% 30%);}
-  
+  background: hsl(0 0% 30%);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -175,7 +181,7 @@ html {
 .bebas-neue-regular {
   font-family: "Bebas Neue", sans-serif;
   font-weight: 400;
-  font-style:normal ;
+  font-style: normal;
 }
 .bai-jamjuree-extralight {
   font-family: "Bai Jamjuree", sans-serif;
@@ -280,9 +286,13 @@ html {
   background-color: #4f46e5; /* indigo-600 */
 }
 @keyframes progressBar {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
 
 @keyframes slideIn {
   0% {
@@ -309,33 +319,49 @@ html {
 /* bubbles float animation */
 
 @keyframes float {
-  0% { transform: translateY(0) translateX(0); }
-  50% { transform: translateY(-20px) translateX(10px); }
-  100% { transform: translateY(0) translateX(0); }
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+  }
+  100% {
+    transform: translateY(0) translateX(0);
+  }
 }
 
 @keyframes float-delay {
-  0% { transform: translateY(0) translateX(0); }
-  50% { transform: translateY(20px) translateX(-10px); }
-  100% { transform: translateY(0) translateX(0); }
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(20px) translateX(-10px);
+  }
+  100% {
+    transform: translateY(0) translateX(0);
+  }
 }
 
-.animate-float { animation: float 4s ease-in-out infinite; }
-.animate-float-delay { animation: float-delay 5s ease-in-out infinite; }
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+.animate-float-delay {
+  animation: float-delay 5s ease-in-out infinite;
+}
 
 /* hidden scrollbar */
 .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* AI Response Styling */
 .ai-response {
-  font-family: 'Bai Jamjuree', sans-serif;
+  font-family: "Bai Jamjuree", sans-serif;
   line-height: 1.6;
 }
 
@@ -365,7 +391,7 @@ html {
 }
 
 .ai-bullet {
-  list-style-type: '• ';
+  list-style-type: "• ";
   margin-left: 1.5rem;
   padding: 0.25rem 0;
   padding-left: 0.5rem;
@@ -383,4 +409,30 @@ html {
 .dark .contribution-cta {
   background-color: #2d3748;
   border-left-color: #63b3ed;
+}
+
+.Indicator {
+  animation: RotatingIndicator 4s ease-in-out infinite;
+}
+
+@keyframes RotatingIndicator {
+  0%, 100% {
+    transform: rotate(10deg);
+  }
+  10%{
+    transform: rotate(70deg);
+  }
+  25% {
+    transform: rotate(45deg);
+  }
+  40%{
+    transform: rotate(105deg);
+
+  }
+  50% {
+    transform: rotate(20deg);
+  }
+  75% {
+    transform: rotate(180deg);
+  }
 }

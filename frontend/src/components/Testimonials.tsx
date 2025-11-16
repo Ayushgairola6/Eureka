@@ -29,12 +29,12 @@ const TestiMonials = () => {
         </div>
 
         {/* Enhanced Horizontal Scrollable Testimonials */}
-        <div className="relative max-w-7xl mx-auto">
+        <div className="relative max-w-7xl mx-auto pl-3">
           {/* Navigation Arrows */}
           <div
-            className={`absolute -top-16 right-4 flex gap-2 ${
+            className={`absolute -top-11 right-4 flex gap-2 ${
               isDarkMode ? "bg-black/50" : "bg-white/50"
-            } backdrop-blur-sm rounded-full p-1 border border-gray-300 dark:border-gray-700`}
+            } backdrop-blur-sm rounded-full p-1 border  dark:border-gray-700`}
           >
             <button
               onClick={() => {
@@ -45,7 +45,7 @@ const TestiMonials = () => {
                   });
                 }
               }}
-              className={`p-3 rounded-full transition-all duration-300 ${
+              className={`p-2 rounded-full transition-all duration-300 ${
                 isDarkMode
                   ? "hover:bg-gray-800 text-gray-300 hover:text-white"
                   : "hover:bg-gray-100 text-gray-600 hover:text-black"
@@ -62,7 +62,7 @@ const TestiMonials = () => {
                   });
                 }
               }}
-              className={`p-3 rounded-full transition-all duration-300 ${
+              className={`p-2 rounded-full transition-all duration-300 ${
                 isDarkMode
                   ? "hover:bg-gray-800 text-gray-300 hover:text-white"
                   : "hover:bg-gray-100 text-gray-600 hover:text-black"
@@ -84,8 +84,8 @@ const TestiMonials = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, margin: "50px" }}
                 transition={{ type: "tween", duration: 0.3 }}
-                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 border-gray-700
-                     dark:from-white/10 dark:to-black border-gray-300
+                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 
+                     dark:from-white/10 dark:to-black 
                  rounded-2xl border backdrop-blur-sm p-6 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] group`}
               >
                 <div className="flex items-center gap-3 mb-4">
@@ -138,8 +138,8 @@ const TestiMonials = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, margin: "50px" }}
                 transition={{ type: "tween", duration: 0.3 }}
-                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 border-gray-700
-                     dark:from-white/10 dark:to-black border-gray-300
+                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 
+                     dark:from-white/10 dark:to-black 
                  rounded-2xl border backdrop-blur-sm p-6 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] group`}
               >
                 <div className="flex items-center gap-3 mb-4">
@@ -192,8 +192,8 @@ const TestiMonials = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, margin: "50px" }}
                 transition={{ type: "tween", duration: 0.3 }}
-                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 border-gray-700
-                     dark:from-white/10 dark:to-black border-gray-300
+                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 
+                     dark:from-white/10 dark:to-black 
                  rounded-2xl border backdrop-blur-sm p-6 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] group`}
               >
                 <div className="flex items-center gap-3 mb-4">
@@ -246,8 +246,8 @@ const TestiMonials = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, margin: "50px" }}
                 transition={{ type: "tween", duration: 0.3 }}
-                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 border-gray-700
-                     dark:from-white/10 dark:to-black border-gray-300
+                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 
+                     dark:from-white/10 dark:to-black 
                  rounded-2xl border backdrop-blur-sm p-6 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] group`}
               >
                 <div className="flex items-center gap-3 mb-4">
@@ -300,8 +300,8 @@ const TestiMonials = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, margin: "50px" }}
                 transition={{ type: "tween", duration: 0.3 }}
-                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 border-gray-700
-                     dark:from-white/10 dark:to-black border-gray-300
+                className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 
+                     dark:from-white/10 dark:to-black 
                  rounded-2xl border backdrop-blur-sm p-6 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] group`}
               >
                 <div className="flex items-center gap-3 mb-4">

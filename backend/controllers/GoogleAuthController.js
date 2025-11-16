@@ -103,9 +103,16 @@ export const HandleGoogleCallback = async (req, res) => {
     const refreshToken = GenerateRefreshTokens(
       user.id,
       user.email,
-      user.username
+      user.username,
+      user.IsPremiumUser
     );
-    const authToken = GenerateAccessTokens(user.id, user.email, user.username);
+    // generate new sesstion token
+    const authToken = GenerateAccessTokens(
+      user.id,
+      user.email,
+      user.username,
+      user.IsPremiumUser
+    );
 
     if (!refreshToken || !authToken) {
       throw new Error("Token generation failed");

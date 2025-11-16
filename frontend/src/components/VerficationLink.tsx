@@ -38,18 +38,31 @@ const VerificationLink = () => {
   };
   return (
     <>
-      <div className="h-screen flex items-center justify-center relative z-[2]  ">
+      <div className="h-screen flex items-center justify-center relative z-[2] overflow-hidden ">
         <Toaster />
 
         {/* gradient accent background */}
-        <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-purple-600/20 to-indigo-600/20 dark:from-black dark:to-black blur-2xl z-[-1]"></div>
+        <div className="absolute h-full w-full top-0 left-0 blur-2xl flex  z-[-1]">
+          <div
+            style={{
+              background: `
+          radial-gradient(circle at 30% 30%, #4B0082 0%, transparent 50%),
+          radial-gradient(circle at 70% 20%, #87CEEB 10%, transparent 50%),
+          radial-gradient(circle at 50% 70%, #FF69B4 15%, transparent 50%),
+          radial-gradient(circle at 80% 60%, #FFBF00 20%, transparent 50%),
+          radial-gradient(circle at 20% 50%, #9370DB 25%, transparent 50%)
+        `,
+              backgroundBlendMode: "screen",
+            }}
+            className=" h-[70%] w-[90%] md:w-[40%] m-auto  opacity-70 rounded-t-xl    rounded-br-md rounded-bl-sm Indicator"
+          ></div>
+        </div>
 
         <motion.div
           drag
           whileDrag={{ scale: 0.9 }}
           dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
-          className="bg-gradient-to-br from-gray-100 to-gray-200 
-            dark:from-black dark:to-white/10 grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black border dark:border-gray-400 cursor-grab"
+          className="bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black border dark:border-gray-400 cursor-grab"
         >
           <h1 className="text-center space-grotesk font-bold  text-2xl">
             Identify yourself{" "}

@@ -15,9 +15,20 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
 
   //   rendering data
   const data = [
-    { name: "Upvotes", value: FeedbackCounts.upvotes || 0 },
-    { name: "Downvotes", value: FeedbackCounts.downvotes || 0 },
-    { name: "Partial", value: FeedbackCounts.partial_upvotes || 0 },
+    {
+      name: "Upvotes",
+      value: FeedbackCounts?.upvotes ? FeedbackCounts?.upvotes : 0,
+    },
+    {
+      name: "Downvotes",
+      value: FeedbackCounts?.downvotes ? FeedbackCounts?.downvotes : 0,
+    },
+    {
+      name: "Partial",
+      value: FeedbackCounts?.partial_upvotes
+        ? FeedbackCounts?.partial_upvotes
+        : 0,
+    },
   ];
   return (
     <>
@@ -133,7 +144,7 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
           </div>
         </div>
         <div className="bai-jamjuree-regular text-md  w-full text-center flex items-center justify-center gap-4">
-          <FaThumbsUp />
+          <FaThumbsUp color="green" />
           Keep Up the good work
         </div>
       </motion.div>

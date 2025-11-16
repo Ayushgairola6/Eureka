@@ -66,7 +66,7 @@ const EmailVerificationForm = () => {
           <h1 className="text-center space-grotesk font-bold  text-2xl">
             Identify yourself{" "}
           </h1>
-          <span className="text-xs text-gray-700 dark:text-gray-300 space-grotesk text-center">
+          <span className="text-xs text-purple-500  space-grotesk text-center">
             verification is the first step
           </span>
 

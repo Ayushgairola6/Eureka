@@ -46,26 +46,30 @@ const NotificationPanel = () => {
   };
 
   return (
-    <div className=" absolute top-15 right-3 z-50" ref={panelRef}>
+    <div
+      // onClick={() => console.log(notifications)}
+      className=" absolute top-8 right-2 z-50"
+      ref={panelRef}
+    >
       <Toaster />
       {isOpen && (
-        <div className=" w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700  max-h-96 overflow-hidden bai-jamjuree-regular">
+        <div className=" w-80 dark:bg-white/10 bg-white rounded-lg shadow-xl border   max-h-96 overflow-hidden bai-jamjuree-regular">
           {/* Panel Header */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-2 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 dark:text-white">
+              <h3 className="font-semibold text-black dark:text-white">
                 Notifications
               </h3>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm text-gray-900 dark:text-gray-200">
                 {notificationcount} unread
               </span>
             </div>
           </div>
 
           {/* Notifications List */}
-          <div className="overflow-y-auto max-h-80 space-grotesk">
-            {notifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+          <div className="overflow-y-auto max-h-80 ">
+            {notifications?.length === 0 ? (
+              <div className="p-4 bai-jamjuree-regular text-center text-gray-500 dark:text-gray-400">
                 No notifications
               </div>
             ) : (
@@ -86,14 +90,14 @@ const NotificationPanel = () => {
                           "room_joining_request"
                             ? "text-blue-600 dark:text-blue-400"
                             : notification.notification_type === "Informatory"
-                            ? "text-yellow-600 dark:text-yellow-400"
-                            : "text-gray-600 dark:text-gray-400"
+                            ? "text-green-500 dark:text-green-500"
+                            : "text-amber-500 dark:text-amber-500"
                         }`}
                       >
                         {notification.title}
                       </span>
                     </div>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                    <span className="text-xs text-indigo-500 dark:text-indigo-400">
                       {notification?.sent_at
                         ? notification?.sent_at.split("T")[0]
                         : "unknown"}

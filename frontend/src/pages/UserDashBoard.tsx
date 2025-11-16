@@ -19,7 +19,7 @@ import { IoSunnyOutline } from "react-icons/io5";
 import { JoinAChatRoom } from "../store/chatRoomSlice.ts";
 import { toast, Toaster } from "sonner";
 import { IoMdHourglass } from "react-icons/io";
-import { BiLoaderAlt, BiLogOut } from "react-icons/bi";
+import { BiError, BiLoaderAlt, BiLogOut } from "react-icons/bi";
 import { LogoutUser } from "../store/AuthSlice.ts";
 import { FaArrowUpRightDots } from "react-icons/fa6";
 // import {NewUserNotification} from '../store/AuthSlice.ts'
@@ -32,7 +32,6 @@ const UserDashboard = () => {
   // Mock user data
 
   const dispatch = useAppDispatch();
-  const user = useAppSelector((state) => state.auth.user);
   const Feedback = useAppSelector((state) => state.auth.FeedbackCounts);
   const chatrooms = useAppSelector((state) => state.auth.chatrooms);
   const isJoining = useAppSelector((state) => state.chats.isJoiningRoom);
@@ -41,7 +40,9 @@ const UserDashboard = () => {
   const [showcard, setShowCard] = useState(false);
   const [open, setOpen] = useState(false);
   const [IncreaseHeight, setIncreaseHeight] = useState(false);
-  const { isDarkMode, isLoggingOut } = useAppSelector((state) => state.auth);
+  const { isDarkMode, isLoggingOut, user } = useAppSelector(
+    (state) => state.auth
+  );
   // Mock conversations
 
   useEffect(() => {
@@ -94,7 +95,11 @@ const UserDashboard = () => {
         <div className="w-64 p-6 border-r dark:border-gray-800 hidden md:block">
           <div className="flex flex-col items-center justify-center mb-10">
             <span className="rounded-full h-24 w-24 text-5xl flex flex-col items-center justify-center border-2 bg-indigo-500 mb-4 dark:text-white text-black relative">
-              {user?.username.trim().split(" ")[0].split("")[0].toUpperCase()}
+              {user?.username ? (
+                user?.username.trim().split("_")[0].charAt(0).toUpperCase()
+              ) : (
+                <BiError />
+              )}
               <ul className="absolute -top-4 -right-11">
                 {score > 70 ? (
                   <IoSunnyOutline color="green" />
@@ -222,7 +227,19 @@ const UserDashboard = () => {
               </h2>
               <section className="inline-flex gap-5">
                 <Link
-                  to="/user/misallaneous-chats"
+                  onClick={() => {
+                    if (user?.IsPremiumUser === false) {
+                      toast.info(
+                        "Become our premium member to access this feature."
+                      );
+                      return;
+                    }
+                  }}
+                  to={`${
+                    user?.IsPremiumUser === true
+                      ? "/user/misallaneous-chats"
+                      : "/user/dashboard"
+                  }`}
                   className="text-xs md:text-sm text-green-600 dark:text-green-400 cursor-pointer flex items-center justify-center gap-2"
                 >
                   Other chats <TbOctahedron />
@@ -268,7 +285,19 @@ const UserDashboard = () => {
 
                     <div className="flex justify-end items-center mt-4">
                       <Link
-                        to={`/User/document_chat_history/${conv.document_id}`}
+                        onClick={() => {
+                          if (user?.IsPremiumUser === false) {
+                            toast.info(
+                              "Become our premium member to be able to view chat history."
+                            );
+                            return;
+                          }
+                        }}
+                        to={`${
+                          user?.IsPremiumUser === true
+                            ? `/User/document_chat_history/${conv.document_id}`
+                            : `/user/dashboard`
+                        }`}
                         className="text-xs text-blue-500 hover:underline"
                       >
                         View full chat →
@@ -277,8 +306,8 @@ const UserDashboard = () => {
                   </motion.div>
                 ))
               ) : (
-                <div className="dark:bg-white/10 bg-gray-100 border border-gray-400 rounded-lg h-full w-full p-4 flex ">
-                  <Link to="/Interface" className="m-auto text-sm">
+                <div className="bg-black/5 dark:bg-white/5 border  rounded-lg h-full w-full p-4 flex ">
+                  <Link to="/Interface" className="m-auto text-sm text-sky-500">
                     Upload docs +
                   </Link>
                 </div>
@@ -391,9 +420,9 @@ const UserDashboard = () => {
                   </motion.div>
                 ))
               ) : (
-                <div className="bg-gray-100 dark:bg-black border border-gray-400 rounded-lg flex ">
+                <div className="bg-black/5 dark:bg-white/5 border  rounded-lg flex ">
                   <h1 className="m-auto space-grotesk text-sm md:text-md p-2">
-                    Your are not member of any room yet , Join a room +
+                    Not a member of any group
                   </h1>
                 </div>
               )}

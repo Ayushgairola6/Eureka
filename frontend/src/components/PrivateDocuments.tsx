@@ -1,8 +1,12 @@
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
-import { setShowDocs } from "../store/InterfaceSlice.ts";
+import { setNeedToRefresh, setShowDocs } from "../store/InterfaceSlice.ts";
 import { FaArrowLeft } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { FiFile } from "react-icons/fi";
+import ConfirmationBox from "@/components/ConfirmationBox.tsx";
+import { useState } from "react";
+import { BiRefresh } from "react-icons/bi";
+import { GetUserDashboardData } from "../store/AuthSlice.ts";
 type PrivateDocProps = {
   selectedDoc: string;
   setSelectedDoc: any;
@@ -13,13 +17,15 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
   setSelectedDoc,
 }) => {
   const dispatch = useAppDispatch();
-  const { showDocs } = useAppSelector((state) => state.interface);
-  // ${showDocs ? "h-full w-full opacity-100" : "h-0 w-0 opacity-0 overflow-hidden"
-  //             }
+  const { showDocs, NeedToRefresh } = useAppSelector(
+    (state) => state.interface
+  );
   const User = useAppSelector((state) => state.auth.user);
+  const [ShowBox, setShowBox] = useState(false);
+  const [DocToDel, setDocToDel] = useState<string>("");
   return (
     <div
-      className={`absolute h-full w-full md:w-1/2 lg:w-1/3 p-4 top-0 left-0 z-[100] space-grotesk 
+      className={`fixed border h-full max-h-screen overflow-y-auto w-full md:w-1/2  p-4 top-10 left-0 z-[5] space-grotesk 
               bg-gray-100 dark:bg-black shadow-lg
               transition-all duration-500 ease-in-out 
               ${
@@ -29,18 +35,6 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
               }`}
     >
       {/* Close button */}
-      <motion.button
-        onClick={() => dispatch(setShowDocs(!showDocs))}
-        className={`absolute top-4 right-4 z-10 p-2 rounded-full 
-               bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
-               transition-all duration-300 ${
-                 showDocs ? "rotate-0" : "rotate-180"
-               }`}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-      >
-        <FaArrowLeft className="text-gray-700 dark:text-gray-200" size={20} />
-      </motion.button>
 
       {/* Documents container */}
       <div className="h-full overflow-y-auto pb-16">
@@ -48,7 +42,7 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
           My Documents
         </h2>
 
-        {User && User.Contributions_user_id_fkey ? (
+        {User && User?.Contributions_user_id_fkey.length > 0 ? (
           <div className="grid grid-cols-1  gap-3 p-2">
             {User?.Contributions_user_id_fkey.map((doc: any) => (
               <motion.div
@@ -60,13 +54,13 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
                     )
                   );
 
-                  dispatch(setShowDocs(!showDocs));
+                  // dispatch(setShowDocs(!showDocs));
                 }}
                 className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200
                       ${
                         selectedDoc === doc.document_id
-                          ? "border-green-400 bg-green-100 dark:bg-white/10 shadow-md"
-                          : "border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800 hover:shadow-sm"
+                          ? "border-green-400 bg-green-100 dark:bg-white/5 shadow-md"
+                          : "border-gray-400 dark:border-gray-600 bg-white dark:bg-white/10 hover:border-amber-300"
                       }
                       hover:scale-[1.02] active:scale-[0.98]`}
                 whileHover={{ y: -2 }}
@@ -81,20 +75,70 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
                 <p className="mt-2 text-xs text-gray-600 dark:text-red-300">
                   Uploaded: {new Date(doc.created_at).toLocaleDateString()}
                 </p>
+                <section className="flex items-center justify-end">
+                  <button
+                    onClick={() => {
+                      setShowBox(!ShowBox);
+                      setDocToDel(doc.document_id);
+                    }}
+                    className="mt-2 text-xs text-red-600 bg-red-600/10 border border-red-600 px-2 py-1 rounded-md bai-jamjuree-semibold "
+                  >
+                    Delete
+                  </button>
+                </section>
               </motion.div>
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-64 text-center">
-            <FiFile className="text-gray-400 dark:text-gray-500 text-4xl mb-2" />
-            <p className="text-gray-500 dark:text-gray-400">
+            <FiFile className="text-gray-500 dark:text-gray-300 text-4xl mb-2" />
+            <p className="text-gray-600 dark:text-gray-300">
               No documents found
             </p>
-            <span className="text-xs text-red-600">
-              * Click on contributions to upload
+            <span className="text-sm bai-jamjuree-regular text-red-600">
+              * Click on contributions button to upload your first file {":)"}
             </span>
           </div>
         )}
+      </div>
+      <ConfirmationBox
+        setDocToDel={setDocToDel}
+        DocToDel={DocToDel}
+        ShowBox={ShowBox}
+        setShowBox={setShowBox}
+      />
+      {/* refreshButton */}
+      <div className="fixed top-5 right-8  flex items-center justify-center gap-2">
+        {NeedToRefresh === true && (
+          <motion.button
+            onClick={() =>
+              dispatch(GetUserDashboardData())
+                .unwrap()
+                .then((res) => {
+                  if (res) {
+                    dispatch(setNeedToRefresh(false));
+                  }
+                })
+            }
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="text-sm bg-gray-400/20 dark:bg-gray-100/20 rounded-md p-1 cursor-pointer"
+          >
+            <BiRefresh size={18} />
+          </motion.button>
+        )}
+        <motion.button
+          onClick={() => dispatch(setShowDocs(!showDocs))}
+          className={` cursor-pointer p-2 rounded-full 
+               bg-gray-400/20 dark:bg-gray-100/20 hover:bg-gray-300 dark:hover:bg-gray-600
+               transition-all duration-300 ${
+                 showDocs ? "rotate-0" : "rotate-180"
+               }`}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <FaArrowLeft className="text-gray-700 dark:text-gray-200" size={12} />
+        </motion.button>
       </div>
     </div>
   );
