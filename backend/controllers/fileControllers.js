@@ -9,6 +9,8 @@ import {
   CheckFileTypeAndParseIt,
   chunkMarkdown,
   formatSSEChunk,
+  HandleSourceCreation,
+  processContextStringCreation,
   splitMarkdown,
 } from "../FilerParsers/FilerParser.js";
 dotenv.config();
@@ -105,8 +107,8 @@ export const FileUploadHandle = async (req, res) => {
     }
     const documentId = uuidv4();
 
-    const CheckedFileType = await CheckFileTypeAndParseIt(file);
-    const textChunks = await splitTextIntoChunks(CheckedFileType);
+    const ParsedText = await CheckFileTypeAndParseIt(file);
+    const textChunks = await splitTextIntoChunks(ParsedText);
 
     if (!textChunks || textChunks.length === 0) {
       await notifyMe(`Error while chunking the text by ${req.user.username}`);
@@ -119,8 +121,7 @@ export const FileUploadHandle = async (req, res) => {
     // array to store a unique record array for upsert operation
     const recordsToUpsert = [];
     // the size of one batch that we process
-    const batchSize = 90; // Adjust batch size based on your index type and data size
-
+    const batchSize = req.user.PaymentStatus === true ? 90 : 50;
     // loop to start pushing chunks into the db
     for (let i = 0; i < textChunks.length; i++) {
       // Generate a unique ID for each chunk
@@ -143,9 +144,9 @@ export const FileUploadHandle = async (req, res) => {
       // If batch is full or it's the last chunk, upsert the batch
       if (recordsToUpsert.length === batchSize || i === textChunks.length - 1) {
         try {
-          await index.upsertRecords(recordsToUpsert); // Pass the array of records
+          await index.upsertRecords(recordsToUpsert); //upsert the records
           // console.log(`Upserted batch of ${recordsToUpsert.length} records.`);
-          recordsToUpsert.length = 0; // Clear the batch array
+          recordsToUpsert.length = 0; // reset the records array
         } catch (error) {
           await notifyMe(
             `Error ${error} while batch upsert the file by ${req.user.username}`
@@ -159,7 +160,8 @@ export const FileUploadHandle = async (req, res) => {
       }
     }
 
-    // If there are any remaining records after the loop (e.g., if total records not divisible by batchSize)
+    // If there are any remaining records after the loop
+    // in case of records less than batchsize
     if (recordsToUpsert.length > 0) {
       try {
         await index.upsertRecords(recordsToUpsert);
@@ -171,6 +173,7 @@ export const FileUploadHandle = async (req, res) => {
           .json({ message: "Error during Pinecone upsert operation." });
       }
     }
+    // storing the contribution details
     const StoredContribution = await StoreContributionDetails(
       email,
       feedback,
@@ -190,23 +193,14 @@ export const FileUploadHandle = async (req, res) => {
         "Caching the info stored in the db related to the file upload info"
       );
 
-      // handle user cache information
-      await UpdateUserFileListCacheInfo(
-        UserAccountDataKey,
-        StoredContribution.InsertedData
-      );
+      // handle user cache information if the documents are not private
+      if (visibility !== "Private") {
+        await UpdateUserFileListCacheInfo(
+          UserAccountDataKey,
+          StoredContribution.InsertedData
+        );
+      }
     }
-    // const StoreInFeedback = await StoreFilesIntoDoc_Feedback(
-    //   userid,
-    //   documentId
-    // );
-    // if (StoreInFeedback?.error) {
-    //   await notifyMe(
-    //     "error while updating the feedback table while the user was uploading a file",
-    //     StoreInFeedback.error
-    //   );
-    // }
-    // // update the redis contributions cache
 
     // create a new notification and inster it in the db
     const metadata = {
@@ -364,7 +358,7 @@ export const GetPublicRecords = async (req, res) => {
     if (!user_id || typeof user_id !== "string")
       return res.status(400).json({ message: "Please login to continue" });
     // const { question, category, subCategory } = req.body;
-    const { question, category, subCategory } = req.body;
+    const { question, category, subCategory, MessageId } = req.body;
     if (
       !question ||
       typeof question !== "string" ||
@@ -387,14 +381,14 @@ export const GetPublicRecords = async (req, res) => {
     if (UpdateState.status.includes("not ok")) {
       return res.status(200).send({
         Answer: UpdateState.message,
-        message: "Limit reached found",
-        favicon: [],
+        message: "Reached todays limit",
+        docUsed: [],
       });
     }
 
     // finding info regarding that query
-    const FoundData = [];
-    const DocumentsUserForReference = [];
+    const FoundData = `This is the information found from the database that is shared by several contributors :`;
+    let DocumentsUserForReference;
     //    console.log(fetchResult)
     const response = await index.searchRecords({
       query: {
@@ -412,7 +406,6 @@ export const GetPublicRecords = async (req, res) => {
         "subCategory",
         "date_of_contribution",
         "documentId",
-        "contributor",
       ],
     });
     // processing the results
@@ -425,52 +418,49 @@ export const GetPublicRecords = async (req, res) => {
         );
         return res.status(200).json({
           message: "Response found",
-          answer: `Could you please be more specific about what you would like to know about ${subCategory}`,
-          doc_id: [],
+          answer: `Looks like I do not have any information regarding your question right now. You can try using our web search functionality to get answer to your questions ${subCategory} `,
+          docUsed: [],
         });
       }
-      // Filter and prepare all hits first
-      const validHits = response.result.hits
-        .filter(
-          (e) =>
-            e && e.fields?.documentId && e.fields?.contributor && e.fields?.text
-        )
-        .map((e) => ({
-          ...e,
-          uniqueKey: `${e.fields.documentId}-${e.fields.contributor}`,
-        }))
-        .filter((e) => {
-          if (seen.has(e.uniqueKey)) return false;
-          seen.add(e.uniqueKey);
-          return true;
+
+      // creating a context string
+      const FoundData = await processContextStringCreation(response);
+
+      if (FoundData.message) {
+        return res.status(200).send({
+          message: "Unable to generate a response",
+          answer: FoundData.message,
+          docUsed: { MessageId, docs: [] },
         });
-
-      // processing the batches
-      for (let i = 0; i < validHits.length; i += batchSize) {
-        const batch = validHits.slice(i, i + batchSize);
-
-        // Process current batch
-        await processBatch(batch, FoundData, DocumentsUserForReference);
-
-        // Optional: Add delay between batches to avoid overwhelming the database
-        if (i + batchSize < validHits.length) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
       }
+      const DocumentsUserForReference = await HandleSourceCreation(
+        response,
+        req.user.PaymentStatus,
+        MessageId
+      );
+
       // a set to store only unique values of document ids
     } catch (er) {
       await notifyMe(
-        `${JSON.stringify(
-          er
-        )}= error while getting documents id from database for documents used for this AI response`
+        ` error while getting documents id from database for documents used for this AI response`,
+        er
       );
     }
 
-    let AnswerToUsersQuestion = await GenerateResponse(question, FoundData);
+    const AnswerToUsersQuestion = await GenerateResponse(
+      question,
+      `This is the information found from the public knowledgebase =${FoundData}`,
+      process.env.SYSTEM_PROMPT,
+      req.user.PaymentStatus
+    );
 
-    if (AnswerToUsersQuestion.error) {
-      return res.status(200).send({ answer: "Server busy" });
-    }
+    // const AnswerToUsersQuestion = "THis is a hardcoded answer";
+
+    // const AnswerToUsersQuestion =
+    //   "this is a mock answer just to test the information";
+    // // if (AnswerToUsersQuestion.error) {
+    // //   return res.status(200).send({ answer: "Server busy" });
+    // // }
 
     const storeResponses = await StoreQueryAndResponse(
       user_id,
@@ -488,6 +478,7 @@ export const GetPublicRecords = async (req, res) => {
       return res.status(200).json({
         message: "Could not store this request",
         answer: AnswerToUsersQuestion,
+        docUsed: DocumentsUserForReference,
       });
     }
 
@@ -523,62 +514,14 @@ export const GetPublicRecords = async (req, res) => {
     return res.status(200).json({
       message: "Response found",
       answer: AnswerToUsersQuestion,
-      doc_id: DocumentsUserForReference || [],
+      docUsed: DocumentsUserForReference,
     });
   } catch (err) {
     await notifyMe(err);
     return res.status(500).send({ message: "Server busy" });
   }
 };
-//processing a batch of context formatting and creating a record of used documents
-const processBatch = async (batch, FoundData, DocumentsUserForReference) => {
-  const documentIds = batch.map((e) => e.fields.documentId);
 
-  try {
-    // Add to FoundData immediately for this batch
-    batch.forEach((e) => {
-      FoundData.push({
-        role: "context",
-        source: "Vector Database",
-        score: e._score || 0,
-        content: e.fields.text,
-        document_id: e.fields.documentId,
-        contributor: e.fields.contributor,
-      });
-    });
-
-    // Batch fetch feedback for all documents in this batch
-    const { data: feedbackData, error } = await supabase
-      .from("Doc_Feedback")
-      .select("document_id, upvotes, downvotes, partial_upvotes")
-      .in("document_id", documentIds);
-
-    if (error) {
-      console.error(`Error fetching feedback for batch:`, error);
-      // Continue without feedback for this batch
-      return;
-    }
-
-    // Create feedback lookup map
-    const feedbackMap = new Map(feedbackData.map((fb) => [fb.document_id, fb]));
-
-    // Build document references for this batch
-    batch.forEach((e) => {
-      const feedback = feedbackMap.get(e.fields.documentId);
-      DocumentsUserForReference.push({
-        doc_id: e.fields.documentId,
-        uploaded_by: e.fields.contributor,
-        upvotes: feedback?.upvotes || 0,
-        downvotes: feedback?.downvotes || 0,
-        partial_upvotes: feedback?.partial_upvotes || 0,
-        has_feedback: !!feedback,
-      });
-    });
-  } catch (batchError) {
-    await notifyMe(`Error processing batch: ${batchError.message}`);
-    // Continue with next batch even if this one fails
-  }
-};
 // store user file upload information
 export const StoreContributionDetails = async (
   email,
@@ -856,7 +799,6 @@ export const PostTypeWebSearch = async (req, res) => {
 
     const IsPremiumUser = req.user.PaymentStatus;
     if (IsPremiumUser === null || IsPremiumUser === undefined) {
-      console.log(req.user);
       return res.status(403).send({
         message:
           "Please logout and logIn again to be able to experience new features",

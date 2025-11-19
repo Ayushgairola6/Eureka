@@ -79,6 +79,7 @@ const App = () => {
 
       getRequest.onsuccess = function () {
         dispatch(UpdateFromLocalCache(getRequest.result)); //update the localstates
+        dispatch(setIsLogin(true));
       };
     };
 
@@ -136,9 +137,7 @@ const App = () => {
             .unwrap()
             .then((res) => {
               if (res) {
-                // updates the local cache
-                console.log(res);
-                StoreLocalCache(res.user);
+                StoreLocalCache(res.user); //store the basics in client side cache
               }
             });
           dispatch(connectSocket());
@@ -150,6 +149,7 @@ const App = () => {
 
     fetchUserData();
   }, [isLoggedIn]);
+
   // re append the user chosen theme
   useEffect(() => {
     // Only run once on mount
@@ -242,6 +242,8 @@ const App = () => {
               element={<TermsAndConditions />}
               path="/terms-and-conditions"
             />
+            <Route element={<LandingPage />} path="/#pricing"></Route>
+
             <Route element={<PrivacyPolicy />} path="/Privacy" />
             <Route element={<RefundPolicy />} path="/Refund-Policy" />
             <Route

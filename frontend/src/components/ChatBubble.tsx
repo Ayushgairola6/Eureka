@@ -5,13 +5,14 @@ import { BiCopy } from "react-icons/bi";
 import { useAppSelector } from "../store/hooks.tsx";
 import { toast } from "sonner";
 import { IoHourglass } from "react-icons/io5";
-
+import DocUsed from "@/components/DocumentsUsed.tsx";
 type ChatBubbleProps = {
   chatcontainer: React.Ref<HTMLDivElement>;
 };
 const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
   const [ReceivedResponseId, setReceivedRsponseId] = useState<any>([]);
-  const { favicon, Chats } = useAppSelector((state) => state.interface);
+  const { Chats } = useAppSelector((state) => state.interface);
+  const [docused, setShowDocUsed] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
   return (
     <>
@@ -26,45 +27,28 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
             >
               {/* Chat Bubble Container */}
               <div className="space-y-8 ">
-                {favicon.length > 0 && (
-                  <>
-                    {favicon.find(
-                      (elem: any) => elem.MessageId === chat.id
-                    ) && (
-                      <>
-                        <ul className="bai-jamjuree-semibold text-sm ">
-                          {
-                            favicon.find((e) => e.MessageId === chat.id)?.icon
-                              .length
-                          }
-                          {"+ "}
-                          Sources
-                        </ul>
-                        <span className="flex items-center justify-start gap-1">
-                          {favicon
-                            .find((z) => z.MessageId === chat.id)
-                            ?.icon.map((im: any, index) => {
-                              return (
-                                <img
-                                  className="h-8 w-8 rounded-full"
-                                  key={index}
-                                  src={im}
-                                  alt="/source.png"
-                                />
-                              );
-                            })}
-                        </span>
-                      </>
-                    )}
-                  </>
-                )}
+                {/* the favicon portion */}
+
+                {/* the documents used section for public documents */}
+                {chat.sent_by === "Eureka" &&
+                  chat === Chats[Chats.length - 1] && (
+                    <DocUsed
+                      chat={chat}
+                      docused={docused}
+                      setShowDocUsed={setShowDocUsed}
+                    />
+                  )}
                 {/* Chat Bubble */}
                 {chat.sent_by === "Eureka" &&
                 chat.message.content === "" &&
                 chat.id === Chats[Chats.length - 1].id ? (
-                  <ul className="bai-jamjuree-semibold text-lg animate-pulse my-2 flex items-center justify-start gap-2">
-                    <IoHourglass className="animate-spin" />
-                    <p>Analyzing...</p>
+                  <ul className="bai-jamjuree-semibold text-lg  my-2 flex items-center justify-start gap-2  w-fit   relative overflow-hidden border rounded-xl border-gray-700 p-[1px]">
+                    <div className=" absolute top-0 left-0   h-full w-full  bg-gradient-to-br from-red-600 via-sky-600 to-yellow-600 z-[-2] ThinkingIndicator" />
+
+                    <p className="flex items-center bg-white dark:bg-black h-[90%] w-full rounded-xl justify-center gap-2 px-2">
+                      <IoHourglass className="animate-spin" />
+                      Analyzing...
+                    </p>
                   </ul>
                 ) : (
                   <div

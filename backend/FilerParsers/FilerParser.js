@@ -6,6 +6,8 @@ import { MarkdownTextSplitter } from "@langchain/textsplitters";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import { toMarkdown } from "mdast-util-to-markdown";
+import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+import { supabase } from "../controllers/supabaseHandler.js";
 const AllowedFileTypes = ["docx", "json", "md", "pptx", "csv", "txt", "pdf"];
 
 export const CheckFileTypeAndParseIt = async (file) => {
@@ -146,21 +148,111 @@ export function formatSSEChunk(chunk) {
       .join("\n") + "\n\n"
   ); // terminate event with double newline
 }
-// Example markdown content
-const markdownContent = `
-# Main Heading
-This is some introductory text.
 
-## Subheading 1
-This is the content for subheading 1.
-It can include multiple paragraphs.
+// creating a batch to process the chunks of context from public docs
+export const HandleSourceCreation = async (
+  response,
+  PaymentStatus,
+  MessageId
+) => {
+  const Reference = {
+    MessageId,
+    docs: [],
+  };
+  const IdsToFetch = [];
+  const batchSize = PaymentStatus === true ? 20 : 10; //this determine how many documents to process at once
 
-\`\`\`javascript
-console.log('This is a code block');
-\`\`\`
+  const seen = new Set(); // a set to track the uniqueness of document
 
-## Subheading 2
-This is the content for subheading 2.
-- It has a list item
-- And another one
-`;
+  if (!response || !response.result || !Array.isArray(response.result.hits)) {
+    await notifyMe("Invalid response passed to HandleSourceCreation");
+    return { error: "Invalid response" };
+  }
+
+  // iterate through hits and flush batches when full or at the last hit
+  for (let i = 0; i < response.result.hits.length; i++) {
+    let currentChunk = response.result.hits[i];
+    // only process the chunk if it has not already been seen and has a documentId
+    const docId = currentChunk?.fields?.documentId;
+    if (!docId) continue;
+
+    if (!seen.has(docId)) {
+      IdsToFetch.push(docId); // add it to the array
+      seen.add(docId); // include the id in the set
+
+      if (
+        IdsToFetch.length === batchSize ||
+        i === response.result.hits.length - 1
+      ) {
+        await HandleChunkProcssing(IdsToFetch, Reference); // fetch data of these ids and process them
+        IdsToFetch.length = 0; // clear the batch after processing
+      }
+    }
+  }
+
+  // handling leftover chunks (safety net)
+  if (IdsToFetch.length > 0) {
+    try {
+      await HandleChunkProcssing(IdsToFetch, Reference);
+    } catch (error) {
+      console.log(error);
+      await notifyMe(` error while chunks refrecne procssing`, error);
+      return { error: "Error during Pinecone upsert operation." };
+    }
+  }
+
+  return Reference;
+};
+
+//helper function to process the chunks
+const HandleChunkProcssing = async (chunksToProces, Reference) => {
+  if (!Array.isArray(chunksToProces) || chunksToProces.length === 0) return;
+  if (!Reference) Reference = { docs: [] };
+
+  const { data, error } = await supabase
+    .from("Doc_Feedback")
+    .select("upvotes,downvotes,partial_upvotes")
+    .eq("document_id", chunksToProces);
+  if (error) {
+    await notifyMe(
+      "An error occured while searching for feedback report of a document in the db",
+      error
+    );
+    return;
+  }
+  // added them to the array
+  if (data && data.length > 0) {
+    data.forEach((e) => {
+      Reference.docs.push({
+        upvotes: e.upvotes,
+        downvotes: e.downvotes,
+        partial_upvotes: e.partial_upvotes,
+      });
+    });
+  } else {
+    Reference.docs.push({
+      upvotes: 0,
+      downvotes: 0,
+      partial_upvotes: 0,
+    });
+  }
+};
+
+// creating a context string for the model to understand
+export const processContextStringCreation = async (response) => {
+  let result = "";
+
+  // looping and appending to original string
+  response.result.hits.forEach((e) => {
+    result += `Score=${e._score}&&Content=${e.fields.text}`;
+  });
+
+  if (!result || result === "") {
+    await notifyMe("An error occured while creating the context string");
+    return {
+      message:
+        "I do not have necessary information regarding your query right now.",
+    };
+  }
+  return result;
+};

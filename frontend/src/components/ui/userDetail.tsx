@@ -128,7 +128,8 @@ const UserForm: React.FC<FormProps> = ({
               className="text-sm md:text-md font-semibold flex items-center justify-cente gap-2 bai-jamjuree-semibold"
               htmlFor="Feeback"
             >
-              File name <FaCircleNodes />
+              <FaCircleNodes />
+              File name
             </label>
             <textarea
               onChange={(e) => {
@@ -148,21 +149,21 @@ const UserForm: React.FC<FormProps> = ({
                 className="text-sm md:text-md font-semibold flex items-center justify-center gap-2 bai-jamjuree-semibold"
                 htmlFor="Feedback"
               >
-                Domain <BiCategory />
+                <BiCategory />
+                Domain
               </label>
-              <div className="relative space-grotesk">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-sky-600 rounded-xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+              <div className="relative space-grotesk  bg-gradient-to-br from-blue-600 via-yellow-600 to-red-600 p-0.5 rounded-xl">
                 <input
                   onChange={handleSearchResults}
                   type="text"
                   placeholder="Search domains..."
-                  className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm space-grotesk rounded-xl text-xs px-2 py-1 w-full md:w-80 focus:outline-none focus:ring-2 focus:ring-purple-500/50 border border-gray-300/50 dark:border-gray-600/50 "
+                  className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm space-grotesk rounded-xl text-xs px-2 py-1 w-full md:w-80 focus:outline-none focus:ring-2 focus:ring-gray-100/10 border border-gray-300/50 dark:border-gray-600/50 "
                 />
 
                 {/* Results Dropdown */}
                 {searchResult.length > 0 && (
                   <div className="absolute top-full left-0 w-full mt-2 z-50">
-                    <div className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                    <div className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600  shadow-lg max-h-40 overflow-y-auto">
                       {searchResult.map((res: any, index: number) => (
                         <div
                           key={`result-${index}`}
@@ -182,15 +183,15 @@ const UserForm: React.FC<FormProps> = ({
               </div>
             </section>
 
-            <section className="flex items-center justify-center gap-2 flex-wrap max-h-30 overflow-auto  space-grotesk">
+            <section className="flex items-center justify-evenly gap-2 flex-wrap max-h-40 overflow-auto  space-grotesk py-4">
               {Categories.map((cat) => (
                 <button
                   key={cat.name}
                   onClick={() => dispatch(setCategory(cat.name))}
-                  className="p-2 rounded-lg text-xs flex flex-col items-center gap-1"
+                  className="p-1 rounded-lg text-xs flex flex-col items-center gap-0.5"
                   title={cat.name}
                 >
-                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                  <div className="w-6 h-6 bg-black dark:bg-gray-100 text-white dark:text-black hover:underline   rounded-md flex items-center justify-center">
                     {cat.name.slice(0, 2)}
                   </div>
                   <span className="text-[10px] truncate w-full text-center">
@@ -246,7 +247,7 @@ const UserForm: React.FC<FormProps> = ({
                   Category
                 </span>
                 <span className="font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-full space-grotesk">
-                  {category}
+                  {category ? category : "Not selected"}
                 </span>
               </div>
             )}

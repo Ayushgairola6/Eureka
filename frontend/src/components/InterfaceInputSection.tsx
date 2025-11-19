@@ -52,6 +52,7 @@ const InputSection: React.FC<InputProps> = ({
     queryType,
     selectedDoc,
     shhowUserForm,
+    docUsed,
   } = useAppSelector((state) => state.interface);
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAppSelector((state) => state.auth);
@@ -279,6 +280,9 @@ const InputSection: React.FC<InputProps> = ({
         navigate("/Login");
         return;
       }
+      if (loading === true) {
+        return;
+      }
       // if the dropdown menu is visible
       if (shwoOptions === true) {
         dispatch(setShowOptions(false));
@@ -374,6 +378,7 @@ const InputSection: React.FC<InputProps> = ({
     <>
       {/* input section body */}
       <motion.section
+        onClick={() => console.log(docUsed)}
         className={`relative overflow-y-visible  w-full  px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border  bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3]  ${
           isActive === true
             ? "h-auto w-full "
@@ -385,7 +390,11 @@ const InputSection: React.FC<InputProps> = ({
         {/* input section */}
         <input
           value={question}
-          onFocus={() => setIsActive(true)}
+          onFocus={() => {
+            dispatch(setShowOptions(false));
+
+            setIsActive(true);
+          }}
           onChange={(e) => {
             dispatch(setQuestion(e.target.value));
           }}
@@ -462,26 +471,32 @@ const InputSection: React.FC<InputProps> = ({
 
           {/* private documents of the user */}
 
-          <ul
-            className={`space-groesk font-semibold text-sm flex items-center justify-end gap-2 CustPoint dark:text-gray-200 text-black`}
+          <div
+            role="button"
+            className="flex-wrap space-grotesk font-normal text-xs  flex items-center gap-1  dark:text-gray-200 text-black justify-end"
             onClick={() => {
               dispatch(setShowDocs(!showDocs));
               dispatch(setShowOptions(false));
             }}
           >
-            <IoDocument />
+            <span className="flex-1 min-w-0 line-clamp-1 text-center  flex-wrap">
+              {(() => {
+                if (!selectedDoc) return "MyDocs";
 
-            {(() => {
-              if (!selectedDoc) return "MyDocs";
+                // Find document name from user contributions
+                const foundDoc = user?.Contributions_user_id_fkey?.find(
+                  (contribution: any) =>
+                    contribution.document_id === selectedDoc
+                );
 
-              // Find document name from user contributions
-              const foundDoc = user?.Contributions_user_id_fkey?.find(
-                (contribution: any) => contribution.document_id === selectedDoc
-              );
+                return foundDoc?.feedback || "MyDocs";
+              })()}
 
-              return foundDoc?.feedback || "MyDocs";
-            })()}
-          </ul>
+              {/* {selectedDoc ? (foundDoc?.feedback ?? "MyDocs") : "MyDocs"} */}
+            </span>
+
+            <IoDocument className="flex-none ml-1" />
+          </div>
         </div>
         {/* query type and send button container */}
         <div className="flex items-center justify-between mt-4">

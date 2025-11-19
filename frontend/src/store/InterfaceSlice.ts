@@ -3,13 +3,18 @@ import axios from "axios";
 
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
-interface DocUsed {
-  uploaded_by: string;
-  doc_id: [];
+interface DocVote {
+  doc_id: string;
   upvotes: number;
   downvotes: number;
   partial_upvotes: number;
 }
+
+interface DocUsed {
+  MessageId: string;
+  docs: DocVote[];
+}
+
 interface favicon {
   MessageId: string;
   icon: any[];
@@ -71,7 +76,14 @@ const initialState: InterfaceState = {
   docUsed: [],
   sendingFeedback: false,
   Chats: [],
-  favicon: [],
+  favicon: [
+    {
+      MessageId: "none",
+      icon: [
+        "https://images.unsplash.com/photo-1748686856746-fc758ac9b4c7?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+    },
+  ],
   selectedDoc: "",
   uploading: false,
   deleting: false,
@@ -279,15 +291,11 @@ const interfaceSlice = createSlice({
     setNeedToRefresh: (state, action) => {
       state.NeedToRefresh = action.payload;
     },
-    UpdateDocUsed: (state, action) => {
-      state.docUsed = [...action.payload];
-    },
+
     setQuestion: (state, action) => {
       state.question = action.payload;
     },
-    setDocUsed: (state, action) => {
-      state.docUsed.push(action.payload);
-    },
+
     setAnswer: (state, action) => {
       state.answer = action.payload;
     },
@@ -355,7 +363,7 @@ const interfaceSlice = createSlice({
       })
       .addCase(QueryAIQuestions.fulfilled, (state, action) => {
         state.loading = false;
-        state.docUsed = [...action.payload.doc_id];
+        state.docUsed = [...state.docUsed, ...action.payload.docUsed];
       })
       .addCase(QueryAIQuestions.rejected, (state) => {
         state.loading = false;
@@ -394,7 +402,7 @@ const interfaceSlice = createSlice({
       .addCase(WebSearchHandler.fulfilled, (state, action) => {
         state.loading = false;
         if (action.payload.favicon && action.payload.favicon.length > 0) {
-          state.favicon = [...action.payload.favicon];
+          state.favicon = [...state.favicon, ...action.payload.favicon];
         }
         // state.docUsed = action.payload
       })
@@ -434,10 +442,8 @@ export const {
   setSuggestion,
   setVisibility,
   setSubCategory,
-  setDocUsed,
   finalizeMessage,
   UpdateMessage,
-  UpdateDocUsed,
   MimicSSE,
   setSelectedDoc,
   updateFavicon,

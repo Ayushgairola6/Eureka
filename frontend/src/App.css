@@ -416,23 +416,54 @@ html {
 }
 
 @keyframes RotatingIndicator {
-  0%, 100% {
+  0%,
+  100% {
     transform: rotate(10deg);
   }
-  10%{
+  10% {
     transform: rotate(70deg);
   }
   25% {
     transform: rotate(45deg);
   }
-  40%{
+  40% {
     transform: rotate(105deg);
-
   }
   50% {
     transform: rotate(20deg);
   }
   75% {
     transform: rotate(180deg);
+  }
+}
+
+.ThinkingIndicator {
+  /* Use a longer duration and an easing curve for a slow, unsteady rhythm */
+  animation: slidingColors 8s infinite cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transform-origin: center;
+  will-change: transform;
+}
+
+@keyframes slidingColors {
+  0% {
+    transform: rotate(0deg);
+  }
+  12% {
+    transform: rotate(18deg);
+  }
+  25% {
+    transform: rotate(-12deg);
+  }
+  45% {
+    transform: rotate(40deg);
+  }
+  60% {
+    transform: rotate(-25deg);
+  }
+  80% {
+    transform: rotate(120deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }

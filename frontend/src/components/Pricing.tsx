@@ -47,7 +47,7 @@ const Pricing = () => {
   return (
     <>
       <div
-        className={`relative py-20 px-4 sm:px-6 z-[1] overflow-hidden ${
+        className={`pricing relative py-20 px-4 sm:px-6 z-[1] overflow-hidden ${
           isDarkMode ? "bg-black text-white" : "bg-gray-50 text-black"
         }`}
       >

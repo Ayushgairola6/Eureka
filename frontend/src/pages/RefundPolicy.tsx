@@ -14,8 +14,8 @@ const RefundPolicy = () => {
               Digital Service Refunds
             </h2>
             <p>
-              Since we provide immediate digital access, we generally don't
-              offer refunds for premium subscriptions.
+              Since we provide immediate digital access, we do provide refunds
+              if requested .
             </p>
           </section>
 

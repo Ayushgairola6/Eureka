@@ -11,7 +11,6 @@ const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
 const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
-const Mode_prompt = process.env.SYSTEM_PROMPT;
 
 export const GenerateResponse = async (
   question,
@@ -27,7 +26,7 @@ export const GenerateResponse = async (
     const FinalString = SYSTEM_PROMPT + FormattedString;
     // calculating the tokens the stirng will cost
     const EstimattedTokens = await genAI.models.countTokens({
-      model: "gemini-2.0-flash-lite-001",
+      model: "gemini-3-pro-preview",
       contents: FinalString,
     });
 
