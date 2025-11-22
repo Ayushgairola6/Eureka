@@ -4,6 +4,7 @@ import ChatBubble from "@/components/ChatBubble.tsx";
 import InputSection from "@/components/InterfaceInputSection.tsx";
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
 import { setSelectedDoc, UploadDocuments } from "../store/InterfaceSlice.ts";
+import { setDocs } from "../store/AuthSlice.ts";
 import UserForm from "@/components/ui/userDetail.tsx";
 import { useSearchParams } from "react-router";
 import PrivateDocuments from "@/components/PrivateDocuments.tsx";
@@ -69,7 +70,7 @@ function Interface() {
       toast.info(
         visibility === "Public"
           ? "Thanks for your contribution ."
-          : "This document will be only accessible to you ."
+          : "This document will be only accessible to you."
       );
 
       const formData = new FormData();
@@ -83,7 +84,8 @@ function Interface() {
         .unwrap()
         .then((res: any) => {
           if (res.message) {
-            toast.message(res.message);
+            toast.message(res.message); //show a popup message
+            dispatch(setDocs(res.insertData || {})); //update the local state
           }
         })
         .catch((err) => toast.error(err.message));

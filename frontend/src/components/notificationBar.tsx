@@ -8,6 +8,8 @@ import {
   DeleteNotification,
 } from "../store/AuthSlice";
 import { toast, Toaster } from "sonner";
+import { IoClose } from "react-icons/io5";
+import { setOpen } from "../store/chatRoomSlice";
 
 const NotificationPanel = () => {
   const { isOpen } = useAppSelector((state) => state.chats);
@@ -48,13 +50,21 @@ const NotificationPanel = () => {
   return (
     <div
       // onClick={() => console.log(notifications)}
-      className=" absolute top-8 right-2 z-50"
+      className="border dark:border-gray-700 border-gray-300  absolute top-9 -right-30 md:right:5 lg:right-5 z-50 rounded-lg"
       ref={panelRef}
     >
       <Toaster />
-      {isOpen && (
-        <div className=" w-80 dark:bg-white/10 bg-white rounded-lg shadow-xl border   max-h-96 overflow-hidden bai-jamjuree-regular">
+      {isOpen === true && (
+        <div className=" w-80 dark:bg-black bg-white rounded-lg shadow-xl max-h-96 overflow-hidden bai-jamjuree-regular">
           {/* Panel Header */}
+          <button
+            onClick={() => {
+              dispatch(setOpen(false));
+            }}
+            className="flex justify-self-end my-1 mx-1 bg-red-600/30 border border-red-600/20 p-0.5 rounded-full text-red-300 cursor-pointer "
+          >
+            <IoClose />
+          </button>
           <div className="p-2 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-black dark:text-white">

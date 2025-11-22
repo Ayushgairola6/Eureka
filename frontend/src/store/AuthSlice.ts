@@ -310,6 +310,9 @@ const authSlice = createSlice({
       // console.log(state.isDarkMode)
       state.isDarkMode = !state.isDarkMode;
     },
+    setDocs: (state, action) => {
+      state.Contributions_user_id_fkey.push(action.payload);
+    },
     setTheme: (state, action) => {
       state.isDarkMode = action.payload;
     },
@@ -324,7 +327,9 @@ const authSlice = createSlice({
       state.notificationcount -= 1;
     },
     setNotificationCount: (state) => {
-      state.notificationcount = state.notificationcount - 1;
+      if (state.notificationcount > 0) {
+        state.notificationcount -= 1;
+      }
     },
     NewUserNotification: (state, action) => {
       // console.log(action.payload, 'this has been envoked')
@@ -346,6 +351,7 @@ const authSlice = createSlice({
         });
       } else {
         state.notifications.push(action.payload);
+        state.notificationcount += 1;
       }
     },
 
@@ -421,5 +427,6 @@ export const {
   setUseStatus,
   SetQueryCount,
   UpdateFromLocalCache,
+  setDocs,
 } = authSlice.actions;
 export default authSlice.reducer;

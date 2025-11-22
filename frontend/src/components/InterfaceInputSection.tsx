@@ -1,7 +1,7 @@
 import type React from "react";
 import { motion } from "framer-motion";
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
-import WebSearch from "./webSearch.tsx";
+// import WebSearch from "./webSearch.tsx";
 import QueryType from "./Query_type.tsx";
 import { v4 as uuid } from "uuid";
 import axios from "axios";
@@ -9,7 +9,7 @@ import { FaFileUpload } from "react-icons/fa";
 import { IoOptions } from "react-icons/io5";
 import { IoDocument } from "react-icons/io5";
 import { BiHourglass } from "react-icons/bi";
-import { BsStars } from "react-icons/bs";
+import { BsPlusLg, BsStars } from "react-icons/bs";
 import { GoZap } from "react-icons/go";
 import {
   UpdateChats,
@@ -30,6 +30,9 @@ import {
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
+import { SetQueryCount } from "../store/AuthSlice.ts";
+import AccessBar from "@/components/AccessBar.tsx";
+import { useState } from "react";
 type InputProps = {
   textareaRef: React.Ref<HTMLInputElement>;
   isActive: boolean;
@@ -52,7 +55,6 @@ const InputSection: React.FC<InputProps> = ({
     queryType,
     selectedDoc,
     shhowUserForm,
-    docUsed,
   } = useAppSelector((state) => state.interface);
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAppSelector((state) => state.auth);
@@ -98,7 +100,7 @@ const InputSection: React.FC<InputProps> = ({
 
   // Combine all parts into a single string using a delimiter
   const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
-
+  const [Showfeatures, SetShowFeatures] = useState(false);
   // getting sse token before sending a request
   const GetSSEToken = async () => {
     try {
@@ -193,8 +195,8 @@ const InputSection: React.FC<InputProps> = ({
         .unwrap()
         .then((res) => {
           if (res.message) {
-            console.log(res);
             dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
+            dispatch(SetQueryCount());
           }
         })
         .catch(() => {
@@ -253,10 +255,10 @@ const InputSection: React.FC<InputProps> = ({
       dispatch(WebSearchHandler({ question, MessageId: AiId }))
         .unwrap()
         .then((res) => {
-          console.log(res);
           if (res.message === "Results found") {
             dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
             dispatch(updateFavicon(res.favicon));
+            dispatch(SetQueryCount());
           }
         })
         .catch(() => {
@@ -361,6 +363,7 @@ const InputSection: React.FC<InputProps> = ({
         .then((res) => {
           if (res.message) {
             dispatch(MimicSSE({ id: AiId, delta: res.answer }));
+            dispatch(SetQueryCount());
           }
         })
         .catch(() => {
@@ -378,7 +381,6 @@ const InputSection: React.FC<InputProps> = ({
     <>
       {/* input section body */}
       <motion.section
-        onClick={() => console.log(docUsed)}
         className={`relative overflow-y-visible  w-full  px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border  bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3]  ${
           isActive === true
             ? "h-auto w-full "
@@ -392,7 +394,7 @@ const InputSection: React.FC<InputProps> = ({
           value={question}
           onFocus={() => {
             dispatch(setShowOptions(false));
-
+            SetShowFeatures(false);
             setIsActive(true);
           }}
           onChange={(e) => {
@@ -415,22 +417,24 @@ const InputSection: React.FC<InputProps> = ({
 
             <section className="relative group">
               <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-auto">
-                Options
+                Domains
               </ul>
-              <ul
+              <button
                 onClick={() => {
                   if (selectedDoc) dispatch(setSelectedDoc(""));
                   dispatch(setShowOptions(!shwoOptions));
+                  SetShowFeatures(false);
+
                   dispatch(setQueryType(""));
                 }}
                 className={` cursor-pointer  ${
                   shwoOptions === true
-                    ? "bg-green-300  text-black"
-                    : "dark:bg-gray-600  bg-gray-200"
-                } rounded-full p-1  h-auto `}
+                    ? "bg-green-600  text-white"
+                    : "dark:bg-white bg-black dark:text-black text-white"
+                } rounded-full p-2  h-auto `}
               >
                 <IoOptions size={18} />
-              </ul>
+              </button>
             </section>
 
             {/* query type for personal documents */}
@@ -438,8 +442,10 @@ const InputSection: React.FC<InputProps> = ({
               <ul
                 onClick={() => dispatch(setShowType(!showType))}
                 className={`  cursor-pointer ${
-                  selectedDoc ? "bg-indigo-600" : "bg-gray-200"
-                } rounded-full p-1  h-auto relative`}
+                  selectedDoc
+                    ? "dark:bg-white bg-black dark:text-black text-white"
+                    : "bg-gray-200"
+                } rounded-full p-2  h-auto relative`}
               >
                 <GoZap size={18} />
                 <QueryType />
@@ -447,12 +453,19 @@ const InputSection: React.FC<InputProps> = ({
             )}
 
             <div className="relative group">
-              <WebSearch
-                selectedDoc={selectedDoc}
-                setSelectedDoc={setSelectedDoc}
+              <AccessBar
+                Showfeatures={Showfeatures}
+                SetShowFeatures={SetShowFeatures}
               />
-              <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-20">
-                Web Search
+              <button
+                onClick={() => SetShowFeatures(!Showfeatures)}
+                className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-2  h-auto  "
+              >
+                <BsPlusLg size={18} />
+              </button>
+
+              <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-fit">
+                Features
               </ul>
             </div>
 
@@ -460,12 +473,12 @@ const InputSection: React.FC<InputProps> = ({
               onClick={() => {
                 dispatch(setShowUserForm(!shhowUserForm));
               }}
-              className="cursor-pointer dark:bg-white/10 bg-black/10 rounded-full p-2  h-auto relative group"
+              className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-2  h-auto relative group"
             >
               <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-auto">
                 Upload
               </ul>
-              <FaFileUpload />
+              <FaFileUpload size={18} />
             </ul>
           </section>
 
@@ -500,9 +513,9 @@ const InputSection: React.FC<InputProps> = ({
         </div>
         {/* query type and send button container */}
         <div className="flex items-center justify-between mt-4">
-          <ul className="  bai-jamjuree-semibold text-sm text-transparent bg-clip-text bg-gradient-to-bl from-purple-600 via-sky-600 to-pink-600 ">
+          <ul className="  bai-jamjuree-semibold text-sm text-gray-500 d">
             {queryType ? (
-              <>Query-Type - {queryType}</>
+              <>Process - {queryType}</>
             ) : category ? (
               <>Category - {category}</>
             ) : null}

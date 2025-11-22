@@ -23,7 +23,6 @@ const Navbar = () => {
   const { isLoggedIn, isDarkMode, user } = useAppSelector(
     (state) => state.auth
   );
-  const isOpen = useAppSelector((state) => state.chats.isOpen);
   // const {isOpen} = useAppSelector(state=>state.chats)
   const { currTab } = useAppSelector((state) => state.auth);
 
@@ -156,7 +155,7 @@ const Navbar = () => {
           {/* notificaiton icon */}
           {user.username !== "" && (
             <ul
-              onClick={() => dispatch(setOpen(!isOpen))}
+              onClick={() => dispatch(setOpen(true))}
               className="cursor-pointer  rounded-full p-1 relative "
             >
               <IoIosNotificationsOutline size={22} />

@@ -917,14 +917,13 @@ export const GetUserAccountDetails = async (req, res) => {
     const CacheExists = await redisClient.exists(UserAccountDataKey);
     if (CacheExists) {
       const userdata = await redisClient.hGetAll(UserAccountDataKey);
-      // console.log("Servving from cache");
       return res.status(200).send({
         user: JSON.parse(userdata.userdata),
         Contributions_user_id_fkey: JSON.parse(userdata.Contributions),
         Querycount: JSON.parse(userdata.querycount),
         FeedbackCounts: JSON.parse(userdata.feedbackcount),
         chatrooms: JSON.parse(userdata.rooms),
-        notificationcount: JSON.parse(userdata.notificationcount),
+        notificationcount: parseInt(userdata.notificationcount),
         notifications: JSON.parse(userdata.notification),
         message: "User data found",
       });
@@ -1201,7 +1200,7 @@ export const DeleteNotification = async (req, res) => {
   try {
     const user_id = req.user.user_id;
     if (!user_id || typeof user_id !== "string") {
-      console.log("No user id found while getting account details");
+      // console.log("No user id found while getting account details");
       return res.status(400).json({ message: "Invalid user id" });
     }
 
@@ -1240,13 +1239,14 @@ export const DeleteNotification = async (req, res) => {
       .eq("id", notification_id);
 
     if (error) {
-      console.error(error);
+      // console.error(error);
       return res.status(400).send({ message: "Something went wrong" });
     }
 
     return res.send({ message: "deleted" });
   } catch (error) {
-    console.error("Server exception:", error);
+    // console.error("Server exception:", error);
+    await notifyMe("Notification deletion controller error", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };

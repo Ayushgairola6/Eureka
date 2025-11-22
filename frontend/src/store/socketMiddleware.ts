@@ -53,6 +53,7 @@ const setupSocketListeners = (dispatch: any) => {
   });
   socket.on("new_Notification", (data) => {
     dispatch(NewUserNotification(data));
+    console.log(data);
   });
 
   socket.on("someone-typing", (data) => {

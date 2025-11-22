@@ -2,7 +2,7 @@ import { SetQueryCount } from "./AuthSlice";
 import {
   finalizeMessage,
   UpdateMessage,
-  UpdateDocUsed,
+  // UpdateDocUsed,
 } from "./InterfaceSlice";
 
 export function HandleSSEConnection(url: any, AiId: string, dispatch: any) {
@@ -23,8 +23,8 @@ export function HandleSSEConnection(url: any, AiId: string, dispatch: any) {
     dispatch(UpdateMessage({ id: AiId, delta: e.data }));
   };
 
-  evtSource.onerror = (err) => {
-    console.error("EventSource error:", err);
+  evtSource.onerror = (_err) => {
+    // console.error("EventSource error:", err);
 
     dispatch(
       UpdateMessage({
@@ -36,7 +36,7 @@ export function HandleSSEConnection(url: any, AiId: string, dispatch: any) {
     evtSource.addEventListener("metadata", (event) => {
       const meta = JSON.parse(event.data);
       // update the array
-      dispatch(UpdateDocUsed(meta));
+      // dispatch(UpdateDocUsed(meta));
       console.log("Documents used:", meta.documents);
     });
     evtSource.close();

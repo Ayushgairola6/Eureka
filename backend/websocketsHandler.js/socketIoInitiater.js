@@ -103,7 +103,7 @@ export const initializeSocketIo = (httpServer) => {
   io.on("connection", (socket) => {
     // joining a specific chatRoom
     if (socket.user_id) {
-      socket.join(socket.user_id);
+      socket.join(socket.user_id, "this user joined the scoket connection");
     }
     socket.on("Joining_a_chat_room", (room_information) => {
       const { username, room_id, room_name, user_id } = room_information;
@@ -148,7 +148,7 @@ export const initializeSocketIo = (httpServer) => {
 
     // leaving a chatRoom
     socket.on("leaving_chat_room", (data) => {
-      console.log("Leaving chat room");
+      // console.log("Leaving chat room");
 
       const { room_id, username } = data;
       if (!room_id || !username) {
@@ -270,7 +270,6 @@ export const initializeSocketIo = (httpServer) => {
         .eq("user_id", room_id.created_by);
 
       if (error) {
-        console.log(error);
         socket.emit("Room_notification", { message: "Some error occurred !" });
         return { error: "Unable to store the message" };
       }

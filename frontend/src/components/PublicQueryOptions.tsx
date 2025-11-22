@@ -16,7 +16,7 @@ const PublicQueryOptions = () => {
           shwoOptions === true
             ? " opacity-100 pointer-events-auto"
             : "pointer-events-none opacity-0"
-        } absolute bottom-20 left-12 z-[99] w-40 border rounded-lg transition-all duration-150 `}
+        } absolute bottom-20 left-12 z-[99] w-40 border rounded-lg transition-all duration-300 `}
       >
         <div className=" bg-black dark:bg-gray-100 space-grotesk  rounded-lg shadow-xl overflow-hidden ">
           <div className="p-3 dark:text-black text-white bai-jamjuree-semibold">
