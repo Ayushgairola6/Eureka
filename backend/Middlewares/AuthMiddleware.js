@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { supabase } from "../controllers/supabaseHandler.js";
 import { GenerateAccessTokens } from "../controllers/AuthController.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
+import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 dotenv.config();
 
 export const verifyJwtAsync = (token, secret) =>
@@ -25,6 +26,7 @@ export const VerifyToken = async (req, res, next) => {
       // console.log("No access token")
       return res.status(401).json({ message: "No session token found" });
     }
+
     try {
       // console.log("Verifying access token")
       // Try to verify access token
@@ -216,5 +218,82 @@ export async function authenticateStream(req, res) {
     });
 
     return { user: refreshDecoded, newAccessToken };
+  }
+}
+
+export async function HandlePreferenceToggle(req, res) {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).send({ message: "Please login to continue" });
+    }
+    const { value } = req.body;
+    if (!value) {
+      return res.status(404).send({
+        message: "No value found",
+        pref: value === "YES" ? "NO" : "YES",
+      });
+    }
+    const UserAccountDataKey = `user_id=${user.user_id}&username=${user.username}'s_dashboardData`;
+
+    const cacheExists = await redisClient.exists(UserAccountDataKey);
+    const userInfo = await redisClient.hGet(UserAccountDataKey, "userdata");
+
+    const parsedInfo = JSON.parse(userInfo);
+    // if both the old and new values match do nothing
+    if (parsedInfo.AllowedTrainingModels === value) {
+      return res.status(200).send({ message: "updated", pref: value });
+    }
+    if (cacheExists) {
+      const { error } = await supabase
+        .from("users")
+        .update({ AllowedTrainingModels: value })
+        .eq("id", user.user_id);
+
+      if (error) {
+        // console.log(error);
+        return res.status(400).send({
+          message: "An error occured while performing update",
+          pref: value === "YES" ? "NO" : "YES",
+        });
+      }
+
+      const parsedInfo = JSON.parse(userInfo);
+      // console.log(parsedInfo);
+      const NewInfo = {
+        ...parsedInfo,
+        AllowedTrainingModels: value,
+      };
+
+      let retries = 0;
+      while (retries <= 2) {
+        //max 2 retries
+        // console.log(NewInfo);
+        await redisClient
+          .hSet(UserAccountDataKey, "userdata", JSON.stringify(NewInfo))
+          .catch((error) => {
+            if (error) {
+              retries++; //if error occurs retry the updation
+            }
+          });
+      }
+    } else {
+      const { error } = await supabase
+        .from("users")
+        .update({ AllowedTrainingModels: value })
+        .eq("id", user.user_id);
+      if (error) {
+        // console.log(error);
+        return res.status(400).send({
+          message: "An error occured while performing update",
+          pref: value === "YES" ? "NO" : "YES",
+        });
+      }
+    }
+    return res.status(200).send({ message: "updated", pref: value });
+  } catch (error) {
+    console.error(error);
+
+    await notifyMe("Error while toggling the preference", error);
   }
 }

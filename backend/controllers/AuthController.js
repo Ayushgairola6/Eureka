@@ -278,7 +278,28 @@ export const HandleUserLogin = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+//update the user cookies
+export const updateCookies = async (req, res) => {
+  try {
+    const newAccessToken = req.headers.authorization.split(" ")[1];
+    if (!newAccessToken) {
+      return res.status(401).send({ message: "The token was not found" });
+    }
+    res.cookie("Eureka_eta_six_version1_AuthToken", newAccessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
 
+    return res.send({message:"cookies updated"});
+  } catch (error) {
+    await notifyMe(
+      "An error occured while updating the client side cookies",
+      error
+    );
+  }
+};
 // checking for previous refreshtoken validity helper function
 const CheckPastToken = async (user) => {
   // Check if existing refresh token is valid and exists
@@ -773,7 +794,9 @@ export const GetUserData = async (user_id) => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select(`username, created_at, email, id,isVerified,IsPremiumUser`)
+      .select(
+        `username, created_at, email, id,isVerified,IsPremiumUser,AllowedTrainingModels`
+      )
       .eq("id", user_id)
       .single();
 
@@ -917,6 +940,8 @@ export const GetUserAccountDetails = async (req, res) => {
     const CacheExists = await redisClient.exists(UserAccountDataKey);
     if (CacheExists) {
       const userdata = await redisClient.hGetAll(UserAccountDataKey);
+      // console.log(JSON.parse(userdata.userdata));
+
       return res.status(200).send({
         user: JSON.parse(userdata.userdata),
         Contributions_user_id_fkey: JSON.parse(userdata.Contributions),

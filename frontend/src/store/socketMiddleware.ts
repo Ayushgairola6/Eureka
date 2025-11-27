@@ -9,7 +9,11 @@ import {
   whoIsTyping,
   SetChatRoomFile,
 } from "./websockteSlice.ts";
-import { NewUserNotification } from "./AuthSlice.ts";
+import {
+  NewUserNotification,
+  UpdatedPreference,
+  SetCookies,
+} from "./AuthSlice.ts";
 import { store } from "./reduxstore.ts";
 const ServerUrl = import.meta.env.VITE_BACKEND_API_URL;
 
@@ -36,6 +40,10 @@ const setupSocketListeners = (dispatch: any) => {
     dispatch(Setroom_info(data));
   });
 
+  socket.on("reauthenticate", (data) => {
+    localStorage.setItem("Eureka_six_eta_v1_Authtoken", data.newAccessToken);
+    dispatch(SetCookies(data.newAccessToken));
+  });
   socket.on("recieved_message", (data) => {
     // console.log("New message received:", data);
     dispatch(NewMessageReceived(data));
@@ -58,6 +66,10 @@ const setupSocketListeners = (dispatch: any) => {
 
   socket.on("someone-typing", (data) => {
     dispatch(whoIsTyping(data));
+  });
+  //listening to preferenec update event
+  socket.on("updated_preference", (data) => {
+    dispatch(UpdatedPreference(data));
   });
   socket.on("disconnect", () => {
     // console.log("Socket disconnected");
@@ -142,9 +154,7 @@ export const socketMiddleware =
           console.warn("Socket is not connected, unable to send the message");
         }
         break;
-      //  socket.on("recieved_message", (data) => {
-      //                     console.log(`This new message has been recieved from the server :${data}`)
-      //                 })
+
       // reading the disconnectSocket reducer function
 
       case "socket/disconnectSocket":

@@ -15,7 +15,7 @@ import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { Categories, SubCategories } from "../../../utlis/Info.ts";
 import { BiCategory, BiHourglass } from "react-icons/bi";
 import { FiChevronDown } from "react-icons/fi";
-import { IoClose } from "react-icons/io5";
+import { LuArrowLeft } from "react-icons/lu";
 // declaring props type
 type FormProps = {
   setSelectedFile?: React.Dispatch<React.SetStateAction<File | null>>;
@@ -102,23 +102,29 @@ const UserForm: React.FC<FormProps> = ({
   function SetValues(val: string) {
     const isCategory = Categories.some((cat) => cat.name === val);
     if (isCategory) {
-      dispatch(setCategory(val));
+      dispatch(setCategory(val)); //if category update instantly
     } else {
-      dispatch(setSubCategory(val));
+      dispatch(setSubCategory(val)); //first update the subcategory
+      const category = SubCategories.find((e) =>
+        e.subcategories.find((elm) => elm === val)
+      );
+
+      // console.log(category?.parent);
+      dispatch(setCategory(category?.parent));
     }
   }
   return (
     <>
       <div
-        className={`absolute top-12 left-0 ${
+        className={`fixed top-0 left-0 ${
           shhowUserForm === true ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 z-[1] w-full md:w-[600px] p-4 max-h-screen`}
+        } transition-transform duration-300 z-[1] w-full md:w-[600px] px-4 py-10 overflow-y-scroll  bg-white/40 dark:bg-black/40 backdrop-blur-xs h-screen mt-10`}
       >
         <button
           onClick={() => dispatch(setShowUserForm(false))}
-          className="absolute top-8 right-8 dark:bg-white bg-black dark:text-black text-white p-1 rounded-full cursor-pointer"
+          className="absolute top-12 right-8 bg-white/20 text-black dark:text-gray-100  p-0.5 rounded-full cursor-pointer"
         >
-          <IoClose />
+          <LuArrowLeft />
         </button>
         <section
           className={`h-auto  py-4 flex items-center justify-center gap-2 opacity-100   overflow-y-auto px-3 bg-gray-100 text-black dark:bg-black dark:text-white  overflow-hidden transition-all duration-500 rounded-lg     flex-col border border-gray-300 `}
@@ -191,7 +197,13 @@ const UserForm: React.FC<FormProps> = ({
                   className="p-1 rounded-lg text-xs flex flex-col items-center gap-0.5"
                   title={cat.name}
                 >
-                  <div className="w-6 h-6 bg-black dark:bg-gray-100 text-white dark:text-black hover:underline   rounded-md flex items-center justify-center">
+                  <div
+                    className={`w-6 h-6  ${
+                      category === cat.name
+                        ? "bg-green-500/20 border-green-500 text-green-500"
+                        : "text-white dark:text-black bg-black dark:bg-gray-100"
+                    } hover:underline   rounded-md flex items-center justify-center`}
+                  >
                     {cat.name.slice(0, 2)}
                   </div>
                   <span className="text-[10px] truncate w-full text-center">
@@ -224,12 +236,21 @@ const UserForm: React.FC<FormProps> = ({
                     )?.subcategories.map((sub) => (
                       <button
                         key={sub}
-                        onClick={() => dispatch(setSubCategory(sub))}
+                        onClick={() => {
+                          dispatch(setSubCategory(sub));
+
+                          const category = SubCategories.find((e) =>
+                            e.subcategories.find((elm) => elm === sub)
+                          );
+
+                          // console.log(category?.parent);
+                          dispatch(setCategory(category?.parent));
+                        }}
                         className={`px-2 py-1 text-xs rounded-full border ${
                           subCategory === sub
-                            ? "bg-blue-500 text-white border-blue-500"
-                            : "bg-gray-100 dark:bg-gray-800 border"
-                        }`}
+                            ? "bg-blue-500   border-blue-500"
+                            : "bg-black dark:bg-gray-200 border"
+                        } text-white dark:text-black`}
                       >
                         {sub}
                       </button>
@@ -240,6 +261,7 @@ const UserForm: React.FC<FormProps> = ({
             </section>
           </div>
           {/* category and subCategory */}
+
           <div className="space-y-1 border border-gray-500 rounded-md my-2 w-full p-2">
             {category && (
               <div className="flex items-center justify-between text-xs">
@@ -262,6 +284,11 @@ const UserForm: React.FC<FormProps> = ({
               </div>
             )}
           </div>
+          {/* ) : (
+            <div className="border p-2 space-grotesk w-full text-center rounded-sm mb-2">
+              <span>Please select a domain first !</span>
+            </div>
+          )} */}
           <div className="flex items-start justify-start gap-3 flex-col w-full p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-black">
             <label className="flex items-center justify-between w-full font-bold text-sm md:text-md bai-jamjuree-semibold">
               <span>Choose your file</span>

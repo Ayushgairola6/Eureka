@@ -29,85 +29,149 @@ export const initializeSocketIo = (httpServer) => {
 
   // verify the user to give access to the server
   io.use(async (socket, next) => {
-    const handshaketoken = socket.handshake.auth.token;
-    const cookies = socket.handshake.headers.cookie
-      ? cookie.parse(socket.handshake.headers.cookie)
-      : {};
-
-    const cookietoken = cookies["Eureka_eta_six_version1_AuthToken"];
-    const token = cookietoken ? cookietoken : handshaketoken;
-
-    if (!token) {
-      return next(new Error("Authentication error: Token not provided"));
-    }
-
     try {
-      const decoded = await verifyJwtAsync(token, process.env.JWT_SECRET);
-      socket.user_id = decoded.user_id;
-      return next();
-    } catch (err) {
-      if (err.name === "TokenExpiredError") {
-        const DecodedData = jwt.decode(token);
-        if (!DecodedData || !DecodedData.user_id) {
-          return next(new Error("Authentication error: Malformed token"));
-        }
+      // 1. Extract Token (Cookies or Auth Object)
+      const cookies = socket.handshake.headers.cookie
+        ? cookie.parse(socket.handshake.headers.cookie)
+        : {};
 
-        // Retrieve refresh token from DB (assuming you have a function for this)
-        const { data, error } = await supabase
-          .from("Tokens")
-          .select("Refresh_Token")
-          .eq("user_id", DecodedData.user_id);
+      const AuthTokenFromCookies = cookies["Eureka_eta_six_version1_AuthToken"];
+      const AuthTokenFromHandshake = socket.handshake.auth.token;
+      const AccessToken = AuthTokenFromCookies || AuthTokenFromHandshake;
 
-        if (error || !data || !data.length) {
-          return next(
-            new Error("Authentication error: No refresh token found")
-          );
-        }
+      if (!AccessToken) {
+        return next(new Error("Authentication error: Token not provided"));
+      }
 
-        const refreshToken = data[0]?.Refresh_Token;
-        try {
-          const refreshDecoded = await verifyJwtAsync(
-            refreshToken,
-            process.env.REFRESH_TOKEN_SECRET
-          );
+      try {
+        // 2. Try to verify access token directly
+        const decoded = await verifyJwtAsync(
+          AccessToken,
+          process.env.JWT_SECRET
+        );
+
+        // Attach user data to socket instance (Matching req.user)
+        socket.user = decoded;
+        socket.user_id = decoded.user_id;
+        return next();
+      } catch (err) {
+        // 3. Handle Token Expiry (Refresh Flow)
+        if (err.name === "TokenExpiredError") {
+          // Decode without verifying to get user details for the Cache Key
+          const DecodedData = jwt.decode(AccessToken);
+          if (!DecodedData || !DecodedData.user_id) {
+            return next(new Error("Authentication error: Malformed token"));
+          }
+
+          const RefreshTokenKey = `user=${DecodedData.username}'s_userId=${DecodedData.user_id}`;
+
+          // 4. Check Redis Cache first (Matching API Logic)
+          const HasCacheRefreshToken = await redisClient.get(RefreshTokenKey);
+          let refreshToken;
+
+          if (HasCacheRefreshToken) {
+            refreshToken = JSON.parse(HasCacheRefreshToken);
+          } else {
+            // 5. Fallback to Supabase
+            const { data, error } = await supabase
+              .from("Tokens")
+              .select("Refresh_Token")
+              .eq("user_id", DecodedData.user_id);
+
+            if (error || !data || data.length === 0) {
+              return next(new Error("Session expired. Please log in again."));
+            }
+
+            refreshToken = data[0].Refresh_Token;
+
+            // 6. Update Redis Cache (Matching API Logic)
+            await redisClient.set(
+              RefreshTokenKey,
+              JSON.stringify(refreshToken),
+              {
+                expiration: {
+                  type: "EX",
+                  value: 1800,
+                },
+              }
+            );
+          }
+
+          // 7. Verify the Refresh Token
+          let refreshDecoded;
+          try {
+            refreshDecoded = await verifyJwtAsync(
+              refreshToken,
+              process.env.REFRESH_TOKEN_SECRET
+            );
+          } catch (refreshErr) {
+            // If refresh token is invalid, clear cache and error out
+            const hasCachedRefreshToken = await redisClient.get(
+              RefreshTokenKey
+            );
+            if (hasCachedRefreshToken) {
+              await redisClient.del(RefreshTokenKey);
+            }
+            return next(new Error("Session expired. Please log in again."));
+          }
+
+          // 8. Generate New Access Token
           const newAccessToken = GenerateAccessTokens(
             refreshDecoded.user_id,
             refreshDecoded.email,
-            refreshDecoded.username
+            refreshDecoded.username,
+            refreshDecoded.PaymentStatus
           );
 
-          // Update the token in the database
+          // 9. Update Access Token in DB
           await supabase
             .from("Tokens")
             .update({ Access_Token: newAccessToken })
             .eq("Refresh_Token", refreshToken);
 
-          // ❗ Crucial Step: Send the new token to the client.
-          socket.emit("reauthenticate", { newAccessToken });
+          // 10. Emit Event to Client (Crucial for Socket.io)
+          // We cannot use res.cookie here because the handshake is already in progress.
+          // The client must listen to "reauthenticate" and update document.cookie.
+          socket.emit("reauthenticate", {
+            newAccessToken,
+            message: "Token refreshed",
+          });
 
-          // Attach the new user data to the socket and allow the connection to proceed
+          // Update the current socket context so this connection is valid
+          socket.user = refreshDecoded;
           socket.user_id = refreshDecoded.user_id;
+
+          // Manually update the handshake headers for this instance
+          // (This allows subsequent middleware in this chain to see the new token if needed)
+          if (socket.handshake.headers.cookie) {
+            socket.handshake.headers.cookie =
+              socket.handshake.headers.cookie.replace(
+                AccessToken,
+                newAccessToken
+              );
+          }
+
           return next();
-        } catch (refreshErr) {
-          return next(
-            new Error("Authentication error: Invalid or expired refresh token")
-          );
         }
+
+        // Handle invalid tokens that aren't just expired
+        return next(new Error("Authentication error: Invalid token"));
       }
-      // Handle other JWT errors (e.g., JsonWebTokenError)
-      return next(new Error("Authentication error: Invalid token"));
+    } catch (error) {
+      console.error("Socket Auth Error:", error);
+      return next(new Error("Internal server error"));
     }
   });
-
   // connecting with the websocket connection
   io.on("connection", (socket) => {
     // joining a specific chatRoom
+    console.log("new user connected");
     if (socket.user_id) {
       socket.join(socket.user_id, "this user joined the scoket connection");
     }
     socket.on("Joining_a_chat_room", (room_information) => {
       const { username, room_id, room_name, user_id } = room_information;
-      console.log("Joining chat room");
+      // console.log("Joining chat room");
       if (!room_id || !room_name || !username || !user_id) {
         socket.emit("Room_notification", {
           message: "An error occured while trying to joining the room",

@@ -77,12 +77,12 @@ const initialState: InterfaceState = {
   sendingFeedback: false,
   Chats: [],
   favicon: [
-    {
-      MessageId: "none",
-      icon: [
-        "https://images.unsplash.com/photo-1748686856746-fc758ac9b4c7?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
-    },
+    // {
+    //   MessageId: "none",
+    //   icon: [
+    //     "https://images.unsplash.com/photo-1748686856746-fc758ac9b4c7?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    //   ],
+    // },
   ],
   selectedDoc: "",
   uploading: false,
@@ -104,11 +104,14 @@ export const UploadDocuments = createAsyncThunk<any, FormData>(
           headers: {
             Authorization: `Bearer ${AuthToken}`,
           },
+          onUploadProgress: (_e: any) => {
+            // console.log(e, "this is the upload progress");
+          },
         }
       );
       return response.data;
     } catch (err) {
-      console.error("Error fetching dashboard data:", err);
+      // console.error("Error fetching dashboard data:", err);
       return rejectWithValue(
         err instanceof Error ? err.message : "Failed to fetch dashboard data"
       );
@@ -129,7 +132,7 @@ export const QueryAIQuestions = createAsyncThunk<any, any>(
       });
       return response.data;
     } catch (err) {
-      console.error("Error fetching dashboard data:", err);
+      // console.error("Error fetching dashboard data:", err);
       return rejectWithValue(
         err instanceof Error ? err.message : "Failed to fetch dashboard data"
       );
@@ -158,7 +161,7 @@ export const DeleteDocuments = createAsyncThunk<string, any>(
       console.error(`Error file deleting document`);
       return rejectWithValue(
         error?.response.data.message ||
-          "An error occured while processing your request"
+        "An error occured while processing your request"
       );
     }
   }
@@ -215,13 +218,13 @@ export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
 );
 export const WebSearchHandler = createAsyncThunk<any, any>(
   "query/web",
-  async ({ question, MessageId }, { rejectWithValue }) => {
+  async ({ question, MessageId, userMessageId }, { rejectWithValue }) => {
     const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
 
     try {
       const response = await axios.post(
         `${BaseApiUrl}/api/query/web-search`,
-        { question, MessageId },
+        { question, MessageId, userMessageId },
         {
           withCredentials: true,
           headers: {
@@ -239,6 +242,43 @@ export const WebSearchHandler = createAsyncThunk<any, any>(
   }
 );
 
+export const GetCachedSessionHistory = createAsyncThunk(
+  "get/sessioncache",
+  async (_, { rejectWithValue }) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+
+      const response = await axios.get(
+        `${BaseApiUrl}/api/user/session-history/cache=true`,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      rejectWithValue(error?.response?.data.message || "Something went wrong");
+    }
+  }
+);
+
+export const ProcessSynthesis = createAsyncThunk<any, any>('synthesis/reques',
+  async (data, { rejectWithValue }) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const response = await axios.post(`${BaseApiUrl}/api/method/synthesis`, data, {
+        withCredentials: true,
+        headers: {
+          "Authorization": `Bearer ${AuthToken}`
+        }
+      })
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message)
+    }
+  })
 const interfaceSlice = createSlice({
   name: "interface",
   initialState,
@@ -420,7 +460,19 @@ const interfaceSlice = createSlice({
       .addCase(DeleteDocuments.fulfilled, (state) => {
         state.deleting = false;
         state.NeedToRefresh = true;
-      });
+      })
+      // getting the cached chat history
+      .addCase(GetCachedSessionHistory.fulfilled, (state, action) => {
+        state.Chats = [...action.payload.data];
+      })
+      //synthesis process
+      .addCase(ProcessSynthesis.pending,(state,action)=>{
+        state.loading=true
+      }).addCase(ProcessSynthesis.rejected,(state,action)=>{
+        state.loading=false
+      }).addCase(ProcessSynthesis.fulfilled,(state,action)=>{
+        state.loading=false
+      })
   },
 });
 

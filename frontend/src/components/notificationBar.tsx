@@ -8,8 +8,6 @@ import {
   DeleteNotification,
 } from "../store/AuthSlice";
 import { toast, Toaster } from "sonner";
-import { IoClose } from "react-icons/io5";
-import { setOpen } from "../store/chatRoomSlice";
 
 const NotificationPanel = () => {
   const { isOpen } = useAppSelector((state) => state.chats);
@@ -55,24 +53,24 @@ const NotificationPanel = () => {
     >
       <Toaster />
       {isOpen === true && (
-        <div className=" w-80 dark:bg-black bg-white rounded-lg shadow-xl max-h-96 overflow-hidden bai-jamjuree-regular">
+        <div className=" w-80 dark:bg-black bg-white rounded-lg shadow-xl max-h-96 overflow-hidden bai-jamjuree-regular z-[2]">
           {/* Panel Header */}
-          <button
-            onClick={() => {
-              dispatch(setOpen(false));
-            }}
-            className="flex justify-self-end my-1 mx-1 bg-red-600/30 border border-red-600/20 p-0.5 rounded-full text-red-300 cursor-pointer "
-          >
-            <IoClose />
-          </button>
+
           <div className="p-2 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="font-semibold text-black dark:text-white">
                 Notifications
               </h3>
-              <span className="text-sm text-gray-900 dark:text-gray-200">
+              <span className="text-sm text-green-600 dark:text-gray-200">
                 {notificationcount} unread
               </span>
+              {/* <div
+                role="button"
+                onClick={() => dispatch(setOpen(false))}
+                className=" my-1 mx-1 bg-red-600/30 border border-red-600/20 p-0.5 rounded-full text-red-300 cursor-pointer "
+              >
+                <IoClose />
+              </div> */}
             </div>
           </div>
 

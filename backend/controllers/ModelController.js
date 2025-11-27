@@ -5,7 +5,7 @@ dotenv.config();
 import { v4 as uuidv4 } from "uuid";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 
-const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
+export const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
 // const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const pc = new Pinecone({

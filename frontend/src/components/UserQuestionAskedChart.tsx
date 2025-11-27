@@ -12,7 +12,7 @@ const QuestionAskedChart = () => {
     <>
       <motion.div
         whileHover={{ y: -5 }}
-        className="h-40 bg-gray-100 dark:bg-black p-6 rounded-xl border border-gray-400"
+        className="h-40 bg-gray-100 dark:bg-black p-6 rounded-xl border shadow-sm shadow-black dark:shadow-white/20"
       >
         <h3 className="text-sm md:text-lg opacity-70 bai-jamjuree-semibold mb-4">
           Questions Asked

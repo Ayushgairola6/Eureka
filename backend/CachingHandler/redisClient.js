@@ -1,6 +1,8 @@
 import { createClient } from "redis";
 import dotenv from "dotenv";
-import { error } from "console";
+// import { error } from "console";
+// import e from "cors";
+import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 dotenv.config();
 
 export const redisClient = createClient({
@@ -31,7 +33,9 @@ export const UpdateUserFileListCacheInfo = async (key, FileInfo) => {
 
   if (OldCache) {
     const ParsedInfo = JSON.parse(OldCache);
+    // console.log("ParsedCacheInfoOfContributions", ParsedInfo);
     ParsedInfo.push(FileInfo);
+
     await redisClient.hSet(key, "Contributions", JSON.stringify(ParsedInfo));
     return;
   }
@@ -61,13 +65,79 @@ export const UpdateTheNotificationCache = async (key, notification) => {
       "notification",
       JSON.stringify(ParsedNotifications)
     );
-    return { message: "New notification has been added with others" };
   }
-  //  update the notification cache
-  await redisClient.hSet(
-    key,
-    "notification",
-    JSON.stringify(ParsedNotifications)
-  );
+
   return { message: "New first notification has been cached" };
+};
+
+// caching the current chats of the user for few hours
+export const CacheCurrentChat = async (message, user) => {
+  const ChatArray = []; //array to store the chat history
+  const ConversationCacheKey = `user_id=${user.user_id
+    }_time=${new Date().toDateString()}`;
+
+  const exists = await redisClient.exists(ConversationCacheKey);
+  if (exists) {
+    const Chats = await redisClient.rPush(
+      ConversationCacheKey,
+      JSON.stringify(message)
+    ); //update the list
+  } else {
+    //using redis multi to execute two operations together to avoid race conditions
+    const multi = redisClient.multi();
+
+    multi.rPush(ConversationCacheKey, JSON.stringify(message));
+    multi.expire(ConversationCacheKey, 4000); // 4000 seconds
+
+    //execute the logic atomically
+    const result = await multi.exec();
+    if (result === null) {
+      console.error("error while executing the redis multi command");
+    }
+    console.log(result);
+  }
+  // console.log("this message was just cached right now", message);
+  return { message: "Record updated or created new record" };
+};
+// fetch chat history from cache
+export const FetchChatHistory = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).send({ message: "Please login to continue" });
+    }
+    const user = req.user;
+    const ConversationCacheKey = `user_id=${user.user_id
+      }_time=${new Date().toDateString()}`;
+    // await redisClient.del(ConversationCacheKey);
+    // console.log("This function has been called");
+    const exists = await redisClient.exists(ConversationCacheKey);
+    // console.log(exists);
+    if (exists) {
+      const limit = user.PaymentStatus === true ? 30 : 10; //the limit of cached messages the users can fetch based on payment status
+
+      const Chats = await redisClient.lRange(ConversationCacheKey, 0, limit); //last 10 chat messages retrive them
+      const parsedChats = Chats.map((jsonString) => {
+        try {
+          // Parse each individual string element
+          return JSON.parse(jsonString);
+        } catch (error) {
+          console.error("Error parsing JSON message:", jsonString, error);
+          // Return a placeholder or handle the error as needed
+          return re.status(400).send({ error: "Parse Error", data: [] });
+        }
+      });
+      // console.log(parsedChats);
+      return res
+        .status(200)
+        .send({ message: "History found", data: parsedChats });
+    }
+
+    return res.status(200).send({ message: "History not found", data: [] });
+  } catch (error) {
+    console.error(error);
+    await notifyMe(
+      "An error occured while retriveing chat history from cache",
+      error
+    );
+  }
 };

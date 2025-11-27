@@ -32,14 +32,14 @@ const WebSearch: React.FC<WebSearchProps> = ({
           if (shwoOptions === true) dispatch(setShowOptions(!shwoOptions));
           if (showType === true) dispatch(setShowType(false));
         }}
-        className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200  ${
+        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-colors duration-200  ${
           queryType === "Web Search"
             ? "text-green-500 bg-green-100 dark:bg-green-200"
             : "hover:text-green-400 hover:bg-teal-400/20"
         }`}
       >
         <BiLogoInternetExplorer size={18} />
-        <span>Synthesis</span>
+        <span>Web Search</span>
       </button>
     </>
   );

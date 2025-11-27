@@ -10,9 +10,11 @@ import {
   VerifyEmail,
   HandleUserLogout,
   GetVerificationEmail,
+  updateCookies,
 } from "../controllers/AuthController.js";
 export const AuthRouter = express.Router();
 import {
+  HandlePreferenceToggle,
   UpdateUserLoginState,
   VerifyToken,
 } from "../Middlewares/AuthMiddleware.js";
@@ -24,6 +26,8 @@ import {
 AuthRouter.post("/user/register", HandleUserRegistration)
   .post("/user/get-verification-email", GetVerificationEmail)
   .put("/user/verify-email/:verificationtoken", VerifyEmail)
+  .post("/user/refreshSession/", updateCookies)
+  .put("/user/update-preference", VerifyToken, HandlePreferenceToggle)
   .post("/user/login", HandleUserLogin)
   .post("/user/session-logout", VerifyToken, HandleUserLogout)
   .get("/verify/userstate", VerifyToken, UpdateUserLoginState)

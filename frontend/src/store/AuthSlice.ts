@@ -20,6 +20,7 @@ interface user {
   Contributions_user_id_fkey: Contributions_user_id_fkey[];
   created_at: string;
   IsPremiumUser: boolean;
+  AllowedTrainingModels: string;
 }
 
 interface FeedbackCounts {
@@ -60,6 +61,7 @@ type ChatRoomsResponse = UserChatRoom[];
 
 interface AuthState {
   user: user;
+  AllowedTrainingModels: string;
   loading: boolean;
   error: string | null;
   userStatus: string;
@@ -92,7 +94,9 @@ const initialState: AuthState = {
     Contributions_user_id_fkey: [],
     created_at: "",
     IsPremiumUser: false,
+    AllowedTrainingModels: "YES",
   },
+  AllowedTrainingModels: "YES",
   loading: false,
   error: null,
   isDarkMode: false,
@@ -188,6 +192,29 @@ export const DeleteNotification = createAsyncThunk(
     }
   }
 );
+
+export const UpdatePreference = createAsyncThunk<any, string>(
+  "updatevalue/preference",
+  async (pref, { rejectWithValue }) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const response = await axios.put(
+        `${BaseApiUrl}/api/user/update-preference`,
+        { value: pref },
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      rejectWithValue(error.response.data.message);
+    }
+  }
+);
+
 export const LogoutUser = createAsyncThunk(
   "user/logout",
   async (_, { rejectWithValue }) => {
@@ -218,6 +245,32 @@ export const LogoutUser = createAsyncThunk(
     }
   }
 );
+export const SetCookies = createAsyncThunk(
+  "update/cookies",
+  async (newToken, { rejectWithValue }) => {
+    try {
+      // const AuthToken = localStorage.getItem(
+      //   "Eureka_eta_six_version1_AuthToken"
+      // );
+      const response = await axios.post(
+        `${BaseApiUrl}/api/user/refreshSession/`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${newToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to logout"
+      );
+    }
+  }
+);
+//updating the user preference in the db
 
 // opening a local indexdb insteance for caching
 export const StoreInIndexDb = () => {
@@ -249,6 +302,7 @@ function getDbConnection() {
   });
 }
 
+// store the user info in the local index db for caching
 export async function StoreLocalCache(data: any) {
   try {
     const db: any = await getDbConnection();
@@ -306,6 +360,7 @@ const authSlice = createSlice({
         state.Contributions_user_id_fkey = [...action.payload.contributions];
       }
     },
+    DeleteFromDocs: (_state, _action) => {},
     toggleTheme: (state) => {
       // console.log(state.isDarkMode)
       state.isDarkMode = !state.isDarkMode;
@@ -329,6 +384,17 @@ const authSlice = createSlice({
     setNotificationCount: (state) => {
       if (state.notificationcount > 0) {
         state.notificationcount -= 1;
+      }
+    },
+    togglePreference: (state, action) => {
+      // console.log("Toggedled the preference", _action.payload);
+      state.AllowedTrainingModels = action.payload;
+    },
+    UpdatedPreference: (state, action) => {
+      if (action.payload.value === "YES") {
+        state.AllowedTrainingModels = "YES";
+      } else {
+        state.AllowedTrainingModels = "NO";
       }
     },
     NewUserNotification: (state, action) => {
@@ -384,6 +450,9 @@ const authSlice = createSlice({
           state.chatrooms = action.payload.chatrooms;
           state.notificationcount = action.payload.notificationcount;
           state.notifications = action.payload.notifications;
+
+          state.AllowedTrainingModels =
+            action.payload.user.AllowedTrainingModels;
         }
         state.userStatus = "idle";
       })
@@ -428,5 +497,8 @@ export const {
   SetQueryCount,
   UpdateFromLocalCache,
   setDocs,
+  DeleteFromDocs,
+  togglePreference,
+  UpdatedPreference,
 } = authSlice.actions;
 export default authSlice.reducer;

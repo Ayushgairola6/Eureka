@@ -9,7 +9,6 @@ import UserForm from "@/components/ui/userDetail.tsx";
 import { useSearchParams } from "react-router";
 import PrivateDocuments from "@/components/PrivateDocuments.tsx";
 import PublicQueryOptions from "@/components/PublicQueryOptions.tsx";
-import { motion } from "framer-motion";
 // import { HandleSSEConnection } from "../store/SSEHandler.tsx";
 function Interface() {
   const [searchParams] = useSearchParams();
@@ -24,9 +23,7 @@ function Interface() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(false);
 
-  const { isLoggedIn, isDarkMode, loading } = useAppSelector(
-    (state) => state.auth
-  );
+  const { isLoggedIn, isDarkMode } = useAppSelector((state) => state.auth);
   const { question, category, visibility, subCategory, Chats, selectedDoc } =
     useAppSelector((state) => state.interface);
 
@@ -84,8 +81,9 @@ function Interface() {
         .unwrap()
         .then((res: any) => {
           if (res.message) {
-            toast.message(res.message); //show a popup message
-            dispatch(setDocs(res.insertData || {})); //update the local state
+            toast.message(res.message);
+            console.log(res.insertData); //show a popup message
+            dispatch(setDocs(res.insertData)); //update the local state
           }
         })
         .catch((err) => toast.error(err.message));
@@ -103,27 +101,25 @@ function Interface() {
 
   return (
     <>
+      {" "}
       <div
-        className={`w-full  flex items-center justify-between flex-col min-h-screen  dark:bg-black  relative z-[1]  px-4 py-3 `}
+        className={`w-full  flex items-center justify-between flex-col min-h-[90vh]  dark:bg-black  relative z-[1]  px-4 py-3 `}
       >
-        {loading === true && (
-          <motion.div
-            initial={{ width: "100%" }}
-            animate={{
-              width: ["100%", "80%", "60%", "40%", "70%", "25%", "12%", "0%"],
-            }}
-            transition={{ duration: 5, repeat: Infinity }}
-            className="bg-gradient-to-r from-red-600 via-sky-600 to-yellow-600 p-1   w-full  fixed   top-9"
-          />
-        )}
         {/* gradient background for light thtme */}
         {!isDarkMode && (
           <div className="bg-gradient-to-br from-pink-500/50 to-amber-500/40  z-[-2] absolute top-0 left-0 h-full w-full blur-2xl"></div>
         )}
-
         <ChatBubble chatcontainer={chatcontainer} />
-
         <div className="w-full flex items-center justify-center fixed bottom-0 py-0.5 left-0 md:px-2 px-0.5  rounded-sm dark:bg-black ">
+          <PrivateDocuments
+            selectedDoc={selectedDoc}
+            setSelectedDoc={setSelectedDoc}
+          />
+          <UserForm
+            setSelectedFile={setSelectedFile}
+            selectedFile={selectedFile}
+            handleUpload={handleUpload}
+          />
           <div className="w-full md:max-w-3/5 relative rounded-2xl p-0.5 dark:bg-black bg-white ">
             {" "}
             {/* Added padding */}
@@ -142,19 +138,9 @@ function Interface() {
             </div>
           </div>
         </div>
-
         {/* chattting seciton */}
         <Toaster />
       </div>
-      <PrivateDocuments
-        selectedDoc={selectedDoc}
-        setSelectedDoc={setSelectedDoc}
-      />
-      <UserForm
-        setSelectedFile={setSelectedFile}
-        selectedFile={selectedFile}
-        handleUpload={handleUpload}
-      />
     </>
   );
 }

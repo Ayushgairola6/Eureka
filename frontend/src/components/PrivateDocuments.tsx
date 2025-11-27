@@ -20,7 +20,7 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
   const { showDocs, NeedToRefresh } = useAppSelector(
     (state) => state.interface
   );
-  const User = useAppSelector((state) => state.auth.user);
+  const User = useAppSelector((state) => state?.auth.user);
   const [ShowBox, setShowBox] = useState(false);
   const [DocToDel, setDocToDel] = useState<string>("");
   return (

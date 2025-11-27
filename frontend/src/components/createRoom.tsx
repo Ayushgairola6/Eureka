@@ -98,7 +98,7 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
           {/* Card Container */}
           <div className="bg-gray-100 shadow-sm shadow-gray-600 dark:shadow-gray-300 dark:bg-[#141414] rounded-xl  overflow-hidden p-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 bai-jamjuree-semibold flex items-center justify-start gap-2">
-              <FaPeopleGroup /> Create New Chat Room
+              <FaPeopleGroup /> Create new discussion room
             </h2>
 
             <div className="space-y-4">
@@ -128,11 +128,11 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
                   <IoPersonAddOutline /> Max Participants
                 </label>
                 {/* options div */}
-                <section className="flex items-center justify-between gap-4 space-grotesk text-sm my-2 relative">
-                  <div className="flex items-center justify-start gap-4 px-2 dark:bg-white/5  rounded-md py-2">
+                <section className="flex items-center justify-between gap-4 space-grotesk text-sm my-2 relative ">
+                  <div className="flex items-center justify-start gap-4 px-2   rounded-md py-2">
                     <ul>Number of paticipants</ul>
                     <label
-                      className="text-green-600 bg-green-600/10 rounded-full p-1 text-xs border border-green-600"
+                      className="text-green-600 bg-green-600/10 rounded-full p-3 h-5 w-5 flex items-center justify-center font-semibold text-xs border border-green-600"
                       htmlFor="count"
                     >
                       {participantCount}
@@ -151,24 +151,45 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
 
                   {/* the animated dropdown menu */}
                   <div
-                    className={`bg-white dark:bg-black absolute top-10 left-0 w-1/2 overflow-hidden rounded-lg shadow-lg dark:shadow-white/10 
-        transition-[max-height] duration-500 ease-in-out ${
+                    className={`bg-white dark:bg-black absolute top-10 left-0 w-full overflow-hidden rounded-lg shadow-lg dark:shadow-white/10 
+        transition-[max-height] duration-500 ease-in-out  ${
           isActive ? "max-h-96" : "max-h-0"
         }`}
                   >
                     <ul className="grid grid-cols-1">
-                      {[2, 4, 8, 16, 50, 100].map((val) => (
-                        <li key={val}>
-                          <button
-                            className="w-full text-left p-2 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white"
-                            onClick={() => {
-                              setParticipantCount(val);
-                              setIsActive(false); // Close dropdown after selection
-                            }}
-                          >
-                            {val}
-                          </button>
-                        </li>
+                      {[
+                        {
+                          count: 2,
+                          icon: "Casual curiosity session with friend",
+                        },
+                        { count: 4, icon: "Small study/friends group" },
+                        {
+                          count: 8,
+                          icon: "Large study groups, event planning sessions",
+                        },
+                        {
+                          count: 16,
+                          icon: "Small/Medium discussion or research teams",
+                        },
+                        { count: 50, icon: "Large discussion/research teams " },
+                        {
+                          count: 100,
+                          icon: "Reasearchers, Tutors, Collborative teams etc. ",
+                        },
+                      ].map((val, index) => (
+                        <section
+                          onClick={() => {
+                            setParticipantCount(val?.count);
+                            setIsActive(false); // Close dropdown after selection
+                          }}
+                          className="flex items-center justify-between gap-3 px-2 hover:px-4 py-1  w-full hover:bg-sky-500/20 transition-all ease-in duration-200 cursor-pointer border-b"
+                          key={`${val.count}+${index}`}
+                        >
+                          <span>{val.icon}</span>
+                          <ul className="  dark:bg-white bg-black rounded-full text-white text-xs p-3 flex items-center justify-center h-5 w-5 text-center dark:text-black">
+                            {val.count}
+                          </ul>
+                        </section>
                       ))}
                     </ul>
                   </div>
@@ -181,7 +202,13 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
                   <FaHouseFlag /> Room Type
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  <label className="inline-flex items-center p-3 border  rounded-lg cursor-pointer  dark:white/5">
+                  <label
+                    className={`inline-flex items-center p-3 border  rounded-lg cursor-pointer  ${
+                      room_type === "public"
+                        ? "bg-sky-500/10 border border-sky-500 shadow-sm shadow-sky-500 text-sky-500"
+                        : ""
+                    }`}
+                  >
                     <input
                       ref={RoomTypeRef}
                       onClick={() => setRoomType("public")}
@@ -195,7 +222,13 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
                       Public
                     </span>
                   </label>
-                  <label className="inline-flex items-center p-3 border  rounded-lg cursor-pointer  dark:white/5">
+                  <label
+                    className={`inline-flex items-center p-3 border  rounded-lg cursor-pointer  ${
+                      room_type === "private"
+                        ? "bg-green-500/10 border border-green-500 shadow-sm shadow-green-500 text-green-500"
+                        : ""
+                    }`}
+                  >
                     <input
                       onClick={() => setRoomType("private")}
                       ref={RoomTypeRef}

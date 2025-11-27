@@ -900,6 +900,6 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
   } catch (error) {
     await notifyMe("Error in quey web in chatRoomController.js", error);
 
-    return res.satus(500).send({ message: "Something went wrong" });
+    return res.status(500).send({ message: "Something went wrong" });
   }
 };

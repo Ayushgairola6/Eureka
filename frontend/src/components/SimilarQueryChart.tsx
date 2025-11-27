@@ -16,19 +16,13 @@ const SimilarQuestions = () => {
   const { Querycount } = useAppSelector((state) => state.auth);
   return (
     <>
-      <div className="border border-gray-400 rounded-md  space-grotesk  h-90 overflow-y-auto">
+      <div className="border  rounded-md  space-grotesk  min-h-100 bg-gray-100 dark:bg-black overflow-auto shadow-sm shadow-black dark:shadow-white/20">
         <h1 className="ba-jamjuree-semibold text-md ">
           <section className="flex items-center justify-start gap-3 p-3 ">
             <GoPeople /> Similarties with others
           </section>
-          {Querycount < 10 && (
-            <ul className="text-xs text-center  bai-jamjuree-regular px-4 w-full text-red-600">
-              * As you continue using eureka we will be able to provide more
-              data
-            </ul>
-          )}
         </h1>
-        <ResponsiveContainer className=" w-auto h-auto">
+        <ResponsiveContainer className=" w-auto h-4/5">
           <BarChart
             data={[
               {

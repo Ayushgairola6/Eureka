@@ -1,7 +1,8 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { DeleteDocuments } from "../store/InterfaceSlice";
 import { toast, Toaster } from "sonner";
+import { DeleteDocuments } from "../store/InterfaceSlice";
+
 type Props = {
   ShowBox: boolean;
   setShowBox: React.Dispatch<React.SetStateAction<boolean>>;
@@ -17,6 +18,7 @@ const ConfirmationBox: React.FC<Props> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { deleting } = useAppSelector((state) => state.interface);
+  // const { Contributions_user_id_fkey } = useAppSelector((state) => state.auth);
   return (
     <>
       <div
@@ -29,7 +31,8 @@ const ConfirmationBox: React.FC<Props> = ({
         <section className="m-auto space-y-8  p-2 dark:bg-black bg-gray-100 border border-gray-300 rounded-lg h-35 w-90 bai-jamjuree-regular">
           <div className="text-center space-grotesk mt-4">
             <h1 className="text-sm">
-              All information of this document will be deleted
+              All information of this document will be deleted Including the
+              chat history
             </h1>
           </div>
           <div className="flex items-center justify-evenly">
@@ -49,12 +52,14 @@ const ConfirmationBox: React.FC<Props> = ({
                 if (DocToDel !== "") {
                   dispatch(DeleteDocuments(DocToDel))
                     .unwrap()
-                    .then((res) => {
+                    .then((res: any) => {
                       if (res) {
                         setShowBox(false);
+                        // dispatch(DeleteFromDocs(DocToDel));
                         toast.message("Record deleted Successfully");
                       }
-                    });
+                    })
+                    .catch((error: any) => toast.error(error?.message));
                 }
               }}
               aria-busy={deleting === true}

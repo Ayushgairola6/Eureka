@@ -4,7 +4,7 @@ import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
 // import WebSearch from "./webSearch.tsx";
 import QueryType from "./Query_type.tsx";
 import { v4 as uuid } from "uuid";
-import axios from "axios";
+// import axios from "axios";
 import { FaFileUpload } from "react-icons/fa";
 import { IoOptions } from "react-icons/io5";
 import { IoDocument } from "react-icons/io5";
@@ -26,8 +26,9 @@ import {
   setShowUserForm,
   setLoading,
   updateFavicon,
+  ProcessSynthesis
 } from "../store/InterfaceSlice.ts";
-const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
+// const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { SetQueryCount } from "../store/AuthSlice.ts";
@@ -102,24 +103,24 @@ const InputSection: React.FC<InputProps> = ({
   const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
   const [Showfeatures, SetShowFeatures] = useState(false);
   // getting sse token before sending a request
-  const GetSSEToken = async () => {
-    try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+  // const GetSSEToken = async () => {
+  //   try {
+  //     const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
 
-      const response = await axios.get(`${BaseApiUrl}/api/new-sseToken`, {
-        withCredentials: true,
-        headers: {
-          Authorization: `Bearer ${AuthToken}`,
-        },
-      });
-      if (response.data.token) {
-        return response.data.token;
-      }
-    } catch (err: any) {
-      console.log(err);
-      toast.error(err.response.data.message || "Something went wrong");
-    }
-  };
+  //     const response = await axios.get(`${BaseApiUrl}/api/new-sseToken`, {
+  //       withCredentials: true,
+  //       headers: {
+  //         Authorization: `Bearer ${AuthToken}`,
+  //       },
+  //     });
+  //     if (response.data.token) {
+  //       return response.data.token;
+  //     }
+  //   } catch (err: any) {
+  //     console.log(err);
+  //     toast.error(err.response.data.message || "Something went wrong");
+  //   }
+  // };
   // private documents querying
   const QueryPrivateDocument = async () => {
     try {
@@ -186,6 +187,7 @@ const InputSection: React.FC<InputProps> = ({
         question,
         query_type: queryType,
         MessageId: AiId,
+        userMessageId: user_id,
       };
       if (!data.docId || !data.question || !data.query_type) {
         toast.error(`Some fields are missing`);
@@ -215,11 +217,11 @@ const InputSection: React.FC<InputProps> = ({
         toast.error("Please type a message first");
         return;
       }
-      const SseToken = await GetSSEToken();
-      if (!SseToken) {
-        toast.error("Please try again !");
-        return;
-      }
+      // const SseToken = await GetSSEToken();
+      // if (!SseToken) {
+      //   toast.error("Please try again !");
+      //   return;
+      // }
       const user_id = uuid();
       const AiId = uuid();
 
@@ -252,7 +254,9 @@ const InputSection: React.FC<InputProps> = ({
       // const Url = `${BaseApiUrl}/api/user/web-search?question=${question}&AccessToken=${SseToken}`;
       // const SSe = HandleSSEConnection(Url, AiId, dispatch);
       // return SSe;
-      dispatch(WebSearchHandler({ question, MessageId: AiId }))
+      dispatch(
+        WebSearchHandler({ question, MessageId: AiId, userMessageId: user_id })
+      )
         .unwrap()
         .then((res) => {
           if (res.message === "Results found") {
@@ -266,7 +270,7 @@ const InputSection: React.FC<InputProps> = ({
             MimicSSE({
               id: AiId,
               delta:
-                "I was unable to find anything related to you question in your document . If you could be more specific about what you want to know about this document I will be able to assist you properly.",
+                "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
             })
           );
         });
@@ -275,6 +279,60 @@ const InputSection: React.FC<InputProps> = ({
       toast.error(err.response.data.message);
     }
   };
+
+  const PerformSynthesis = async () => {
+
+    if (!question || typeof question !== 'string') {
+      return;
+    }
+    const user_id = uuid();
+    const AiId = uuid();
+
+    // Insert user message
+    dispatch(
+      UpdateChats({
+        id: user_id,
+        sent_at: currentTime,
+        sent_by: "You",
+        message: {
+          isComplete: true,
+          content: question,
+        },
+      })
+    );
+
+    // Insert empty AI message
+    dispatch(
+      UpdateChats({
+        id: AiId,
+        sent_at: currentTime,
+        sent_by: "Eureka",
+        message: {
+          isComplete: false,
+          content: "",
+        },
+      })
+    );
+
+    // dispatch the main function
+    dispatch(ProcessSynthesis({ question: question, MessageId: AiId, userMessageId: user_id }))
+      .unwrap().then((res) => {
+        if (res.message === 'Response generated') {
+          dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
+          dispatch(updateFavicon(res.favicon));
+          dispatch(SetQueryCount());
+        }
+      })
+      .catch(() => {
+        dispatch(
+          MimicSSE({
+            id: AiId,
+            delta:
+              "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
+          }))
+      })
+
+  }
   // centeral function that manages when to call which function
   const handleAsk = async () => {
     try {
@@ -297,6 +355,9 @@ const InputSection: React.FC<InputProps> = ({
       // if private doc is not selected and query type web search is chosen
       else if (!selectedDoc && queryType === "Web Search") {
         await SearchWeb();
+        return;
+      } else if (queryType === 'Synthesis' && !selectedDoc) {
+        await PerformSynthesis()
         return;
       }
 
@@ -356,6 +417,8 @@ const InputSection: React.FC<InputProps> = ({
         question: question,
         category: category,
         subCategory: subCategory,
+        MessageId: AiId,
+        userMessageId: user_id,
       };
       // get answers
       dispatch(QueryAIQuestions(data))
@@ -381,14 +444,12 @@ const InputSection: React.FC<InputProps> = ({
     <>
       {/* input section body */}
       <motion.section
-        className={`relative overflow-y-visible  w-full  px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border  bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3]  ${
-          isActive === true
-            ? "h-auto w-full "
-            : "w-[90%] h-18 overflow-hidden mx-auto "
-        } transition-all duration-150 ease-linear`}
+        className={`relative overflow-y-visible  w-full  px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border  bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3]  ${isActive === true
+          ? "h-auto w-full "
+          : "w-[90%] h-18 overflow-hidden mx-auto "
+          } transition-all duration-150 ease-linear`}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
-        {" "}
         {/* input section */}
         <input
           value={question}
@@ -408,9 +469,8 @@ const InputSection: React.FC<InputProps> = ({
         />
         {/* the other options section */}
         <div
-          className={`${
-            isActive === true ? "flex" : "hidden"
-          } items-center justify-between `}
+          className={`${isActive === true ? "flex" : "hidden"
+            } items-center justify-between `}
         >
           <section className="flex items-center justify-center gap-2 my-2">
             {/* show options icon */}
@@ -427,11 +487,10 @@ const InputSection: React.FC<InputProps> = ({
 
                   dispatch(setQueryType(""));
                 }}
-                className={` cursor-pointer  ${
-                  shwoOptions === true
-                    ? "bg-green-600  text-white"
-                    : "dark:bg-white bg-black dark:text-black text-white"
-                } rounded-full p-2  h-auto `}
+                className={` cursor-pointer  ${shwoOptions === true
+                  ? "bg-green-600  text-white"
+                  : "dark:bg-white bg-black dark:text-black text-white"
+                  } rounded-full p-2  h-auto `}
               >
                 <IoOptions size={18} />
               </button>
@@ -441,11 +500,10 @@ const InputSection: React.FC<InputProps> = ({
             {selectedDoc && (
               <ul
                 onClick={() => dispatch(setShowType(!showType))}
-                className={`  cursor-pointer ${
-                  selectedDoc
-                    ? "dark:bg-white bg-black dark:text-black text-white"
-                    : "bg-gray-200"
-                } rounded-full p-2  h-auto relative`}
+                className={`  cursor-pointer ${selectedDoc
+                  ? "dark:bg-white bg-black dark:text-black text-white"
+                  : "bg-gray-200"
+                  } rounded-full p-2  h-auto relative`}
               >
                 <GoZap size={18} />
                 <QueryType />
@@ -527,15 +585,13 @@ const InputSection: React.FC<InputProps> = ({
             whileHover={{ scaleX: 1.05 }}
             transition={{ duration: 0.3, ease: "circIn" }}
             onClick={handleAsk}
-            className={`cursor-pointer ${
-              loading === true
-                ? "bg-green-600  animate-pulse "
-                : ` ${
-                    question === ""
-                      ? "dark:bg-gray-600 bg-gray-400"
-                      : "bg-black dark:bg-gray-100"
-                  }   dark:text-black`
-            } text-white  p-2  rounded-full space-grotesk   text-sm flex items-center justify-center gap-2  `}
+            className={`cursor-pointer ${loading === true
+              ? "bg-green-600  animate-pulse "
+              : ` ${question === ""
+                ? "dark:bg-gray-600 bg-gray-400"
+                : "bg-black dark:bg-gray-100"
+              }   dark:text-black`
+              } text-white  p-2  rounded-full space-grotesk   text-sm flex items-center justify-center gap-2  `}
           >
             {loading === false ? (
               <>

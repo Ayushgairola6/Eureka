@@ -1,5 +1,5 @@
 import { supabase } from "./supabaseHandler.js";
-
+import { notifyMe } from '../ErrorNotificationHandler/telegramHandler.js'
 export const RecieveReviews = async (req, res) => {
   try {
     const { review, where, Occupation, Rating } = req.body;
@@ -79,7 +79,8 @@ export const HandleDocumentAuthenticityFeedback = async (req, res) => {
 
       const updated = await Promise.all(feedbackUpdates);
     } catch (error) {
-      console.error("Error in feedback updates:", error);
+      // console.error("Error in feedback updates:", error);
+      await notifyMe("And error occured in feedback update controller", error);
     }
 
     return res.json({ message: "Feedback recorded successfully" });

@@ -1,3 +1,4 @@
+import { FetchChatHistory } from "../CachingHandler/redisClient.js";
 import {
   CreateChatRooms,
   GetRoomChatHistory,
@@ -25,4 +26,5 @@ ChatsRouter.post("/user/request/create-room", VerifyToken, CreateChatRooms)
     "/user/doc/misallaneous-history",
     VerifyToken,
     GetMisallaneousChatHistory
-  );
+  )
+  .get("/user/session-history/cache=true", VerifyToken, FetchChatHistory);

@@ -2,8 +2,7 @@ import { useAppSelector } from "../store/hooks";
 import React from "react";
 import { motion } from "framer-motion";
 import { PieChart, ResponsiveContainer, Pie, Cell } from "recharts";
-import { FaThumbsUp } from "react-icons/fa";
-
+import { RiFeedbackLine } from "react-icons/ri";
 // import { FaExclamation, FaThumbsDown, FaThumbsUp } from "react-icons/fa";
 
 type props = {
@@ -17,35 +16,35 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
   const data = [
     {
       name: "Upvotes",
-      value: FeedbackCounts?.upvotes ? FeedbackCounts?.upvotes : 0,
+      value: FeedbackCounts?.upvotes ? FeedbackCounts?.upvotes : 1,
     },
     {
       name: "Downvotes",
-      value: FeedbackCounts?.downvotes ? FeedbackCounts?.downvotes : 0,
+      value: FeedbackCounts?.downvotes ? FeedbackCounts?.downvotes : 1,
     },
     {
       name: "Partial",
       value: FeedbackCounts?.partial_upvotes
         ? FeedbackCounts?.partial_upvotes
-        : 0,
+        : 1,
     },
   ];
   return (
     <>
       <motion.div
         whileTap={{ scale: 0.98 }}
-        className="bg-gray-100 dark:bg-black p-6 rounded-2xl border border-gray-400 transition-all duration-300"
+        className="bg-gray-100 dark:bg-black p-6 rounded-2xl border  transition-all duration-300 shadow-sm shadow-black dark:shadow-white/20  "
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
-            <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"></div>
+        <div className="flex items-center justify-start gap-3 mb-6">
+          <RiFeedbackLine />
+          <h3 className="text-sm  text-gray-600 dark:text-gray-300 bai-jamjuree-semibold  tracking-wide flex items-center gap-2">
             Community Feedback
           </h3>
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="grid grid-cols-1  gap-6 items-start">
           {/* Left: Pie Chart */}
           <div className="flex items-center justify-center">
             <div className="w-48 h-48 bai-jamjuree-semibold">
@@ -58,7 +57,7 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
                     innerRadius="60%"
                     outerRadius="80%"
                     paddingAngle={2}
-                    dataKey="value" // ← Add this too
+                    dataKey="value"
                   >
                     <Cell key="up" fill="#10b981" />
                     <Cell key="down" fill="#ef4444" />
@@ -94,13 +93,27 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
               </ResponsiveContainer>
             </div>
           </div>
-
+          {/* indicator of colors and their meaning */}
+          <div className="flex items-center justify-center gap-2 space-grotesk text-xs">
+            <section className="flex flex-col items-center justify-center gap-2">
+              <ul className="bg-red-500 h-5 w-5 rounded-md"></ul>
+              <label htmlFor="">Upvotes</label>
+            </section>
+            <section className="flex flex-col items-center justify-center gap-2">
+              <ul className="bg-amber-500 h-5 w-5 rounded-md"></ul>
+              <label htmlFor="">Downvotes</label>
+            </section>
+            <section className="flex flex-col items-center justify-center gap-2">
+              <ul className="bg-green-500 h-5 w-5 rounded-md"></ul>
+              <label htmlFor="">Partial Votes</label>
+            </section>
+          </div>
           {/* Right: Stats & Metrics */}
           <div className="space-y-4 space-grotesk">
             {/* Stats Grid */}
 
             {/* Confidence Score */}
-            <div className="space-grotesk bg-white/50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50">
+            <div className="space-grotesk bg-gray-200 dark:bg-white/5 rounded-xl p-4 border ">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Confidence Score
@@ -143,10 +156,10 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
             </div>
           </div>
         </div>
-        <div className="bai-jamjuree-regular text-md  w-full text-center flex items-center justify-center gap-4">
+        {/* <div className="bai-jamjuree-regular text-md  w-full text-center flex items-center justify-center gap-4">
           <FaThumbsUp color="green" />
           Keep Up the good work
-        </div>
+        </div> */}
       </motion.div>
     </>
   );

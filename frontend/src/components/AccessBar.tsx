@@ -27,20 +27,20 @@ const AccessBar: React.FC<props> = ({ Showfeatures }) => {
         : "opacity-0 pointer-events-none"
     } 
     dark:bg-gray-100 dark:text-black text-white bg-black 
-    space-grotesk p-2 
+    space-grotesk p-1 
     text-sm md:text-base 
-    w-30 md:w-80 
+    w-40 md:w-80 
     rounded-md shadow-lg 
     space-y-2 
     z-[99] transition-all duration-300 
-    flex flex-col items-center justify-center`}
+    flex flex-col items-normal justify-start`}
       >
         {/* Web Search Component */}
         <WebSearch selectedDoc={selectedDoc} setSelectedDoc={setSelectedDoc} />
 
         {/* Synthesis Button */}
         <button
-          className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200 
+          className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-colors duration-200 
       ${
         queryType === "Synthesis"
           ? "text-green-500 bg-green-100 dark:bg-green-200"

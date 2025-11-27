@@ -19,6 +19,7 @@ import {
   VerifySSETokens,
 } from "../Middlewares/StreamingMiddleware.js";
 import { WebSearchHandle } from "../OnlineSearchHandler/WebSearchHandler.js";
+import { IdentifyRequestInputs } from "../Synthesis/Identifier.js";
 Router.post(
   "/upload-pdf",
   VerifyToken,
@@ -33,4 +34,5 @@ Router.post(
   .get("/ask-pdf", VerifySSETokens, FindMatchingResponse)
   .get("/user/documents", VerifyToken, GetPrivateUserDocs)
   .get("/privateDocs/ask", VerifySSETokens, QueryPersonalDocs)
-  .get("/user/web-search", VerifySSETokens, WebSearchHandle);
+  .get("/user/web-search", VerifySSETokens, WebSearchHandle)
+  .post("/method/synthesis", VerifyToken, IdentifyRequestInputs)
