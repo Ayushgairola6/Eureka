@@ -161,7 +161,7 @@ export const DeleteDocuments = createAsyncThunk<string, any>(
       console.error(`Error file deleting document`);
       return rejectWithValue(
         error?.response.data.message ||
-        "An error occured while processing your request"
+          "An error occured while processing your request"
       );
     }
   }
@@ -264,21 +264,27 @@ export const GetCachedSessionHistory = createAsyncThunk(
   }
 );
 
-export const ProcessSynthesis = createAsyncThunk<any, any>('synthesis/reques',
+export const ProcessSynthesis = createAsyncThunk<any, any>(
+  "synthesis/reques",
   async (data, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
-      const response = await axios.post(`${BaseApiUrl}/api/method/synthesis`, data, {
-        withCredentials: true,
-        headers: {
-          "Authorization": `Bearer ${AuthToken}`
+      const response = await axios.post(
+        `${BaseApiUrl}/api/method/synthesis`,
+        data,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
         }
-      })
-      return response.data
+      );
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error?.response?.data?.message)
+      return rejectWithValue(error?.response?.data?.message);
     }
-  })
+  }
+);
 const interfaceSlice = createSlice({
   name: "interface",
   initialState,
@@ -439,11 +445,11 @@ const interfaceSlice = createSlice({
       .addCase(WebSearchHandler.pending, (state) => {
         state.loading = true;
       })
-      .addCase(WebSearchHandler.fulfilled, (state, action) => {
+      .addCase(WebSearchHandler.fulfilled, (state, _action) => {
         state.loading = false;
-        if (action.payload.favicon && action.payload.favicon.length > 0) {
-          state.favicon = [...state.favicon, ...action.payload.favicon];
-        }
+        // if (action.payload.favicon && action.payload.favicon.length > 0) {
+        //   state.favicon = [...state.favicon, ...action.payload.favicon];
+        // }
         // state.docUsed = action.payload
       })
       .addCase(WebSearchHandler.rejected, (state) => {
@@ -466,13 +472,18 @@ const interfaceSlice = createSlice({
         state.Chats = [...action.payload.data];
       })
       //synthesis process
-      .addCase(ProcessSynthesis.pending,(state,action)=>{
-        state.loading=true
-      }).addCase(ProcessSynthesis.rejected,(state,action)=>{
-        state.loading=false
-      }).addCase(ProcessSynthesis.fulfilled,(state,action)=>{
-        state.loading=false
+      .addCase(ProcessSynthesis.pending, (state, _action) => {
+        state.loading = true;
       })
+      .addCase(ProcessSynthesis.rejected, (state, _action) => {
+        state.loading = false;
+      })
+      .addCase(ProcessSynthesis.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload.docUsed) {
+          state.docUsed = [...state.docUsed, action.payload.docUsed];
+        }
+      });
   },
 });
 

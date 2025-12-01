@@ -13,7 +13,7 @@ import {
 } from "../../store/InterfaceSlice";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { Categories, SubCategories } from "../../../utlis/Info.ts";
-import { BiCategory, BiHourglass } from "react-icons/bi";
+import { BiCategory, BiDetail, BiHourglass } from "react-icons/bi";
 import { FiChevronDown } from "react-icons/fi";
 import { LuArrowLeft } from "react-icons/lu";
 // declaring props type
@@ -55,6 +55,7 @@ const UserForm: React.FC<FormProps> = ({
     visibility,
   } = useAppSelector((state) => state.interface);
   const [feedback, setFeedback] = React.useState<string>("");
+  const [description, setDescription] = React.useState<string>("");
 
   // top-10 right-2  md:right-50
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -144,6 +145,24 @@ const UserForm: React.FC<FormProps> = ({
               value={feedback}
               className="border text-sm py-1 space-grotesk  border-black dark:border-white rounded-sm px-2 font-normal w-full"
               placeholder="Fifty shades of C++ ... "
+              rows={2}
+            />
+          </div>
+          <div className="flex items-start justify-start gap-3 flex-col  w-full rounded-lg p-2">
+            <label
+              className="text-sm md:text-md font-semibold flex items-center justify-cente gap-2 bai-jamjuree-semibold"
+              htmlFor="Feeback"
+            >
+              <BiDetail />
+              Brief description
+            </label>
+            <textarea
+              onChange={(e) => {
+                setDescription(e.target.value);
+              }}
+              value={description}
+              className="border text-sm py-1 space-grotesk  border-black dark:border-white rounded-sm px-2 font-normal w-full"
+              placeholder="Project deadlines and current progress detailed report"
               rows={2}
             />
           </div>
@@ -486,12 +505,13 @@ const UserForm: React.FC<FormProps> = ({
           <motion.button
             onClick={() => {
               const UserData = new FormData();
-              if (!feedback) {
-                toast("Please fill in all fields");
+              if (!feedback || !description) {
+                toast.info("Please fill in all fields");
                 return;
               }
 
               UserData.append("feedback", feedback);
+              UserData.append("about", description);
               handleUpload?.(UserData);
             }}
             disabled={uploading === true}

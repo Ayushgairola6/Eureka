@@ -26,7 +26,7 @@ import {
   setShowUserForm,
   setLoading,
   updateFavicon,
-  ProcessSynthesis
+  ProcessSynthesis,
 } from "../store/InterfaceSlice.ts";
 // const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import { toast } from "sonner";
@@ -102,6 +102,7 @@ const InputSection: React.FC<InputProps> = ({
   // Combine all parts into a single string using a delimiter
   const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
   const [Showfeatures, SetShowFeatures] = useState(false);
+
   // getting sse token before sending a request
   // const GetSSEToken = async () => {
   //   try {
@@ -122,6 +123,7 @@ const InputSection: React.FC<InputProps> = ({
   //   }
   // };
   // private documents querying
+
   const QueryPrivateDocument = async () => {
     try {
       if (!question) {
@@ -281,8 +283,7 @@ const InputSection: React.FC<InputProps> = ({
   };
 
   const PerformSynthesis = async () => {
-
-    if (!question || typeof question !== 'string') {
+    if (!question || typeof question !== "string") {
       return;
     }
     const user_id = uuid();
@@ -315,11 +316,21 @@ const InputSection: React.FC<InputProps> = ({
     );
 
     // dispatch the main function
-    dispatch(ProcessSynthesis({ question: question, MessageId: AiId, userMessageId: user_id }))
-      .unwrap().then((res) => {
-        if (res.message === 'Response generated') {
+    dispatch(
+      ProcessSynthesis({
+        question: question,
+        MessageId: AiId,
+        userMessageId: user_id,
+      })
+    )
+      .unwrap()
+      .then((res) => {
+        if (res.message === "Response generated") {
           dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
-          dispatch(updateFavicon(res.favicon));
+          if (res.favicon) {
+            dispatch(updateFavicon(res.favicon));
+          }
+
           dispatch(SetQueryCount());
         }
       })
@@ -329,10 +340,10 @@ const InputSection: React.FC<InputProps> = ({
             id: AiId,
             delta:
               "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
-          }))
-      })
-
-  }
+          })
+        );
+      });
+  };
   // centeral function that manages when to call which function
   const handleAsk = async () => {
     try {
@@ -356,8 +367,8 @@ const InputSection: React.FC<InputProps> = ({
       else if (!selectedDoc && queryType === "Web Search") {
         await SearchWeb();
         return;
-      } else if (queryType === 'Synthesis' && !selectedDoc) {
-        await PerformSynthesis()
+      } else if (queryType === "Synthesis" && !selectedDoc) {
+        await PerformSynthesis();
         return;
       }
 
@@ -444,10 +455,11 @@ const InputSection: React.FC<InputProps> = ({
     <>
       {/* input section body */}
       <motion.section
-        className={`relative overflow-y-visible  w-full  px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border  bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3]  ${isActive === true
-          ? "h-auto w-full "
-          : "w-[90%] h-18 overflow-hidden mx-auto "
-          } transition-all duration-150 ease-linear`}
+        className={`relative overflow-y-visible  w-full  px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border  bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3]  ${
+          isActive === true
+            ? "h-auto w-full "
+            : "w-[90%] h-18 overflow-hidden mx-auto "
+        } transition-all duration-150 ease-linear`}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
         {/* input section */}
@@ -469,8 +481,9 @@ const InputSection: React.FC<InputProps> = ({
         />
         {/* the other options section */}
         <div
-          className={`${isActive === true ? "flex" : "hidden"
-            } items-center justify-between `}
+          className={`${
+            isActive === true ? "flex" : "hidden"
+          } items-center justify-between `}
         >
           <section className="flex items-center justify-center gap-2 my-2">
             {/* show options icon */}
@@ -487,10 +500,11 @@ const InputSection: React.FC<InputProps> = ({
 
                   dispatch(setQueryType(""));
                 }}
-                className={` cursor-pointer  ${shwoOptions === true
-                  ? "bg-green-600  text-white"
-                  : "dark:bg-white bg-black dark:text-black text-white"
-                  } rounded-full p-2  h-auto `}
+                className={` cursor-pointer  ${
+                  shwoOptions === true
+                    ? "bg-green-600  text-white"
+                    : "dark:bg-white bg-black dark:text-black text-white"
+                } rounded-full p-2  h-auto `}
               >
                 <IoOptions size={18} />
               </button>
@@ -500,10 +514,11 @@ const InputSection: React.FC<InputProps> = ({
             {selectedDoc && (
               <ul
                 onClick={() => dispatch(setShowType(!showType))}
-                className={`  cursor-pointer ${selectedDoc
-                  ? "dark:bg-white bg-black dark:text-black text-white"
-                  : "bg-gray-200"
-                  } rounded-full p-2  h-auto relative`}
+                className={`  cursor-pointer ${
+                  selectedDoc
+                    ? "dark:bg-white bg-black dark:text-black text-white"
+                    : "bg-gray-200"
+                } rounded-full p-2  h-auto relative`}
               >
                 <GoZap size={18} />
                 <QueryType />
@@ -585,13 +600,15 @@ const InputSection: React.FC<InputProps> = ({
             whileHover={{ scaleX: 1.05 }}
             transition={{ duration: 0.3, ease: "circIn" }}
             onClick={handleAsk}
-            className={`cursor-pointer ${loading === true
-              ? "bg-green-600  animate-pulse "
-              : ` ${question === ""
-                ? "dark:bg-gray-600 bg-gray-400"
-                : "bg-black dark:bg-gray-100"
-              }   dark:text-black`
-              } text-white  p-2  rounded-full space-grotesk   text-sm flex items-center justify-center gap-2  `}
+            className={`cursor-pointer ${
+              loading === true
+                ? "bg-green-600  animate-pulse "
+                : ` ${
+                    question === ""
+                      ? "dark:bg-gray-600 bg-gray-400"
+                      : "bg-black dark:bg-gray-100"
+                  }   dark:text-black`
+            } text-white  p-2  rounded-full space-grotesk   text-sm flex items-center justify-center gap-2  `}
           >
             {loading === false ? (
               <>

@@ -81,12 +81,12 @@ const formattedTime = `${hour > 12 ? hour - 12 : hour}:${minute
   .padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
 
 // Combine all parts into a single string using a delimiter
-const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
+export const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
 
 //upload file handler
 export const FileUploadHandle = async (req, res) => {
   try {
-    const { category, feedback, subCategory, visibility } = req.body;
+    const { category, feedback, subCategory, visibility, about } = req.body;
     const file = req.file;
     const userid = req.user.user_id;
     if (!userid) {
@@ -102,7 +102,9 @@ export const FileUploadHandle = async (req, res) => {
       !file ||
       !subCategory ||
       typeof subCategory !== "string" ||
-      !visibility
+      !visibility ||
+      !about ||
+      typeof about !== "string"
     ) {
       return res.status(400).json({ message: "Invalid data type !" });
     }
@@ -197,6 +199,11 @@ export const FileUploadHandle = async (req, res) => {
         });
       }
     }
+    const documentmetadata = {
+      category: category,
+      subCategory: subCategory,
+      about: about,
+    };
     // storing the contribution details
     const StoredContribution = await StoreContributionDetails(
       email,
@@ -204,7 +211,8 @@ export const FileUploadHandle = async (req, res) => {
       userid,
       visibility,
       documentId,
-      chunkNumber
+      chunkNumber,
+      documentmetadata
     );
     const UserAccountDataKey = `user_id=${userid}&username=${req.user.username}'s_dashboardData`;
 
@@ -611,7 +619,8 @@ export const StoreContributionDetails = async (
   userid,
   visibility,
   documentId,
-  chunkNumber
+  chunkNumber,
+  documentmetadata
 ) => {
   try {
     if (
@@ -620,17 +629,9 @@ export const StoreContributionDetails = async (
       !feedback ||
       typeof feedback !== "string" ||
       !userid ||
-      typeof chunkNumber !== "number"
+      typeof chunkNumber !== "number" ||
+      !documentmetadata
     ) {
-      console.log(
-        "Some fields are missing",
-        email,
-        feedback,
-        userid,
-        visibility,
-        documentId,
-        chunkNumber
-      );
       return { error: "Invalid data !" };
     }
 
@@ -643,6 +644,7 @@ export const StoreContributionDetails = async (
         Document_visibility: visibility,
         document_id: documentId,
         chunk_count: chunkNumber,
+        metadata: documentmetadata,
       })
       .select("*")
       .single();
@@ -711,7 +713,8 @@ export const GetPrivateDocResultss = async (req, res) => {
       typeof query_type !== "string"
     ) {
       await notifyMe(
-        `Error while asking question from private doc by user=${req.user.username
+        `Error while asking question from private doc by user=${
+          req.user.username
         } the req.body is like this = ${JSON.stringify(req.body)}`,
         "sometgin broke the functionality"
       );
@@ -738,8 +741,8 @@ export const GetPrivateDocResultss = async (req, res) => {
       query_type === "QNA"
         ? process.env.SYSTEM_PROMPT
         : query_type === "Summary"
-          ? process.env.SUMMARIZER_PROMPT
-          : process.env.WEB_SEARCH_RESULT_PROMPT;
+        ? process.env.SUMMARIZER_PROMPT
+        : process.env.WEB_SEARCH_RESULT_PROMPT;
 
     // if the query is of qna type
     if (query_type === "QNA") {
@@ -806,8 +809,9 @@ export const GetPrivateDocResultss = async (req, res) => {
         .map((rest, index) => {
           // create a string of results
           if (rest._score && rest.fields.text) {
-            return `ArrayBasedrank=${index + 1}&relevancy_score=${rest._score
-              }&actual_content${rest.fields.text}`;
+            return `ArrayBasedrank=${index + 1}&relevancy_score=${
+              rest._score
+            }&actual_content${rest.fields.text}`;
           }
         })
         .filter(Boolean);
@@ -917,10 +921,10 @@ export const PostTypeWebSearch = async (req, res) => {
       return res.status(200).send({
         Answer: UpdateState.message,
         message: "Limit reached found",
-        favicon: [],
+        favicon: { MessageId, icon: [] },
       });
     }
-    const WebResults = await SearchQueryResults(question);
+    const WebResults = await SearchQueryResults(question, user);
     if (WebResults.error) {
       await notifyMe(WebResults.error);
       return res.status(400).send({ message: "The server is busy right now" });
@@ -928,7 +932,10 @@ export const PostTypeWebSearch = async (req, res) => {
     const Formattedresult = formatForGemini(WebResults.response);
     if (!Formattedresult) {
       await notifyMe(`${Formattedresult}, "Results formatting error"`);
-      return res.status(400).send({ message: "The server is busy right now" });
+      return res.status(400).send({
+        message: "The server is busy right now",
+        favicon: { MessageId, icon: [] },
+      });
     }
 
     const message = {
@@ -951,32 +958,12 @@ export const PostTypeWebSearch = async (req, res) => {
         `Error while generating a response by gemini :${Answer.error}`
       );
       // fallback response
-      //   const results = await FormatForHumanFallback(WebResults.response);
-      //   Answer = results.text;
+      const results = await FormatForHumanFallback(WebResults.response);
+      Answer = results.text;
     }
-    // const Answer = `
-    // // # Hello World 👋
 
-    // // This is a sample **Markdown** content stored in a JavaScript variable.
-
-    // // ## Features
-
-    // // - Bullet points
-    // // - **Bold text**
-    // // - *Italic text*
-    // // - [Link to Copilot](https://copilot.microsoft.com)
-
-    // // > This is a blockquote.
-
-    // // \`\`\`js
-    // // // Code block
-    // // function greet() {
-    // //   console.log("Hello from Markdown!");
-    // // }
-    // // \`\`\`
-    // // `;
     const AiMessage = {
-      id: userMessageId,
+      id: MessageId,
       sent_by: "Eureka", //sent by the user
       message: {
         isComplete: true,
@@ -1018,7 +1005,7 @@ export const PostTypeWebSearch = async (req, res) => {
 
     const FormattedFavicon = {
       MessageId,
-      icon: [],
+      icon: WebResults.favicon, //favicon array from the web search
     };
 
     //  now that we have generated all the response and data for the user
@@ -1028,7 +1015,7 @@ export const PostTypeWebSearch = async (req, res) => {
     return res.send({
       Answer: Answer,
       message: "Results found",
-      favicon: FormattedFavicon | [],
+      favicon: FormattedFavicon,
     });
   } catch (err) {
     await notifyMe(err);
@@ -1093,9 +1080,7 @@ export const StoreQueryAndResponse = async (
   user_id,
   question,
   Ai_response,
-  docId,
-  category,
-  subCategory
+  docId
 ) => {
   try {
     if (
@@ -1108,21 +1093,15 @@ export const StoreQueryAndResponse = async (
     ) {
       return { error: "Invalid arguments" };
     }
-    const metadata = {
-      category: category,
-      subCategory: subCategory,
-    };
-    const { data, error } = await supabase
-      .from("Conversation_History")
-      .insert({
-        user_id: user_id,
-        question: question,
-        AI_response: Ai_response,
-        document_id: docId,
-        metadata: metadata,
-      })
-      .select()
-      .single();
+
+    const { data, error } = await supabase.from("Conversation_History").insert({
+      user_id: user_id,
+      question: question,
+      AI_response: Ai_response,
+      document_id: docId,
+    });
+    // .select();
+    // .single();
     if (error) {
       console.error(
         "Error while storing the session data in the database:",

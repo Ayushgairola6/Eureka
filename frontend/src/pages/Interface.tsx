@@ -76,13 +76,14 @@ function Interface() {
       formData.append("visibility", visibility);
       formData.append("subCategory", subCategory);
       formData.append("feedback", UserData.get("feedback") as string);
+      formData.append("about", UserData.get("about") as string);
 
       dispatch(UploadDocuments(formData))
         .unwrap()
         .then((res: any) => {
           if (res.message) {
             toast.message(res.message);
-            console.log(res.insertData); //show a popup message
+            // console.log(res.insertData); //show a popup message
             dispatch(setDocs(res.insertData)); //update the local state
           }
         })

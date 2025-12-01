@@ -11,13 +11,14 @@ const DocUsed: React.FC<props> = ({ chat }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   // 1. Extract Data relevant to this specific chat message
+
   const relevantFaviconData = favicon.find((f) => f.MessageId === chat.id);
   const sourceIcons = relevantFaviconData?.icon || [];
 
   // Filter docused that actually have IDs (assuming logic matches your backend)
   const relevantDocs = docUsed
     ?.find((doc: any) => {
-      doc.MessageId === chat.MessageId;
+      doc.MessageId === chat.id;
     })
     ?.docs.filter((d) => d.doc_id && d.doc_id.length > 0);
 

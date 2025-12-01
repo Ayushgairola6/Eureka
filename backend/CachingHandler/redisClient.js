@@ -73,8 +73,9 @@ export const UpdateTheNotificationCache = async (key, notification) => {
 // caching the current chats of the user for few hours
 export const CacheCurrentChat = async (message, user) => {
   const ChatArray = []; //array to store the chat history
-  const ConversationCacheKey = `user_id=${user.user_id
-    }_time=${new Date().toDateString()}`;
+  const ConversationCacheKey = `user_id=${
+    user.user_id
+  }_time=${new Date().toDateString()}`;
 
   const exists = await redisClient.exists(ConversationCacheKey);
   if (exists) {
@@ -94,7 +95,6 @@ export const CacheCurrentChat = async (message, user) => {
     if (result === null) {
       console.error("error while executing the redis multi command");
     }
-    console.log(result);
   }
   // console.log("this message was just cached right now", message);
   return { message: "Record updated or created new record" };
@@ -106,8 +106,9 @@ export const FetchChatHistory = async (req, res) => {
       return res.status(401).send({ message: "Please login to continue" });
     }
     const user = req.user;
-    const ConversationCacheKey = `user_id=${user.user_id
-      }_time=${new Date().toDateString()}`;
+    const ConversationCacheKey = `user_id=${
+      user.user_id
+    }_time=${new Date().toDateString()}`;
     // await redisClient.del(ConversationCacheKey);
     // console.log("This function has been called");
     const exists = await redisClient.exists(ConversationCacheKey);

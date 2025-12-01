@@ -26,7 +26,6 @@ const setupSocketListeners = (dispatch: any) => {
 
   listenerInitialized = true;
   socket.on("connect", () => {
-    // console.log("socket has connected");
     dispatch(setConnected());
 
     // Rejoin any rooms that were joined before if needed
@@ -45,7 +44,6 @@ const setupSocketListeners = (dispatch: any) => {
     dispatch(SetCookies(data.newAccessToken));
   });
   socket.on("recieved_message", (data) => {
-    // console.log("New message received:", data);
     dispatch(NewMessageReceived(data));
     dispatch(whoIsTyping(""));
   });
@@ -61,7 +59,6 @@ const setupSocketListeners = (dispatch: any) => {
   });
   socket.on("new_Notification", (data) => {
     dispatch(NewUserNotification(data));
-    console.log(data);
   });
 
   socket.on("someone-typing", (data) => {
@@ -72,7 +69,6 @@ const setupSocketListeners = (dispatch: any) => {
     dispatch(UpdatedPreference(data));
   });
   socket.on("disconnect", () => {
-    // console.log("Socket disconnected");
     dispatch(setDisconnected());
   });
 };

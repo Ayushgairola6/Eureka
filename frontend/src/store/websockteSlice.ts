@@ -155,10 +155,7 @@ const socketSlice = createSlice({
   reducers: {
     // Actions to trigger the middleware
     connectSocket: () => {},
-    disconnectSocket: () => {
-      // No state change here, middleware will handle disconnection
-    },
-    // Actions to be dispatched by the middleware
+    disconnectSocket: () => {},
     setConnected: (state) => {
       // console.log("socket has connected")
       state.isConnected = true;
