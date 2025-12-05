@@ -11,16 +11,16 @@ import { StoreQueryAndResponse } from "../controllers/fileControllers.js";
 import { chunkMarkdown, formatSSEChunk } from "../FilerParsers/FilerParser.js";
 const tvly = tavily({ apiKey: process.env.TAVILY_WEB_SEARCH_API_KEY });
 
-export const SearchQueryResults = async (query) => {
+export const SearchQueryResults = async (query, user) => {
   try {
     if (!query || typeof query !== "string") {
       return { error: "Invalid query type" };
     }
 
     const response = await tvly.search(query, {
-      searchDepth: "basic",
-      maxTokens: 10,
-      includeAnswer: "basic",
+      searchDepth: user.PaymentStatus === false ? "advanced" : "basic",
+      maxTokens: user.PaymentStatus === false ? 20 : 10,
+      includeAnswer: user.PaymentStatus === false ? false : true,
       includeFavicon: true,
     });
     if (!response) {

@@ -54,6 +54,7 @@ interface InterfaceState {
   uploading: boolean;
   deleting: boolean;
   NeedToRefresh: boolean;
+  SynthesisDocuments: string[];
 }
 
 const initialState: InterfaceState = {
@@ -88,6 +89,7 @@ const initialState: InterfaceState = {
   uploading: false,
   deleting: false,
   NeedToRefresh: false,
+  SynthesisDocuments: [],
 };
 
 // Async Thunks
@@ -265,7 +267,7 @@ export const GetCachedSessionHistory = createAsyncThunk(
 );
 
 export const ProcessSynthesis = createAsyncThunk<any, any>(
-  "synthesis/reques",
+  "synthesis/request",
   async (data, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
@@ -325,6 +327,19 @@ const interfaceSlice = createSlice({
     },
     setSelectedDoc: (state, action) => {
       state.selectedDoc = action.payload;
+    },
+    SetSynthesisDocuments: (state, action) => {
+      const NewId = action.payload;
+      // console.log("intiaed documents selection", NewId);
+      if (!state.SynthesisDocuments.includes(NewId)) {
+        state.SynthesisDocuments.push(action.payload);
+      } else {
+        const NewArray = state.SynthesisDocuments.filter((li) => li !== NewId);
+        state.SynthesisDocuments = [...NewArray];
+      }
+    },
+    EmptyTheSynthesisArray: (state) => {
+      state.SynthesisDocuments = [];
     },
     UpdateMessage: (state, action) => {
       const { id, delta } = action.payload;
@@ -511,6 +526,8 @@ export const {
   setSelectedDoc,
   updateFavicon,
   setNeedToRefresh,
+  SetSynthesisDocuments,
+  EmptyTheSynthesisArray,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

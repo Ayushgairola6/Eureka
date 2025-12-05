@@ -1,11 +1,16 @@
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
-import { setNeedToRefresh, setShowDocs } from "../store/InterfaceSlice.ts";
+import {
+  EmptyTheSynthesisArray,
+  setNeedToRefresh,
+  setShowDocs,
+  SetSynthesisDocuments,
+} from "../store/InterfaceSlice.ts";
 import { FaArrowLeft } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { FiFile } from "react-icons/fi";
 import ConfirmationBox from "@/components/ConfirmationBox.tsx";
 import { useState } from "react";
-import { BiRefresh } from "react-icons/bi";
+import { BiPlus, BiRefresh } from "react-icons/bi";
 import { GetUserDashboardData } from "../store/AuthSlice.ts";
 type PrivateDocProps = {
   selectedDoc: string;
@@ -17,9 +22,8 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
   setSelectedDoc,
 }) => {
   const dispatch = useAppDispatch();
-  const { showDocs, NeedToRefresh } = useAppSelector(
-    (state) => state.interface
-  );
+  const { showDocs, NeedToRefresh, queryType, SynthesisDocuments } =
+    useAppSelector((state) => state.interface);
   const User = useAppSelector((state) => state?.auth.user);
   const [ShowBox, setShowBox] = useState(false);
   const [DocToDel, setDocToDel] = useState<string>("");
@@ -48,11 +52,19 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
               <motion.div
                 key={doc.id}
                 onClick={() => {
-                  dispatch(
-                    setSelectedDoc(
-                      selectedDoc === doc.document_id ? "" : doc.document_id
-                    )
-                  );
+                  if (queryType === "Synthesis") {
+                    // console.log("intiated synthesis mode");
+                    dispatch(SetSynthesisDocuments(doc.document_id)); //add it to the the array of synthessis array only
+                  } else {
+                    if (SynthesisDocuments?.length > 0) {
+                      dispatch(EmptyTheSynthesisArray());
+                    } //empty the synthesis array
+                    dispatch(
+                      setSelectedDoc(
+                        selectedDoc === doc.document_id ? "" : doc.document_id
+                      )
+                    );
+                  }
 
                   // dispatch(setShowDocs(!showDocs));
                 }}
@@ -60,22 +72,29 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
                       ${
                         selectedDoc === doc.document_id
                           ? "border-green-400 bg-green-100 dark:bg-white/5 shadow-md"
-                          : "border-gray-400 dark:border-gray-600 bg-white dark:bg-white/10 hover:border-amber-300"
-                      }
-                      hover:scale-[1.02] active:scale-[0.98]`}
+                          : "border-gray-400 dark:border-gray-600 bg-white dark:bg-white/10 hover:border-teal-500 "
+                      } ${
+                  SynthesisDocuments.includes(doc.document_id)
+                    ? "border-indigo-600 dark:border-indigo-500"
+                    : ""
+                }
+                      hover:scale-[1.02] active:scale-[0.98] relative`}
                 whileHover={{ y: -2 }}
               >
+                <ul className="absolute top-3 right-3  rounded-full p-1 dark:bg-white bg-black dark:text-black text-white ">
+                  <BiPlus />
+                </ul>
                 <h3 className="font-bold text-gray-800 dark:text-white truncate">
                   {doc.feedback || "Untitled Document"}
                 </h3>
 
-                <div className="mt-2 text-xs text-gray-600 dark:text-green-300">
+                <div className="mt-2 text-xs text-gray-400 ">
                   <p>ID: {doc.document_id}</p>
                 </div>
-                <p className="mt-2 text-xs text-gray-600 dark:text-red-300">
+                <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
                   Uploaded: {new Date(doc.created_at).toLocaleDateString()}
                 </p>
-                <section className="flex items-center justify-end">
+                <section className="flex items-center justify-between">
                   <button
                     onClick={() => {
                       setShowBox(!ShowBox);
@@ -85,6 +104,16 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
                   >
                     Delete
                   </button>
+                  {SynthesisDocuments.includes(doc.document_id) && (
+                    <ul className="dark:text-black dark:bg-gray-100 py-1 px-2 bg-black border text-white rounded-full space-grotesk font-semibold text-xs">
+                      Chosen for Synthesis
+                    </ul>
+                  )}
+                  {selectedDoc === doc.document_id && (
+                    <ul className="dark:text-black dark:bg-gray-100 py-1 px-2 bg-black border text-white rounded-full space-grotesk font-semibold text-xs">
+                      Ready to query
+                    </ul>
+                  )}
                 </section>
               </motion.div>
             ))}

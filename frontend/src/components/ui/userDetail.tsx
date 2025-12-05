@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { FaRegFile, FaEye, FaCloudUploadAlt } from "react-icons/fa";
 import { FaCircleNodes } from "react-icons/fa6";
-import { BsStars } from "react-icons/bs";
 import { useRef } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -13,7 +12,7 @@ import {
 } from "../../store/InterfaceSlice";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { Categories, SubCategories } from "../../../utlis/Info.ts";
-import { BiCategory, BiDetail, BiHourglass } from "react-icons/bi";
+import { BiCategory, BiDetail, BiHourglass, BiUpload } from "react-icons/bi";
 import { FiChevronDown } from "react-icons/fi";
 import { LuArrowLeft } from "react-icons/lu";
 // declaring props type
@@ -156,6 +155,10 @@ const UserForm: React.FC<FormProps> = ({
               <BiDetail />
               Brief description
             </label>
+            <p className="text-red-600 text-xs">
+              * We recommend using bullet points, as this information will help
+              the model process your document easier across all sources
+            </p>
             <textarea
               onChange={(e) => {
                 setDescription(e.target.value);
@@ -404,11 +407,11 @@ const UserForm: React.FC<FormProps> = ({
           </div>
           {/* visibility section */}
           <div className="flex items-start justify-start gap-3 flex-col w-full rounded-lg p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
-            <label className="text-sm font-semibold flex items-center gap-2 bai-jamjuree-semibold text-gray-700 dark:text-gray-300">
+            <label className="text-sm font-semibold flex items-center gap-2 bai-jamjuree-semibold text-black dark:text-gray-300">
               Visibility <FaEye className="text-blue-500" />
             </label>
 
-            <section className="flex items-center gap-4 w-full">
+            <section className="flex items-center gap-4 w-full space-grotesk">
               {/* Public Option */}
               <label className="flex-1 cursor-pointer group">
                 <input
@@ -523,14 +526,19 @@ const UserForm: React.FC<FormProps> = ({
           >
             {uploading === true ? (
               <>
-                Uploading.. <BiHourglass className="animate-spin" />
+                Processing document.. <BiHourglass className="animate-spin" />
               </>
             ) : (
               <>
-                Upload <BsStars />
+                Upload Document
+                <BiUpload size={20} />
               </>
             )}
           </motion.button>
+          <p className="text-xs text-gray-600 dark:text-gray-300 space-grotesk text-center">
+            Note - The upload time depends on your subscription and the number
+            of pages in the file
+          </p>
           <button
             onClick={() => dispatch(setShowUserForm(!shhowUserForm))}
             className="dark:bg-white/10 rounded-xl px-3 py-2  text-sm  cursor-pointer  transition-all duration-300 z-[1] bai-jamjuree-regular flex items-center justify-center gap-2 bai-jamjuree-semibold w-full"

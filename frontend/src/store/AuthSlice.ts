@@ -314,7 +314,7 @@ export async function StoreLocalCache(data: any) {
       const putRequest = objectStore.put(
         {
           username: data.username,
-          email: data.username,
+          email: data.email,
           created_at: data.created_at,
           isVerified: data.isVerified,
           PaymentStatus: data.IsPremiumUser,

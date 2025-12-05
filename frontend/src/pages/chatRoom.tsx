@@ -38,12 +38,17 @@ import TypingIndicator from "@/components/TypingIndicator.tsx";
 import DocumentPanel from "@/components/DocumentPanel.tsx";
 import AiQuerySection from "@/components/AiQuerySection.tsx";
 import WebSearchPanel from "@/components/ChatRoomWebSearch.tsx";
+import DocUsed from "@/components/DocumentsUsed.tsx";
+import SynthesisMode from "@/components/ChatRoomSynthesisMode.tsx";
+import { GiArchiveResearch } from "react-icons/gi";
 
 const ChatRoom = () => {
   const { id } = useParams();
   // State management
   // const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [docused, setShowDocUsed] = useState(false);
+
   const [aiQuery, setAiQuery] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
   const data = useAppSelector((state) => state.socket.newMessage);
@@ -57,9 +62,7 @@ const ChatRoom = () => {
   const notification = useAppSelector((state) => state.socket.response);
   const isConnected = useAppSelector((state) => state.socket.isConnected);
   const gettinChats = useAppSelector((state) => state.socket.gettingOldMessage);
-  const { whoistyping, chatRoomFile, favicon } = useAppSelector(
-    (state) => state.socket
-  );
+  const { whoistyping, chatRoomFile } = useAppSelector((state) => state.socket);
   const roomMembers = useAppSelector((state) => state.socket.membername);
   const [showRoomInfo, setShowRoomInfo] = useState(false);
 
@@ -550,6 +553,13 @@ const ChatRoom = () => {
               <FiFileText />
               <span>{showDocsPanel ? "Hide Documents" : "My Documents"}</span>
             </button>
+            <button
+              onClick={() => setShowDocsPanel(!showDocsPanel)}
+              className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors bai-jamjuree-regular"
+            >
+              <GiArchiveResearch />
+              <span>{showDocsPanel ? "Cancel" : "Synthesis Mode"}</span>
+            </button>
           </section>
         </div>
 
@@ -610,7 +620,7 @@ const ChatRoom = () => {
                               />
                             </>
                           ); */}
-                  {favicon.length > 0 &&
+                  {/* {favicon.length > 0 &&
                     favicon.find((e) => e.MessageId === message.message_id) && (
                       <section className="flex items-center justify-start gap-2 bai-jamjuree-semibold text-md my-6 px-3">
                         From{" "}
@@ -635,7 +645,14 @@ const ChatRoom = () => {
                             );
                           })}
                       </section>
-                    )}
+                    )} */}
+                  {message.sent_by === null && (
+                    <DocUsed
+                      chat={message}
+                      docused={docused}
+                      setShowDocUsed={setShowDocUsed}
+                    />
+                  )}
                   <motion.div
                     key={`${message.room_id}_${message.sent_by}_${index}`}
                     initial={{ opacity: 0, y: 10 }}
@@ -651,11 +668,11 @@ const ChatRoom = () => {
                     <div
                       className={`${
                         message.sent_by === User?.id
-                          ? "border bg-gray-100 text-black dark:bg-white/5 dark:text-white rounded-lg rounded-br-none"
+                          ? "border bg-gray-100 text-black dark:bg-white/5 dark:text-white rounded-lg rounded-br-none max-w-4/5"
                           : message.sent_by === null
                           ? "bg-white text-black dark:bg-black dark:text-white border w-full rounded-lg"
-                          : "border bg-sky-600/10  dark:text-white  text-black rounded-lg rounded-bl-none"
-                      } p-3 max-w-[80%]`}
+                          : "border bg-sky-600/10  dark:text-white  text-black rounded-lg rounded-bl-none max-w-4/5"
+                      } p-3 `}
                     >
                       {/* username with timestamp */}
                       <div className="flex items-center justify-between mb-1 gap-2">
@@ -679,12 +696,7 @@ const ChatRoom = () => {
                         </p>
                       </div>
 
-                      {/* Message content */}
-                      {/* {message.sent_by === null ? ( */}
                       <Streamdown className="">{message.message}</Streamdown>
-                      {/* ) : ( */}
-                      {/* <p>{message.message}</p> */}
-                      {/* )} */}
                     </div>
                   </motion.div>
                   {message === data[data.length - 1] &&
@@ -699,7 +711,11 @@ const ChatRoom = () => {
           {/* Message Input */}
           <div className="border-t border-gray-200 dark:border-gray-700 p-4 bai-jamjuree-regular">
             <div className="max-w-6xl mx-auto">
-              <div className="flex items-center">
+              <div className="flex items-center justify-center gap-2">
+                {/* synthesis mode */}
+                <SynthesisMode />
+                {/* web search mode */}
+
                 <button
                   onClick={() => {
                     if (chatRoomFile !== null) {
@@ -707,15 +723,28 @@ const ChatRoom = () => {
                     }
                     setShowWebSearchPanel(!showWebSearchPanel);
                   }}
-                  className="cursor-pointer p-2 mr-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                  className="bg-black text-white dark:bg-white dark:text-black rounded-full p-1.5 group relative"
                 >
+                  <label
+                    className="group-hover:block hidden  bg-gray-800 text-gray-50 dark:bg-gray-100 dark:text-gray-800 py-1 px-2 rounded-sm absolute bottom-9 left-5 text-xs space-grotesk font-semibold"
+                    htmlFor="mode"
+                  >
+                    Live Information
+                  </label>
                   <FaInternetExplorer />
                 </button>
+                {/* private doc query mode */}
                 <button
                   onClick={() => setShowDocsPanel(!showDocsPanel)}
-                  className="cursor-pointer p-2 mr-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                  className="bg-black text-white dark:bg-white dark:text-black rounded-full p-1.5 group relative"
                 >
-                  <FiPaperclip size={20} />
+                  <label
+                    className="group-hover:block hidden  bg-gray-800 text-gray-50 dark:bg-gray-100 dark:text-gray-800 py-1 px-2 rounded-sm absolute bottom-9 left-5 text-xs space-grotesk font-semibold"
+                    htmlFor="mode"
+                  >
+                    File discussion
+                  </label>
+                  <FiPaperclip />
                 </button>
                 <input
                   onFocus={() => dispatch(whoIsTyping(""))}

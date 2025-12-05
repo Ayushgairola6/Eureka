@@ -28,11 +28,12 @@ import {
   UpdateUserFileListCacheInfo,
 } from "../CachingHandler/redisClient.js";
 import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
+import { ProcessUserQuery } from "./UserCreditLimitController.js";
 import {
-  CheckCreditLimitPerUser,
-  HandleUserCreditCachingOrUpdationOrCreation,
-  UpdateUserCreditLimit,
-} from "./UserCreditLimitController.js";
+  KNOWLEDGE_DISTRIBUTOR_PROMPT,
+  SUMMARIZATION_ANALYST_PROMPT,
+  WEB_SEARCH_DISTRIBUTOR_PROMPT,
+} from "../Prompts/Prompts.js";
 const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
@@ -446,9 +447,7 @@ export const GetPublicRecords = async (req, res) => {
     }
 
     // update the daily quota of the user
-    const UpdateState = await HandleUserCreditCachingOrUpdationOrCreation(
-      req.user
-    );
+    const UpdateState = await ProcessUserQuery(req.user);
 
     // if user has reached the
     if (UpdateState.status.includes("not ok")) {
@@ -465,7 +464,7 @@ export const GetPublicRecords = async (req, res) => {
     //    console.log(fetchResult)
     const response = await index.searchRecords({
       query: {
-        topK: req.user.PaymentStatus === true ? 100 : 30,
+        topK: req.user.PaymentStatus === true ? 300 : 100,
         inputs: { text: question },
         filter: {
           category: { $eq: category },
@@ -531,7 +530,7 @@ export const GetPublicRecords = async (req, res) => {
     const AnswerToUsersQuestion = await GenerateResponse(
       question,
       `This is the information found from the public knowledgebase =${FoundData}`,
-      process.env.SYSTEM_PROMPT,
+      KNOWLEDGE_DISTRIBUTOR_PROMPT,
       req.user.PaymentStatus
     );
 
@@ -722,9 +721,7 @@ export const GetPrivateDocResultss = async (req, res) => {
     }
     //  setting the specific headers for stream type
     // check the current credit limit record for the user
-    const UpdateState = await HandleUserCreditCachingOrUpdationOrCreation(
-      req.user
-    );
+    const UpdateState = await ProcessUserQuery(req.user);
 
     // if user has reached the
     if (UpdateState?.status && UpdateState?.status.includes("not ok")) {
@@ -739,16 +736,16 @@ export const GetPrivateDocResultss = async (req, res) => {
 
     const SYSTEM_PROMPT =
       query_type === "QNA"
-        ? process.env.SYSTEM_PROMPT
+        ? KNOWLEDGE_DISTRIBUTOR_PROMPT
         : query_type === "Summary"
-        ? process.env.SUMMARIZER_PROMPT
-        : process.env.WEB_SEARCH_RESULT_PROMPT;
+        ? SUMMARIZATION_ANALYST_PROMPT
+        : WEB_SEARCH_DISTRIBUTOR_PROMPT;
 
     // if the query is of qna type
     if (query_type === "QNA") {
       response = await index.searchRecords({
         query: {
-          topK: req.user.PaymentStatus === false ? 30 : 100, //quota based system
+          topK: req.user.PaymentStatus === false ? 100 : 200, //quota based system
           inputs: { text: question },
           filter: {
             documentId: { $eq: docId },
@@ -912,100 +909,99 @@ export const PostTypeWebSearch = async (req, res) => {
     // if (!question) return res.status(404).send({ message: "Invalid question" });
 
     // check the current credit limit record for the user
-    const UpdateState = await HandleUserCreditCachingOrUpdationOrCreation(
-      req.user
-    );
+    const UpdateState = await ProcessUserQuery(req.user);
 
     // if user has reached the
-    if (UpdateState.status.includes("not ok")) {
+    if (UpdateState.status.trim().includes("not ok")) {
+      console.log(UpdateState, "current status failed");
       return res.status(200).send({
-        Answer: UpdateState.message,
+        Answer: "You have reached you daily limit for today",
         message: "Limit reached found",
         favicon: { MessageId, icon: [] },
       });
     }
-    const WebResults = await SearchQueryResults(question, user);
-    if (WebResults.error) {
-      await notifyMe(WebResults.error);
-      return res.status(400).send({ message: "The server is busy right now" });
-    }
-    const Formattedresult = formatForGemini(WebResults.response);
-    if (!Formattedresult) {
-      await notifyMe(`${Formattedresult}, "Results formatting error"`);
-      return res.status(400).send({
-        message: "The server is busy right now",
-        favicon: { MessageId, icon: [] },
-      });
-    }
+    // const WebResults = await SearchQueryResults(question, req.user);
+    // if (WebResults.error) {
+    //   await notifyMe(WebResults.error);
+    //   return res.status(400).send({ message: "The server is busy right now" });
+    // }
+    // const Formattedresult = formatForGemini(WebResults.response);
+    // if (!Formattedresult) {
+    //   await notifyMe(`${Formattedresult}, "Results formatting error"`);
+    //   return res.status(400).send({
+    //     message: "The server is busy right now",
+    //     favicon: { MessageId, icon: [] },
+    //   });
+    // }
 
-    const message = {
-      id: userMessageId, //users message Id
-      sent_by: "You", //sent by the user
-      message: { isComplete: true, content: question },
-      sent_at: currentTime,
-    };
-    // update the cache
-    await CacheCurrentChat(message, req.user);
-    const WebResultPrompt = process.env.WEB_SEARCH_RESULT_PROMPT;
-    let Answer = await GenerateResponse(
-      question,
-      Formattedresult,
-      WebResultPrompt
-    );
-    if (Answer.error) {
-      console.error(Answer.error, "Gemini response generation error");
-      await notifyMe(
-        `Error while generating a response by gemini :${Answer.error}`
-      );
-      // fallback response
-      const results = await FormatForHumanFallback(WebResults.response);
-      Answer = results.text;
-    }
+    // const message = {
+    //   id: userMessageId, //users message Id
+    //   sent_by: "You", //sent by the user
+    //   message: { isComplete: true, content: question },
+    //   sent_at: currentTime,
+    // };
+    // // update the cache
+    // await CacheCurrentChat(message, req.user);
+    // const WebResultPrompt = WEB_SEARCH_DISTRIBUTOR_PROMPT;
+    // let Answer = await GenerateResponse(
+    //   question,
+    //   Formattedresult,
+    //   WebResultPrompt
+    // );
+    // if (Answer.error) {
+    //   console.error(Answer.error, "Gemini response generation error");
+    //   await notifyMe(
+    //     `Error while generating a response by gemini :${Answer.error}`
+    //   );
+    //   // fallback response
+    //   const results = await FormatForHumanFallback(WebResults.response);
+    //   Answer = results.text;
+    // }
 
-    const AiMessage = {
-      id: MessageId,
-      sent_by: "Eureka", //sent by the user
-      message: {
-        isComplete: true,
-        content: Answer,
-      },
-      sent_at: currentTime,
-    };
-    // update the cache
-    await CacheCurrentChat(AiMessage, req.user);
+    // const AiMessage = {
+    //   id: MessageId,
+    //   sent_by: "Eureka", //sent by the user
+    //   message: {
+    //     isComplete: true,
+    //     content: Answer,
+    //   },
+    //   sent_at: currentTime,
+    // };
+    // // update the cache
+    // await CacheCurrentChat(AiMessage, req.user);
 
-    // store in the db
-    const StoreChats = await StoreQueryAndResponse(user_id, question, Answer);
-    if (StoreChats.error) {
-      await notifyMe(
-        `Error while storing response history ${StoreChats.error}`
-      );
-    }
+    // // store in the db
+    // const StoreChats = await StoreQueryAndResponse(user_id, question, Answer);
+    // if (StoreChats.error) {
+    //   await notifyMe(
+    //     `Error while storing response history ${StoreChats.error}`
+    //   );
+    // }
 
-    // find the update the chats
-    const misallaneousChatsKey = `user=${req.user.username}'s_misallaneousChats`;
-    // update the chats cache in redis
-    const OldChats = await redisClient.get(misallaneousChatsKey);
-    if (OldChats) {
-      const newChats = JSON.parse(OldChats);
-      newChats.push({
-        created_at: new Date().toISOString(),
-        question: question,
-        AI_response: Answer.text,
-      });
+    // // find the update the chats
+    // const misallaneousChatsKey = `user=${req.user.username}'s_misallaneousChats`;
+    // // update the chats cache in redis
+    // const OldChats = await redisClient.get(misallaneousChatsKey);
+    // if (OldChats) {
+    //   const newChats = JSON.parse(OldChats);
+    //   newChats.push({
+    //     created_at: new Date().toISOString(),
+    //     question: question,
+    //     AI_response: Answer.text,
+    //   });
 
-      //update the value of the key
-      await redisClient.set(misallaneousChatsKey, JSON.stringify(newChats), {
-        expiration: {
-          type: "Ex",
-          value: 600,
-        },
-      });
-    }
+    //   //update the value of the key
+    //   await redisClient.set(misallaneousChatsKey, JSON.stringify(newChats), {
+    //     expiration: {
+    //       type: "Ex",
+    //       value: 600,
+    //     },
+    //   });
+    // }
 
     const FormattedFavicon = {
       MessageId,
-      icon: WebResults.favicon, //favicon array from the web search
+      icon: [], //favicon array from the web search
     };
 
     //  now that we have generated all the response and data for the user
@@ -1013,12 +1009,16 @@ export const PostTypeWebSearch = async (req, res) => {
     //if true we update the value in both else we create a new record
 
     return res.send({
-      Answer: Answer,
+      Answer: "Testing the rate limit system",
       message: "Results found",
       favicon: FormattedFavicon,
     });
   } catch (err) {
-    await notifyMe(err);
+    await notifyMe(
+      "An error occured in the postTypewebsearch controller function",
+      err
+    );
+    console.error(err);
     return res.status(500).send({ message: "Something went wrong" });
   }
 };

@@ -576,7 +576,7 @@ export const GetDocumentChatHistory = async (req, res) => {
 export const GetMisallaneousChatHistory = async (req, res) => {
   try {
     const user_id = req.user.user_id;
-    const IsPremiumUser = req.user.PaymentStatus;
+    // const IsPremiumUser = req.user.PaymentStatus;
 
     if (!user_id) {
       return res.status(402).send({ message: "Please login to continue" });
@@ -586,9 +586,9 @@ export const GetMisallaneousChatHistory = async (req, res) => {
     const cursor = req.query.cursor; // Expecting an ISO date string, e.g., from the client's previous request
     const limit = 5; // Define your limit
 
-    let query = supabase
+    let { data, error } = await supabase
       .from("Conversation_History")
-      .select(" created_at, question, AI_response, metadata")
+      .select(" created_at, question, AI_response,metadata")
       .eq("user_id", user_id)
       .is("document_id", null)
       .order("created_at", { ascending: false }) // Order newest first
@@ -599,7 +599,7 @@ export const GetMisallaneousChatHistory = async (req, res) => {
       query = query.lt("created_at", cursor);
     }
 
-    const { data, error } = await query;
+    // const { data, error } = await query;
 
     if (error) {
       await notifyMe(
@@ -624,6 +624,7 @@ export const GetMisallaneousChatHistory = async (req, res) => {
       hasMore: data.length === limit,
     });
   } catch (err) {
+    console.error(err);
     await notifyMe(`"Error while getting miscellaneous chats:", ${err}`);
     return res.status(500).send({ message: "Something went wrong!" });
   }

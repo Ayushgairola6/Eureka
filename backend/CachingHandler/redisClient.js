@@ -142,3 +142,5 @@ export const FetchChatHistory = async (req, res) => {
     );
   }
 };
+
+export const UserCurrentQueryCount = async (req, res) => {};

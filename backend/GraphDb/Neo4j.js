@@ -11,7 +11,7 @@ const ConnectToInstance = async () => {
   const serverInfo = await NeoGraphdriver.getServerInfo();
 
   console.log("Connection established withe the graph db");
-  console.log(serverInfo);
+  // console.log(serverInfo);
 
   // await driver.close()
 };

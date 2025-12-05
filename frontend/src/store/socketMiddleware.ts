@@ -8,6 +8,7 @@ import {
   Setroom_info,
   whoIsTyping,
   SetChatRoomFile,
+  setCurrentStatus,
 } from "./websockteSlice.ts";
 import {
   NewUserNotification,
@@ -67,6 +68,11 @@ const setupSocketListeners = (dispatch: any) => {
   //listening to preferenec update event
   socket.on("updated_preference", (data) => {
     dispatch(UpdatedPreference(data));
+  });
+  //updation of synthesis state
+  socket.on("SynthesisStatus", (data) => {
+    const message = data;
+    dispatch(setCurrentStatus(message));
   });
   socket.on("disconnect", () => {
     dispatch(setDisconnected());

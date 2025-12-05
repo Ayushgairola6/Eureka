@@ -14,9 +14,9 @@ import {
   currentTime,
   StoreQueryAndResponse,
 } from "../controllers/fileControllers.js";
-import { ReferenceModelToJSON } from "@pinecone-database/pinecone/dist/pinecone-generated-ts-fetch/assistant_data/index.js";
-import { Result } from "neo4j-driver";
-import { request } from "http";
+import { ProcessUserQuery } from "../controllers/UserCreditLimitController.js";
+import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
+import { supabase } from "../controllers/supabaseHandler.js";
 
 //function to identify the functions needed to process the request
 
@@ -26,7 +26,7 @@ export async function IdentifyRequestInputs(req, res) {
     return res.status(401).send({ message: "Please log in to continue" });
   }
 
-  const { question, MessageId, userMessageId } = req.body;
+  const { question, MessageId, userMessageId, selectedDocuments } = req.body;
 
   if (
     !question ||
@@ -34,7 +34,8 @@ export async function IdentifyRequestInputs(req, res) {
     !MessageId ||
     typeof MessageId !== "string" ||
     !userMessageId ||
-    typeof userMessageId !== "string"
+    typeof userMessageId !== "string" ||
+    !selectedDocuments
   ) {
     return res
       .status(400)
@@ -56,15 +57,23 @@ export async function IdentifyRequestInputs(req, res) {
     });
 
     const responseText = result.text;
+    // const responseText = `ask_private(doc_id="4ae39375-8a4e-4a09-90cb-db2111bd2e7d", query="synthesize for detailed analysis"); GetDoc_info(doc_id="4ae39375-8a4e-4a09-90cb-db2111bd2e7d")`;
+    //  search_knowledge(query="AUTO", category= "AUTO", subCategory= "AUTO")
+    // const responseText = `ask_private(doc_id="AUTO", query="synthesize document information"); GetDoc_info(doc_id="AUTO")`;
+
     if (!responseText) {
       await notifyMe(
-        `Error while generating a response , the code execution results are these`,
-        JSON.stringify(result.codeExecutionResult)
+        `Error while generating a response , the code execution results are these`
+        // JSON.stringify(result.codeExecutionResult)
       );
       return { error: "The server is very busy , please try again !" };
     }
 
-    const ExtractedFunctions = CentralFunctionProcessor(responseText); //clearing the function string
+    const io = getIo();
+    if (io) {
+      io.to(user.user_id).emit("SynthesisStatus", "Dissecting Request");
+    }
+    const ExtractedFunctions = CentralFunctionProcessor(responseText, io); //clearing the function string
     // console.log(ExtractedFunctions);
 
     if (ExtractedFunctions.length < 0) {
@@ -73,6 +82,9 @@ export async function IdentifyRequestInputs(req, res) {
         .send({ message: "An error occured while processing your request" });
     }
 
+    if (io) {
+      io.to(user.user_id).emit("SynthesisStatus", "Finding sources");
+    }
     const message = {
       id: userMessageId, //users message Id
       sent_by: "You", //sent by the user
@@ -83,7 +95,9 @@ export async function IdentifyRequestInputs(req, res) {
 
     const smartExecResult = await ExeCuteContextEngines(
       ExtractedFunctions,
-      user
+      user,
+      selectedDocuments,
+      io
     );
 
     if (!smartExecResult || smartExecResult.message) {
@@ -114,11 +128,13 @@ export async function IdentifyRequestInputs(req, res) {
     // update the cache
     await CacheCurrentChat(AiMessage, req.user);
 
+    const UpdateState = await ProcessUserQuery(req.user);
+
     // storing the convo in solid state db
     const StoreChats = await StoreQueryAndResponse(
       user.user_id,
       question,
-      ModelResponse
+      smartExecResult
     );
     if (StoreChats.error) {
       await notifyMe(
@@ -126,7 +142,6 @@ export async function IdentifyRequestInputs(req, res) {
       );
     }
 
-    // console.log(smartExecResult);
     return res.status(200).send({
       message: "Response generated",
       Answer: ModelResponse,
@@ -176,10 +191,12 @@ function CentralFunctionProcessor(resultString) {
         const value = argsMatch[2];
         args[key] = value; //adding the vlue in the array as object pair
       }
-      FilteredFunc.push({
-        function_name: funcName,
-        arguments: args,
-      });
+      if (funcName && args) {
+        FilteredFunc.push({
+          function_name: funcName,
+          arguments: args,
+        });
+      }
     }
   });
 
@@ -187,7 +204,12 @@ function CentralFunctionProcessor(resultString) {
 }
 
 //call the functions and execute them based on their priority list from the ToolRegistry
-async function ExeCuteContextEngines(functionsArray, user) {
+async function ExeCuteContextEngines(
+  functionsArray,
+  user,
+  selectedDocuments,
+  io
+) {
   try {
     if (!functionsArray.length < 0) {
       return { message: "No functions found in the array" };
@@ -209,6 +231,9 @@ async function ExeCuteContextEngines(functionsArray, user) {
       }
     });
 
+    if (io) {
+      io.to(user.user_id).emit("SynthesisStatus", "Distributing resources");
+    }
     let GlobalContextObject = {
       AlldocumentInformation: [],
       privateFilesResponse: [],
@@ -224,41 +249,74 @@ async function ExeCuteContextEngines(functionsArray, user) {
       const needs_doc_info = phase1_Context.filter(
         (li) => li.function_name === "GetDoc_info"
       );
+      const docToolConfig = ToolRegistry["GetDoc_info"];
 
-      // console.log(needs_doc_info, "needs_Dcos array");
+      if (needs_doc_info.length > 0 || selectedDocuments.length > 0) {
+        const uniqueDocsMap = new Map(); //map to store only unique values
 
-      // 1-a: if the information of the documents is required to fetch the responses
-      if (needs_doc_info) {
+        for (const item of needs_doc_info) {
+          const docId = item.arguments.doc_id; //from arguments only pick those who have a uuid
+          const cleanId = extractUUID(docId); //clean the docuement_ID
+          if (cleanId) {
+            uniqueDocsMap.set(cleanId, item);
+          }
+        }
+
+        //extract document_ids from the manually selected document_id's
+        for (const docId of selectedDocuments) {
+          if (!uniqueDocsMap.has(docId)) {
+            uniqueDocsMap.set(docId, {
+              function_name: "GetDoc_info",
+              arguments: { doc_id: docId, query: "AUTO" },
+              config: docToolConfig,
+            });
+          }
+        }
+
+        // --- 4. Finalize and Process ---
+        const FinalizedDocuments = Array.from(uniqueDocsMap.values());
+
         const docdata = await ProcessDocumentInfoGathering(
-          needs_doc_info,
+          FinalizedDocuments,
           user
         );
-        //if there is atleast one document information
+
+        // --- 5. Update Global Context ---
         if (docdata.length !== 0) {
-          GlobalContextObject.AlldocumentInformation = [...docdata]; //append it to the globl context
+          if (io) {
+            io.to(user.user_id).emit(
+              "SynthesisStatus",
+              "Gathered DocumentInformation"
+            );
+          }
+
+          GlobalContextObject.AlldocumentInformation = [...docdata];
         }
       }
 
-      //1-b: if there is a a need to look for information in public knowledgebase
-      //if there is a need to search the knowledgebase
       const needs_to_search_knowledgebase = phase1_Context.filter(
         (li) => li.function_name === "search_knowledge"
       );
 
+      //if there are
       const PublicKnowledge = await ProcessKnowledgeBaseContextGathering(
         needs_to_search_knowledgebase,
         user,
-        GlobalContextObject.AlldocumentInformation //array containing the information of the document and its metadata
+        GlobalContextObject.AlldocumentInformation
       );
 
-      // console.log(PublicKnowledge);
-      if (PublicKnowledge.length > 0) {
+      if (PublicKnowledge) {
+        if (io) {
+          io.to(user.user_id).emit(
+            "SynthesisStatus",
+            "Reading public knowledgebase"
+          );
+        }
+
         GlobalContextObject.knowledgebaseData = [...PublicKnowledge];
       }
 
-      //executing the phase 2
       if (phase2_Action.length > 0) {
-        //list of things to web search
         const needs_web_results = phase2_Action.filter(
           (li) => li.function_name === "search_web"
         );
@@ -271,25 +329,93 @@ async function ExeCuteContextEngines(functionsArray, user) {
           );
           if (webResult.length > 0) {
             // console.log("This is the finformation from the web", webResult);
+            if (io) {
+              io.to(user.user_id).emit("SynthesisStatus", "Searching Web ");
+            }
             GlobalContextObject.webSearchResults = [...webResult];
           }
         }
 
         //if private documents are needed to be scanned
-        const needsToSearchPrivateDocs = phase2_Action.filter(
+        const askPrivateRequests = phase2_Action.filter(
           (li) => li.function_name === "ask_private"
         );
 
-        if (needsToSearchPrivateDocs.length > 0) {
+        // We need the config to execute later
+        const privateToolConfig = ToolRegistry["ask_private"];
+
+        // Map to handle deduplication: Key = doc_id
+        const privateDocsMap = new Map();
+
+        // Variable to store the "General Query" if the LLM uses AUTO
+        let fallbackQuery =
+          "Extract relevant information based on user request";
+
+        // ---------------------------------------------------------
+        // STEP 1: Process LLM Requests
+        // ---------------------------------------------------------
+        askPrivateRequests.forEach((req) => {
+          const rawId = req.arguments.doc_id;
+          const rawQuery = req.arguments.query;
+          const cleanId = extractUUID(rawId); // Use your helper
+
+          // CASE A: Valid, Specific UUID
+          if (cleanId) {
+            privateDocsMap.set(cleanId, {
+              arguments: { doc_id: cleanId, query: rawQuery || fallbackQuery }, //in the same format we extract from the function
+              config: privateToolConfig,
+            });
+          }
+          // CASE B: "AUTO" (Capture the query to use on selected docs)
+          else if (rawId === "AUTO" || !rawId) {
+            if (rawQuery && rawQuery.trim() !== "") {
+              fallbackQuery = rawQuery; // "Summarize this", "Find risks", etc.
+            }
+          }
+        });
+
+        // ---------------------------------------------------------
+        // STEP 2: Process Selected Documents (The "Podium")
+        // We use 'GlobalContextObject.AlldocumentInformation' because
+        // Phase 1 has already validated that these docs exist.
+        // ---------------------------------------------------------
+        const validDocsFromPhase1 =
+          GlobalContextObject.AlldocumentInformation || [];
+
+        //if there are valid docs
+        if (validDocsFromPhase1.length > 0) {
+          validDocsFromPhase1.forEach((docObj) => {
+            const docId = docObj.doc_id || docObj.id;
+
+            if (docId && !privateDocsMap.has(docId)) {
+              privateDocsMap.set(docId, {
+                arguments: { doc_id: docId, query: fallbackQuery },
+                config: privateToolConfig,
+              });
+            }
+          });
+        }
+
+        const CleanedRequest = Array.from(privateDocsMap.values()); //make an array of it
+
+        if (CleanedRequest.length > 0) {
+          if (io) {
+            io.to(user.user_id).emit(
+              "SynthesisStatus",
+              "Reading Private Documents..."
+            );
+          }
+
+          // Now we pass the cleaner array to your helper
+          // Note: You might need to adjust CheckPrivateDocs to accept this array structure
           const PrivateInfo = await CheckPrivateDocs(
-            needsToSearchPrivateDocs,
+            CleanedRequest,
             user,
             GlobalContextObject.AlldocumentInformation
           );
 
-          if (PrivateInfo.length > 0) {
-            // console.log("Information from privatedocuments", PrivateInfo);
-            GlobalContextObject.webSearchResults = [...PrivateInfo];
+          if (PrivateInfo) {
+            GlobalContextObject.privateFilesResponse = [...PrivateInfo];
           }
         }
 
@@ -311,6 +437,15 @@ async function ExeCuteContextEngines(functionsArray, user) {
             user,
             needs_to_store_memory
           );
+
+          if (storedMemories) {
+            if (io) {
+              io.to(user.user_id).emit(
+                "SynthesisStatus",
+                "Creating memory node"
+              );
+            }
+          }
         }
       }
     }
@@ -324,7 +459,7 @@ async function ExeCuteContextEngines(functionsArray, user) {
     const limit = user.PaymentStatus === true ? 10 : 5;
     if (pastConversation) {
       const Chats = await redisClient.lRange(cachekey, 0, limit); //last 10 chat messages retrive them
-      const parsedChats = Chats.map((jsonString) => {
+      const parsedChats = Chats.filter((jsonString) => {
         try {
           // Parse each individual string element
           return JSON.parse(jsonString);
@@ -334,13 +469,23 @@ async function ExeCuteContextEngines(functionsArray, user) {
           return re.status(400).send({ error: "Parse Error", data: [] });
         }
       }); //last 10 chat messages retrive them
-      GlobalContextObject.pastConversation = [parsedChats];
+      GlobalContextObject.pastConversation = [...parsedChats];
+    } else {
+      const OldChats = await FetchPastMessagesFromDbAndCacheThem(user);
+      if (OldChats.message) {
+        GlobalContextObject.pastConversation = [
+          "There is no conversation history of this user",
+        ];
+      } else {
+        GlobalContextObject.OlderChats = [...OldChats];
+      }
     }
-    const FinalContextString = generateXMLContext(GlobalContextObject);
-    if (!FinalContextString) {
-      return { message: "Error while formatting the context object" };
-    }
-    return FinalContextString;
+    // const FinalContextString = generateXMLContext(GlobalContextObject);
+    // if (!FinalContextString) {
+    //   return { message: "Error while formatting the context object" };
+    // }
+    // console.log(JSON.stringify(GlobalContextObject));
+    return JSON.stringify(GlobalContextObject);
   } catch (processingError) {
     console.error(processingError);
   }
@@ -353,7 +498,7 @@ async function ProcessDocumentInfoGathering(ReferenceArray, user) {
     // Execute all doc fetches in parallel
     await Promise.all(
       ReferenceArray.map(async (req) => {
-        const docId = req.arguments.doc_id; //id of the respective document
+        const docId = req.arguments.doc_id;
         if (docId) {
           try {
             // Assuming config.execute returns { metadata: {...} }
@@ -382,26 +527,46 @@ async function ProcessKnowledgeBaseContextGathering(
 ) {
   const Response = [];
   if (ReferenceArray.length > 0) {
+    let i = 0;
+
     await Promise.all(
       ReferenceArray.map(async (req) => {
         try {
+          console.log(MetaDataArray, "metadata array");
+          //find the category-subCategory-description of the document from the metadat
           const current = MetaDataArray.find(
-            (func) => func.doc_id === req.arguments.query
+            (func) => func.doc_id === extractUUID(req?.arguments?.query) //if the query has the uuid of any document
           );
-          const result = await req.config.execute(
-            current.result.metadata.category || "General",
-            current.result.metadata.subCategory || "General",
-            current.result.metadata.about,
-            user
-          );
-
-          if (result) {
+          let results;
+          if (current) {
+            results = await req.config.execute(
+              current.result.metadata.category || "General",
+              current.result.metadata.subCategory || "General",
+              current.result.metadata.about,
+              user
+            );
+          }
+          //find fetch based on the metadata of other documents
+          else if (MetaDataArray.length > 0) {
+            let i = 0;
+            while (i < MetaDataArray.length) {
+              results = results = await req.config.execute(
+                MetaDataArray[i].result.metadata.category || "General",
+                MetaDataArray[i].result.metadata.subCategory || "General",
+                MetaDataArray[i].result.metadata.about,
+                user
+              );
+              i++;
+            }
+          }
+          if (results) {
             Response.push({
               category: current.result.metadata.category,
               subcategory: current.result.metadata.subCategory,
-              text: result,
+              text: results,
             });
           }
+
           // console.log(result);
         } catch (error) {
           console.error(error, "error while fetching info from public sources");
@@ -475,18 +640,30 @@ async function CheckPrivateDocs(ReferenceArray, user, DocumentArray) {
   const FinalResult = [];
   await Promise.all(
     ReferenceArray.map(async (req) => {
-      // console.log(req.arguments);
       const document_id = req.arguments.doc_id;
-      const documentQuery = DocumentArray.find(
-        (func) => func.doc_id === document_id
-      );
-      // console.log(DocumentArray);
-      const result = await req.config.execute(
-        document_id,
-        documentQuery.result.metadata.about,
-        user
-      ); //user file description as query
-      FinalResult.push({ document_id: document_id, context: result });
+      if (document_id !== "AUTO") {
+        const documentQuery = DocumentArray.find(
+          (func) => func.doc_id === document_id
+        );
+        // console.log(DocumentArray);
+        const result = await req.config.execute(
+          document_id,
+          documentQuery.result.metadata.about,
+          user
+        ); //user file description as query
+        FinalResult.push({ document_id: document_id, context: result });
+      } else {
+        const documentQuery = DocumentArray.find(
+          (func) => func.doc_id !== document_id
+        );
+        // console.log(DocumentArray);
+        const result = await req.config.execute(
+          document_id,
+          documentQuery.result.about,
+          user
+        ); //user file description as query
+        FinalResult.push({ document_id: document_id, context: result });
+      }
     })
   );
   return FinalResult;
@@ -498,82 +675,34 @@ async function HandleMemoryStorage(user, ReferenceArray) {}
 //retrieving any memories
 async function RetrieveMemories(user, ReferenceArray) {}
 
-//generates xml for the understanding of the model
+//fetch last few messages for reminder whwer we left off
+async function FetchPastMessagesFromDbAndCacheThem(user) {
+  const Limit = user.PaymentStatus === false ? 5 : 10;
+  const { data, error } = await supabase
+    .from("Conversation_History")
+    .select("created_at,question,AiResponse")
+    .eq("user_id", user.user_id)
+    .limit(Limit);
 
-function generateXMLContext(ctx) {
-  let xml = "<context_data>\n";
-
-  // 1. Documents Available (Fixing the nested 'result' structure)
-  if (ctx.AlldocumentInformation && ctx.AlldocumentInformation.length > 0) {
-    xml += `  <documents_available>\n`;
-    ctx.AlldocumentInformation.forEach((doc) => {
-      // Safe access to the nested structure in your JSON
-      const info = doc.result || {};
-      const meta = info.metadata || {};
-
-      xml += `    <doc_meta id="${doc.doc_id}">\n`;
-      xml += `      <title>${
-        info.feedback ? info.feedback.trim() : "Untitled Document"
-      }</title>\n`;
-      xml += `      <category>${meta.category || "General"}</category>\n`;
-      xml += `      <sub_category>${
-        meta.subCategory || "General"
-      }</sub_category>\n`;
-      xml += `      <summary>${meta.about || ""}</summary>\n`;
-      xml += `    </doc_meta>\n`;
-    });
-    xml += `  </documents_available>\n`;
+  if (data.length === 0 || error) {
+    return { message: "There is no past conversation history of this user" };
   }
 
-  // 2. Knowledge Base (Handling the "Invalid arguments" error)
-  if (ctx.knowledgebaseData && ctx.knowledgebaseData.length > 0) {
-    xml += `  <knowledge_base>\n`;
-    ctx.knowledgebaseData.forEach((item) => {
-      // Check if 'text' is an error object or a string
-      let content = item.text;
-      if (typeof content === "object" && content.message) {
-        content = `Error: ${content.message}`;
-      }
+  return data;
+}
 
-      xml += `    <entry category="${item.category}" sub_category="${item.subcategory}">\n`;
-      xml += `      ${content}\n`;
-      xml += `    </entry>\n`;
-    });
-    xml += `  </knowledge_base>\n`;
-  }
+//uuid identifier
 
-  // 3. Web/Context Results (Handling your raw chunk text)
-  // Note: Your JSON shows vector chunks inside 'webSearchResults'.
-  // We will preserve the formatting so the LLM can read the 'text=' parts.
-  if (ctx.webSearchResults && ctx.webSearchResults.length > 0) {
-    xml += `  <web_search>\n`;
-    ctx.webSearchResults.forEach((item) => {
-      xml += `    <result related_doc_id="${item.document_id}">\n`;
-      // We escape likely XML-breaking chars just in case, though usually fine
-      xml += `      ${(item.context || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")}\n`;
-      xml += `    </result>\n`;
-    });
-    xml += `  </web_search>\n`;
-  }
+export function extractUUID(inputString) {
+  if (!inputString || typeof inputString !== "string") return null;
 
-  // 4. User Memories
-  if (ctx.oldMemories && ctx.oldMemories.length > 0) {
-    xml += `  <user_memory>\n`;
-    ctx.oldMemories.forEach((mem) => {
-      xml += `    <fact>${JSON.stringify(mem)}</fact>\n`;
-    });
-    xml += `  </user_memory>\n`;
-  }
-  if (ctx.pastConversation) {
-    xml += `<Past Conversation>\n`;
-    ctx.pastConversation.forEach((mess) => {
-      xml += `<message>${JSON.stringify(mess)}<message>`;
-    });
-    xml += `<Past Conversation>\n`;
-  }
-  xml += "</context_data>";
-  return xml;
+  // The strict Regex for a UUID (Version 4 and others)
+  // Matches: 8 chars - 4 chars - 4 chars - 4 chars - 12 chars
+  const uuidRegex =
+    /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+
+  const match = inputString.match(uuidRegex);
+
+  // If found, return the clean UUID. If not, return null.
+  return match ? match[0] : null;
 }

@@ -40,10 +40,6 @@ const OtherChats = () => {
   const apiCallRef = useRef(false);
 
   useEffect(() => {
-    if (user?.IsPremiumUser === false) {
-      toast.info("Become our premiumUser to Access this feature");
-      return;
-    }
     if (Misallaneouschats.length === 0 && !apiCallRef.current) {
       apiCallRef.current = true;
       dispatch(GetMisallaneousChatHistory(cursor))
@@ -53,10 +49,6 @@ const OtherChats = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (user?.IsPremiumUser === false) {
-      toast.info("Become our premiumUser to Access this feature");
-      return;
-    }
     if (Misallaneouschats.length > 0) {
       SetSearchResult(() => [...Misallaneouschats]);
     }
@@ -223,7 +215,7 @@ const OtherChats = () => {
                           transition={{ duration: 0.3 }}
                           className="border-t border-gray-100 dark:border-gray-700/50"
                         >
-                          <div className="p-4 bg-gray-50/50 dark:bg-gray-700/20">
+                          <div className="p-4 ">
                             <div className="flex items-start gap-3 mb-3">
                               <div className="w-8 h-8 bg-black  rounded-full flex items-center justify-center flex-shrink-0">
                                 <FaRobot className="w-3 h-3 text-white" />
@@ -235,9 +227,9 @@ const OtherChats = () => {
 
                             <div className="pl-11">
                               <div className="prose prose-sm max-w-none dark:prose-invert">
-                                <div className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                                  <Streamdown>{message.AI_response}</Streamdown>
-                                </div>
+                                {/* <div className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed"> */}
+                                <Streamdown>{message.AI_response}</Streamdown>
+                                {/* </div> */}
                               </div>
 
                               {/* Action Buttons */}

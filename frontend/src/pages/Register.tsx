@@ -8,8 +8,6 @@ import { MdEmail, MdPassword } from "react-icons/md";
 import { LuEyeClosed, LuEye, LuLogIn } from "react-icons/lu";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import { IoIosHourglass } from "react-icons/io";
-import { PiArrowUpRight } from "react-icons/pi";
-import FloatingStars from "@/components/FloatingStars";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -93,6 +91,7 @@ const Register = () => {
       username: Username.current.value.trim(),
       email: Email.current.value,
       password: Password.current.value,
+      AcceptedConditions: HasAccepted,
     };
 
     try {
@@ -133,7 +132,6 @@ const Register = () => {
     <>
       <div className="h-screen flex items-center justify-center relative z-[2] dark:bg-black dark:text-white overflow-hidden">
         {/* gradient accent background */}
-        <FloatingStars />
 
         <div className="absolute flex h-full w-full top-0 left-0 blur-2xl  z-[-1] ">
           <div
@@ -151,14 +149,9 @@ const Register = () => {
           />
         </div>
 
-        <motion.div
-          drag
-          whileDrag={{ scale: 0.9 }}
-          dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
-          className="bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black border dark:border-gray-400 cursor-grab relative"
-        >
+        <div className="bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-sm shadow-black border dark:border-gray-400 cursor-grab relative">
           <h1 className="text-center space-grotesk font-bold  text-2xl">
-            Welcome to Eureka !{" "}
+            Join Eureka{" "}
           </h1>
           <span className="text-xs text-gray-700 dark:text-gray-400 space-grotesk text-center">
             Start contributing today and become a part of our community .
@@ -198,7 +191,7 @@ const Register = () => {
               ref={Username}
               className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk"
               type="text"
-              placeholder="Your full name"
+              placeholder="John_Doe"
             />
           </span>
           <span className="flex flex-col gap-2">
@@ -213,7 +206,7 @@ const Register = () => {
               ref={Email}
               className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk"
               type="email"
-              placeholder="Your email address"
+              placeholder="JohnDoe12@yahoo.com"
             />
           </span>
           <span className="flex flex-col gap-2">
@@ -235,7 +228,7 @@ const Register = () => {
                 onChange={(e) => ReflectPasswordStrength(e)}
                 className="w-full border border-gray-300 px-2 py-1 rounded-lg space-grotesk"
                 type={type}
-                placeholder="Choose a strong password"
+                placeholder="A strong password"
               />
               <button
                 onClick={() =>
@@ -274,7 +267,7 @@ const Register = () => {
                 />
               </div>
             )}
-            <section className=" flex items-center justify-center w-full space-grotesk text-xs gap-2 p-2">
+            <section className=" flex items-center justify-between w-full bai-jamjuree-regular text-xs gap-2 p-2">
               <input
                 spellCheck
                 onClick={() =>
@@ -284,7 +277,7 @@ const Register = () => {
               />
               <span>
                 By clicking this you agree to our
-                <Link className="text-blue-600" to="/terms-and-conditions">
+                <Link className="text-sky-600" to="/terms-and-conditions">
                   {" "}
                   terms-and-conditions
                 </Link>
@@ -330,27 +323,19 @@ const Register = () => {
               <img src="/googleLogo.png" alt="Google" width="20" height="20" />
             </motion.button>
           </span>
-        </motion.div>
-        <Toaster />
-        <div className="flex items-center justify-end gap-3 absolute bottom-10 mt-8">
-          {/* Register Button - Glass */}
-          <Link
-            to="/Login"
-            className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl dark:bg-white/20 bg-black/20  border border-white/20 dark:border-gray-600/30 dark:text-gray-50 text-black font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
-          >
-            <span>Login</span>
-            <LuLogIn className="w-4 h-4" />
-          </Link>
-
-          {/* Get Verified Button - Glass */}
-          <Link
-            to="/Verification"
-            className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl dark:bg-white/20 bg-black/20 border border-white/20 dark:border-gray-600/30 dark:text-gray-50 text-black font-medium text-sm transition-all duration-300 hover:bg-sky-500/20 hover:border-sky-500/30 hover:text-sky-700 dark:hover:text-sky-300 hover:shadow-lg hover:scale-105"
-          >
-            <span>Get Verified</span>
-            <PiArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-          </Link>
+          {/* Footer Section - Absolute Bottom */}
+          <div className=" px-8 flex items-center justify-between border-t border-white/10 pt-4 mx-2">
+            {/* Login Button - Glass Pill Style */}
+            <Link
+              to="/Login"
+              className="group flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 dark:text-gray-300 text-xs font-space-grotesk hover:bg-white/10 dark:hover:text-white hover:border-white/30 transition-all duration-300"
+            >
+              <LuLogIn className="w-3.5 h-3.5 text-green-400 gdark:roup-hover:text-green-300 transition-colors" />
+              <span>Login</span>
+            </Link>
+          </div>
         </div>
+        <Toaster />
       </div>
     </>
   );

@@ -1,205 +1,114 @@
-import { supabase } from "./supabaseHandler.js";
+import dayjs from "dayjs"; // Recommended for easy TTL calc, or use your Date math
 import { redisClient } from "../CachingHandler/redisClient.js";
+import { supabase } from "./supabaseHandler.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 
-// this function will check the current limit of the user / that means if the user is within the limit of their quota this will let them proceed else will stop them from continuing
+//handles limit check and update all at once
+export const ProcessUserQuery = async (user) => {
+  const user_id = user.user_id;
+  const DAILY_LIMIT = 20;
 
-export const CheckCreditLimitPerUser = async (user_id) => {
+  // 1. Premium Check (Fastest exit)
+  if (user.PaymentStatus === true) {
+    return { status: "ok", message: "Premium user - no limits" };
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const redisKey = `rate_limit:${user_id}:${today}`; //unique user cache rate limit tracing key
+
+  // await redisClient.del(redisKey);
+
   try {
-    // date object to match the values from cache or db
-    const today = new Date().toISOString().split("T")[0];
-    //  cache key for the user
-    const UserQueryLimitKeyForUser = `User=${user_id}'s_credit_limit_key_day=${today}`;
+    //atomic updte for the user to avoid race conditions
+    const UserAccountDataKey = `user_id=${user_id}&username=${user.username}'s_dashboardData`;
 
-    // if the cache data exists in the memory
-    const exists = await redisClient.exists(UserQueryLimitKeyForUser);
-    if (exists) {
-      const CachedCreditLimit = await redisClient.hGetAll(
-        UserQueryLimitKeyForUser
-      );
+    const newCount = await redisClient.hIncrBy(
+      UserAccountDataKey,
+      "querycount",
+      1
+    ); //This is an upsert operation
 
-      if (CachedCreditLimit && Object.keys(CachedCreditLimit).length > 0) {
-        const parsedInfo = {
-          question_asked_count:
-            parseInt(CachedCreditLimit.question_asked_count) || 0,
-          added_at: CachedCreditLimit.added_at,
-        };
+    // If Redis says count is '1', it implies this is the first request of the day.
+    // BUT, Redis might have just crashed or evicted the key.
+    // We must check the DB *once* to be sure we aren't resetting a user who actually has 15 queries.
 
-        // Validate the cached date matches today
-        if (parsedInfo.added_at.split("T")[0] === today) {
+    if (newCount === 1) {
+      // Set the expiry for the end of the day since we just created the key
+      const now = new Date();
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 999);
+      const ttl = Math.floor((endOfDay - now) / 1000);
+      await redisClient.expire(UserAccountDataKey, ttl); // set a new key expiry date
+
+      // Verify against DB to ensure this isn't a false reset
+      // We read the DB only on the "first" request of the cached session
+      const { data: dbData } = await supabase
+        .from("Question_Rate_Limits")
+        .select("question_asked_count")
+        .eq("user_id", user_id)
+        .eq("day_date", today) //value that only matches today
+        .single();
+
+      // If DB has data (e.g., 15) but Redis said 1, we sync Redis to DB + 1
+      if (dbData && dbData.question_asked_count > 0) {
+        const correctCount = dbData.question_asked_count + 1;
+
+        // Fix Redis to match reality
+        console.log(
+          "The value was okay so updating the cache with confirmed value"
+        );
+        await redisClient.hSet(UserAccountDataKey, "querycount", correctCount); //update the new value for the user if the older data was wrong
+
+        // If the corrected count exceeds limit, stop here
+        if (correctCount > DAILY_LIMIT) {
+          console.log("The correct count from db is moew than daily quota");
           return {
-            message: "Current Credit record found",
-            value: parsedInfo,
+            status: "not ok",
+            message: `You have reached your daily limit it will reset at ${endOfDay}`,
           };
         }
-        // If cached data is from previous day, delete it
-        await redisClient.del(UserQueryLimitKeyForUser);
+
+        // Sync the increment to DB via RPC
+        console.log("Updating the db");
+        await supabase.rpc("rpc_increment_rate_limit", {
+          p_user_id: user_id,
+          p_day_date: today,
+        }); ///use the rpc fnction to upsert the informaiton
+
+        return {
+          status: "ok",
+          message: `Query ${correctCount} of ${DAILY_LIMIT}`,
+        };
       }
     }
 
-    // Fetch from database
-    const { data, error } = await supabase
-      .from("Question_Rate_Limits")
-      .select("question_asked_count, added_at")
-      .eq("user_id", user_id)
-      .gte("added_at", `${today}T00:00:00.000Z`)
-      .lte("added_at", `${today}T23:59:59.999Z`)
-      .single();
-
-    if (error || !data) {
+    if (newCount > DAILY_LIMIT) {
       return {
-        message: "No record found for today",
-        value: null,
+        status: "not ok",
+        message: `You have reached your free tier limit of ${DAILY_LIMIT} queries.`,
       };
     }
 
-    // Calculate TTL until end of day
-    const now = new Date();
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
-    const ttl = Math.floor((endOfDay - now) / 1000);
-
-    // Cache with proper TTL
-    await redisClient.hSet(UserQueryLimitKeyForUser, data);
-    await redisClient.expire(UserQueryLimitKeyForUser, ttl);
+    //if the query fails once try it again once more
+    const { error } = await supabase.rpc("rpc_increment_rate_limit", {
+      p_user_id: user_id,
+      p_day_date: today,
+    });
+    if (error) {
+      await notifyMe(
+        "An error occured in the rate_limit rpc function check asap",
+        error
+      );
+    }
 
     return {
-      message: "Current Credit record found",
-      value: data,
+      status: "ok",
+      message: `Query ${newCount} of ${DAILY_LIMIT}`,
     };
   } catch (error) {
-    await notifyMe("Error in CheckCreditLimitPerUser helper function", error);
-    return { message: "Something went wrong" };
+    console.error(error);
+    await notifyMe("Something went wrong in the rateLimiterController", error);
+    return { status: "not ok", message: "Service temporarily unavailable" };
   }
 };
-
-// this function will update the values in the cache as well as the db
-export const UpdateUserCreditLimit = async (user_id) => {
-  const client = redisClient; // Use pipeline for atomic operations
-  const today = new Date().toISOString().split("T")[0];
-  const UserQueryLimitKeyForUser = `User=${user_id}'s_credit_limit_key_day=${today}`;
-
-  try {
-    // Use Redis pipeline for atomic operations to execute uninterrupted updates for each user
-    const pipeline = client.multi();
-
-    // Check and increment atomically using HINCRBY
-    pipeline.hIncrBy(UserQueryLimitKeyForUser, "question_asked_count", 1);
-    pipeline.hGet(UserQueryLimitKeyForUser, "added_at");
-
-    const results = await pipeline.exec();
-    const [newCount, addedAt] = results;
-
-    if (addedAt) {
-      // Record exists in cache, update database
-      const { error } = await supabase
-        .from("Question_Rate_Limits")
-        .update({ question_asked_count: parseInt(newCount) })
-        .eq("user_id", user_id)
-        .gte("added_at", `${today}T00:00:00.000Z`)
-        .lte("added_at", `${today}T23:59:59.999Z`);
-
-      if (error) {
-        // Rollback cache if DB update fails
-        await client.hIncrBy(
-          UserQueryLimitKeyForUser,
-          "question_asked_count",
-          -1
-        );
-        return { message: "Error updating record", error: true };
-      }
-
-      return { message: "The value has been incremented" };
-    } else {
-      // No record exists, create new one
-      const now = new Date().toISOString();
-      const newRecord = {
-        user_id: user_id,
-        question_asked_count: 1,
-        added_at: now,
-      };
-
-      const { error: insertError } = await supabase
-        .from("Question_Rate_Limits")
-        .insert([newRecord]);
-
-      if (insertError) {
-        await client.del(UserQueryLimitKeyForUser); // Clean up cache
-        return { message: "Error creating new record", error: true };
-      }
-
-      // Set cache with new record
-      await client.hSet(UserQueryLimitKeyForUser, {
-        question_asked_count: "1",
-        added_at: now,
-      });
-
-      // Set TTL until end of day
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999); //right before ending of 24 hours
-      // to convert it into seconds
-      const ttl = Math.floor((endOfDay - new Date()) / 1000);
-      await client.expire(UserQueryLimitKeyForUser, ttl); //delte the cache data
-
-      return { message: "New record has been created and cached" };
-    }
-  } catch (error) {
-    await notifyMe("Error in UpdateUserCreditLimit helper function", error);
-    return { message: "Something went wrong", error: true };
-  }
-};
-
-// this method will call and update the values based on the credit current limit of users
-export async function HandleUserCreditCachingOrUpdationOrCreation(user) {
-  try {
-    const today = new Date().toISOString().split("T")[0];
-    // checking the users quota status
-    const { message, value } = await CheckCreditLimitPerUser(user.user_id);
-
-    const IsPremiumUser = user.PaymentStatus; //users paid status
-
-    // Premium users have no limits
-    if (IsPremiumUser === true) {
-      return { message: "Premium user - no limits", status: "ok" };
-    }
-
-    // Free tier user handling
-    if (message.includes("No record found for today")) {
-      await UpdateUserCreditLimit(user.user_id); //creating a new record for the user
-      return {
-        message: "First query of the day - record created",
-        status: "ok",
-      };
-    } else if (message.includes("Current Credit record found") && value) {
-      // Additional safety check for date mismatch
-      if (value.added_at.split("T")[0] !== today) {
-        await UpdateUserCreditLimit(user.user_id);
-        return { message: "New day - record reset", status: "ok" };
-      }
-
-      if (value.question_asked_count >= 14) {
-        //free user reaching their daily quota
-        return {
-          message:
-            "You have reached your free tier limit for the day. It will reset tomorrow. To experience unlimited queries and other premium features consider becoming our premium member.",
-          status: "not ok",
-        };
-      } else {
-        await UpdateUserCreditLimit(user.user_id);
-        return {
-          message: `Query ${value.question_asked_count + 1} of 14`,
-          status: "ok",
-        };
-      }
-    }
-
-    // Fallback for unexpected states
-    return { message: "Unable to determine credit status", status: "not ok" };
-  } catch (error) {
-    await notifyMe(
-      "Error in HandleUserCreditCachingOrUpdationOrCreation",
-      error
-    );
-    return { message: "Service temporarily unavailable", status: "not ok" };
-  }
-}

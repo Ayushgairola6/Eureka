@@ -9,6 +9,7 @@ import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
 import { EmailServices } from "../EmailHandlers/EmailTemplates.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+import dayjs from "dayjs";
 
 export const GenerateRefreshTokens = (id, email, username, PaymentStatus) => {
   try {
@@ -292,7 +293,7 @@ export const updateCookies = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    return res.send({message:"cookies updated"});
+    return res.send({ message: "cookies updated" });
   } catch (error) {
     await notifyMe(
       "An error occured while updating the client side cookies",
@@ -834,18 +835,22 @@ export const GetUserContributions = async (user_id) => {
 // Function to get user question count
 export const GetUserQuestionAskedCount = async (user_id) => {
   try {
-    const { count, error } = await supabase
-      .from("Conversation_History")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user_id);
+    //local timezone
+    const today = new Date().toISOString().split("T")[0]; //only the date part
+
+    //fetch only todays limits
+    const { data, error } = await supabase
+      .from("Question_Rate_Limits")
+      .select("question_asked_count")
+      .eq("user_id", user_id)
+      .eq("day_date", today)
+      .single();
 
     if (error) {
-      console.error("Supabase error (GetUserQuestionAskedCount):", error);
-      return { error };
+      return { count: 0 };
     }
-    return { count: count || 0 };
+    return { count: data.question_asked_count || 0 };
   } catch (error) {
-    console.error("Exception (GetUserQuestionAskedCount):", error);
     return { error };
   }
 };
@@ -940,12 +945,11 @@ export const GetUserAccountDetails = async (req, res) => {
     const CacheExists = await redisClient.exists(UserAccountDataKey);
     if (CacheExists) {
       const userdata = await redisClient.hGetAll(UserAccountDataKey);
-      // console.log(JSON.parse(userdata.userdata));
-
+      // console.log("Serving from the cache", userdata.querycount);
       return res.status(200).send({
         user: JSON.parse(userdata.userdata),
         Contributions_user_id_fkey: JSON.parse(userdata.Contributions),
-        Querycount: JSON.parse(userdata.querycount),
+        Querycount: parseInt(userdata.querycount),
         FeedbackCounts: JSON.parse(userdata.feedbackcount),
         chatrooms: JSON.parse(userdata.rooms),
         notificationcount: parseInt(userdata.notificationcount),
@@ -972,6 +976,7 @@ export const GetUserAccountDetails = async (req, res) => {
       GetNotificationsInformations(user_id),
     ]);
 
+    // console.log(userData, countData, "info from the db");
     // Consistent error handling
     if (userData.error) {
       return res.status(404).send({ message: "User not found" });
@@ -1017,7 +1022,7 @@ export const GetUserAccountDetails = async (req, res) => {
     await notifyMe(
       `An error ${error} From User account details function for user ${req.user.username}`
     );
-
+    console.log(error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -1057,7 +1062,12 @@ const StoreUserDataInTheCache = async (
           "an error occured while caching the user dashboard information"
         )
       );
-    await redisClient.expire(UserAccountDataKey, 3600); //wait for a while before deleting user account data
+    const now = new Date();
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    const ttl = Math.floor((endOfDay - now) / 1000);
+    await redisClient.expire(UserAccountDataKey, ttl); //wait the whole day before removing the users data
+    // await redisClient.expire(UserAccountDataKey, 3600); //wait for a while before deleting user account data
   } catch (error) {
     return { error };
   }

@@ -3,29 +3,16 @@ import { FaGitAlt } from "react-icons/fa";
 import { MdOutlineHourglassEmpty } from "react-icons/md";
 import { FiUploadCloud } from "react-icons/fi";
 import { BsPeople } from "react-icons/bs";
+import { FaResearchgate } from "react-icons/fa6";
 
 const Why = () => {
-  function HandleCardTiltEffect(e: any) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    // current position of the mouse
-    const x = e.clientX - rect.left; // X position within the element
-    const y = e.clientY - rect.top; // Y position within the element
-
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-
-    const rotateY = ((x - centerX) / centerX) * 3; // Max 3 degrees rotation
-    const rotateX = ((centerY - y) / centerY) * 3; // Max 3 degrees rotation
-
-    e.currentTarget.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-  }
   const cardsData = [
     {
       id: 1,
       title: "Purpose",
       subtitle: "Authenticity",
       description:
-        "Misinformation has been on this planet since millenia we can't end it but creating filters to protect our brains is necessary, and only we can do that.",
+        "Misinformation is everywhere. We can't end it, but we can filter it. Eureka builds a protective layer around your brain, ensuring you consume only verified data.",
       icon: <FiZap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
       gradient: "from-indigo-500 to-sky-500",
       badgeColor: "bg-teal-500/10",
@@ -36,7 +23,7 @@ const Why = () => {
       title: "Problem we solve?",
       subtitle: "Misinformation",
       description:
-        "Traditional knowledge sources are siloed and filled with all types of information but, what you need is the trueh not the typical web search result but actual human verified data.",
+        "Traditional search is noisy and unverified. You don't need more links; you need the truth. We provide human-verified data backed by AI synthesis.",
       icon: <FaGitAlt className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
       gradient: "from-emerald-500 to-teal-500",
       badgeColor: "bg-amber-500/10",
@@ -47,7 +34,7 @@ const Why = () => {
       title: "How Eureka is different?",
       subtitle: "Differentiator",
       description:
-        "Eureka uses Community contributions as knowledge base and trusts  👉you👈 to verify information through voting, reducing false information.",
+        "Eureka combines AI speed with human trust. Our community-driven knowledge base ensures that information is voted on and verified by experts like you.",
       icon: (
         <MdOutlineHourglassEmpty className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
       ),
@@ -68,14 +55,25 @@ const Why = () => {
     },
     {
       id: 5,
-      title: "Collbarotive sessions",
-      subtitle: "Doing stuff together",
+      title: "Collbarotive Research/Planning",
+      subtitle: "Research with teams",
       description:
-        "With Eureka Rooms you can create collborative AI powered research/study/chat rooms and can surf the web and private documents of the members together .",
+        "Create Eureka rooms an experience AI powered research room where you can perform from basic web search to advanced multi-file analysis in real time and experience same results in real time.",
       icon: <BsPeople className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
       gradient: "from-pink-500 to-red-500",
       badgeColor: "bg-red-500/20",
       border: "border-red-500",
+    },
+    {
+      id: 6,
+      title: "Synthesis Mode",
+      subtitle: "Collaborative Intelligence",
+      description:
+        "Solo or create Eureka Rooms to research as a team. Synthesize insights from private member documents, community knowledge, and the web in a shared, real-time workspace, with the power of deep reasoning.",
+      icon: <FaResearchgate className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
+      gradient: "from-purple-500 to-indigo-500",
+      badgeColor: "bg-purple-500/20",
+      border: "border-purple-500",
     },
   ];
   return (
@@ -96,7 +94,6 @@ const Why = () => {
             return (
               <>
                 <div
-                  onMouseOver={(e) => HandleCardTiltEffect(e)}
                   key={`${data.id}+${index}_${data.title}`}
                   className="border bg-gradient-to-br from-gray-50 to-gray-100 dark:from-white/10 dark:to-black  rounded-sm w-full md:w-100 h-auto md:h-50 p-2"
                 >

@@ -34,6 +34,7 @@ import { useNavigate } from "react-router";
 import { SetQueryCount } from "../store/AuthSlice.ts";
 import AccessBar from "@/components/AccessBar.tsx";
 import { useState } from "react";
+import { setCurrentStatus } from "../store/websockteSlice.ts";
 type InputProps = {
   textareaRef: React.Ref<HTMLInputElement>;
   isActive: boolean;
@@ -56,7 +57,9 @@ const InputSection: React.FC<InputProps> = ({
     queryType,
     selectedDoc,
     shhowUserForm,
+    SynthesisDocuments,
   } = useAppSelector((state) => state.interface);
+  // const { setCurrentStatus } = useAppSelector((state) => state.socket);
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAppSelector((state) => state.auth);
   const now = new Date();
@@ -321,12 +324,15 @@ const InputSection: React.FC<InputProps> = ({
         question: question,
         MessageId: AiId,
         userMessageId: user_id,
+        selectedDocuments: SynthesisDocuments,
       })
     )
       .unwrap()
       .then((res) => {
         if (res.message === "Response generated") {
+          // console.log(res.Answer);
           dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
+          dispatch(setCurrentStatus("Analyzing.."));
           if (res.favicon) {
             dispatch(updateFavicon(res.favicon));
           }

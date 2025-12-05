@@ -22,7 +22,7 @@ const WebSearchPanel: React.FC<QuerySectionProps> = ({
   return (
     <>
       {showWebSearchPanel && (
-        <div className="bg-gray-50 dark:bg-gray-800/50 p-3 border-b border-gray-200 dark:border-gray-700 bai-jamjuree-regular">
+        <div className="bg-gray-50 dark:bg-gray-800/50 p-3 border-b border-gray-200 dark:border-gray-700 bai-jamjuree-regular mt-1">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-start bai-jamjuree-semibold text-md  text-sky-400 mb-2">
               Ask Anything from the Web

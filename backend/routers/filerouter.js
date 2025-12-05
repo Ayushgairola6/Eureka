@@ -35,4 +35,4 @@ Router.post(
   .get("/user/documents", VerifyToken, GetPrivateUserDocs)
   .get("/privateDocs/ask", VerifySSETokens, QueryPersonalDocs)
   .get("/user/web-search", VerifySSETokens, WebSearchHandle)
-  .post("/method/synthesis", VerifyToken, IdentifyRequestInputs)
+  .post("/method/synthesis", VerifyToken, IdentifyRequestInputs);

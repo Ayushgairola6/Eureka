@@ -55,6 +55,7 @@ interface chatStates {
   membername: RoomMembers[];
   chatRoomFile: chatRoomFile | null;
   favicon: Favicon[];
+  currentStatus: string;
 }
 const initialState: chatStates = {
   isConnected: false,
@@ -67,6 +68,7 @@ const initialState: chatStates = {
   membername: [],
   chatRoomFile: null,
   favicon: [],
+  currentStatus: "Analyzing",
 };
 export const GetChatRoomHistory = createAsyncThunk(
   "room/history",
@@ -159,6 +161,9 @@ const socketSlice = createSlice({
     setConnected: (state) => {
       // console.log("socket has connected")
       state.isConnected = true;
+    },
+    setCurrentStatus: (state, action) => {
+      state.currentStatus = action.payload;
     },
     setDisconnected: (state) => {
       state.isConnected = false;
@@ -266,5 +271,6 @@ export const {
   SetChatRoomFile,
   AddNewMessage,
   setFavicon,
+  setCurrentStatus,
 } = socketSlice.actions;
 export default socketSlice.reducer;

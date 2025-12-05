@@ -24,7 +24,6 @@ export const ToolRegistry = {
         .eq("user_id", user.user_id)
         .single();
       if (error) {
-        // console.log(error);
         return {
           message: "There is not such document in the db found",
           data: "",
@@ -193,7 +192,7 @@ RETURN new_m
       //getting the text chunks from the db
       const response = await index.searchRecords({
         query: {
-          topK: user.PaymentStatus === true ? 10 : 5,
+          topK: user.PaymentStatus === true ? 20 : 10,
           inputs: { text: question },
           filter: {
             documentId: { $eq: docId },

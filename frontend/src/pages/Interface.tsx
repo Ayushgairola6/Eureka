@@ -22,7 +22,6 @@ function Interface() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(false);
-
   const { isLoggedIn, isDarkMode } = useAppSelector((state) => state.auth);
   const { question, category, visibility, subCategory, Chats, selectedDoc } =
     useAppSelector((state) => state.interface);

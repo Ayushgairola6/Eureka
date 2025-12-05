@@ -10,7 +10,6 @@ import { useAppDispatch } from "../store/hooks.tsx";
 import { setIsLogin } from "../store/AuthSlice.ts";
 import { LuEye, LuEyeClosed, LuUserPlus } from "react-icons/lu";
 import { PiArrowUpRight } from "react-icons/pi";
-import FloatingStars from "@/components/FloatingStars.tsx";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 const Login = () => {
@@ -39,13 +38,13 @@ const Login = () => {
       setIsPending("pending");
       if (!Email?.current?.value || !Password?.current?.value) {
         setIsPending("idle");
-        toast("Please fill in all fields !");
+        toast.info("All fields are mandatory.");
         return;
       }
 
       if (!Email.current.value.split("").includes("@")) {
         setIsPending("idle");
-        toast("Please Enter a valid email address");
+        toast.message("Please Enter a valid email address.");
         return;
       }
 
@@ -90,7 +89,6 @@ const Login = () => {
     <>
       <div className="relative h-screen flex items-center justify-center  z-[2]  dark:bg-black overflow-hidden">
         <Toaster />
-        <FloatingStars />
 
         <div className="absolute flex h-full w-full top-0 left-0 blur-2xl  z-[-1] ">
           <div
@@ -109,17 +107,12 @@ const Login = () => {
         </div>
         {/* )} */}
 
-        <motion.div
-          drag
-          whileDrag={{ scale: 0.9 }}
-          dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
-          className="relative bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-4/5 md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400"
-        >
-          <h1 className="text-center space-grotesk font-bold  text-2xl">
-            Welcome back{" "}
+        <div className="relative bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400">
+          <h1 className="text-center bai-jamjuree-bold  md:text-3xl text-2xl ">
+            Welcome back!
           </h1>
-          <span className="text-xs text-gray-700 dark:text-gray-400 space-grotesk text-center">
-            Login to continue contributing !
+          <span className="text-xs md:text-sm text-gray-700 dark:text-gray-400 bai-jamjuree-regular text-center">
+            Continue from where you left off
           </span>
 
           <span className="flex flex-col gap-2">
@@ -149,7 +142,7 @@ const Login = () => {
                 to="/ResetPassword"
                 className="bai-jamjuree-semibold text-xs text-end text-gray-700 dark:text-gray-300 dark:hover:text-sky-600 hover:text-sky-600 transition-colors duration-300"
               >
-                Do not remember your password ?
+                Forgot password?
               </Link>
             </label>
 
@@ -176,7 +169,7 @@ const Login = () => {
             </section>
           </span>
 
-          <span className="flex items-center justfify-center py-4 flex-col gap-2">
+          <span className="flex items-center justfify-center py-4 flex-col gap-2 ">
             {/*normal button */}
             <motion.button
               disabled={isPending !== "idle"}
@@ -191,7 +184,7 @@ const Login = () => {
                 isPending === "idle"
                   ? "bg-black text-white dark:bg-white dark:text-black"
                   : "bg-green-500"
-              } py-2 px-3 rounded-lg space-grotesk  w-full CustPoint flex items-center justify-center gap-2`}
+              } py-2 px-3 rounded-lg bai-jamjuree-regular  w-full  flex items-center justify-center gap-2`}
             >
               {isPending === "idle" ? (
                 <>
@@ -214,32 +207,32 @@ const Login = () => {
               }}
               whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px black" }}
               transition={{ duration: 0.2 }}
-              className="bg-indigo-400 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint "
+              className="bg-indigo-400 py-2 px-3 rounded-lg bai-jamjuree-regular text-black w-full flex items-center justify-center gap-2  "
             >
-              Login with Google
+              Continue with Google
               <img className="h-6 w-6" src="/googleLogo.png" alt="" />
             </motion.button>
           </span>
           {/* links to other pages */}
-        </motion.div>
-        <div className="flex items-center justify-end gap-3 absolute bottom-10 mt-3">
-          {/* Register Button - Glass */}
-          <Link
-            to="/Register"
-            className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl dark:bg-white/20 bg-black/20  border border-white/20 dark:border-gray-600/30 dark:text-gray-50 text-black font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
-          >
-            <span>Register</span>
-            <LuUserPlus className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/10">
+            {/* Register - Outlined Glass Chip */}
+            <Link
+              to="/Register"
+              className="group flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 dark:text-gray-300 text-xs font-space-grotesk hover:bg-white/10 dark:hover:text-white hover:border-white/30 transition-all duration-300"
+            >
+              <LuUserPlus className="w-3.5 h-3.5 text-blue-400 dark:group-hover:text-white transition-colors" />
+              <span>Create Account</span>
+            </Link>
 
-          {/* Get Verified Button - Glass */}
-          <Link
-            to="/Verification"
-            className="group relative inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl dark:bg-white/20 bg-black/20  border border-white/20 dark:border-gray-600/30 dark:text-gray-50 text-black font-medium text-sm transition-all duration-300 hover:bg-green-500/20 hover:border-green-500/30 hover:text-green-700 dark:hover:text-green-300 hover:shadow-lg hover:scale-105"
-          >
-            <span>Get Verified</span>
-            <PiArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-          </Link>
+            {/* Verify - Subtle Text Link on the right */}
+            <Link
+              to="/Verification"
+              className="group flex items-center gap-1 text-xs dark:text-gray-500 font-medium dark:hover:text-gray-300 transition-colors"
+            >
+              <span>Verification link expired?</span>
+              <PiArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </Link>
+          </div>
         </div>
       </div>
     </>

@@ -42,10 +42,10 @@ export const GenerateResponse = async (
       model: "gemini-2.5-flash-lite",
       contents: [{ role: "user", parts: [{ text: FinalString }] }],
       generationConfig: {
-        temperature: 0.4,
+        temperature: PaymentStatus === false ? 0.5 : 1,
         topP: 0.95,
-        topK: 40,
-        maxOutputTokens: PaymentStatus === false ? 400 : 1000,
+        topK: PaymentStatus === false ? 40 : 80,
+        maxOutputTokens: PaymentStatus === false ? 600 : 2000,
       },
     });
 
