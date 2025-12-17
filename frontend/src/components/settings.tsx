@@ -19,7 +19,9 @@ const Settings: React.FC<settingProps> = (
     // isLoggedIn,
   }
 ) => {
-  const { isDarkMode, user } = useAppSelector((state) => state.auth);
+  const { isDarkMode, isLoggedIn, user } = useAppSelector(
+    (state) => state.auth
+  );
   const dispatch = useAppDispatch();
 
   return (
