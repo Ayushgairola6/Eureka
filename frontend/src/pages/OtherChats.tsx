@@ -31,7 +31,7 @@ const OtherChats = () => {
   const { Misallaneouschats, cursor, gettingChats } = useAppSelector(
     (state) => state.chats
   );
-  const { user } = useAppSelector((state) => state.auth);
+  // const { user } = useAppSelector((state) => state.auth);
   const [SearchResult, SetSearchResult] = useState<SearchResultData[]>([]);
   const [filtercategory, setfiltercategory] = useState<string>("");
   const [subCategory, setSubCategory] = useState<string>("");

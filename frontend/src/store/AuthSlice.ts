@@ -345,7 +345,7 @@ const authSlice = createSlice({
       // Only update existing user fields when a user object exists in state
       // console.log(action.payload)
 
-      if (action.payload) {
+      if (action.payload && state.user) {
         state.user.username = action.payload.username;
         state.user.email = action.payload.email;
         state.user.created_at = action.payload.created_at;

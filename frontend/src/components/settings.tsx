@@ -12,14 +12,14 @@ type settingProps = {
   setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-const Settings: React.FC<settingProps> = ({
-  showSettings,
-  setShowSettings,
-  isLoggedIn,
-}) => {
-  const { isDarkMode, isLoggingOut, user } = useAppSelector(
-    (state) => state.auth
-  );
+const Settings: React.FC<settingProps> = (
+  {
+    // showSettings,
+    // setShowSettings,
+    // isLoggedIn,
+  }
+) => {
+  const { isDarkMode, user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
 
   return (
