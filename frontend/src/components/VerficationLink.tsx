@@ -5,7 +5,7 @@ import { BiLink } from "react-icons/bi";
 import { IoIosHourglass } from "react-icons/io";
 import { MdEmail } from "react-icons/md";
 import { Link } from "react-router";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 const VerificationLink = () => {
@@ -39,8 +39,6 @@ const VerificationLink = () => {
   return (
     <>
       <div className="h-screen flex items-center justify-center relative z-[2] overflow-hidden ">
-        <Toaster />
-
         {/* gradient accent background */}
         <div className="absolute h-full w-full top-0 left-0 blur-2xl flex  z-[-1]">
           <div

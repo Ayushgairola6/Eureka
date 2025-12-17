@@ -16,6 +16,7 @@ import {
   SetCookies,
 } from "./AuthSlice.ts";
 import { store } from "./reduxstore.ts";
+import { setUploadStatus } from "./InterfaceSlice.ts";
 const ServerUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 // import { data } from 'react-router';
@@ -74,6 +75,12 @@ const setupSocketListeners = (dispatch: any) => {
     const message = data;
     dispatch(setCurrentStatus(message));
   });
+  //upload status state updation for UX
+  socket.on("UploadStatus", (data) => {
+    dispatch(setUploadStatus(data));
+  });
+
+  //disconnection handler
   socket.on("disconnect", () => {
     dispatch(setDisconnected());
   });

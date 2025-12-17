@@ -60,7 +60,7 @@ interface notifications {
 type ChatRoomsResponse = UserChatRoom[];
 
 interface AuthState {
-  user: user;
+  user: user | null;
   AllowedTrainingModels: string;
   loading: boolean;
   error: string | null;
@@ -161,7 +161,6 @@ export const AcceptOrRejectRequest = createAsyncThunk<any, ActionPayload>(
       // console.log(response.data);
       return response.data;
     } catch (err) {
-      console.error("Error managing the notification:", err);
       return rejectWithValue(
         err instanceof Error ? err.message : "Failed to fetch dashboard data"
       );
@@ -334,7 +333,6 @@ export async function StoreLocalCache(data: any) {
         reject({ message: "Transaction error.", error: e.target.error });
     });
   } catch (error) {
-    console.error("Error during caching:", error);
     throw error;
   }
 }

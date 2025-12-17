@@ -17,11 +17,15 @@ export const SearchQueryResults = async (query, user) => {
       return { error: "Invalid query type" };
     }
 
+    const Paid = user.PaymentStatus === true ? true : false;
     const response = await tvly.search(query, {
-      searchDepth: user.PaymentStatus === false ? "advanced" : "basic",
-      maxTokens: user.PaymentStatus === false ? 20 : 10,
-      includeAnswer: user.PaymentStatus === false ? false : true,
+      searchDepth: Paid ? "advanced" : "basic",
+      maxTokens: Paid ? 20 : 5,
+      includeAnswer: Paid ? "advanced" : "basic",
       includeFavicon: true,
+      chunksPerSource: Paid ? 8 : 3,
+      maxResults: Paid ? 14 : 5,
+      include_images: Paid ? true : false,
     });
     if (!response) {
       return { error: "Unable to find results online" };
@@ -42,45 +46,52 @@ export const SearchQueryResults = async (query, user) => {
 
 // formatting search result for AI
 export function formatForGemini(results) {
-  if (!results || results.results.length === 0) {
-    return [
-      {
-        role: "model",
-        parts: [{ text: "NO_WEB_RESULTS: No relevant search results found." }],
-      },
-    ];
+  // 1. Handle Empty State
+  if (!results || !results.results || results.results.length === 0) {
+    return "NO_WEB_RESULTS: No relevant search results found on the web.";
   }
 
-  let FormattedSttring = `These are the websearch results for the users question,`;
+  let formattedString = `### WEB SEARCH DATA ###\nHere is the gathered information from the web:\n\n`;
 
-  // 1. Direct answer (if available)
+  // 2. Direct Answer (Tavily's AI summary)
   if (results.answer) {
-    FormattedSttring += `SearchEngineAnswer=${results.answer}`;
+    formattedString += `**Quick Summary (Search Engine):**\n"${results.answer}"\n\n`;
   }
 
-  // 2. Key insights from top results
-  const keyInsights = [];
-  results.results.slice(0, 3).forEach((res, index) => {
-    if (res.content) {
-      const insight = res.content;
-      keyInsights.push(`${index + 1}. ${insight}`);
+  // 3. Images (Crucial for your "Paid" tier features)
+  // Tavily returns images as an array of URLs or Objects depending on config
+  if (results.images && results.images.length > 0) {
+    formattedString += `**Relevant Images & Visuals:**\n`;
+    results.images.forEach((img) => {
+      // Handle case where img is a string or an object with a url property
+      const url = typeof img === "string" ? img : img.url;
+      if (url) formattedString += `- ${url}\n`;
+    });
+    formattedString += `\n`;
+  }
+
+  // 4. Detailed Sources (Context)
+  formattedString += `**Detailed Sources:**\n`;
+
+  results.results.forEach((res, index) => {
+    // Only include results that actually have content
+    if (!res.content) return;
+
+    formattedString += `\n--- [Source ${index + 1}] ---\n`;
+    formattedString += `Title: ${res.title || "No Title"}\n`;
+    formattedString += `Link: ${res.url || "No URL"}\n`;
+    formattedString += `Context/Excerpt: ${res.content}\n`;
+
+    // If raw content is available (Advanced search), you can append it here
+    if (res.raw_content) {
+      formattedString += `Additional Data: ${res.raw_content.substring(
+        0,
+        500
+      )}...\n`; // Truncate to save tokens
     }
   });
 
-  if (keyInsights.length > 0) {
-    FormattedSttring += `KEY_INSIGHTS:\n${keyInsights.join("\n")}`;
-  }
-
-  // 3. Sources reference
-  const sources = results.results.map(
-    (res, index) =>
-      `[${index + 1}] ${res.title || "No title"} - ${res.url || "No URL"}`
-  );
-
-  // parts.push(`SOURCES:\n${sources.join("\n")}`);
-  FormattedSttring += `SOURCES:\n${sources.join("\n")}`;
-
-  return FormattedSttring;
+  return formattedString;
 }
 
 // Searhc the web and write the message for client

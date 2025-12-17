@@ -31,7 +31,9 @@ const LandingPage = () => {
                   alt="Research Engine Light"
                   className=" rounded-full "
                 />
-
+                {/* <a href="https://storyset.com/technology">
+                  Technology illustrations by Storyset
+                </a> */}
                 {/* Image 2: Visible ONLY in Dark Mode */}
                 {/* <img
                   src="/landingpage.png"

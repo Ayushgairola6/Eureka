@@ -1,7 +1,7 @@
 // components/OAuthCallbackHandler.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-
+import { motion } from "framer-motion";
 interface MessageState {
   type: "loading" | "success" | "error";
   text: string;
@@ -60,76 +60,54 @@ const OAuthCallbackHandler = () => {
   }, [navigate, searchParams]);
 
   // Determine styles based on message type
-  const getMessageStyles = () => {
-    switch (message.type) {
-      case "success":
-        return "text-green-500";
-      case "error":
-        return "text-red-500";
-      case "loading":
-      default:
-        return "text-white";
-    }
-  };
-
-  const getSpinnerStyles = () => {
-    switch (message.type) {
-      case "success":
-        return "border-green-500"; // Green spinner for success
-      case "error":
-        return "border-red-500"; // Red spinner for error
-      case "loading":
-      default:
-        return "border-sky-400"; // Blue spinner for loading
-    }
-  };
-
-  const shouldShowSpinner = message.type === "loading";
 
   return (
     <div className="flex items-center justify-center bai-jamjuree-semibold text-lg h-screen relative z-[2]">
-      <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-indigo-500/20 to-white dark:from-white/10 dark:to-black z-[-2]"></div>
-      <section className="flex flex-col items-center justify-center gap-4">
-        {shouldShowSpinner && (
-          <div
-            className={`h-8 w-8 rounded-full border-t-4 animate-spin ${getSpinnerStyles()}`}
-          ></div>
-        )}
-
-        {message.type === "success" && (
-          <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
-            <svg
-              className="h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={3}
-                d="M5 13l4 4L19 7"
+      {message.type === "loading" ? (
+        <>
+          <div>
+            <h1 className="text-center bai-jamjuree-semibold">
+              Setting up your account
+            </h1>
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="w-1 bg-green-500 rounded-sm" // Sharp corners (sm) and tech green
+                animate={{
+                  height: ["16px", "26px", "16px"], // Grow and shrink
+                  opacity: [0.5, 1, 0.5], // Pulse opacity
+                }}
+                transition={{
+                  duration: 0.8,
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                  ease: "easeInOut",
+                }}
               />
-            </svg>
+            ))}
           </div>
-        )}
-
-        <p
-          className={`${getMessageStyles()} text-center transition-colors duration-300`}
-        >
-          {message.text}
-          {message.type === "loading" && "..."}
-        </p>
-
-        {message.type === "error" && (
-          <button
-            onClick={() => navigate("/login")}
-            className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-          >
-            Back to Login
-          </button>
-        )}
-      </section>
+        </>
+      ) : message.type === "error" ? (
+        <>
+          <div className="flex flex-col items-center">
+            <img className="h-60 w-60" src="/404.png" alt="error" />
+            <h1 className="bai-jamjuree-semibold uppercase text-sm">
+              User not found
+            </h1>
+          </div>
+        </>
+      ) : (
+        <>
+          <div>
+            <h1 className="text-center bai-jamjuree-semibold uppercase">
+              Redirecting...
+            </h1>
+            <p className="text-red-400 text-xs">
+              If this takes too long, reload the page.
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 };

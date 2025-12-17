@@ -7,6 +7,8 @@ import {
   GetMisallaneousChatHistory,
   QueryDocWithEurekaInChatRoom,
   QueryWebInEurekaChatRoom,
+  GetSyntheSizedResults,
+  FetchMoreMessages,
 } from "../controllers/ChatRoomController.js";
 import { VerifyToken } from "../Middlewares/AuthMiddleware.js";
 import express from "express";
@@ -21,10 +23,12 @@ ChatsRouter.post("/user/request/create-room", VerifyToken, CreateChatRooms)
     GetDocumentChatHistory
   )
   .post("/chat-room/ask-doc", VerifyToken, QueryDocWithEurekaInChatRoom)
-  .post("/chat-room/ask-web/:query", VerifyToken, QueryWebInEurekaChatRoom)
+  .post("/user/chat-room/ask-web/", VerifyToken, QueryWebInEurekaChatRoom)
   .get(
     "/user/doc/misallaneous-history",
     VerifyToken,
     GetMisallaneousChatHistory
   )
-  .get("/user/session-history/cache=true", VerifyToken, FetchChatHistory);
+  .get("/user/session-history/cache=true", VerifyToken, FetchChatHistory)
+  .post("/chatroom/synthesis", VerifyToken, GetSyntheSizedResults)
+  .post("/room/history/chats", VerifyToken, FetchMoreMessages);

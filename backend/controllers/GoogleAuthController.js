@@ -92,7 +92,13 @@ export const HandleGoogleCallback = async (req, res) => {
     const { email, name, picture, sub: googleId } = userProfile;
 
     // 5. Find or create user in database
-    const user = await findOrCreateUser({ email, name, picture, googleId });
+    const user = await findOrCreateUser({
+      email,
+      name,
+
+      picture,
+      googleId,
+    });
 
     if (user?.error) {
       return res.redirect(
@@ -103,16 +109,10 @@ export const HandleGoogleCallback = async (req, res) => {
     const refreshToken = GenerateRefreshTokens(
       user.id,
       user.email,
-      user.username,
-      user.IsPremiumUser
+      user.username
     );
     // generate new sesstion token
-    const authToken = GenerateAccessTokens(
-      user.id,
-      user.email,
-      user.username,
-      user.IsPremiumUser
-    );
+    const authToken = GenerateAccessTokens(user.id, user.email, user.username);
 
     if (!refreshToken || !authToken) {
       throw new Error("Token generation failed");
@@ -194,54 +194,68 @@ async function getUserProfile(access_token) {
 // Helper function: Find or create user in database
 async function findOrCreateUser(googleUser) {
   const { email, name, picture, googleId } = googleUser;
-  // Check if user exists
-  const { data: existingUser, error: userError } = await supabase
+  const emailLower = email.toLowerCase();
+
+  // --- 1. Check if user exists ---
+  const { data: existingUser, error: selectError } = await supabase
     .from("users")
     .select("*")
-    .eq("email", email.toLowerCase())
+    .eq("email", emailLower)
     .single();
 
-  if (userError) {
-    await notifyMe("User error in the google auth code flow", userError);
-    return { error: "User not found" };
-  }
-  //   if the user previously loggedIn with google
-  if (existingUser && existingUser.Google_Id) {
-    const { error } = await supabase
-      .from("users")
-      .update({ Google_Id: googleId })
-      .eq("id", existingUser.id);
-    if (error) {
-      await notifyMe("Error while updating the google id of a user", error);
+  if (selectError && !existingUser) {
+    // If the error is NOT 'no rows found' (i.e., a real DB error), stop.
+    // Supabase sets data to null and error to non-null on 0 rows,
+    // but the error object is often large, so this is a safety check.
+    if (!selectError.details.includes("0 rows")) {
+      await notifyMe("Critical DB Error during user selection", selectError);
+      return { error: "Database error during login check." };
     }
-    return existingUser;
-  } else if (existingUser && !existingUser.Google_Id) {
+  }
+
+  // --- 2. Scenario: New User (ExistingUser is null) ---
+  if (!existingUser) {
+    const newUser = await createNewUser(name, emailLower, googleId);
+
+    if (!newUser || newUser.error) {
+      await notifyMe(
+        "Error while creating a new user",
+        newUser?.error || "Unknown"
+      );
+      return { message: "Unable to create a new user." };
+    }
+    await notifyMe("A new user Logged In using Google Auth", newUser);
+    return newUser;
+  }
+
+  // Case A: User existed, but signed up with email/password (no Google ID).
+  if (!existingUser.Google_Id) {
+    // SECURITY CHOICE: If you want to allow them to link their account:
+    // This is where you would update their Google_Id with the new value.
+    // If you want to BLOCK them (your original intention):
     return {
-      error: "This account already exists , Please login with your password .",
+      error:
+        "This account already exists. Please login with your password first to link the account.",
     };
   }
 
-  // Create new user
-  const username = name.toLowerCase().replace(/\s+/g, "_") + "_" + Date.now();
+  // Case B: User already signed up via Google, but maybe the ID changed (rare) or you want to update the ID.
+  if (existingUser.Google_Id !== googleId) {
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({ Google_Id: googleId })
+      .eq("id", existingUser.id);
 
-  const { data: newUser, error: createError } = await supabase
-    .from("users")
-    .insert({
-      email: email.toLowerCase(),
-      username: username,
-      Google_Id: googleId,
-      isVerified: true,
-      password: null,
-    })
-    .select()
-    .single();
-
-  if (createError) {
-    throw new Error(`User creation failed: ${createError.message}`);
+    if (updateError) {
+      await notifyMe(
+        "Error while updating the Google ID of an existing user",
+        updateError
+      );
+    }
   }
 
-  await notifyMe("A new user Logged In using google auth ", newUser);
-  return newUser;
+  // Return the existing (potentially updated) user object
+  return existingUser;
 }
 
 // Helper function: Clean up old states
@@ -254,4 +268,26 @@ function cleanupOldStates() {
       pendingStates.delete(state);
     }
   }
+}
+
+async function createNewUser(name, email, googleId) {
+  const username = name.toLowerCase().replace(/\s+/g, "_") + "_" + Date.now();
+
+  const { data: newUser, error: createError } = await supabase
+    .from("users")
+    .insert({
+      email: email.toLowerCase(),
+      username: username,
+      Google_Id: googleId,
+      isVerified: true,
+      password: null,
+    })
+    .select("*")
+    .single();
+
+  if (createError) {
+    return { error: "Error while creating a new user" };
+  }
+
+  return newUser;
 }

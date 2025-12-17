@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 // import type { RootState } from './reduxstore';
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import _ from "lodash";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 interface ChatRoomState {
@@ -15,6 +16,11 @@ interface ChatRoomState {
   cursor: any;
   hasMore: boolean;
   gettingChats: boolean;
+  RoomQueryMode: string;
+  RoomSynthesisDocs: string[];
+  showSyntheSisPanel: boolean;
+  synthesisQuery: string;
+  isSynthesizing: boolean;
 }
 interface RoomData {
   Room_name: string;
@@ -52,6 +58,11 @@ const initialState: ChatRoomState = {
   cursor: null,
   hasMore: false,
   gettingChats: false,
+  RoomQueryMode: "",
+  RoomSynthesisDocs: [],
+  showSyntheSisPanel: false,
+  synthesisQuery: "",
+  isSynthesizing: false,
 };
 
 export const CreateChatRoom = createAsyncThunk<ApiResponse, RoomData>(
@@ -163,6 +174,29 @@ export const GetMisallaneousChatHistory = createAsyncThunk<any, any>(
     }
   }
 );
+//get synthesized results
+export const GetSynthesizedResult = createAsyncThunk<any, any>(
+  "query/synthesis",
+  async (data, { rejectWithValue }) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+
+      const response = await axios.post(
+        `${BaseApiUrl}/api/chatroom/synthesis`,
+        data,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message);
+    }
+  }
+);
 
 const ChatSlice = createSlice({
   name: "chat",
@@ -170,6 +204,31 @@ const ChatSlice = createSlice({
   reducers: {
     setOpen: (state, action) => {
       state.isOpen = action.payload;
+    },
+    setRoomQueryMode: (state, action) => {
+      state.RoomQueryMode = action.payload;
+    },
+    setRoomSynthesisDocs: (state, action) => {
+      const value = action.payload;
+      //if the value is in the array remove it else create a new once
+      if (!state.RoomSynthesisDocs.includes(value)) {
+        console.log("Value already exists", value);
+        state.RoomSynthesisDocs.push(action.payload);
+      } else {
+        //create new array and append it into the original one
+        const Filtered = state.RoomSynthesisDocs.filter((e) => e !== value);
+        state.RoomSynthesisDocs = [...Filtered];
+        console.log("Removing the value", value);
+      }
+    },
+    emptyArray: (state) => {
+      state.RoomSynthesisDocs = [];
+    },
+    setSyntheSisQuery: (state, action) => {
+      state.synthesisQuery = action.payload;
+    },
+    setShowSynthesisPanel: (state, action) => {
+      state.showSyntheSisPanel = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -213,9 +272,27 @@ const ChatSlice = createSlice({
       })
       .addCase(GetMisallaneousChatHistory.pending, (state, _action) => {
         state.gettingChats = true;
+      })
+      //synthesis handler
+      .addCase(GetSynthesizedResult.pending, (state, _action) => {
+        state.isSynthesizing = true;
+      })
+      .addCase(GetSynthesizedResult.rejected, (state, _action) => {
+        state.isSynthesizing = false;
+      })
+      .addCase(GetSynthesizedResult.fulfilled, (state, _action) => {
+        state.isSynthesizing = false;
+        // state.
       });
   },
 });
 
-export const { setOpen } = ChatSlice.actions;
+export const {
+  setOpen,
+  setRoomSynthesisDocs,
+  setRoomQueryMode,
+  emptyArray,
+  setSyntheSisQuery,
+  setShowSynthesisPanel,
+} = ChatSlice.actions;
 export default ChatSlice.reducer;

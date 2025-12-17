@@ -1,4 +1,4 @@
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Link } from "react-router";
 import { IoIosHourglass, IoMdCode } from "react-icons/io";
@@ -51,8 +51,6 @@ const EmailVerificationForm = () => {
   return (
     <>
       <div className="h-screen flex items-center justify-center relative z-[2]  ">
-        <Toaster />
-
         {/* gradient accent background */}
         <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-purple-600/20 to-indigo-600/20 dark:from-black dark:to-black blur-2xl z-[-1]"></div>
 

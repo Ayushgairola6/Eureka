@@ -1,39 +1,49 @@
 import React from "react";
-import { BiHourglass } from "react-icons/bi";
-import { IoMdInformationCircleOutline } from "react-icons/io";
-import { TbError404 } from "react-icons/tb";
+import { motion } from "framer-motion";
 type LoadingProp = {
-  text: string;
+  userStatus: string;
 };
 
-const LoadingIndicator: React.FC<LoadingProp> = ({ text }) => {
+const LoadingIndicator: React.FC<LoadingProp> = ({ userStatus }) => {
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="rounded-xl p-6 flex flex-col items-center">
-          <div
-            className={`text-xl bai-jamjuree-semibold ${
-              text.includes("Setting up your dashboard")
-                ? "text-green-400"
-                : text.includes(
-                    "Failed to get your details please logIn instead"
-                  )
-                ? "text-red-400"
-                : "text-sky-400"
-            } flex items-center justify-center gap-3`}
-          >
-            {text}
-            {text.includes("Setting up your dashboard") ? (
-              <BiHourglass className="animate-spin" />
-            ) : text.includes(
-                "Failed to get your details please logIn instead"
-              ) ? (
-              <TbError404 />
-            ) : (
-              <IoMdInformationCircleOutline />
-            )}
-          </div>
-        </div>
+        {userStatus === "pending" ? (
+          <>
+            <section className="text-center flex items-center flex-col gap-2">
+              <div className="flex items-center gap-[3px] h-5">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1 bg-green-500 rounded-sm" // Sharp corners (sm) and tech green
+                    animate={{
+                      height: ["16px", "26px", "16px"], // Grow and shrink
+                      opacity: [0.5, 1, 0.5], // Pulse opacity
+                    }}
+                    transition={{
+                      duration: 0.8,
+                      repeat: Infinity,
+                      delay: i * 0.2,
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
+              </div>
+              <h1 className=" bai-jamjuree-semibold text-xs">
+                Updating your dashboard
+              </h1>
+            </section>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col items-center">
+              <img className="h-40 w-40" src="/404.png" alt="error" />
+              <h1 className="bai-jamjuree-semibold uppercase">
+                Something went wrong{" "}
+              </h1>
+            </div>
+          </>
+        )}
       </div>
     </>
   );

@@ -12,7 +12,7 @@ type SidebarProps = {
 };
 //  = useAppSelector(state => state.auth.isLoggedIn);
 const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
-  const { isLoggedIn } = useAppSelector((state) => state.auth);
+  const { isLoggedIn, user } = useAppSelector((state) => state.auth);
 
   return (
     <>
@@ -21,6 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           if (isVisble === true) {
             setIsVisible(false);
           }
+
           // -translate-y-0 translate-y-90
         }}
         className={`md:hidden fixed h-auto w-70 -bottom-5 -left-2 rotate-0 bg-white dark:bg-black  rounded-r-full shadow-2xl shadow-black dark:shadow-purple-500 gap-2 z-[99] py-10 rounded-b-xl  ${
@@ -47,7 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             <IoChatboxEllipsesOutline size={22} />
             Try Now
           </Link>
-          {isLoggedIn === false && (
+          {isLoggedIn === false && user?.email === "" && (
             <Link
               className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
               to="/Register"
@@ -56,7 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
               Register
             </Link>
           )}
-          {isLoggedIn === false ? (
+          {isLoggedIn === false && user?.email === "" ? (
             <Link
               className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
               to="/Login"

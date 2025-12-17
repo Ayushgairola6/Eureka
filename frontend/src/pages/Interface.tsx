@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import ChatBubble from "@/components/ChatBubble.tsx";
 import InputSection from "@/components/InterfaceInputSection.tsx";
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
-import { setSelectedDoc, UploadDocuments } from "../store/InterfaceSlice.ts";
+import {
+  setSelectedDoc,
+  setUploadStatus,
+  UploadDocuments,
+} from "../store/InterfaceSlice.ts";
 import { setDocs } from "../store/AuthSlice.ts";
 import UserForm from "@/components/ui/userDetail.tsx";
 import { useSearchParams } from "react-router";
@@ -86,7 +90,13 @@ function Interface() {
             dispatch(setDocs(res.insertData)); //update the local state
           }
         })
-        .catch((err) => toast.error(err.message));
+        .catch((err) => {
+          toast.message(err);
+          dispatch(setUploadStatus("Failed"));
+        })
+        .finally(() => {
+          dispatch(setUploadStatus("Processing"));
+        });
     } catch (err) {
       console.error(err);
     }
@@ -107,7 +117,24 @@ function Interface() {
       >
         {/* gradient background for light thtme */}
         {!isDarkMode && (
-          <div className="bg-gradient-to-br from-pink-500/50 to-amber-500/40  z-[-2] absolute top-0 left-0 h-full w-full blur-2xl"></div>
+          <div className="absolute top-0 left-0 w-full h-64 overflow-hidden z-[-2] pointer-events-none">
+            {/* 1. Primary Light: Deep Indigo (Left) */}
+            <div
+              className="absolute -top-24 -left-20 w-96 h-96 
+      bg-indigo-500/30 rounded-full blur-[100px] 
+      animate-pulse mix-blend-multiply"
+            />
+
+            {/* 2. Secondary Light: Bright Cyan (Right) */}
+            <div
+              className="absolute -top-32 right-0 w-[500px] h-[500px] 
+      bg-cyan-400/20 rounded-full blur-[120px] 
+      animate-pulse"
+            />
+
+            {/* 3. The "Fade Out" Mask to ensure it blends down smoothly */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-white" />
+          </div>
         )}
         <ChatBubble chatcontainer={chatcontainer} />
         <div className="w-full flex items-center justify-center fixed bottom-0 py-0.5 left-0 md:px-2 px-0.5  rounded-sm dark:bg-black ">
@@ -139,7 +166,6 @@ function Interface() {
           </div>
         </div>
         {/* chattting seciton */}
-        <Toaster />
       </div>
     </>
   );

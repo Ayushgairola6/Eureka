@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useState } from "react";
 // import { Link } from 'react-router';
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { BiClipboard } from "react-icons/bi";
 import { useAppSelector } from "../store/hooks";
 const ApiDocs = React.lazy(() => import("@/components/ApiDocs"));
@@ -50,8 +50,6 @@ const API = () => {
     <>
       {/* Main Content Container */}
       <main className=" flex flex-col items-center justify-center   w-full">
-        <Toaster />
-
         {/* Documentation Card */}
         <div className="bg-white dark:bg-black  dark:text-white text-black  shadow-md border  p-8 w-full flex flex-col items-center gap-8">
           {/* Header Section */}

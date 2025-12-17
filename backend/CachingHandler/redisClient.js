@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 // import { error } from "console";
 // import e from "cors";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+import { supabase } from "../controllers/supabaseHandler.js";
 dotenv.config();
 
 export const redisClient = createClient({
@@ -48,26 +49,57 @@ export const UpdateUserFileListCacheInfo = async (key, FileInfo) => {
   return { message: "Cache Updated" };
 };
 
-export const UpdateTheNotificationCache = async (key, notification) => {
-  const exists = await redisClient.exists(key);
-  if (!exists) {
-    return { message: "cache does not exist" };
+export const UpdateTheNotificationCache = async (
+  UserAccountDataKey,
+  userid,
+  feedback
+) => {
+  // create a new notification and inster it in the db
+  const metadata = {
+    sent_by_username: "System",
+  };
+  // add a new notification in the database
+  const { data: newNotification, error: insertError } = await supabase
+    .from("notifications")
+    .insert({
+      user_id: userid, //person who is responsible for this notification
+      notification_type: "Informatory",
+      notification_message: `A new file ${feedback} uploaded .`,
+      title: "New file uploaded",
+      metadata: metadata,
+    })
+    .select("*")
+    .single();
+
+  if (insertError) {
+    await notifyMe(
+      `${insertError}= This error occured while Inserting notification data in file upload controller `
+    );
   }
 
-  //  getting any old notifications if exists
-  const Oldnotifications = await redisClient.hGet(key, "notification");
+  //if the user data exists in the cache
+  const multi = redisClient.multi();
+  multi.exists(UserAccountDataKey);
+  const Oldnotifications = multi.redisClient.hGet(key, "notification");
 
   if (Oldnotifications) {
     const ParsedNotifications = JSON.parse(Oldnotifications);
-    ParsedNotifications.push(notification);
-    await redisClient.hSet(
+    ParsedNotifications.push(newNotification);
+    multi.redisClient.hSet(
       key,
       "notification",
       JSON.stringify(ParsedNotifications)
     );
+
+    multi.hSet(
+      key,
+      "notificationcount",
+      JSON.stringify(ParsedNotifications?.length)
+    );
   }
 
-  return { message: "New first notification has been cached" };
+  await multi.exec();
+  return { message: "New first notification has been cached", newNotification };
 };
 
 // caching the current chats of the user for few hours
@@ -142,5 +174,3 @@ export const FetchChatHistory = async (req, res) => {
     );
   }
 };
-
-export const UserCurrentQueryCount = async (req, res) => {};

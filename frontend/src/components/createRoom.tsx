@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 import { CreateChatRoom } from "../store/chatRoomSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { IoIosHourglass } from "react-icons/io";
 import { LuCircleFadingPlus } from "react-icons/lu";
 import { FaPeopleGroup, FaHouseFlag } from "react-icons/fa6";
@@ -81,7 +81,6 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
             : "opacity-0 -translate-x-full  pointer-events-none"
         } flex items-center justify-center p-4`}
       >
-        <Toaster />
         <div className=" max-w-md w-full relative">
           {/* Close Button */}
           <motion.button

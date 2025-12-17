@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FiSend,
   FiPaperclip,
@@ -7,13 +7,14 @@ import {
   FiX,
   FiChevronDown,
 } from "react-icons/fi";
-import { IoMdClose, IoMdHourglass } from "react-icons/io";
+import { IoMdClose } from "react-icons/io";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
 import {
   AddNewMessage,
   AskAI,
   ChooseFile,
+  FetchMoreChatsInTheRoom,
   SearchWeb,
   SetChatRoomFile,
   setFavicon,
@@ -27,10 +28,10 @@ import {
   leaveChatRoom,
   connectSocket,
   GetChatRoomHistory,
-  isTyping,
+  // isTyping,
   setWhoIsTyping,
 } from "../store/websockteSlice.ts";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { Streamdown } from "streamdown";
 import { FaInternetExplorer } from "react-icons/fa";
@@ -40,8 +41,14 @@ import AiQuerySection from "@/components/AiQuerySection.tsx";
 import WebSearchPanel from "@/components/ChatRoomWebSearch.tsx";
 import DocUsed from "@/components/DocumentsUsed.tsx";
 import SynthesisMode from "@/components/ChatRoomSynthesisMode.tsx";
+import SynthesisPanel from "@/components/SynthesiQueryBar.tsx";
 import { GiArchiveResearch } from "react-icons/gi";
 
+import {
+  emptyArray,
+  setRoomQueryMode,
+  setShowSynthesisPanel,
+} from "../store/chatRoomSlice.ts";
 const ChatRoom = () => {
   const { id } = useParams();
   // State management
@@ -52,6 +59,7 @@ const ChatRoom = () => {
   const [aiQuery, setAiQuery] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
   const data = useAppSelector((state) => state.socket.newMessage);
+  const { showSyntheSisPanel } = useAppSelector((state) => state.chats);
   const [showDocsPanel, setShowDocsPanel] = useState(false);
   const [showWebSearchPanel, setShowWebSearchPanel] = useState(false);
   // const [currentRoomName, setCurrentRoomName] = useState<any>();
@@ -61,6 +69,8 @@ const ChatRoom = () => {
   const chatrooms = useAppSelector((state) => state?.auth.chatrooms);
   const notification = useAppSelector((state) => state.socket.response);
   const isConnected = useAppSelector((state) => state.socket.isConnected);
+  const { RoomQueryMode } = useAppSelector((state) => state.chats);
+  const { fetchingMoreChats } = useAppSelector((state) => state.socket);
   const gettinChats = useAppSelector((state) => state.socket.gettingOldMessage);
   const { whoistyping, chatRoomFile } = useAppSelector((state) => state.socket);
   const roomMembers = useAppSelector((state) => state.socket.membername);
@@ -138,6 +148,18 @@ const ChatRoom = () => {
 
   // Combine all parts into a single string using a delimiter
   const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
+  // empty the doc array;
+  useEffect(() => {
+    if (RoomQueryMode !== "Synthesis") {
+      dispatch(emptyArray());
+      if (showSyntheSisPanel === true) {
+        dispatch(setShowSynthesisPanel(false));
+      }
+    } else if (RoomQueryMode === "Synthesis") {
+      dispatch(setShowSynthesisPanel(!showSyntheSisPanel));
+    }
+  }, [RoomQueryMode]);
+
   useEffect(() => {
     // Only run if the room and user information is available AND socket is connected
     if (currentRoom && User && isConnected && id) {
@@ -202,9 +224,10 @@ const ChatRoom = () => {
       room_id: currentRoom?.room_id,
       users: { username: "SYSTEM" },
     };
-    setShowDocsPanel(!showDocsPanel);
+    // setShowDocsPanel(!showDocsPanel);
     dispatch(sendMessage(systemMessage));
   };
+  //synthesis room info emittter
 
   // function to handle document queryin the chatroom
   const handleQueryDocument = async () => {
@@ -243,7 +266,7 @@ const ChatRoom = () => {
       })
     );
 
-    await dispatch(AskAI(information))
+    dispatch(AskAI(information))
       .unwrap()
       .then((res) => {
         dispatch(
@@ -286,7 +309,7 @@ const ChatRoom = () => {
       toast.error("Please login to continue");
       return;
     }
-    if (!aiQuery.trim() || isQuerying) {
+    if (!aiQuery.trim() || isQuerying === true) {
       toast.error(!aiQuery.trim() && "Please enter a question");
       return;
     }
@@ -336,6 +359,7 @@ const ChatRoom = () => {
         return res.answer;
       })
       .catch((_error) => {
+        console.log(_error);
         dispatch(
           AddNewMessage({
             message_id: MessageId,
@@ -346,36 +370,81 @@ const ChatRoom = () => {
             users: { username: "EUREKA" },
           })
         );
-
+      })
+      .finally(() => {
         setIsQuerying(false);
         setAiQuery("");
-        return _error;
       });
   };
 
-  const [timer, setTimer] = useState<any>(null);
-  //   emitting the isTyping event to the room so that others can see someone is typing
-  const HandleTypingIndicator = useCallback(() => {
-    // Clear any existing timer to prevent sending multiple events
-    if (timer) {
-      clearTimeout(timer);
+  const HandleFetchOlderChats = (event: any) => {
+    const container = event.target;
+    // const chatContainerRef = useRef(null);
+    // 1. Check Condition and Gate
+    if (container.scrollTop === 0 && fetchingMoreChats === false) {
+      // console.log("Triggering fetch for older chats...");
+
+      // Store the current scroll height BEFORE fetching new content
+      const previousScrollHeight = container.scrollHeight;
+
+      const lastMessage = data[0]; //last item
+      //the room id and the time of the last message in the array
+      const information = {
+        room_id: currentRoom?.room_id,
+        time_value: lastMessage?.created_at,
+        MessageId: lastMessage.message_id,
+        index: 1,
+      };
+
+      // console.log(information);
+      if (!information.time_value) {
+        toast.message("Unable to fetch");
+        return;
+      }
+      dispatch(FetchMoreChatsInTheRoom(information))
+        .unwrap()
+        .then((res) => {
+          if (res.message) {
+            toast.message(res.message);
+          }
+        })
+        .catch((err) => {
+          if (err) {
+            toast.error(err);
+          }
+        });
+
+      // Calculate the height of the newly loaded content
+      const newScrollHeight = container.scrollHeight;
+      const newContentHeight = newScrollHeight - previousScrollHeight;
+
+      // Set the scroll position below the new content
+      container.scrollTop = newContentHeight;
     }
+  };
+  //
+  // const [timer, setTimer] = useState<any>(null);
+  //   emitting the isTyping event to the room so that others can see someone is typing
+  // const HandleTypingIndicator = useCallback(() => {
+  //   // Clear any existing timer to prevent sending multiple events
+  //   if (timer) {
+  //     clearTimeout(timer);
+  //   }
 
-    // Set a new timer
-    const newTimer = setTimeout(() => {
-      // Dispatch the typing event
-      dispatch(
-        isTyping({ room_id: currentRoom?.room_id, username: User?.username })
-      );
-    }, 2000);
+  //   // Set a new timer
+  //   const newTimer = setTimeout(() => {
+  //     // Dispatch the typing event
+  //     dispatch(
+  //       isTyping({ room_id: currentRoom?.room_id, username: User?.username })
+  //     );
+  //   }, 2000);
 
-    // Store the timer ID in state so it can be cleared on the next call
-    setTimer(newTimer);
-  }, [dispatch, User, timer]); // Add timer to the dependency array
+  //   // Store the timer ID in state so it can be cleared on the next call
+  //   setTimer(newTimer);
+  // }, [dispatch, User, timer]); // Add timer to the dependency array
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-black text-gray-900 dark:text-gray-100">
-      <Toaster />
       {/* Mobile Header */}
       <div className="lg:hidden flex justify-between items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <h1 className="text-xl font-bold bai-jamjuree-bold">
@@ -540,6 +609,7 @@ const ChatRoom = () => {
                   dispatch(SetChatRoomFile(null));
                 }
                 setShowWebSearchPanel(!showWebSearchPanel);
+                dispatch(setRoomQueryMode("WebSearch"));
               }}
               className="w-full flex items-center justify-center space-x-2 bg-black hover:bg-gray-900 dark:hover:bg-gray-400 text-white dark:bg-white dark:text-black py-2 px-4 rounded-lg transition-colors bai-jamjuree-regular"
             >
@@ -547,14 +617,23 @@ const ChatRoom = () => {
               <span>{showDocsPanel ? "Cancel" : "Web Search"}</span>
             </button>
             <button
-              onClick={() => setShowDocsPanel(!showDocsPanel)}
+              onClick={() => {
+                setShowDocsPanel(!showDocsPanel);
+                dispatch(setRoomQueryMode("Basic"));
+              }}
               className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition-colors bai-jamjuree-regular"
             >
               <FiFileText />
               <span>{showDocsPanel ? "Hide Documents" : "My Documents"}</span>
             </button>
             <button
-              onClick={() => setShowDocsPanel(!showDocsPanel)}
+              onClick={() => {
+                setShowDocsPanel(!showDocsPanel);
+                dispatch(setRoomQueryMode("Synthesis"));
+                if (chatRoomFile !== null) {
+                  dispatch(SetChatRoomFile(null));
+                }
+              }}
               className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors bai-jamjuree-regular"
             >
               <GiArchiveResearch />
@@ -599,53 +678,50 @@ const ChatRoom = () => {
             handleRoomWebSearch={handleRoomWebSearch}
             showWebSearchPanel={showWebSearchPanel}
           />
+          {/* Synthesis mode query panel */}
+          <SynthesisPanel
+            room_id={id}
+            currentTime={currentTime}
+            currentRoom={currentRoom}
+          />
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-grotesk relative">
+          <div
+            onScroll={(e) => HandleFetchOlderChats(e)}
+            className="flex-1 overflow-y-auto max-h-screen px-3 py-4 space-grotesk relative"
+          >
+            {/* fetching more chats indicator */}
+            {fetchingMoreChats === true && (
+              <div className="text-sm text-black dark:text-white space-grotesk  mx-auto w-full flex items-center justify-center gap-4  py-2">
+                fetchhing history
+                <ul className="border-t-2 dark:border-white h-5 w-5 border:black rounded-full animate-spin"></ul>
+              </div>
+            )}
+            {/* current first batch chat gettign indicator */}
             {gettinChats === true && data.length === 0 ? (
               <div className="flex h-full">
                 <h1 className="bai-jamjuree-regular  text-green-400 m-auto flex items-center justify-center gap-2">
-                  Looking for older messages...{" "}
-                  <IoMdHourglass className="animate-spin" />
+                  Getting chats
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1 bg-green-500 rounded-sm" // Sharp corners (sm) and tech green
+                      animate={{
+                        height: ["16px", "26px", "16px"], // Grow and shrink
+                        opacity: [0.5, 1, 0.5], // Pulse opacity
+                      }}
+                      transition={{
+                        duration: 0.8,
+                        repeat: Infinity,
+                        delay: i * 0.2,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  ))}
                 </h1>
               </div>
             ) : (
               data.map((message: any, index: any) => (
                 <>
-                  {/*  return (
-                            <>
-                              <img
-                                className="h-5 w-5 rounded-full"
-                                src={icon}
-                                alt=""
-                              />
-                            </>
-                          ); */}
-                  {/* {favicon.length > 0 &&
-                    favicon.find((e) => e.MessageId === message.message_id) && (
-                      <section className="flex items-center justify-start gap-2 bai-jamjuree-semibold text-md my-6 px-3">
-                        From{" "}
-                        {
-                          favicon.find(
-                            (e: any) => e.MessageId === message.message_id
-                          )?.favicon.length
-                        }{" "}
-                        Sources
-                        {favicon
-                          .find((e) => e.MessageId === message.message_id)
-                          ?.favicon.map((icon, index) => {
-                            return (
-                              <>
-                                <img
-                                  key={`${message.message_id}_${index}`}
-                                  className="h-5 w-5 rounded-full"
-                                  src={icon}
-                                  alt="source favicon"
-                                />
-                              </>
-                            );
-                          })}
-                      </section>
-                    )} */}
                   {message.sent_by === null && (
                     <DocUsed
                       chat={message}
@@ -666,6 +742,7 @@ const ChatRoom = () => {
                     }`}
                   >
                     <div
+                      // onClick={() => console.log(message)}
                       className={`${
                         message.sent_by === User?.id
                           ? "border bg-gray-100 text-black dark:bg-white/5 dark:text-white rounded-lg rounded-br-none max-w-4/5"
@@ -713,7 +790,12 @@ const ChatRoom = () => {
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-center gap-2">
                 {/* synthesis mode */}
-                <SynthesisMode />
+                <SynthesisMode
+                  currentTime={currentTime}
+                  currentRoom={currentRoom}
+                  setShowDocsPanel={setShowDocsPanel}
+                  showDocsPanel={showDocsPanel}
+                />
                 {/* web search mode */}
 
                 <button
@@ -722,6 +804,7 @@ const ChatRoom = () => {
                       dispatch(SetChatRoomFile(null));
                     }
                     setShowWebSearchPanel(!showWebSearchPanel);
+                    dispatch(setRoomQueryMode("WebSearch"));
                   }}
                   className="bg-black text-white dark:bg-white dark:text-black rounded-full p-1.5 group relative"
                 >
@@ -735,7 +818,10 @@ const ChatRoom = () => {
                 </button>
                 {/* private doc query mode */}
                 <button
-                  onClick={() => setShowDocsPanel(!showDocsPanel)}
+                  onClick={() => {
+                    setShowDocsPanel(!showDocsPanel);
+                    dispatch(setRoomQueryMode("Basic"));
+                  }}
                   className="bg-black text-white dark:bg-white dark:text-black rounded-full p-1.5 group relative"
                 >
                   <label
@@ -750,9 +836,10 @@ const ChatRoom = () => {
                   onFocus={() => dispatch(whoIsTyping(""))}
                   type="text"
                   value={newMessage}
+                  disabled={gettinChats === true}
                   onChange={(e) => {
                     setNewMessage(e.target.value);
-                    HandleTypingIndicator();
+                    // HandleTypingIndicator();
                   }}
                   onKeyUp={(e) => e.key === "Enter" && handleSendMessage()}
                   placeholder="Type your message..."

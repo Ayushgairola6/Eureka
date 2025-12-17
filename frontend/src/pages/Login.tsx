@@ -2,7 +2,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { CiLogin } from "react-icons/ci";
 import { IoIosHourglass } from "react-icons/io";
 import { MdEmail, MdPassword } from "react-icons/md";
@@ -88,8 +88,6 @@ const Login = () => {
   return (
     <>
       <div className="relative h-screen flex items-center justify-center  z-[2]  dark:bg-black overflow-hidden">
-        <Toaster />
-
         <div className="absolute flex h-full w-full top-0 left-0 blur-2xl  z-[-1] ">
           <div
             className="w-[70%] h-[80%] md:w-[40%] m-auto rounded-t-xl    rounded-br-md rounded-bl-sm  opacity-100 Indicator"

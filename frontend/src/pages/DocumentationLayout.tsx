@@ -1,6 +1,5 @@
 import React from "react";
 import { Link, Outlet } from "react-router";
-import { Toaster } from "sonner";
 
 type DocLayoutProps = {
   children?: React.ReactNode;
@@ -53,7 +52,6 @@ const DocumentationLayout: React.FC<DocLayoutProps> = ({ children }) => {
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-blue-600/20 blur-3xl z-[-1]" />
       {/* Main Content */}
       {/* <main className=" px-4 pt-2"> */}
-      <Toaster />
       {children || <Outlet />} {/* Render either children or Outlet */}
       {/* </main> */}
     </div>

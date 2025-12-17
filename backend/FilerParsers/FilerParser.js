@@ -5,10 +5,15 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { MarkdownTextSplitter } from "@langchain/textsplitters";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
+import { PDFExtract } from "pdf.js-extract";
 import { toMarkdown } from "mdast-util-to-markdown";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { supabase } from "../controllers/supabaseHandler.js";
+import pdf2md from "@opendocsg/pdf2md";
+
 const AllowedFileTypes = ["docx", "json", "md", "pptx", "csv", "txt", "pdf"];
+
+const pdfExtract = new PDFExtract();
 
 export const CheckFileTypeAndParseIt = async (file) => {
   try {
@@ -66,7 +71,18 @@ async function ParseTxtileType(file) {
 
 async function ParseCsvFileType(file) {
   const content = file.buffer.toString("utf-8");
-  return parse(content, { columns: true, skip_empty_lines: true });
+  const rows = parse(content, { columns: true, skip_empty_lines: true });
+
+  return rows
+    .map((row) => {
+      return (
+        "Row Data: " +
+        Object.entries(row)
+          .map(([key, val]) => `${key}=${val}`)
+          .join(", ")
+      );
+    })
+    .join("\n");
 }
 
 async function ParseMdFileType(file) {
@@ -83,17 +99,23 @@ async function ParsePptxFileType(file) {
 }
 
 async function ParsePdfFileType(file) {
-  const blob = new Blob([file.buffer], { type: file.mimetype });
-  const loader = new PDFLoader(blob, {
-    splitPages: false,
-  });
-  const docs = await loader.load();
-  // console.log(docs[0].pageContent[0]);
+  // const blob = new Blob([file.buffer], { type: file.mimetype });
+  // const loader = new PDFLoader(blob, {
+  //   splitPages: false,
+  // });
 
-  if (!docs || !docs[0].pageContent) {
-    return res.status(400).json({ message: "Error while uploading the file" });
-  }
-  return docs[0].pageContent;
+  // const docs = await loader.load();
+
+  // if (!docs || docs.length === 0 || !docs[0].pageContent) {
+  //   return res.status(400).json({ message: "Error while uploading the file" });
+  // }
+  // return docs[0].pageContent;
+  const buffer = file.buffer;
+
+  // pdf2md expects a typed array or buffer
+  const markdown = await pdf2md(buffer);
+
+  return markdown;
 }
 
 // handling markdowns

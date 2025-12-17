@@ -1,6 +1,6 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { DeleteDocuments } from "../store/InterfaceSlice";
 
 type Props = {
@@ -99,7 +99,6 @@ const ConfirmationBox: React.FC<Props> = ({
             </button>
           </div>
         </section>
-        <Toaster />
       </div>
     </>
   );

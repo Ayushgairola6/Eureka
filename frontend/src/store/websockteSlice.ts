@@ -25,6 +25,7 @@ interface NewMessages {
   sent_at: Date;
   room_id: string;
   users: users;
+  created_at: string | null;
 }
 
 interface leaveroom {
@@ -55,6 +56,7 @@ interface chatStates {
   membername: RoomMembers[];
   chatRoomFile: chatRoomFile | null;
   favicon: Favicon[];
+  fetchingMoreChats: boolean;
   currentStatus: string;
 }
 const initialState: chatStates = {
@@ -69,6 +71,7 @@ const initialState: chatStates = {
   chatRoomFile: null,
   favicon: [],
   currentStatus: "Analyzing",
+  fetchingMoreChats: false,
 };
 export const GetChatRoomHistory = createAsyncThunk(
   "room/history",
@@ -129,8 +132,8 @@ export const SearchWeb = createAsyncThunk<any, any>(
     try {
       const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
       const response = await axios.post(
-        `${BaseApiUrl}/api/chat-room/ask-web/${query}`,
-        { room_id, MessageId },
+        `${BaseApiUrl}/api/user/chat-room/ask-web`,
+        { room_id, MessageId, query },
         {
           withCredentials: true,
           headers: {
@@ -143,14 +146,37 @@ export const SearchWeb = createAsyncThunk<any, any>(
         favicon: response.data.favicon || [],
       };
     } catch (error: any) {
+      console.error(error);
       return rejectWithValue(
         error?.response?.data?.message ||
-          "I was unable to find relevant information about the question you asked in this document"
+          "I am having some trouble generating a response right now !"
       );
     }
   }
 );
 
+//fetches moremessages for the user in the chatRoomb based on the subscription
+export const FetchMoreChatsInTheRoom = createAsyncThunk<any, object>(
+  "get/more-chats",
+  async (data, { rejectWithValue }) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const response = await axios.post(
+        `${BaseApiUrl}/api/room/history/chats`,
+        data,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message);
+    }
+  }
+);
 const socketSlice = createSlice({
   name: "socket",
   initialState,
@@ -244,6 +270,20 @@ const socketSlice = createSlice({
       })
       .addCase(GetChatRoomHistory.rejected, (state) => {
         state.gettingOldMessage = false;
+      })
+      //fethcing more messages for the room
+      //fetching more chats
+      .addCase(FetchMoreChatsInTheRoom.rejected, (state, _action) => {
+        state.fetchingMoreChats = false;
+      })
+      .addCase(FetchMoreChatsInTheRoom.pending, (state, _action) => {
+        state.fetchingMoreChats = true;
+      })
+      .addCase(FetchMoreChatsInTheRoom.fulfilled, (state, _action) => {
+        state.fetchingMoreChats = false;
+        if (_action.payload.history) {
+          state.newMessage = [..._action.payload.history, ...state.newMessage];
+        }
       });
     // ask ai function for chatrooms
     // .addCase(AskAI.rejected, (state, action) => {

@@ -1,6 +1,6 @@
 import { FiCheckCircle, FiLock, FiChevronDown } from "react-icons/fi";
 import { useState } from "react";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { Link } from "react-router";
 import { useAppSelector } from "../store/hooks.tsx";
 
@@ -353,7 +353,6 @@ const Pricing = () => {
             ))}
           </div>
         </div>
-        <Toaster />
       </div>
     </>
   );

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router";
 import axios from "axios";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { FaUserPlus, FaUser } from "react-icons/fa";
 import { MdEmail, MdPassword } from "react-icons/md";
 import { LuEyeClosed, LuEye, LuLogIn } from "react-icons/lu";
@@ -335,7 +335,6 @@ const Register = () => {
             </Link>
           </div>
         </div>
-        <Toaster />
       </div>
     </>
   );

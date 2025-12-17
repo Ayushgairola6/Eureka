@@ -27,14 +27,22 @@ import {
   UpdateTheNotificationCache,
   UpdateUserFileListCacheInfo,
 } from "../CachingHandler/redisClient.js";
-import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
-import { ProcessUserQuery } from "./UserCreditLimitController.js";
+import { EmitEvent, getIo } from "../websocketsHandler.js/socketIoInitiater.js";
+import {
+  CheckUserContributionCount,
+  ProcessUserQuery,
+} from "./UserCreditLimitController.js";
 import {
   KNOWLEDGE_DISTRIBUTOR_PROMPT,
   SUMMARIZATION_ANALYST_PROMPT,
   WEB_SEARCH_DISTRIBUTOR_PROMPT,
 } from "../Prompts/Prompts.js";
-const pc = new Pinecone({
+// import {
+//   generateEmbedding,
+//   generateEmbeddingsWithGoogle,
+// } from "../embeddings/Embeddings.js";
+// import { UpsertDocs } from "../UpsertHandler.js/upsert.js";
+export const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
 
@@ -111,7 +119,16 @@ export const FileUploadHandle = async (req, res) => {
     }
     const documentId = uuidv4();
 
+    EmitEvent(userid, "UploadStatus", "Parsing Document");
     const ParsedText = await CheckFileTypeAndParseIt(file);
+    // console.log(ParsedText);
+
+    if (!ParsedText) {
+      return res.status(400).send({
+        message: "An error occured while extracting text from your file",
+      });
+    }
+
     const textChunks = await splitTextIntoChunks(ParsedText);
 
     // get the file extension type and append to the title
@@ -120,27 +137,46 @@ export const FileUploadHandle = async (req, res) => {
       await notifyMe(`Error while chunking the text by ${req.user.username}`);
       return res.status(400).json({
         message: "Error while processing your file",
-        insertData: {
-          id: "Not found",
-          chunk_count: 0,
-          feedback: feedback,
-          created_at: new Date().toISOString(),
-          document_id: documentId,
-        },
       });
     }
+
+    EmitEvent(userid, "UploadStatus", "Creating Chunks");
+
+    //limit of texts for free  users
+    if (req.user.PaymentStatus === false && textChunks.length > 25) {
+      return res.status(400).send({
+        message: "Purchase our premium to be able to upload large documents.",
+      });
+    }
+
+    //check user contributioncount
+    //currently for only free users
+    // later for other tiers as well
+    if (req.user.PaymentStatus === false) {
+      const checkUpperBound = await CheckUserContributionCount(req.user);
+
+      if (
+        checkUpperBound &&
+        checkUpperBound.message.trim().toLowerCase().includes("limit reached")
+      ) {
+        return res.status(400).send({
+          message: `You've reached your limit of 2 private documents for the free tier. Upgrade your plan to upload more and unlock additional features.`,
+        });
+      }
+    }
+
     // random id for the doc
     let chunkNumber;
     // array to store a unique record array for upsert operation
     const recordsToUpsert = [];
     // the size of one batch that we process
-    const batchSize = req.user.PaymentStatus === true ? 90 : 50;
+    const batchSize = req.user.PaymentStatus === true ? 50 : 10;
     // loop to start pushing chunks into the db
     for (let i = 0; i < textChunks.length; i++) {
       // Generate a unique ID for each chunk
       // Option 1: documentId-chunkIndex (simple)
       chunkNumber = i;
-      const chunkId = `${documentId.trim()}:${req.user.username.trim()}:${feedback.trim()}:${chunkNumber}`;
+      const chunkId = `id=${documentId.trim()}:chunkcount=${chunkNumber}`;
 
       // pushing the chunk data in formatted way to store in the db
       recordsToUpsert.push({
@@ -149,7 +185,7 @@ export const FileUploadHandle = async (req, res) => {
         visibility: visibility,
         category: category,
         subCategory: subCategory,
-        date_of_contribution: new Date().toISOString(),
+        date_of_contribution: new Date().toISOString().split("T")[0],
         documentId: documentId,
         contributor: userid,
       });
@@ -157,6 +193,8 @@ export const FileUploadHandle = async (req, res) => {
       // If batch is full or it's the last chunk, upsert the batch
       if (recordsToUpsert.length === batchSize || i === textChunks.length - 1) {
         try {
+          EmitEvent(userid, "UploadStatus", "Upserting vectors");
+
           await index.upsertRecords(recordsToUpsert); //upsert the records
           // console.log(`Upserted batch of ${recordsToUpsert.length} records.`);
           recordsToUpsert.length = 0; // reset the records array
@@ -206,16 +244,16 @@ export const FileUploadHandle = async (req, res) => {
       about: about,
     };
     // storing the contribution details
+    EmitEvent(userid, "UploadStatus", "Creating Record");
     const StoredContribution = await StoreContributionDetails(
-      email,
-      `${feedback}.${FileType}`, //append the file extension for ux purposes
+      `${feedback}.${FileType}`,
       userid,
       visibility,
       documentId,
       chunkNumber,
       documentmetadata
     );
-    const UserAccountDataKey = `user_id=${userid}&username=${req.user.username}'s_dashboardData`;
+    const UserAccountDataKey = `user_id=${userid}'s_dashboardData`;
 
     if (StoredContribution?.error) {
       await notifyMe(StoredContribution.error);
@@ -223,9 +261,8 @@ export const FileUploadHandle = async (req, res) => {
         message: StoredContribution.error,
         insertData: {
           id: "Not found",
-          chunk_count: 0,
+          chunk_count: chunkNumber,
           feedback: feedback,
-          created_at: new Date().toISOString(),
           document_id: documentId,
         },
       });
@@ -240,54 +277,15 @@ export const FileUploadHandle = async (req, res) => {
       }
     }
 
-    // create a new notification and inster it in the db
-    const metadata = {
-      sent_by_username: "System",
-    };
-    // add a new notification
-    const { data: newNotification, error: insertError } = await supabase
-      .from("notifications")
-      .insert({
-        user_id: userid, //person who is responsible for this notification
-        notification_type: "Informatory",
-        notification_message: `A new file ${feedback} uploaded .`,
-        title: "New file uploaded",
-        metadata: metadata,
-      })
-      .select("*")
-      .single();
+    /// update the notifications
+    const result = await UpdateTheNotificationCache(
+      UserAccountDataKey,
+      userid,
+      feedback
+    );
 
-    if (insertError) {
-      await notifyMe(
-        `${insertError}= This error occured while Inserting notification data in file upload controller `
-      );
-    }
-
-    const exists = await redisClient.exists(UserAccountDataKey); //if the user data exists in the cache
-
-    // if the user cache exists
-    if (exists) {
-      const oldNotification = await redisClient.hGet(
-        UserAccountDataKey,
-        "notification"
-      );
-      const UpdatedArray = JSON.parse(oldNotification); //parse and add new notificaiton object
-      UpdatedArray.push(newNotification);
-      await redisClient.hSet(
-        UserAccountDataKey,
-        "notification",
-        JSON.stringify(UpdatedArray)
-      ); //update the cache data
-      await redisClient.hSet(
-        UserAccountDataKey,
-        "notificationcount",
-        JSON.stringify(UpdatedArray.length)
-      );
-    }
-
-    const io = getIo();
-    if (io) {
-      io.to(userid).emit("new_Notification", newNotification);
+    if (result && result.newNotification) {
+      EmitEvent(userid, "new_Notification", result.newNotification);
     }
 
     return res.json({
@@ -300,6 +298,28 @@ export const FileUploadHandle = async (req, res) => {
     return res.status(500).json({ message: "Internal Server error" });
   }
 };
+
+//helper function to insert the records
+export async function InsertRecords(ReferenceArray) {
+  if (ReferenceArray.length === 0) {
+    return { message: "Array is empty in the inertrecords function" };
+  }
+
+  const { error } = await supabase
+    .from("DocumenteEmbeddings")
+    .insert(ReferenceArray);
+
+  if (error) {
+    console.error(
+      error,
+      "An error occured in the embeddings upsertion handler"
+    );
+    return { message: "Failed" };
+  }
+
+  return { message: "Upserted" };
+}
+
 //deleting the whole information of a file except the data of public contributed files;
 export const DeleteFileHandle = async (req, res) => {
   try {
@@ -312,10 +332,10 @@ export const DeleteFileHandle = async (req, res) => {
     const { document_id } = req.query;
 
     let preference;
-    const UserAccountDataKey = `user_id=${user.user_id}&username=${user.username}'s_dashboardData`;
-    const userdataexists = await redisClient.exists(UserAccountDataKey);
-    if (userdataexists) {
-      const info = await redisClient.hGet(UserAccountDataKey, "userdata");
+    const UserAccountDataKey = `user_id=${user.user_id}'s_dashboardData`;
+    const info = await redisClient.hGet(UserAccountDataKey, "userdata");
+
+    if (info) {
       const parsed = JSON.parse(info);
       preference = parsed.AllowedTrainingModels;
     } else {
@@ -341,7 +361,7 @@ export const DeleteFileHandle = async (req, res) => {
     //deleting the chat history of this document
     if (preference === "NO") {
       const deletion = await deleteFileData(document_id, user); //
-      if (deletion.error) {
+      if (deletion?.error) {
         return res.status(400).send({ message: deletion.error });
       }
       // delete all the ifnormation related to the file
@@ -359,12 +379,11 @@ export const DeleteFileHandle = async (req, res) => {
     // users dashboard info cache key
 
     // delete the file record from the cache too
-    const contributionsExits = await redisClient.exists(UserAccountDataKey);
-    if (contributionsExits) {
-      const Contributions = await redisClient.hGet(
-        UserAccountDataKey,
-        "Contributions"
-      );
+    const Contributions = await redisClient.hGet(
+      UserAccountDataKey,
+      "Contributions"
+    );
+    if (Contributions) {
       const NewContributions = JSON.parse(Contributions);
       // removing the designated files info from the cache as well
 
@@ -382,16 +401,26 @@ export const DeleteFileHandle = async (req, res) => {
 
     return res.send({ message: "File deleted" });
   } catch (error) {
+    console.error(error);
     await notifyMe(`Error in deleting file function`, error);
     return res.status(500).send({ message: "Something went wrong!" });
   }
 };
 // functin to split text content into chunks
 export async function splitTextIntoChunks(documentText) {
+  const customSeparators = [
+    "\n\n",
+    "\n\n--- PAGE BREAK ---\n\n", // Great idea to keep this marker!
+    "\n",
+    " ",
+    "",
+  ];
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
     chunkOverlap: 200,
+    separators: customSeparators,
   });
+
   const chunks = await splitter.splitText(documentText);
   return chunks;
 }
@@ -447,13 +476,13 @@ export const GetPublicRecords = async (req, res) => {
     }
 
     // update the daily quota of the user
-    const UpdateState = await ProcessUserQuery(req.user);
+    const UpdateState = await ProcessUserQuery(req.user, "Public");
 
     // if user has reached the
-    if (UpdateState.status.includes("not ok")) {
+    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
         Answer: UpdateState.message,
-        message: "Reached todays limit",
+        message: "Todays quota has finished!",
         docUsed: [],
       });
     }
@@ -531,7 +560,7 @@ export const GetPublicRecords = async (req, res) => {
       question,
       `This is the information found from the public knowledgebase =${FoundData}`,
       KNOWLEDGE_DISTRIBUTOR_PROMPT,
-      req.user.PaymentStatus
+      req.user
     );
 
     // const AnswerToUsersQuestion = "THis is a hardcoded answer";
@@ -613,7 +642,6 @@ export const GetPublicRecords = async (req, res) => {
 
 // store user file upload information
 export const StoreContributionDetails = async (
-  email,
   feedback,
   userid,
   visibility,
@@ -623,8 +651,6 @@ export const StoreContributionDetails = async (
 ) => {
   try {
     if (
-      !email ||
-      typeof email !== "string" ||
       !feedback ||
       typeof feedback !== "string" ||
       !userid ||
@@ -637,7 +663,6 @@ export const StoreContributionDetails = async (
     const { data, error } = await supabase
       .from("Contributions")
       .insert({
-        email: email,
         feedback: feedback,
         user_id: userid,
         Document_visibility: visibility,
@@ -721,13 +746,14 @@ export const GetPrivateDocResultss = async (req, res) => {
     }
     //  setting the specific headers for stream type
     // check the current credit limit record for the user
-    const UpdateState = await ProcessUserQuery(req.user);
+    const UpdateState = await ProcessUserQuery(req.user, "ask_private");
 
     // if user has reached the
-    if (UpdateState?.status && UpdateState?.status.includes("not ok")) {
+    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
         Answer: UpdateState.message,
-        message: "Limit reached found",
+        message: "Todays quota has finished!",
+        docUsed: [],
       });
     }
 
@@ -774,7 +800,7 @@ export const GetPrivateDocResultss = async (req, res) => {
       }
       const { data, error } = await supabase
         .from("Contributions")
-        .select("feedback , chunk_count ,username")
+        .select(" chunk_count")
         .eq("document_id", docId);
 
       if (error || !data.length === 0) {
@@ -786,8 +812,6 @@ export const GetPrivateDocResultss = async (req, res) => {
       //   console.log(data)
       response = await getAllDocumentTextsForSummary(
         docId,
-        data[0].username,
-        data[0].feedback,
         data[0].chunk_count
       );
       if (!response || response.length === 0) {
@@ -815,7 +839,12 @@ export const GetPrivateDocResultss = async (req, res) => {
 
       // appending the text to the context string for better understanding and accurate results
       FormattedContextString += formattedContext;
-      // FoundData.push(...formattedContext);
+
+      ///if the response is from fetch metho
+    } else {
+      response.forEach((str) => {
+        FormattedContextString += str;
+      });
     }
     // user message object
     const message = {
@@ -832,7 +861,8 @@ export const GetPrivateDocResultss = async (req, res) => {
       FormattedContextString !== 0
         ? FormattedContextString
         : "No relevant results were found in the database",
-      SYSTEM_PROMPT
+      SYSTEM_PROMPT,
+      user
     );
 
     if (AnswerToUsersQuestion?.error) {
@@ -909,99 +939,99 @@ export const PostTypeWebSearch = async (req, res) => {
     // if (!question) return res.status(404).send({ message: "Invalid question" });
 
     // check the current credit limit record for the user
-    const UpdateState = await ProcessUserQuery(req.user);
+    const UpdateState = await ProcessUserQuery(req.user, "web_search");
 
     // if user has reached the
-    if (UpdateState.status.trim().includes("not ok")) {
-      console.log(UpdateState, "current status failed");
+    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
-        Answer: "You have reached you daily limit for today",
-        message: "Limit reached found",
+        Answer: UpdateState.message,
+        message: "Todays quota has finished!",
+        docUsed: [],
+      });
+    }
+    const WebResults = await SearchQueryResults(question, req.user);
+    if (WebResults.error) {
+      await notifyMe(WebResults.error);
+      return res.status(400).send({ message: "The server is busy right now" });
+    }
+    const Formattedresult = formatForGemini(WebResults.response);
+    if (!Formattedresult) {
+      await notifyMe(`${Formattedresult}, "Results formatting error"`);
+      return res.status(400).send({
+        message: "The server is busy right now",
         favicon: { MessageId, icon: [] },
       });
     }
-    // const WebResults = await SearchQueryResults(question, req.user);
-    // if (WebResults.error) {
-    //   await notifyMe(WebResults.error);
-    //   return res.status(400).send({ message: "The server is busy right now" });
-    // }
-    // const Formattedresult = formatForGemini(WebResults.response);
-    // if (!Formattedresult) {
-    //   await notifyMe(`${Formattedresult}, "Results formatting error"`);
-    //   return res.status(400).send({
-    //     message: "The server is busy right now",
-    //     favicon: { MessageId, icon: [] },
-    //   });
-    // }
 
-    // const message = {
-    //   id: userMessageId, //users message Id
-    //   sent_by: "You", //sent by the user
-    //   message: { isComplete: true, content: question },
-    //   sent_at: currentTime,
-    // };
-    // // update the cache
-    // await CacheCurrentChat(message, req.user);
-    // const WebResultPrompt = WEB_SEARCH_DISTRIBUTOR_PROMPT;
-    // let Answer = await GenerateResponse(
-    //   question,
-    //   Formattedresult,
-    //   WebResultPrompt
-    // );
-    // if (Answer.error) {
-    //   console.error(Answer.error, "Gemini response generation error");
-    //   await notifyMe(
-    //     `Error while generating a response by gemini :${Answer.error}`
-    //   );
-    //   // fallback response
-    //   const results = await FormatForHumanFallback(WebResults.response);
-    //   Answer = results.text;
-    // }
+    const message = {
+      id: userMessageId, //users message Id
+      sent_by: "You", //sent by the user
+      message: { isComplete: true, content: question },
+      sent_at: currentTime,
+    };
+    // update the cache
+    await CacheCurrentChat(message, req.user);
+    const WebResultPrompt = WEB_SEARCH_DISTRIBUTOR_PROMPT;
+    let Answer = await GenerateResponse(
+      question,
+      Formattedresult,
+      WebResultPrompt,
+      req.user
+    );
+    if (Answer.error) {
+      console.error(Answer.error, "Gemini response generation error");
+      await notifyMe(
+        `Error while generating a response by gemini :${Answer.error}`
+      );
+      // fallback response
+      const results = await FormatForHumanFallback(WebResults.response);
+      Answer = results.text;
+    }
 
-    // const AiMessage = {
-    //   id: MessageId,
-    //   sent_by: "Eureka", //sent by the user
-    //   message: {
-    //     isComplete: true,
-    //     content: Answer,
-    //   },
-    //   sent_at: currentTime,
-    // };
-    // // update the cache
-    // await CacheCurrentChat(AiMessage, req.user);
+    const AiMessage = {
+      id: MessageId,
+      sent_by: "Eureka", //sent by the user
+      message: {
+        isComplete: true,
+        content: Answer,
+      },
+      sent_at: currentTime,
+    };
+    // update the cache
+    await CacheCurrentChat(AiMessage, req.user);
 
-    // // store in the db
-    // const StoreChats = await StoreQueryAndResponse(user_id, question, Answer);
-    // if (StoreChats.error) {
-    //   await notifyMe(
-    //     `Error while storing response history ${StoreChats.error}`
-    //   );
-    // }
+    // store in the db
+    const StoreChats = await StoreQueryAndResponse(user_id, question, Answer);
+    if (StoreChats.error) {
+      await notifyMe(
+        `Error while storing response history ${StoreChats.error}`
+      );
+    }
 
-    // // find the update the chats
-    // const misallaneousChatsKey = `user=${req.user.username}'s_misallaneousChats`;
-    // // update the chats cache in redis
-    // const OldChats = await redisClient.get(misallaneousChatsKey);
-    // if (OldChats) {
-    //   const newChats = JSON.parse(OldChats);
-    //   newChats.push({
-    //     created_at: new Date().toISOString(),
-    //     question: question,
-    //     AI_response: Answer.text,
-    //   });
+    // find the update the chats
+    const misallaneousChatsKey = `user=${req.user.username}'s_misallaneousChats`;
+    // update the chats cache in redis
+    const OldChats = await redisClient.get(misallaneousChatsKey);
+    if (OldChats) {
+      const newChats = JSON.parse(OldChats);
+      newChats.push({
+        created_at: new Date().toISOString(),
+        question: question,
+        AI_response: Answer.text,
+      });
 
-    //   //update the value of the key
-    //   await redisClient.set(misallaneousChatsKey, JSON.stringify(newChats), {
-    //     expiration: {
-    //       type: "Ex",
-    //       value: 600,
-    //     },
-    //   });
-    // }
+      //update the value of the key
+      await redisClient.set(misallaneousChatsKey, JSON.stringify(newChats), {
+        expiration: {
+          type: "Ex",
+          value: 600,
+        },
+      });
+    }
 
     const FormattedFavicon = {
       MessageId,
-      icon: [], //favicon array from the web search
+      icon: WebResults.favicon, //favicon array from the web search
     };
 
     //  now that we have generated all the response and data for the user
@@ -1009,7 +1039,7 @@ export const PostTypeWebSearch = async (req, res) => {
     //if true we update the value in both else we create a new record
 
     return res.send({
-      Answer: "Testing the rate limit system",
+      Answer: Answer,
       message: "Results found",
       favicon: FormattedFavicon,
     });
@@ -1024,14 +1054,9 @@ export const PostTypeWebSearch = async (req, res) => {
 };
 
 // extract text from the chunks based on the chunk Ids
-export async function getAllDocumentTextsForSummary(
-  docId,
-  username,
-  title,
-  totalChunks
-) {
+export async function getAllDocumentTextsForSummary(docId, totalChunks) {
   // console.log(docId, username, title, totalChunks)
-  if (!docId || !username || !title || !totalChunks) {
+  if (!docId || !totalChunks) {
     console.warn(`No chunks to fetch for document: ${docId}`);
     return [];
   }
@@ -1041,7 +1066,7 @@ export async function getAllDocumentTextsForSummary(
   let chunkId;
   for (let i = 0; i < totalChunks; i++) {
     // console.log("Running the id creattion loop")
-    chunkId = `${docId.trim()}:${username.trim()}:${title.trim()}:${i}`;
+    chunkId = `id=${docId.trim()}:chunkcount=${i}`;
     // console.log(chunkId, 'individual chunksId')
 
     allChunkIds.push(chunkId);
@@ -1067,7 +1092,6 @@ export async function getAllDocumentTextsForSummary(
     }
 
     // Return the array of text strings.
-    // console.log(allTextChunks)
     return allTextChunks;
   } catch (error) {
     console.error("Error fetching all document chunks:", error);

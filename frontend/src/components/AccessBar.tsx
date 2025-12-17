@@ -29,7 +29,7 @@ const AccessBar: React.FC<props> = ({ Showfeatures }) => {
     dark:bg-gray-100 dark:text-black text-white bg-black 
     space-grotesk p-1 
     text-sm md:text-base 
-    w-40 md:w-80 
+    w-40  text-xs 
     rounded-md shadow-lg 
     space-y-2 
     z-[99] transition-all duration-300 

@@ -55,6 +55,7 @@ interface InterfaceState {
   deleting: boolean;
   NeedToRefresh: boolean;
   SynthesisDocuments: string[];
+  uploadStatus: string;
 }
 
 const initialState: InterfaceState = {
@@ -90,6 +91,7 @@ const initialState: InterfaceState = {
   deleting: false,
   NeedToRefresh: false,
   SynthesisDocuments: [],
+  uploadStatus: "Processing",
 };
 
 // Async Thunks
@@ -106,16 +108,13 @@ export const UploadDocuments = createAsyncThunk<any, FormData>(
           headers: {
             Authorization: `Bearer ${AuthToken}`,
           },
-          onUploadProgress: (_e: any) => {
-            // console.log(e, "this is the upload progress");
-          },
         }
       );
       return response.data;
-    } catch (err) {
+    } catch (err: any) {
       // console.error("Error fetching dashboard data:", err);
       return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to fetch dashboard data"
+        err?.response?.data.message || "Failed to process your document"
       );
     }
   }
@@ -283,6 +282,7 @@ export const ProcessSynthesis = createAsyncThunk<any, any>(
       );
       return response.data;
     } catch (error: any) {
+      console.error(error);
       return rejectWithValue(error?.response?.data?.message);
     }
   }
@@ -401,6 +401,9 @@ const interfaceSlice = createSlice({
     },
     setSubCategory: (state, action) => {
       state.subCategory = action.payload;
+    },
+    setUploadStatus: (state, action) => {
+      state.uploadStatus = action.payload;
     },
     resetState: (_state) => {
       return initialState;
@@ -528,6 +531,7 @@ export const {
   setNeedToRefresh,
   SetSynthesisDocuments,
   EmptyTheSynthesisArray,
+  setUploadStatus,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

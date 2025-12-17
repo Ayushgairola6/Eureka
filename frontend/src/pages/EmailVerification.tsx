@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import axios from "axios";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { GetUserDashboardData, setIsLogin } from "../store/AuthSlice";
@@ -93,7 +93,6 @@ const EmailVerification = () => {
   }, [dispatch, navigate]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black px-4 space-grotesk">
-      <Toaster />
       <div className="max-w-md w-full bg-white dark:bg-white/10 rounded-xl shadow-lg p-8 text-center">
         {/* Header */}
         <div className="mb-8">

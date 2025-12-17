@@ -11,7 +11,13 @@ import { redisClient } from "../CachingHandler/redisClient.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import dayjs from "dayjs";
 
-export const GenerateRefreshTokens = (id, email, username, PaymentStatus) => {
+export const GenerateRefreshTokens = (
+  id,
+  email,
+  username,
+  PaymentStatus,
+  AllowedTrainingModels
+) => {
   try {
     if (
       !id ||
@@ -30,6 +36,7 @@ export const GenerateRefreshTokens = (id, email, username, PaymentStatus) => {
         username: username,
         isVerified: true,
         PaymentStatus: PaymentStatus,
+        AllowedTrainingModels: AllowedTrainingModels,
       },
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "20d" }
@@ -56,7 +63,13 @@ const GenerateEmailVerificationTokens = (username, email) => {
     return null; // Return null instead of error object
   }
 };
-export const GenerateAccessTokens = (id, email, username, PaymentStatus) => {
+export const GenerateAccessTokens = (
+  id,
+  email,
+  username,
+  PaymentStatus,
+  AllowedTrainingModels
+) => {
   try {
     if (
       !id ||
@@ -76,6 +89,7 @@ export const GenerateAccessTokens = (id, email, username, PaymentStatus) => {
         username: username,
         isVerified: true,
         PaymentStatus: PaymentStatus,
+        AllowedTrainingModels: AllowedTrainingModels,
       },
       Secret,
       { expiresIn: "20min" }
@@ -141,7 +155,9 @@ export const HandleUserRegistration = async (req, res) => {
 
     const user = { username: username, email: email };
     // send welcome email with verify account email
-    // const welcomeEmail = await EmailServices.sendWelcomeEmail(user).catch(error => console.error('Register email failed ;', error));
+    const welcomeEmail = await EmailServices.sendWelcomeEmail(user).catch(
+      (error) => console.error("Register email failed ;", error)
+    );
     const verificationtoken = GenerateEmailVerificationTokens(username, email);
 
     const verificationEmail = await EmailServices.sendAccountVerficicationEmail(
@@ -183,17 +199,15 @@ export const HandleUserLogin = async (req, res) => {
     const { data: user, error: userError } = await supabase
       .from("users")
       .select(
-        "email, id, username, password, isVerified,IsPremiumUser, Tokens(Refresh_Token)"
+        "email, id, username, password, isVerified,IsPremiumUser,AllowedTrainingModels, Tokens(Refresh_Token)"
       )
       .eq("email", normalizedEmail)
       .single();
 
+    // console.log(user);
     // if the user is not found in the database or some error occured
     if (userError || !user) {
-      await notifyMe(
-        `User not found or error in login: ${JSON.stringify(userError)}`,
-        userError
-      );
+      console.log(userError);
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -227,13 +241,15 @@ export const HandleUserLogin = async (req, res) => {
         user.id,
         user.email,
         user.email,
-        user.IsPremiumUser
+        user.IsPremiumUser,
+        user.AllowedTrainingModels
       );
       RefreshToken = GenerateRefreshTokens(
         user.id,
         user.email,
         user.username,
-        user.IsPremiumUser
+        user.IsPremiumUser,
+        user.AllowedTrainingModels
       );
     }
     // Generate new tokens if no valid refresh token exists
@@ -267,7 +283,7 @@ export const HandleUserLogin = async (req, res) => {
     });
 
     // Send login notification
-    // await sendLoginNotification(req, user);
+    await sendLoginNotification(req, user);
 
     return res.status(200).json({
       message: "Login successful",
@@ -555,7 +571,9 @@ export const GetVerificationEmail = async (req, res) => {
 
     const user = { username: data.username, email: email };
     // send welcome email with verify account email
-    // const welcomeEmail = await EmailServices.sendWelcomeEmail(user).catch(error => console.error('Register email failed ;', error));
+    const welcomeEmail = await EmailServices.sendWelcomeEmail(user).catch(
+      (error) => console.error("Register email failed ;", error)
+    );
     const verificationtoken = GenerateEmailVerificationTokens(
       data.username,
       email
@@ -939,13 +957,13 @@ export const GetUserAccountDetails = async (req, res) => {
     }
     const username = req.user.username ? req.user.username : "unkown1";
 
-    const UserAccountDataKey = `user_id=${user_id}&username=${username}'s_dashboardData`;
-    // await redisClient.del(UserAccountDataKey);
+    const UserAccountDataKey = `user_id=${user_id}'s_dashboardData`;
     //  if this cache key exists in the memory return the info from it after parsing to original values
+    // await redisClient.del(UserAccountDataKey);
     const CacheExists = await redisClient.exists(UserAccountDataKey);
     if (CacheExists) {
       const userdata = await redisClient.hGetAll(UserAccountDataKey);
-      // console.log("Serving from the cache", userdata.querycount);
+
       return res.status(200).send({
         user: JSON.parse(userdata.userdata),
         Contributions_user_id_fkey: JSON.parse(userdata.Contributions),
@@ -976,7 +994,6 @@ export const GetUserAccountDetails = async (req, res) => {
       GetNotificationsInformations(user_id),
     ]);
 
-    // console.log(userData, countData, "info from the db");
     // Consistent error handling
     if (userData.error) {
       return res.status(404).send({ message: "User not found" });
@@ -1045,7 +1062,7 @@ const StoreUserDataInTheCache = async (
   }
 
   try {
-    const UserAccountDataKey = `user_id=${user_id}&username=${username}'s_dashboardData`;
+    const UserAccountDataKey = `user_id=${user_id}'s_dashboardData`;
     await redisClient
       .hSet(UserAccountDataKey, {
         userdata: JSON.stringify(userdata ? userdata : []),
@@ -1241,31 +1258,31 @@ export const DeleteNotification = async (req, res) => {
 
     const { notification_id } = req.params;
 
-    const key = `user_id=${user_id}&username=${req.user.username}'s_dashboardData`;
+    const key = `user_id=${user_id}'s_dashboardData`;
 
     // if the data of the key exists in the cache
     const exists = await redisClient.exists(key);
     if (exists) {
       // get the notifications then remove the notification from it
-      const AllNotitifications = await redisClient.hGet(key, "notification");
+      const AllNotitifications = await redisClient.exists(key);
       if (AllNotitifications) {
-        const ParsedNotifications = JSON.parse(AllNotitifications);
+        const notifications = await redisClient.hGet(key, "notification");
+        const ParsedNotifications = JSON.parse(notifications);
         const indexOfId = ParsedNotifications.find(
           (e) => e.id === notification_id
         );
         // delete the items from it and update the cache
         ParsedNotifications.splice(indexOfId, 1);
-        await redisClient.hSet(
-          key,
-          "notification",
-          JSON.stringify(ParsedNotifications)
-        );
-        // the length of the new array is the new notificatins count
-        await redisClient.hSet(
-          key,
-          "notificationcount",
-          JSON.stringify(ParsedNotifications.length)
-        );
+        //perform all operations at once
+        await redisClient
+          .multi()
+          .hSet(key, "notification", JSON.stringify(ParsedNotifications))
+          .hSet(
+            key,
+            "notificationcount",
+            JSON.stringify(ParsedNotifications.length)
+          )
+          .exec();
       }
     }
     const { data, error } = await supabase

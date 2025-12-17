@@ -20,7 +20,6 @@ export const VerifyToken = async (req, res, next) => {
       req.cookies["Eureka_eta_six_version1_AuthToken"];
     const AuthTokenFromHeaders = req.headers?.authorization?.split(" ")[1];
     const AccessToken = AuthTokenFromCookies || AuthTokenFromHeaders;
-    // console.log(AccessToken)
 
     if (!AccessToken) {
       // console.log("No access token")
@@ -55,9 +54,6 @@ export const VerifyToken = async (req, res, next) => {
             .eq(" user_id", DecodedData?.user_id);
 
           if (error || !data) {
-            // console.log(data, error)
-            // console.log("No Refresh token in database");
-
             return res
               .status(401)
               .json({ message: "Session expired. Please log in again." });
@@ -76,8 +72,6 @@ export const VerifyToken = async (req, res, next) => {
           );
         }
 
-        // console.log("refreshtoken data", refreshToken)
-
         let refreshDecoded;
         try {
           refreshDecoded = await verifyJwtAsync(
@@ -85,7 +79,9 @@ export const VerifyToken = async (req, res, next) => {
             process.env.REFRESH_TOKEN_SECRET
           );
         } catch (refreshErr) {
-          const hasCachedRefreshToken = await redisClient.get(RefreshTokenKey);
+          const hasCachedRefreshToken = await redisClient.exists(
+            RefreshTokenKey
+          );
           if (hasCachedRefreshToken) {
             await redisClient.del(RefreshTokenKey);
           }
@@ -123,6 +119,8 @@ export const VerifyToken = async (req, res, next) => {
       return res.status(403).json({ message: "Invalid or malformed token." });
     }
   } catch (error) {
+    // console.error(error);
+    await notifyMe("An error occured in the authMiddleware", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -234,17 +232,20 @@ export async function HandlePreferenceToggle(req, res) {
         pref: value === "YES" ? "NO" : "YES",
       });
     }
-    const UserAccountDataKey = `user_id=${user.user_id}&username=${user.username}'s_dashboardData`;
+    const UserAccountDataKey = `user_id=${user.user_id}'s_dashboardData`;
 
     const cacheExists = await redisClient.exists(UserAccountDataKey);
     const userInfo = await redisClient.hGet(UserAccountDataKey, "userdata");
 
     const parsedInfo = JSON.parse(userInfo);
+    // console.log(parsedInfo);
     // if both the old and new values match do nothing
-    if (parsedInfo.AllowedTrainingModels === value) {
+    if (parsedInfo && parsedInfo.AllowedTrainingModels === value) {
       return res.status(200).send({ message: "updated", pref: value });
     }
+    //if cache exists
     if (cacheExists) {
+      //update the db
       const { error } = await supabase
         .from("users")
         .update({ AllowedTrainingModels: value })
@@ -258,6 +259,7 @@ export async function HandlePreferenceToggle(req, res) {
         });
       }
 
+      // update the cache as well
       const parsedInfo = JSON.parse(userInfo);
       // console.log(parsedInfo);
       const NewInfo = {
@@ -265,19 +267,13 @@ export async function HandlePreferenceToggle(req, res) {
         AllowedTrainingModels: value,
       };
 
-      let retries = 0;
-      while (retries <= 2) {
-        //max 2 retries
-        // console.log(NewInfo);
-        await redisClient
-          .hSet(UserAccountDataKey, "userdata", JSON.stringify(NewInfo))
-          .catch((error) => {
-            if (error) {
-              retries++; //if error occurs retry the updation
-            }
-          });
-      }
+      await redisClient
+        .hSet(UserAccountDataKey, "userdata", JSON.stringify(NewInfo))
+        .catch((error) => {
+          console.error(error);
+        });
     } else {
+      //else only update the db
       const { error } = await supabase
         .from("users")
         .update({ AllowedTrainingModels: value })

@@ -29,7 +29,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
     "Collaborating",
     "Contributing",
   ];
-  const [text, setText] = useState<string>(steps[3]); //default the first value of steps message
+  const [text, setText] = useState<string>(steps[0]); //default the first value of steps message
 
   // creating a slight animation effect for ux
   useEffect(() => {
@@ -45,7 +45,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
       if (i >= steps.length || Chats.length > 0) {
         clearInterval(interval);
       }
-    }, 800); //2 seconds of gap when animating
+    }, 2000); //2 seconds of gap when animating
 
     return () => clearInterval(interval); //clear the interval on unmount
   }, []);
@@ -165,17 +165,17 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
         })
       ) : (
         <div className="text-center  py-8  m-auto w-full  flex items-center justify-center flex-col gap-1">
-          <h1 className="text-2xl bai-jamjuree-bold">
+          <h1 className="text-3xl bai-jamjuree-bold">
             Welcome,{" "}
             {user?.username
               ? user?.username.split("_")[0].toLocaleUpperCase()
               : "Cadet"}{" "}
           </h1>
-          <span className="text-sm dark:text-gray-400 text-gray-700 space-grotesk">
-            What are we{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-purple-600 bai-jamjuree-bold ">
-              {text}
-            </span>{" "}
+          <span className="text-md dark:text-gray-400 text-gray-700 ">
+            What are we {/* Apply your custom class here */}
+            <span className="bai-jamjuree-bold  text-transparent bg-clip-text bg-gradient-to-r from-[#4f46e5] to-[#0891b2] dark:from-[#a78bfa] dark:to-[#22d3ee]">
+              {text}{" "}
+            </span>
             today?
           </span>
         </div>

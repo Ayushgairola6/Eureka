@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { FiMessageSquare, FiSend, FiStar } from "react-icons/fi";
 import { useAppSelector } from "../store/hooks.tsx";
 import { FaResearchgate } from "react-icons/fa";
@@ -71,8 +71,6 @@ const Feedback = () => {
   return (
     <>
       <div className="h-screen flex items-center justify-center relative z-[2]">
-        <Toaster />
-
         {/* Gradient accent background */}
         <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-blue-800/30 to-cyan-600/20 dark:from-black dark:to-black blur-2xl z-[-1]"></div>
 

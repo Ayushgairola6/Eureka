@@ -6,13 +6,30 @@ import {
   SearchQueryResults,
 } from "../OnlineSearchHandler/WebSearchHandler.js";
 import {
+  CHATROOM_IDENTIFIER_PROMPT,
+  CHATROOM_SYNTHESIS_PROMPT,
+  IDENTIFIER_PROMPT,
+  KNOWLEDGE_DISTRIBUTOR_PROMPT,
+} from "../Prompts/Prompts.js";
+import {
+  CentralFunctionProcessor,
+  ExeCuteContextEngines,
+} from "../Synthesis/Identifier.js";
+import {
   getIo,
   UpdateTheRoomChatCache,
 } from "../websocketsHandler.js/socketIoInitiater.js";
 import { index } from "./fileControllers.js";
-import { GenerateResponse } from "./ModelController.js";
+import {
+  genAI,
+  GenerateResponse,
+  HandleSummarizationOfChats,
+  SynthesisResponseGenerator,
+} from "./ModelController.js";
 import { supabase } from "./supabaseHandler.js";
 import { v4 as uuidv4 } from "uuid";
+import { ProcessUserQuery } from "./UserCreditLimitController.js";
+import { cp } from "fs";
 
 // string type validator
 const IsAString = (value) => {
@@ -293,7 +310,7 @@ export const JoinTheUser = async (room_id, user_id) => {
     if (error && error.code !== "PGRST116") {
       // 'PGRST116' means 'no rows found'
       // This is a real database error, so we should warn and return an error.
-      console.warn(error);
+      // console.warn(error);
       return { error: "Database error while checking membership" };
     }
 
@@ -306,11 +323,30 @@ export const JoinTheUser = async (room_id, user_id) => {
     // If the user is not in the room, add them.
     const { error: JoiningError } = await supabase
       .from("Room_and_Members")
-      .insert({ room_id: room_id, member_id: user_id });
+      .insert({ room_id: room_id, member_id: user_id })
+      .select();
+
     if (JoiningError) {
-      console.warn(JoiningError);
+      // console.warn(JoiningError);
       return { error: "Error while joining this room" };
     }
+    // fetch data to update the caceh of the user
+    const { data: chatrooms, error: chatRoomError } = await supabase
+      .from("Room_and_Members")
+      .select("member_id, room_id, chat_rooms(*)")
+      .eq("member_id", user_id);
+
+    if (chatRoomError) {
+      console.error("error while updating the users cache");
+    }
+    const key = `user_id=${user_id}'s_dashboardData`;
+
+    const exists = await redisClient.exists(key);
+    //if the users cache is available update that too
+    if (exists) {
+      await redisClient.hSet(key, "chatrooms", JSON.stringify(chatrooms));
+    }
+
     return { message: "Room joined successfully" };
   } catch (error) {
     return { error };
@@ -475,13 +511,28 @@ export const GetRoomChatHistory = async (req, res) => {
     if (!room_id) return res.status(400).send({ message: "Invalid room id" });
 
     const RoomChatKey = `room_id=${room_id}'s_chat-history`;
+    // await redisClient.del(RoomChatKey);
+    //if cache exists
+    const exists = await redisClient.exists(RoomChatKey);
+    let limit = req.user.PaymentStatus === true ? 15 : 10;
+    if (exists) {
+      const ChatHistory = await redisClient.lRange(RoomChatKey, -5, -1); //always recent messages
+      const parsedChats = ChatHistory.map((jsonString) => {
+        try {
+          // Parse each individual string element
+          return JSON.parse(jsonString);
+        } catch (error) {
+          console.error("Error parsing JSON message:", jsonString, error);
+          // Return a placeholder or handle the error as needed
+          return re.status(400).send({ error: "Parse Error", data: [] });
+        }
+      });
 
-    const CachedChats = await redisClient.get(RoomChatKey);
-    if (CachedChats) {
-      // console.log("CachedChats", JSON.parse(CachedChats));
-      // redisClient.del(RoomChatKey);
-      return res.status(200).send({ chats: JSON.parse(CachedChats) });
+      // console.log(parsedChats);
+      return res.status(200).send({ chats: parsedChats });
     }
+
+    //retrieve the chats from the db and cache it then send it;
     const { data, error } = await supabase
       .from("room-chat-history")
       .select(
@@ -490,13 +541,16 @@ export const GetRoomChatHistory = async (req, res) => {
     sent_at,
     sent_by,
     room_id,
-    users!sent_by (username)
+    message_id,
+    users!sent_by (username),created_at
   `
       )
       .eq("room_id", room_id)
-      .order("sent_at", { ascending: true })
-      .limit(IsPremiumUser === true ? 10 : 3);
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
+    // console.log(data);
+    //fetches the chat_history from latest to oldest
     if (!data || data.length === 0) {
       return res.status(200).send({ chats: [], message: "No messages found" });
     }
@@ -504,22 +558,139 @@ export const GetRoomChatHistory = async (req, res) => {
     if (error) {
       return res.status(400).send({ message: "Unable to read older messages" });
     }
+
     // cache the chats
-    if (data.length !== 0) {
-      await redisClient.set(RoomChatKey, JSON.stringify(data), {
-        expiration: {
-          type: "EX",
-          value: 600,
-        },
+
+    const SortedResults = [...data].reverse();
+    const stringifiedResults = SortedResults.map((chat) =>
+      JSON.stringify(chat)
+    );
+    const multi = redisClient.multi();
+    redisClient.rPush(RoomChatKey, stringifiedResults); //add it into end of the list the
+    multi.expire(RoomChatKey, 4000); // 4000 seconds
+
+    await multi
+      .exec()
+      .then()
+      .catch(async (error) => {
+        if (error) {
+          await notifyMe("An error while caching room_chat history", error);
+        }
       });
-    }
-    return res.send({ chats: data });
+
+    return res.send({ chats: SortedResults });
   } catch (error) {
     await notifyMe("GetRoommChatHistory controller error", error);
     return res.status(500).send({ message: "Internal server error" });
   }
 };
+//handles fetchign more messages
+export const FetchMoreMessages = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).send({ message: "Please login to continue" });
+    }
+    const { room_id, time_value, MessageId, index } = req.body;
+    if (
+      !room_id ||
+      !time_value ||
+      typeof room_id !== "string" ||
+      typeof time_value !== "string" ||
+      !MessageId ||
+      typeof MessageId !== "string" ||
+      !index
+    ) {
+      // console.log(req.body);
+      return res.status(400).send({ message: "Invalid arguments" });
+    }
 
+    if (user.PaymentStatus === false) {
+      return res.status(200).send({
+        message:
+          "Currently only premium members are allowed to fetch previous chats",
+      });
+    }
+    const RoomChatKey = `room_id=${room_id}'s_chat-history`;
+    // we check the oldest messaeg in the cache
+    const oldestCacheCheck = await redisClient.lRange(RoomChatKey, 0, 0);
+    if (oldestCacheCheck && oldestCacheCheck.length > 0) {
+      const cachedOldest = JSON.parse(oldestCacheCheck[0]);
+      // console.log(cachedOldest, time_value);
+
+      // If Cache Time < Client Time, the cache has older history!
+      if (
+        cachedOldest.created_at < time_value ||
+        (cachedOldest.created_at === time_value &&
+          cachedOldest.message_id < MessageId)
+      ) {
+        // 4. Retrieve the history
+        // Since we don't know exactly "where" the client's message is in the list,
+        // and Redis lists are usually small (100-200 items), fetching the whole list
+        // and filtering is often faster than doing a linear search in Redis.
+
+        const fullCache = await redisClient.lRange(RoomChatKey, 0, -1);
+        const parsedCache = fullCache.map(JSON.parse);
+
+        // Filter to return only messages OLDER than the client's anchor
+        const olderMessages = parsedCache.filter((msg) => {
+          return (
+            msg.created_at < time_value ||
+            (msg.created_at === time_value && msg.message_id < MessageId)
+          );
+        });
+
+        // Send these back!
+        return res
+          .status(200)
+          .send({ message: "Found older messages", history: olderMessages });
+      }
+    }
+
+    // // return;
+    // //then go to the database
+    const { data, error } = await supabase
+      .from("room-chat-history")
+      .select(
+        `
+        message, sent_at, sent_by, room_id, message_id, created_at,
+        users!sent_by (username)
+    `
+      )
+      .eq("room_id", room_id)
+
+      // 1. Order by timestamp ASC (Oldest first)
+      .order("created_at", { ascending: false })
+      // 2. Order by message_id ASC (Tie-breaker)
+      .order("message_id", { ascending: false })
+      .lt("created_at", time_value)
+      // .lt("message_id", MessageId)
+      .limit(1);
+
+    if ((data && data?.length === 0) || error) {
+      return res.status(404).send({ message: "No older messages found" });
+    }
+
+    const sortedChats = [...data].reverse(); //sort the array;
+
+    //update the cache if the messages are new
+    const StringifiedMessages = sortedChats.map((li) => JSON.stringify(li)); //strigify the values
+    //update the cache
+    await redisClient
+      .multi()
+      .exists(RoomChatKey)
+      .lPush(RoomChatKey, StringifiedMessages) //as the messages are older, we we push it in reversed mode behind the oler message which is at the head of the list
+      .exec();
+
+    return res
+      .status(200)
+      .send({ message: "Found older messages", history: sortedChats });
+  } catch (error) {
+    console.error(error);
+    await notifyMe("An erro while fetching more messages");
+    return res.status(500).send({ message: "Internal server error" });
+  }
+};
 // get document specific chat history
 
 export const GetDocumentChatHistory = async (req, res) => {
@@ -559,7 +730,7 @@ export const GetDocumentChatHistory = async (req, res) => {
       await redisClient.set(DocumentChatCacheKey, JSON.stringify(data), {
         expiration: {
           type: "EX",
-          value: 600,
+          value: 1500,
         },
       });
     }
@@ -675,7 +846,7 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
     // check for matching results from db
     const DbResults = await index.searchRecords({
       query: {
-        topK: 30,
+        topK: req.user.PaymentStatus === true ? 200 : 100,
         inputs: { text: question },
         filter: {
           documentId: { $eq: document_id },
@@ -790,70 +961,57 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
     await notifyMe(error);
   }
 };
-
+//web search handler for rooms
 export const QueryWebInEurekaChatRoom = async (req, res) => {
   try {
     const user_id = req.user.user_id;
-    const IsPremiumUser = req.user.PaymentStatus;
     const io = getIo();
 
-    if (IsPremiumUser === false) {
-      if (io) {
-        io.to(room_id).emit("recieved_message", {
-          message_id: MessageId,
-          sent_by: null,
-          message: `${
-            req.user.username || "User"
-          } needs to have an active subscription in order to be able to use Eureka AI in a chat room.`,
-          room_id: room_id,
-          users: { username: "EUREKA" },
-          sent_at: currentTime || new Date().toISOString(),
-        });
-      }
-      return res.status(200).send({
-        answer:
-          "You need to have an active subscription in order to be able to use Eureka AI in a chat room.",
-      });
-    }
     if (!user_id) {
       return res.status(401).send({ message: "Please login to continue" });
     }
-    const { query } = req.params;
-    if (!query) {
-      return res.status(200).send({ answer: "This question is too vague." });
-    }
-    const { room_id, MessageId } = req.body;
-    if (!room_id || !MessageId) {
+
+    const { room_id, MessageId, query } = req.body;
+
+    if (!room_id || !MessageId || !query) {
       await notifyMe("Something is wrong in the chatRoomWebSearchHandler");
       return res.status(400).send({ message: "Something went wrong" });
     }
-
-    const webResults = await SearchQueryResults(query);
+    const webResults = await SearchQueryResults(query.trim(), req.user);
     if (!webResults || webResults.error) {
-      await notifyMe(webResults.error);
+      await notifyMe("web search error", webResults.error);
 
       return res.status(400).send({ message: "Something went wrong" });
     }
 
-    const Formattedresult = formatForGemini(webResults.response);
+    let Formattedresult = formatForGemini(webResults.response);
     if (!Formattedresult) {
+      // console.log(Formattedresult);
       return res.status(400).send({
         message:
-          "The server is quite loaded right now so i am having trouble generating a response right now.",
+          "There are many users using our service right now, that is why I am having issues while processing your request right now. I want apologize for the inconvenience. If this issue presists you can contact the support team.",
       });
+    }
+
+    const ChatHistory = await ExtractChatHistory(room_id, req.user);
+    if (ChatHistory && ChatHistory.length > 0) {
+      ChatHistory.map(
+        (li, i) => (Formattedresult += `index=${i}&content=${li}`)
+      );
     }
     // creating  response for the user
     let AnswerToQuestion = await GenerateResponse(
       query,
       Formattedresult,
-      process.env.WEB_SEARCH_RESULT_PROMPT
+      WEB_SEARCH_DISTRIBUTOR_PROMPT,
+      req.user.PaymentStatus
     );
 
     if (!AnswerToQuestion || AnswerToQuestion.error) {
-      AnswerToQuestion = FormatForHumanFallback(webResults.response).text;
+      // AnswerToQuestion = FormatForHumanFallback(webResults.response).text;
       return res.status(400).send({
         message:
-          "The server is quite loaded right now so i am having trouble generating a response right now. ",
+          "There are many users using our service right now, that is why I am having issues while processing your request right now. I want apologize for the inconvenience. If this issue presists you can contact the support team. ",
       });
     }
     // emitting the response throughout the room
@@ -867,7 +1025,7 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
         sent_at: currentTime || new Date().toISOString(),
       });
     }
-    // sote the messagein the db
+    // store the message in the db
     const { error } = await supabase.from("room-chat-history").insert({
       sent_by: null,
       message: AnswerToQuestion,
@@ -896,11 +1054,244 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
       answer: AnswerToQuestion,
       favicon: FormattedFavIcon,
     });
-    console.log(Formattedresult);
+    // console.log(Formattedresult);
     return;
   } catch (error) {
+    console.error(error);
     await notifyMe("Error in quey web in chatRoomController.js", error);
 
     return res.status(500).send({ message: "Something went wrong" });
   }
 };
+
+export const GetSyntheSizedResults = async (req, res) => {
+  try {
+    const user = req.user;
+    const io = getIo();
+    if (!user) {
+      return res.status(401).send({ message: "Please log in to continue" });
+    }
+    const { question, documents, room_id, user_id, MessageId } = req.body;
+    if (!question || !documents || !room_id || !user_id || !MessageId) {
+      // console.log(req.body);
+      return res.status(400).send({ message: "Some fields are missing" });
+    }
+
+    //process the request and gather context
+    const ProcessQuery = await IdentifyRequestInputs(
+      user,
+      question,
+      documents,
+      room_id
+    );
+
+    if (!ProcessQuery?.SynthesizedResponse) {
+      return res.status(400).send({
+        message: "I was unable to proceed with your request at the moment!",
+      });
+    }
+    if (io) {
+      io.to(room_id).emit("recieved_message", {
+        message_id: MessageId,
+        sent_by: null,
+        message: ProcessQuery?.SynthesizedResponse,
+        room_id: room_id,
+        users: { username: "EUREKA" },
+        sent_at: currentTime || new Date().toISOString(),
+      });
+    }
+    // store the message in the db
+    const { error } = await supabase.from("room-chat-history").insert({
+      sent_by: null,
+      message: ProcessQuery?.SynthesizedResponse,
+      room_id: room_id,
+      message_id: MessageId,
+      sent_at: currentTime || new Date().toISOString(),
+    });
+    if (error) {
+      await notifyMe(
+        `An error occured of critical level occured when storing chat history in the db at ${currentTime}`
+      );
+    }
+    const RateLimit = await ProcessQuery(user, "Synthesis");
+    if (RateLimit.status.trim().toLowerCase().includes("not ok")) {
+      return res.status(200).send({
+        Answer: RateLimit.message,
+        message: "Todays quota has finished!",
+        docUsed: [],
+      });
+    }
+    // update the cache for EUREKA
+    await UpdateTheRoomChatCache(
+      room_id,
+      ProcessQuery?.SynthesizedResponse,
+      currentTime || new Date().toISOString,
+      null,
+      { username: "EUREKA" }
+    );
+    return res.send({
+      Answer: ProcessQuery?.SynthesizedResponse,
+    });
+  } catch (synthesisError) {
+    console.error(synthesisError);
+    await notifyMe(
+      "An error occured while creating a synthesized result in a chatroom",
+      synthesisError
+    );
+  }
+};
+
+export async function IdentifyRequestInputs(
+  user,
+  question,
+  selectedDocuments,
+  room_id
+) {
+  try {
+    let FinalString = `${CHATROOM_IDENTIFIER_PROMPT}_This is the users question=${question}`; //command for the model
+
+    const result = await genAI.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: [{ role: "user", parts: [{ text: FinalString }] }],
+      generationConfig: {
+        temperature: 0.4,
+        topP: 0.95,
+        topK: 20,
+        maxOutputTokens: 200, ///maximum 300 characters output
+      },
+    });
+
+    const responseText = result.text;
+    //     ask_pr
+    // ivate(doc_id="AUTO", query="Analyze and underst
+    // and skeptical points in the research report");
+    // GetDoc_info(doc_id="AUTO")
+    if (!responseText) {
+      await notifyMe(
+        `Error while generating a response , the code execution results are these`
+      );
+      return { error: "The server is very busy , please try again !" };
+    }
+
+    const io = getIo();
+    if (io) {
+      io.to(user.user_id).emit("SynthesisStatus", "Dissecting Request");
+    }
+    const ExtractedFunctions = CentralFunctionProcessor(responseText, io); //clearing the function string
+    // console.log(ExtractedFunctions);
+
+    if (ExtractedFunctions.length < 0) {
+      return {
+        SynthesizedResponse:
+          "I was unable to understand your request, if you could be more specific about your requirements, I will be able to process a better response",
+      };
+    }
+
+    if (io) {
+      io.to(user.user_id).emit("SynthesisStatus", "Finding sources");
+    }
+
+    //process the query
+
+    const smartExecResult = await ExeCuteContextEngines(
+      ExtractedFunctions,
+      user,
+      selectedDocuments,
+      io
+    );
+
+    if (!smartExecResult || smartExecResult.message) {
+      return {
+        SynthesizedResponse: "An error occured while processing your request",
+      };
+    }
+    const PastChats = await ExtractChatHistory(room_id, user);
+    if (PastChats.length > 0) {
+      smartExecResult.pastConversation = [...PastChats];
+    }
+
+    const ModelResponse = await SynthesisResponseGenerator(
+      JSON.stringify(smartExecResult),
+      question,
+      user,
+      CHATROOM_SYNTHESIS_PROMPT
+    );
+
+    if (ModelResponse.error) {
+      return { SynthesizedResponse: ModelResponse.error };
+    }
+
+    //incremetn query counter
+    const UpdateState = await ProcessUserQuery(user);
+
+    return { SynthesizedResponse: ModelResponse };
+  } catch (SynthesisError) {
+    console.error(SynthesisError);
+    await notifyMe("An error occured in the synthesis hanlder", SynthesisError);
+  }
+}
+
+//helper function to inject room chat history in in the model context object
+async function ExtractChatHistory(room_id, user) {
+  const key = `room_id=${room_id}'s_chat-history`;
+  const summaryKey = `room_id=${room_id}'s_summarized_history`;
+  const summaryExists = await redisClient.exists(summaryKey);
+
+  //if there is summary of room avaialble
+  if (summaryExists) {
+    const summary = await redisClient.get(summaryExists);
+    return JSON.parse(summary);
+  }
+  const exists = await redisClient.exists(key);
+
+  if (exists) {
+    const batchsize = 19;
+    const Chats = await redisClient.lRange(key, 0, 20);
+    const Parsed = Chats.map((li) => JSON.parse(li)); //fetch latest 20 messages
+    // if the messages are late or we have reached batchsize
+    const timeOfLastMessage = Parsed[Parsed.length - 1]?.created_at;
+    const lastMessageMs = new Date(timeOfLastMessage).getTime();
+    const currentMs = Date.now();
+    const timeGap = currentMs - lastMessageMs;
+    const STALE_THRESHOLD_MS = 60 * 60 * 1000;
+    //if the length has reached a number of 10
+    if (
+      batchsize ||
+      timeGap > STALE_THRESHOLD_MS //and the length of array is even number
+    ) {
+      //create a summary
+      const UpsertSummary = await HandleSummarizationOfChats(
+        room_id,
+        Parsed,
+        user
+      );
+    }
+    return Parsed;
+  } else {
+    const { data, error } = await supabase
+      .from("room-chat-history")
+      .select(
+        `
+    message,
+    sent_at,
+    room_id,
+    users!sent_by (username)
+  `
+      )
+      .eq("room_id", room_id)
+      .order("created_at", { ascending: true })
+      .limit(20);
+
+    if (error) {
+      return [];
+    }
+
+    const multi = redisClient.multi();
+    const chats = data.map((cht) => JSON.stringify(cht));
+    multi.rPush(key, chats); //cache the chats
+    multi.expire(key, 4000);
+
+    await multi.exec(); //execute all the request
+    return data;
+  }
+}

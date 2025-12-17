@@ -389,30 +389,31 @@ export const UpdateTheRoomChatCache = async (
   sent_by,
   users
 ) => {
-  try {
-    const roomChatCacheKey = `room_id=${room_id}'s_chat-history`;
-    if (!roomChatCacheKey) {
-      await notifyMe("Error while updating the room chat cache history");
-      return { message: "Error while updating the cache" };
-    }
-    const OldChats = await redisClient.get(roomChatCacheKey);
-    if (OldChats) {
-      const NewChats = JSON.parse(OldChats);
-      NewChats.push({
-        message: message,
-        sent_at: sent_at,
-        sent_by: sent_by,
-        room_id: room_id,
-        users: users,
-      });
+  const roomChatCacheKey = `room_id=${room_id}'s_chat-history`;
+  const MessageObject = {
+    message: message,
+    sent_at: sent_at,
+    sent_by: sent_by,
+    room_id: room_id,
+    users: users,
+  };
+  const stringifiedMessage = JSON.stringify(MessageObject);
 
-      await redisClient.set(roomChatCacheKey, JSON.stringify(NewChats), {
-        expiration: {
-          type: "EX",
-          value: 600,
-        },
-      });
-    }
+  try {
+    // 1. Start the single atomic block (Pipeline).
+    const multi = redisClient.multi();
+
+    // 2. ALWAYS push the message. The list is created if it doesn't exist.
+    multi.rPush(roomChatCacheKey, stringifiedMessage);
+
+    // 3. ALWAYS reset the expiry (to keep the cache alive with activity).
+    // This is the correct behavior for chat cache (time should reset on new message).
+    multi.expire(roomChatCacheKey, 4000); // 4000*60*60 1.1 hours or 4000 seconds
+
+    // 4. Execute the atomic operation in a single network round-trip.
+    await multi.exec();
+
+    // No need for the complex 'if (OldChats)' logic anymore.
   } catch (ChatCacheError) {
     await notifyMe(ChatCacheError);
   }
@@ -469,5 +470,11 @@ async function CheckRoomIdAssociatedWithRoomCode(room_code) {
   } catch (error) {
     console.error(error);
     return { error };
+  }
+}
+
+export function EmitEvent(reciever, eventName, eventValue) {
+  if (io) {
+    io.to(reciever).emit(eventName, eventValue);
   }
 }

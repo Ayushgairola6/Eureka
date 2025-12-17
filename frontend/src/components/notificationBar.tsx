@@ -7,7 +7,7 @@ import {
   SetNotifications,
   DeleteNotification,
 } from "../store/AuthSlice";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 
 const NotificationPanel = () => {
   const { isOpen } = useAppSelector((state) => state.chats);
@@ -51,7 +51,6 @@ const NotificationPanel = () => {
       className="border dark:border-gray-700 border-gray-300  absolute top-9 -right-30 md:right:5 lg:right-5 z-50 rounded-lg"
       ref={panelRef}
     >
-      <Toaster />
       {isOpen === true && (
         <div className=" w-80 dark:bg-black bg-white rounded-lg shadow-xl max-h-96 overflow-hidden bai-jamjuree-regular z-[2]">
           {/* Panel Header */}

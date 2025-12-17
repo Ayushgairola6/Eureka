@@ -23,7 +23,7 @@ import {
 } from "react-icons/fa";
 
 import { JoinAChatRoom } from "../store/chatRoomSlice.ts";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { IoMdHourglass } from "react-icons/io";
 import { BiError, BiLoaderAlt, BiLogOut } from "react-icons/bi";
 import {
@@ -100,8 +100,6 @@ const UserDashboard = () => {
       <div
         className={`dark:bg-black dark:text-white bg-white text-black relative flex min-h-screen w-full overflow-hidden z-[1] realative`}
       >
-        <Toaster />
-
         {/* Sidebar */}
         <div className="w-64 p-6 border-r  hidden md:block shadow-sm shadow-black dark:shadow-white/20">
           <div className="flex flex-col items-center justify-center mb-10 ">

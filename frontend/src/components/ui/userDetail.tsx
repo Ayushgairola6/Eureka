@@ -29,6 +29,7 @@ const UserForm: React.FC<FormProps> = ({
 }) => {
   const [searchResult, SetSearchResult] = useState<any>([]);
   const dispatch = useAppDispatch();
+  const { uploadStatus } = useAppSelector((state) => state.interface);
   //   drag and drop feature
   const isSupportedFormat = (filename: any) => {
     const supportedFormats = [
@@ -526,7 +527,7 @@ const UserForm: React.FC<FormProps> = ({
           >
             {uploading === true ? (
               <>
-                Processing document.. <BiHourglass className="animate-spin" />
+                {uploadStatus} <BiHourglass className="animate-spin" />
               </>
             ) : (
               <>

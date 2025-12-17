@@ -41,7 +41,7 @@ import "./App.css";
 import axios from "axios";
 import VerificationLink from "./components/VerficationLink.tsx";
 import OAuthCallbackHandler from "./pages/OauthCallbackHandlers.tsx";
-
+import { toast, Toaster } from "sonner";
 const DocumentationLayout = lazy(
   () => import("./pages/DocumentationLayout.tsx")
 );
@@ -70,7 +70,11 @@ const App = () => {
     request.onsuccess = (event: any) => {
       let db = event.target.result;
 
-      // if this table does not exist return simply
+      //if an object store exists
+      if (!db.objectStoreNames.contains("userinfo")) {
+        // No store means brand new DB, safely exit or handle state reset
+        return;
+      }
 
       let transaction = db.transaction(["userinfo"], "readwrite");
       let objectStore = transaction.objectStore("userinfo");
@@ -78,8 +82,14 @@ const App = () => {
       let getRequest = objectStore.get("currentUser");
 
       getRequest.onsuccess = function () {
-        dispatch(UpdateFromLocalCache(getRequest.result)); //update the localstates
-        dispatch(setIsLogin(true));
+        if (getRequest.result) {
+          // User data exists in IndexedDB cache
+          dispatch(UpdateFromLocalCache(getRequest.result));
+          dispatch(setIsLogin(true)); // If not handled in the action creator
+        } else {
+          console.log("No user cache found. State remains logged out.");
+          dispatch(setIsLogin(false)); // Optional: Explicitly reset/verify
+        }
       };
     };
 
@@ -96,8 +106,11 @@ const App = () => {
   }, []);
   const themeInitialized = useRef(false);
 
+  const FetchCountRef = useRef(0);
   useEffect(() => {
-    const controller = new AbortController();
+    if (FetchCountRef.current >= 1) {
+      return;
+    }
     const VerifyLoginState: () => Promise<any> = async () => {
       try {
         setUseStatus("pending");
@@ -112,11 +125,15 @@ const App = () => {
         if (response.data.message === "verified") {
           dispatch(setIsLogin(true));
           setUseStatus("idle");
-          return;
+          toast.message("Your dashboard has been updated");
+        } else {
+          toast.message(response.data.message);
         }
+        FetchCountRef.current = 1; //indicates that we have fetched the userstate once
       } catch (error) {
         // console.log(error);
         setUseStatus("failed");
+        toast.info("No internet connection");
 
         const time = setTimeout(() => {
           setUseStatus("idle");
@@ -125,7 +142,6 @@ const App = () => {
       }
     };
     VerifyLoginState();
-    return () => controller.abort();
   }, []);
 
   // now if the user is loggedIn
@@ -196,17 +212,7 @@ const App = () => {
   return (
     <>
       {/* Global Loading Overlay */}
-      {userStatus === "pending" && (
-        <LoadingIndicator
-          text={
-            userStatus === "pending"
-              ? "Setting up your dashboard"
-              : userStatus === "failed"
-              ? "Failed to get your details please logIn instead"
-              : "Nothing for you here"
-          }
-        />
-      )}
+      {userStatus === "pending" && <LoadingIndicator userStatus={userStatus} />}
 
       {/* main routers */}
       <Suspense
@@ -221,6 +227,7 @@ const App = () => {
         }
       >
         <Router>
+          <Toaster />
           {/* <Elements stripe={stripePromise} options={options}> */}
           <Navbar />
           <Routes>

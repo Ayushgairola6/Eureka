@@ -10,7 +10,6 @@ import { setCurrTab, toggleTheme } from "../store/AuthSlice.ts";
 import { setOpen } from "../store/chatRoomSlice.ts";
 import NotificationPanel from "@/components/notificationBar.tsx";
 import Settings from "@/components/settings.tsx";
-import { IoIosArrowDropdown } from "react-icons/io";
 import { GoMoon } from "react-icons/go";
 const Navbar = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -30,7 +29,7 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`sticky top-0 left-0 bg-gray-50 border  py-1 px-6 flex items-center justify-between z-[3] oveflow-visible dark:text-white text-black dark:bg-black `}
+        className={`sticky top-0 left-0 bg-white border  py-1 px-6 flex items-center justify-between z-[3] oveflow-visible dark:text-white text-black dark:bg-black `}
       >
         {/* top scroll indicator */}
         <motion.div
@@ -122,39 +121,15 @@ const Navbar = () => {
 
         <div className="flex items-center justify-center gap-2 bai-jamjuree-regular text-sm overflow-visible ">
           {/* settings icon */}
-          <div className="relative  group">
-            <button
-              className={`cursor-pointer md:block hidden p-1  ${
-                showSettings
-                  ? "text-red-600 bg-red-100 dark:bg-red-900/30"
-                  : "text-green-500 bg-green-600/10 "
-              } rounded-full transition-all duration-300 hover:scale-110`}
-              onClick={() => setShowSettings(!showSettings)}
-            >
-              <IoIosArrowDropdown
-                size={22}
-                className={`transition-transform duration-300 ${
-                  showSettings ? "rotate-180" : "rotate-0"
-                }`}
-              />
-            </button>
 
-            {/* Tooltip */}
-            {showSettings === false && (
-              <div className="absolute  top-7 right-4  z-[9999]   hidden md:flex px-2 py-1 bg-black dark:bg-white text-white dark:text-black border  text-xs rounded pointer-events-none  opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Options
-                <div className="absolute -top-1 right-2 transform -translate-x-1/2 w-2 h-2 bg-black dark:bg-white rotate-45"></div>
-              </div>
-            )}
-            <Settings
-              showSettings={showSettings}
-              setShowSettings={setShowSettings}
-              isLoggedIn={isLoggedIn}
-            />
-          </div>
+          <Settings
+            showSettings={showSettings}
+            setShowSettings={setShowSettings}
+            isLoggedIn={isLoggedIn}
+          />
 
           {/* notificaiton icon */}
-          {user.username !== "" && (
+          {user?.username !== "" && (
             <ul
               onClick={() => dispatch(setOpen(!isOpen))}
               className="cursor-pointer  rounded-full p-1 relative "
@@ -185,10 +160,10 @@ const Navbar = () => {
           </ul>
 
           {/* rest of the items */}
-          {user.username !== "" && (
+          {user?.username !== "" && (
             <Link to="user/dashboard">
               {" "}
-              <ul className="cursor-pointer uppercase bg-emerald-500 rounded-full h-6 w-6  text-lg p-1 flex items-center justify-center  text-white bai-jamjuree-regular  font-bold">
+              <ul className="cursor-pointer uppercase bg-sky-600 text-white rounded-full h-7 w-7  text-lg p-2 flex items-center justify-center   bai-jamjuree-semibold  ">
                 {user?.username.trim().split("_")[0].charAt(0).toUpperCase()}
               </ul>
             </Link>
