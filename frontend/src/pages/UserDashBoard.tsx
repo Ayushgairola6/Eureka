@@ -1,8 +1,6 @@
-import { useRef } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
-import { FiUsers, FiCalendar, FiFile } from "react-icons/fi";
-import { MdMarkUnreadChatAlt } from "react-icons/md";
+import { FiCalendar, FiFile } from "react-icons/fi";
 import {
   BsFile,
   BsFiletypeDocx,
@@ -10,34 +8,26 @@ import {
   BsFiletypeMd,
   BsFiletypePptx,
   BsFiletypeTxt,
-  BsLightningChargeFill,
 } from "react-icons/bs";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { TbOctahedron, TbTextCaption } from "react-icons/tb";
 import { useEffect, useState } from "react";
-import {
-  FaFilePdf,
-  FaArrowDown,
-  FaUserSecret,
-  FaRocketchat,
-} from "react-icons/fa";
+import { FaFilePdf, FaArrowDown, FaRocketchat } from "react-icons/fa";
 
-import { JoinAChatRoom } from "../store/chatRoomSlice.ts";
 import { toast } from "sonner";
-import { IoMdHourglass } from "react-icons/io";
 import { BiError, BiLoaderAlt, BiLogOut } from "react-icons/bi";
 import {
   LogoutUser,
   togglePreference,
   UpdatePreference,
 } from "../store/AuthSlice.ts";
-import { FaArrowUpRightDots } from "react-icons/fa6";
-// import {NewUserNotification} from '../store/AuthSlice.ts'
 import CreateRoom from "@/components/createRoom.tsx";
 import QuestionAskedChart from "@/components/UserQuestionAskedChart.tsx";
 import UserFeedbackReport from "@/components/UserFeedbackReport.tsx";
 import SimilarQuestions from "@/components/SimilarQueryChart.tsx";
 import PreferenceToggle from "@/components/Preference.tsx";
+import JoinRoomInput from "@/components/room_join_input.tsx";
+import RoomCard from "@/components/Room_card.tsx";
 
 const UserDashboard = () => {
   // Mock user data
@@ -46,8 +36,6 @@ const UserDashboard = () => {
   const Feedback = useAppSelector((state) => state.auth.FeedbackCounts);
   const { AllowedTrainingModels } = useAppSelector((state) => state.auth);
   const chatrooms = useAppSelector((state) => state.auth.chatrooms);
-  const isJoining = useAppSelector((state) => state.chats.isJoiningRoom);
-  const InputRef = useRef<HTMLInputElement>(null);
   const [score, setScore] = useState<number>(0);
   const [showcard, setShowCard] = useState(false);
   const [open, setOpen] = useState(false);
@@ -74,26 +62,6 @@ const UserDashboard = () => {
       setScore((weightedSum / totalVotes) * 100);
     }
   }, []);
-
-  const handleJoinRoom = async () => {
-    if (InputRef?.current?.value && user) {
-      try {
-        const result = await dispatch(JoinAChatRoom(InputRef.current.value))
-          .unwrap()
-          .then((res) => {
-            if (res) {
-              toast.success(res.message);
-            }
-          })
-          .catch((error) => {
-            toast.error(error);
-          });
-        return result;
-      } catch (rejectedAction: any) {
-        toast.error(rejectedAction.response.data.message);
-      }
-    }
-  };
 
   return (
     <>
@@ -276,7 +244,6 @@ const UserDashboard = () => {
               <PreferenceToggle />
             </div>
           </header>
-
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 ">
             <section className="grid grid-cols-1 space-y-3">
@@ -374,7 +341,6 @@ const UserDashboard = () => {
             {/* user uploaded docs feedback section */}
             <UserFeedbackReport score={score} />
           </div>
-
           {/* User  Conversations and documents */}
           <section
             className={`mb-8 border p-2 space-y-2  rounded-lg ${
@@ -468,7 +434,6 @@ const UserDashboard = () => {
             )}
             {/* </div> */}
           </section>
-
           {/* Rooms  Section */}
           <section
             className={`border ${
@@ -508,113 +473,21 @@ const UserDashboard = () => {
             {/* list of chatrooms section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bai-jamjuree-regular ">
               {chatrooms.length > 0 ? (
-                chatrooms.map((room) => (
-                  <motion.div
-                    key={room?.room_id}
-                    whileHover={{ y: -4 }}
-                    whileTap={{ scale: 0.98 }}
-                    // onClick={() => console.log(room)}
-                    className="w-full  p-4 rounded-xl border bg-white dark:bg-white/5 shadow-sm shadow-black dark:shadow-white/20 transition-all cursor-pointer relative"
-                  >
-                    {/* Admin badge */}
-                    {user?.id === room.chat_rooms.created_by && (
-                      <span className="absolute top-3 right-3 bg-lime-100  text-green-600  text-xs font-medium px-2.5 py-0.5 rounded-full">
-                        Admin
-                      </span>
-                    )}
-
-                    <div className="text-center space-y-2">
-                      <h3 className="text-lg  text-gray-800 dark:text-white line-clamp-1 flex items-center justify-start gap-2 bai-jamjuree-semibold">
-                        <MdMarkUnreadChatAlt className="w-6 h-6" />
-                        {room?.chat_rooms?.room_name || "Untitled Room"}
-                      </h3>
-
-                      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 min-h-[40px]">
-                        {room?.chat_rooms?.Room_Description || "No description"}
-                      </p>
-
-                      <div className="flex justify-center gap-3 pt-2 flex-wrap">
-                        <span
-                          className={`text-xs px-3 py-1 rounded-full ${
-                            room?.chat_rooms?.room_type === "private"
-                              ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
-                              : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
-                          }`}
-                        >
-                          {room?.chat_rooms?.room_type || "unknown"}
-                        </span>
-
-                        <span className="flex items-center text-xs bg-yellow-600/10 px-3 py-1 rounded-full text-yellow-600 ">
-                          <FiUsers className="mr-1" />
-                          {room?.chat_rooms?.participant_count || 0}
-                        </span>
-                        <span className="flex items-center text-xs  dark:bg-red-700/10 px-3 py-1 rounded-full text-red-700 ">
-                          <FaUserSecret className="mr-1" />
-                          {room?.chat_rooms?.Room_Joining_code}
-                        </span>
-                      </div>
-
-                      <div className="pt-3 text-xs flex items-center justify-between flex-wrap">
-                        <ul className="text-gray-800 dark:text-gray-300 ">
-                          Created:{" "}
-                          {room?.chat_rooms?.created_at?.split("T")[0] ||
-                            "Unknown date"}
-                        </ul>
-                        <Link
-                          className="   text-xs md:text-sm text-white dark:text-black "
-                          to={`/chatroom/${room?.room_id}`}
-                        >
-                          <ul className=" flex items-center justify-center gap-2 bg-black dark:bg-white px-2 py-1 rounded-sm bai-jamjuree-semibold ">
-                            <button>Enter</button>
-                            <FaArrowUpRightDots />
-                          </ul>
-                        </Link>
-                      </div>
-                    </div>
-                  </motion.div>
+                chatrooms.map((room, index) => (
+                  <RoomCard room={room} index={index}></RoomCard>
                 ))
               ) : (
                 <div className=" border  rounded-lg flex bg-gray-100 dark:bg-black">
                   <h1 className="m-auto space-grotesk text-sm md:text-md p-2">
-                    Not a member of any rooms
+                    No active rooms
                   </h1>
                 </div>
               )}
             </div>
           </section>
           {/* join a room with a code section */}
-          <section className=" border  rounded-lg w-full md:w-1/3 p-3 mt-8 space-y-3 bg-gray-100 dark:bg-black shadow-sm shadow-black dark:shadow-white/20">
-            <h1 className="bai-jamjuree-semibold flex items-center justify-start gap-2 ">
-              <FaUserSecret /> Have a room code ?
-            </h1>
-            <div className="flex items-center justify-between gap-2">
-              <input
-                ref={InputRef}
-                className="rounded-lg border focus:ring-0  px-2 py-2 text-sm space-grotesk w-full"
-                type="text"
-                placeholder="Enter 6 digit code here "
-              />
-              <button
-                disabled={isJoining === true}
-                onClick={handleJoinRoom}
-                className={`   ${
-                  isJoining === true
-                    ? "bg-green-500/20 border border-green-500 text-green-500"
-                    : "dark:bg-white bg-black text-white dark:text-black"
-                } rounded-lg px-2 py-2 text-sm space-grotesk font-semibold CustPoint flex items-center justify-center gap-2`}
-              >
-                {isJoining === false ? (
-                  <>
-                    Join <BsLightningChargeFill />
-                  </>
-                ) : (
-                  <>
-                    Joining.. <IoMdHourglass className="animate-spin" />
-                  </>
-                )}
-              </button>
-            </div>
-          </section>
+          <JoinRoomInput />
+          {/* logout button */}
           <section className=" md:hidden block my-6 w-full">
             <button
               disabled={isLoggingOut}

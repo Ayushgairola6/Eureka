@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { IoHourglass } from "react-icons/io5";
 import DocUsed from "@/components/DocumentsUsed.tsx";
 import { GetCachedSessionHistory } from "../store/InterfaceSlice.ts";
+import { AnimatePresence, motion } from "framer-motion";
 type ChatBubbleProps = {
   chatcontainer: React.Ref<HTMLDivElement>;
 };
@@ -23,29 +24,26 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
   const dispatch = useAppDispatch();
   // array of welcom messages
   const steps = [
-    "Validating",
-    "Researching",
-    "Evaluating",
-    "Collaborating",
-    "Contributing",
+    "Uncovering", // Sounds more exciting than Researching
+    "Synthesizing", // Very "AI" specific (combining info)
+    "Decoding", // Implies finding hidden truths
+    "Verifying", // Stronger than Validating
+    "Solving", // The ultimate goal
   ];
   const [text, setText] = useState<string>(steps[0]); //default the first value of steps message
 
   // creating a slight animation effect for ux
   useEffect(() => {
-    if (Chats.length > 0) {
-      return;
-    }
     let i = 0; //counter of index
 
     // update the text every 2 seconds and clear when done
     const interval = setInterval(() => {
       setText(steps[i]); //update the value of text
       i++;
-      if (i >= steps.length || Chats.length > 0) {
-        clearInterval(interval);
+      if (i >= steps.length - 1 || Chats.length > 0) {
+        i = 0; //return to 0 and create an infinite loop
       }
-    }, 2000); //2 seconds of gap when animating
+    }, 4000); //2 seconds of gap when animating
 
     return () => clearInterval(interval); //clear the interval on unmount
   }, []);
@@ -165,18 +163,27 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
         })
       ) : (
         <div className="text-center  py-8  m-auto w-full  flex items-center justify-center flex-col gap-1">
-          <h1 className="text-3xl bai-jamjuree-bold">
-            Welcome,{" "}
+          <h1 className="md:text-5xl text-3xl  bai-jamjuree-bold">
+            Welcome{" "}
             {user?.username
               ? user?.username.split("_")[0].toLocaleUpperCase()
               : "Cadet"}{" "}
           </h1>
-          <span className="text-md dark:text-gray-400 text-gray-700 ">
+          <span className="text-md dark:text-gray-400 text-gray-700 space-grotesk">
             What are we {/* Apply your custom class here */}
-            <span className="bai-jamjuree-bold  text-transparent bg-clip-text bg-gradient-to-r from-[#4f46e5] to-[#0891b2] dark:from-[#a78bfa] dark:to-[#22d3ee]">
-              {text}{" "}
-            </span>
-            today?
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={text}
+                className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-sky-600  "
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -20, opacity: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                {text}
+              </motion.span>
+            </AnimatePresence>
+            {"  today?"}
           </span>
         </div>
       )}

@@ -40,17 +40,14 @@ const Navbar = () => {
         {/* navlinks */}
         <Link
           to="/"
-          className="cursor-pointer flex items-center justify-center gap-2 "
+          className="  text-md  w-fit flex items-center justify-center gap-1 bai-jamjuree-bold rounded-md  cursor-pointer  p-1"
         >
-          {/* EUREKA */}
-
-          {/* <span className="bebas-neue-regular text-xl">Ask?EUREKA</span> */}
-
           <img
-            className="h-12 w-12 rotate-9 "
-            src={isDarkMode === false ? "/Light.png" : "/Dark.png"}
-            alt="AskEuekaLogo"
+            className="h-4 w-4  rounded-xs border rounded-lg "
+            src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
+            alt="logo"
           />
+          <label htmlFor="logo">AskEureka</label>
         </Link>
 
         <div
@@ -75,15 +72,15 @@ const Navbar = () => {
             Try Now
           </Link>
 
-          {/* <Link
-            onClick={() => dispatch(setCurrTab("About"))}
-            className={` rounded-lg py-1 px-2 hover:bg-indigo-300 transition-all duration-300 ${
-              currTab === "About" ? "slider" : "bg-transparent "
+          <Link
+            onClick={() => dispatch(setCurrTab("Rooms"))}
+            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
+              currTab === "Rooms" ? "slider" : "bg-transparent "
             }`}
-            to="/About"
+            to="/user/rooms"
           >
-            Quick start
-          </Link> */}
+            Rooms
+          </Link>
 
           <Link
             onClick={() => dispatch(setCurrTab("API"))}
@@ -135,9 +132,11 @@ const Navbar = () => {
               className="cursor-pointer  rounded-full p-1 relative "
             >
               <IoIosNotificationsOutline size={22} />
-              <span className=" absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-medium text-white bg-red-600 rounded-full border-2 border-white dark:border-gray-900">
-                {notificationcount}
-              </span>
+              {notificationcount > 0 && (
+                <span className=" absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-medium text-white bg-red-600 rounded-full border-2 border-white dark:border-gray-900">
+                  {notificationcount}
+                </span>
+              )}
               <NotificationPanel />
             </ul>
           )}

@@ -4,7 +4,6 @@ import { MdOutlineHourglassEmpty } from "react-icons/md";
 import { FiUploadCloud } from "react-icons/fi";
 import { BsPeople } from "react-icons/bs";
 import { FaResearchgate } from "react-icons/fa6";
-
 const Why = () => {
   const cardsData = [
     {
@@ -85,7 +84,7 @@ const Why = () => {
             Why AskEureka ?
           </h1>
           <p className="bai-jamjuree-regular text-xs">
-            Find why there is need for a tool like AskEureka
+            Find why there is need for a tool like AskEureka{" "}
           </p>
         </section>
         {/* cards ssection rendering */}

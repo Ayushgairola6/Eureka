@@ -48,6 +48,7 @@ const DocumentationLayout = lazy(
 import TermsAndConditions from "./pages/TermsAndConditions.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import RefundPolicy from "./pages/RefundPolicy.tsx";
+import UserChatRooms from "./pages/Rooms.tsx";
 
 // stripe api
 // const stripePromise = loadStripe(
@@ -238,7 +239,7 @@ const App = () => {
             <Route element={<LandingPage />} path="/"></Route>
             <Route element={<EmailVerification />} path="/user/verify-email" />
             <Route element={<Interface />} path="/Interface"></Route>
-            {/* <Route element={<About />} path="/About" /> */}
+            <Route element={<UserChatRooms />} path="/user/rooms" />
             <Route element={<Login />} path="/Login" />
             <Route element={<Register />} path="/Register" />
             <Route element={<Feedback />} path="/Feedback" />

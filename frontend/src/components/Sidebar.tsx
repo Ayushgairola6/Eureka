@@ -1,22 +1,30 @@
 import { Link } from "react-router";
 import { IoHomeOutline } from "react-icons/io5";
 import { IoChatboxEllipsesOutline } from "react-icons/io5";
-import { motion } from "framer-motion";
 import { MdDashboard, MdFeedback, MdLogin } from "react-icons/md";
 import { FaRegRegistered } from "react-icons/fa";
 import { MdKey } from "react-icons/md";
 import { useAppSelector } from "../store/hooks.tsx";
+import { BsPeople } from "react-icons/bs";
+import { motion } from "framer-motion";
 type SidebarProps = {
   isVisble: boolean;
   setIsVisible: React.Dispatch<React.SetStateAction<boolean>>;
 };
 //  = useAppSelector(state => state.auth.isLoggedIn);
 const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
-  const { isLoggedIn, user } = useAppSelector((state) => state.auth);
+  const { isLoggedIn, user, isDarkMode } = useAppSelector(
+    (state) => state.auth
+  );
 
   return (
     <>
-      <div
+      <motion.div
+        initial={{ x: -400 }}
+        animate={{
+          x: isVisble === true ? 0 : -500,
+        }}
+        transition={{ duration: 0.3, ease: "backInOut" }}
         onClick={() => {
           if (isVisble === true) {
             setIsVisible(false);
@@ -24,33 +32,62 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
 
           // -translate-y-0 translate-y-90
         }}
-        className={`md:hidden fixed h-auto w-70 -bottom-5 -left-2 rotate-0 bg-white dark:bg-black  rounded-r-full shadow-2xl shadow-black dark:shadow-purple-500 gap-2 z-[99] py-10 rounded-b-xl  ${
-          isVisble === true
-            ? "-translate-y-0 rotate-0"
-            : "translate-y-90  rotate-90"
-        } duration-500 transition-all cursor-pointer flex items-center justify-start border border-black dark:border-white/40`}
+        className={`md:hidden fixed h-full w-70  top-0 rotate-0 bg-white dark:bg-black   z-[20] rounded-tr-md pt-10 rounded-br-md   duration-500 transition-all cursor-pointer flex flex-col items-center justify-start border border-gray-300 dark:border-gray-700`}
       >
-        {/* <MdClose size={22} className="absolute right-5 bottom-8 hover:scale-110 transition-all duration-300" /> */}
+        {/* logo  */}
+        <header className="absolute top-2 right-3 text-xs  w-fit flex items-center justify-end gap-1 bai-jamjuree-bold rounded-md border p-1">
+          <img
+            className="h-4 w-4  rounded-xs  "
+            src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
+            alt="logo"
+          />
 
+          <label htmlFor="logo">AskEureka</label>
+        </header>
+        {/* HeaderSection */}
+        <div className="border-b w-full px-3 py-3">
+          <section className="space-y-3">
+            <h1 className="bai-jamjuree-semibold flex items-center justify-start gap-3">
+              <Link
+                className="p-1 flex items-center justify-center h-6 w-6 rounded-full dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold"
+                role="button"
+                to="/user/dashboard"
+              >
+                {user?.username.trim().split("")[0]}
+              </Link>
+              {user?.username || "Cadet"}
+            </h1>
+            <h2 className="bai-jamjuree-regular text-xs text-gray-400">
+              {user?.email || "Cadet@unknown.com"}
+            </h2>
+          </section>
+        </div>
         {/*navigation links  */}
-        <motion.section className="flex flex-col items-center justify-center gap-1   text-sm space-grotesk">
+        <section className="grid grid-cols-1 space-y-2  w-full   text-sm space-grotesk">
           <Link
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
+            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/"
           >
             <IoHomeOutline size={22} />
             Home
           </Link>
           <Link
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
+            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/Interface"
           >
             <IoChatboxEllipsesOutline size={22} />
             Try Now
           </Link>
+          <Link
+            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
+            to="/user/rooms"
+          >
+            <BsPeople size={22} />
+            Rooms
+          </Link>
           {isLoggedIn === false && user?.email === "" && (
             <Link
-              className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
+              className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
               to="/Register"
             >
               <FaRegRegistered size={22} />
@@ -59,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           )}
           {isLoggedIn === false && user?.email === "" ? (
             <Link
-              className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
+              className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
               to="/Login"
             >
               <MdLogin size={22} />
@@ -67,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             </Link>
           ) : (
             <Link
-              className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
+              className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
               to="user/dashboard"
             >
               <MdDashboard size={22} />
@@ -76,28 +113,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           )}
 
           <Link
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
+            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/Feedback"
           >
             <MdFeedback size={22} />
             Feedback
           </Link>
           <Link
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
+            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/Api/introduction"
           >
             <MdKey size={22} />
             API{" "}
           </Link>
-          {/* <Link
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:text-purple-600   pl-4 hover:pl-12 hover:transition-all duration-300"
-            to="/About"
-          >
-            <GoQuestion size={22} />
-            Quick Start
-          </Link> */}
-        </motion.section>
-      </div>
+        </section>
+      </motion.div>
     </>
   );
 };
