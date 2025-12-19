@@ -4,7 +4,7 @@ import { IoIosNotificationsOutline } from "react-icons/io";
 import { Link } from "react-router";
 import Sidebar from "@/components/Sidebar";
 import { MdClose } from "react-icons/md";
-import { motion, useScroll } from "framer-motion";
+// import { motion, useScroll } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
 import { setCurrTab, toggleTheme } from "../store/AuthSlice.ts";
 import { setOpen } from "../store/chatRoomSlice.ts";
@@ -15,7 +15,7 @@ const Navbar = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const dispatch = useAppDispatch();
-  const { scrollYProgress } = useScroll();
+  // const { scrollYProgress } = useScroll();
   const notificationcount = useAppSelector(
     (state) => state.auth.notificationcount
   );
@@ -31,11 +31,11 @@ const Navbar = () => {
       <nav
         className={`sticky top-0 left-0 bg-white border  py-1 px-6 flex items-center justify-between z-[3] oveflow-visible dark:text-white text-black dark:bg-black `}
       >
-        {/* top scroll indicator */}
+        {/* top scroll indicator
         <motion.div
           style={{ scaleX: scrollYProgress }}
           className="bg-orange-500 w-full fixed py-0.5 origin-left top-0 left-0 z-[9]"
-        ></motion.div>
+        ></motion.div> */}
 
         {/* navlinks */}
         <Link

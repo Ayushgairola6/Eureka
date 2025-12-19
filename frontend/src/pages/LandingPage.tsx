@@ -4,15 +4,17 @@ const Why = React.lazy(() => import("./Why.tsx"));
 const Pricing = React.lazy(() => import("@/components/Pricing"));
 const Footer = React.lazy(() => import("@/components/Footer.tsx"));
 import Marquee from "@/components/marquee";
-import Hero from "@/components/stacked_images.tsx";
+import Hero from "@/components/Landing_Hero.tsx";
+///words that render dynamically
 const words = [
   "Unbiased",
   "Grounded",
   "Limitless",
-  "Autonomous ",
+  "Agentic",
   "Private",
   "Federated ",
   "Verified",
+  "Shared",
 ];
 
 const LandingPage = () => {
@@ -24,7 +26,7 @@ const LandingPage = () => {
     const interval = setInterval(() => {
       setValues(words[i]);
       i = (i + 1) % words.length;
-    }, 5000);
+    }, 4000);
 
     return () => clearInterval(interval);
   }, []);
