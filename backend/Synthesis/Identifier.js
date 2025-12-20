@@ -355,5 +355,6 @@ export async function ExeCuteContextEngines(
     return { GlobalContextObject, favicons };
   } catch (processingError) {
     console.error(processingError);
+    return { error: processingError };
   }
 }

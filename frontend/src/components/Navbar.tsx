@@ -26,6 +26,21 @@ const Navbar = () => {
   // const {isOpen} = useAppSelector(state=>state.chats)
   const { currTab } = useAppSelector((state) => state.auth);
 
+  const navLinks = [
+    { label: "Home", to: "/", tab: "Home" },
+    { label: "Try Now", to: "/Interface", tab: "Try" },
+    { label: "Rooms", to: "/user/rooms", tab: "Rooms" },
+    { label: "API", to: "/Api/introduction", tab: "API" },
+    { label: "Feedback", to: "/Feedback", tab: "Feedback" },
+    // only show dashboard when logged in
+    {
+      label: "DashBoard",
+      to: "/user/dashboard",
+      tab: "DashBoard",
+      requiresAuth: true,
+    },
+  ];
+
   return (
     <>
       <nav
@@ -43,7 +58,7 @@ const Navbar = () => {
           className="  text-md  w-fit flex items-center justify-center gap-1 bai-jamjuree-bold rounded-md  cursor-pointer  p-1"
         >
           <img
-            className="h-4 w-4  rounded-xs border rounded-lg "
+            className="h-4 w-4  rounded-xs   "
             src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
             alt="logo"
           />
@@ -53,67 +68,22 @@ const Navbar = () => {
         <div
           className={`relative hidden md:flex items-center justify-center gap-3 text-sm space-grotesk dark:text-white text-black `}
         >
-          <Link
-            onClick={() => dispatch(setCurrTab("Home"))}
-            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
-              currTab === "Home" ? " slider" : " "
-            } z-[1]`}
-            to="/"
-          >
-            Home
-          </Link>
-          <Link
-            onClick={() => dispatch(setCurrTab("Try"))}
-            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
-              currTab === "Try" ? "slider" : "bg-transparent "
-            }`}
-            to="/Interface"
-          >
-            Try Now
-          </Link>
-
-          <Link
-            onClick={() => dispatch(setCurrTab("Rooms"))}
-            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
-              currTab === "Rooms" ? "slider" : "bg-transparent "
-            }`}
-            to="/user/rooms"
-          >
-            Rooms
-          </Link>
-
-          <Link
-            onClick={() => dispatch(setCurrTab("API"))}
-            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
-              currTab === "API" ? "slider" : "bg-transparent "
-            }`}
-            to="/Api/introduction"
-          >
-            API
-          </Link>
-          <Link
-            onClick={() => dispatch(setCurrTab("Feedback"))}
-            className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
-              currTab === "Feedback" ? "slider" : "bg-transparent "
-            }`}
-            to="/Feedback"
-          >
-            Feedback
-          </Link>
-          {/* only render if the user is not logged In */}
-          {isLoggedIn === true && (
-            <Link
-              onClick={() => dispatch(setCurrTab("DashBoard"))}
-              className={` rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black    transition-all duration-300 ${
-                currTab === "DashBoard" ? "slider" : "bg-transparent "
-              }`}
-              to="/user/dashboard"
-            >
-              DashBoard
-            </Link>
-          )}
-
-          {/* end */}
+          {navLinks.map((link) => {
+            if (link.requiresAuth && !isLoggedIn) return null;
+            const isActive = currTab === link.tab;
+            return (
+              <Link
+                key={link.tab}
+                onClick={() => dispatch(setCurrTab(link.tab))}
+                className={`rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black transition-all duration-300 ${
+                  isActive ? "slider" : "bg-transparent"
+                }`}
+                to={link.to}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="flex items-center justify-center gap-2 bai-jamjuree-regular text-sm overflow-visible ">
