@@ -14,8 +14,14 @@ import { GetCachedSessionHistory } from "../store/InterfaceSlice.ts";
 import { AnimatePresence, motion } from "framer-motion";
 type ChatBubbleProps = {
   chatcontainer: React.Ref<HTMLDivElement>;
+  isActive: boolean;
+  setIsActive: React.Dispatch<React.SetStateAction<boolean>>;
 };
-const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
+const ChatBubble: React.FC<ChatBubbleProps> = ({
+  chatcontainer,
+  isActive,
+  setIsActive,
+}) => {
   const ReceivedResponseId: any = []; //just a tracker array
   const { Chats } = useAppSelector((state) => state.interface);
   const { currentStatus } = useAppSelector((state) => state.socket);
@@ -69,6 +75,11 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
         Chats.map((chat, index) => {
           return (
             <div
+              onClick={() => {
+                if (isActive === true) {
+                  setIsActive(false);
+                }
+              }}
               key={`chat-${index}-${chat.sent_by}`}
               className={`w-full md:w-3/5 relative ${
                 chat === Chats[Chats.length - 1] && Chats.length > 1
@@ -162,19 +173,26 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ chatcontainer }) => {
           );
         })
       ) : (
-        <div className="text-center  py-8  m-auto w-full  flex items-center justify-center flex-col gap-1">
-          <h1 className="md:text-5xl text-3xl  bai-jamjuree-bold">
+        <div
+          onClick={() => {
+            if (isActive === true) {
+              setIsActive(false);
+            }
+          }}
+          className="text-center  py-8  m-auto w-full  flex items-center justify-center flex-col gap-1"
+        >
+          <h1 className="md:text-5xl text-3xl  bai-jamjuree-bold ">
             Welcome{" "}
             {user?.username
               ? user?.username.split("_")[0].toLocaleUpperCase()
               : "Cadet"}{" "}
           </h1>
-          <span className="text-md dark:text-gray-400 text-gray-700 space-grotesk">
+          <span className="text-md dark:text-gray-400 text-gray-700 space-grotesk font-semibold">
             What are we {/* Apply your custom class here */}
             <AnimatePresence mode="wait">
               <motion.span
                 key={text}
-                className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-sky-600  "
+                className="text-transparent  bg-clip-text bg-gradient-to-r from-blue-600 to-sky-600  "
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: -20, opacity: 0 }}
@@ -212,11 +230,11 @@ const ChatMessage = ({ chat, lastMessageId }: any) => {
     : chat.message.content; // Use the full, final content if it's history
 
   return (
-    <div className={`message-bubble ${chat.sent_by}`}>
-      <Streamdown className="space-grotesk">
-        {textToRender}
-        {/* Optional: Add a cursor/placeholder when streaming */}
-      </Streamdown>
-    </div>
+    // <div className={`message-bubble ${chat.sent_by}`}>
+    <Streamdown className="space-grotesk">
+      {textToRender}
+      {/* Optional: Add a cursor/placeholder when streaming */}
+    </Streamdown>
+    // </div>
   );
 };

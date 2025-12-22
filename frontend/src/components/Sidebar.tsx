@@ -63,7 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           </section>
         </div>
         {/*navigation links  */}
-        <section className="grid grid-cols-1 space-y-2  w-full   text-sm space-grotesk">
+        <section className="grid grid-cols-1 space-y-2  w-full mt-8  text-sm space-grotesk ">
           <Link
             className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/"

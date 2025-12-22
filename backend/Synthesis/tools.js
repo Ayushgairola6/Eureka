@@ -268,7 +268,7 @@ RETURN new_m
       }
 
       // getting the text chunks from the db
-      const favicons = [];
+      let favicons = [];
       const webResults = await SearchQueryResults(query, user.PaymentStatus); //web results
 
       if (webResults.error) {

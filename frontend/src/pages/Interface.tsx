@@ -136,7 +136,11 @@ function Interface() {
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-white" />
           </div>
         )}
-        <ChatBubble chatcontainer={chatcontainer} />
+        <ChatBubble
+          isActive={isActive}
+          setIsActive={setIsActive}
+          chatcontainer={chatcontainer}
+        />
         <div className="w-full flex items-center justify-center fixed bottom-0 py-0.5 left-0 md:px-2 px-0.5  rounded-sm dark:bg-black ">
           <PrivateDocuments
             selectedDoc={selectedDoc}

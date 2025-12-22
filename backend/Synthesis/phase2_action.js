@@ -23,7 +23,8 @@ export async function CheckWebForInformation(
       user,
       GlobalContextObject.AlldocumentInformation
     );
-    if (webResult.FinalResult.length > 0) {
+
+    if (webResult?.FinalResult?.length > 0) {
       EmitEvent(user.user_id, "SynthesisStatus", `Searching online`);
 
       return {

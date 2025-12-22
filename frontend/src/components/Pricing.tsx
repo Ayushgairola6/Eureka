@@ -100,7 +100,10 @@ const Pricing = () => {
   ];
   return (
     <>
-      <div className={`bg-white dark:bg-black p-4 w-full h-auto`}>
+      <div
+        id="pricing"
+        className={`bg-white dark:bg-black p-4 w-full h-auto pricing`}
+      >
         {/* heading section */}
         <header className="text-center px-2 py-4">
           <h1 className="bai-jamjuree-bold md:text-3xl text-2xl text-black dark:text-white">
@@ -112,7 +115,7 @@ const Pricing = () => {
         </header>
         {/* the cards rendering */}
         <div className=" flex  w-full ">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 space-x-2 space-y-4 p-2 mx-auto md:w-4/5 w-full ">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-2 mx-auto md:w-[90%] w-full ">
             {PlanDetails.map((plan, index) => {
               return (
                 <>
@@ -121,7 +124,9 @@ const Pricing = () => {
                     className={`relative flex flex-col h-full rounded-2xl p-6 transition-all duration-300 border 
     ${
       plan.id === 2
-        ? "bg-white dark:bg-neutral-900 border-cyan-500 shadow-[0_0_40px_-15px_rgba(6,182,212,0.3)] scale-[1.01] "
+        ? "bg-white dark:bg-neutral-900 border-cyan-500 shadow-[0_0_40px_-15px_rgba(6,182,212,0.3)] scale-[1.03] "
+        : plan.id === 4
+        ? "scale-[1.01] border-amber-500/70"
         : "bg-gray-50/50 dark:bg-black/40 border-gray-200 dark:border-white/10 shadow-xl"
     }`}
                   >

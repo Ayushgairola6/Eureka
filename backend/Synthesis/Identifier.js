@@ -80,6 +80,7 @@ export async function IdentifyRequestInputs(req, res) {
 
     const responseText = result.text;
     // console.log(responseText);
+    // search_web(query="node-cron cron.schedule to keep server awake")
     // const responseText = `searchByName(filename="Nebuala_AI_Q3_Report.txt");ask_private(doc_id="AUTO", query="synthesize")`;
     if (!responseText) {
       await notifyMe(
@@ -330,11 +331,11 @@ export async function ExeCuteContextEngines(
       user
     );
 
-    const favicons = [];
-    if (webContext && webContext.length > 0) {
+    let favicons = [];
+    if (webContext && webContext.results) {
       GlobalContextObject.webSearchResults = [...webContext.results];
-      if (webContext.favicon && webContext.favicon.length > 0) {
-        favicons = [...webContext.favicon];
+      if (webContext.favicons) {
+        favicons = [...webContext.favicons];
       }
     }
 

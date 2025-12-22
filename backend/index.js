@@ -8,7 +8,7 @@ initializeSocketIo(httpServer);
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 dotenv.config();
-
+import "./service_worker.js"; //the cron job scheduler
 import { Router } from "./routers/filerouter.js";
 import { AuthRouter } from "./routers/AuthRouter.js";
 import { ChatsRouter } from "./routers/ChatsRouter.js";

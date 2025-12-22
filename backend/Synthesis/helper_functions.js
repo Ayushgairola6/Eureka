@@ -92,7 +92,7 @@ export async function ProcessWebContextGathering(
   documentInfoArray
 ) {
   const FinalResult = [];
-  const AllFavicons = [];
+  let AllFavicons = [];
   try {
     // Process all function calls (requests) in parallel
     await Promise.all(

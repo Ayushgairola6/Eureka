@@ -210,7 +210,8 @@ const InputSection: React.FC<InputProps> = ({
           dispatch(MimicSSE({ id: AiId, delta: "Server busy" }));
 
           toast.error("Server busy");
-        });
+        })
+        .finally(() => setIsActive(false));
     } catch (err) {
       toast.error("Something went wrong");
     }
@@ -278,7 +279,8 @@ const InputSection: React.FC<InputProps> = ({
                 "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
             })
           );
-        });
+        })
+        .finally(() => setIsActive(false));
       dispatch(setQuestion(""));
     } catch (err: any) {
       toast.error(err.response.data.message);
@@ -348,7 +350,8 @@ const InputSection: React.FC<InputProps> = ({
               "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
           })
         );
-      });
+      })
+      .finally(() => setIsActive(false));
   };
   // centeral function that manages when to call which function
   const handleAsk = async () => {
@@ -451,7 +454,8 @@ const InputSection: React.FC<InputProps> = ({
           dispatch(MimicSSE({ id: AiId, delta: "Server busy" }));
 
           toast.error("Server busy");
-        });
+        })
+        .finally(() => setIsActive(false));
     } catch (err) {
       toast.error("Something went wrong");
     }
@@ -461,12 +465,15 @@ const InputSection: React.FC<InputProps> = ({
     <>
       {/* input section body */}
       <motion.section
-        className={`relative overflow-y-visible  w-full  px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border  bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3]  ${
-          isActive === true
-            ? "h-auto w-full "
-            : "w-[90%] h-18 overflow-hidden mx-auto "
-        } transition-all duration-150 ease-linear`}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
+        initial={false}
+        animate={{
+          height: isActive ? "auto" : 64,
+        }}
+        transition={{
+          ease: "linear",
+          duration: 0.4,
+        }}
+        className={`relative overflow-y-visible w-full px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3] transition-all duration-150 ease-linear`}
       >
         {/* input section */}
         <input
@@ -483,7 +490,7 @@ const InputSection: React.FC<InputProps> = ({
           ref={textareaRef}
           name="input"
           placeholder="What would you like to research today ... ?"
-          className="w-full dark:text-white text-black rounded-lg px-2 py-3 focus:border-none active:border-none transition-all duration-200 "
+          className="w-full dark:text-white text-black rounded-lg px-2 py-3 focus:ring-0 ring-0 transition-all duration-200 "
         />
         {/* the other options section */}
         <div
