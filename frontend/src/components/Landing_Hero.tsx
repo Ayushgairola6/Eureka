@@ -109,6 +109,7 @@ const Hero: React.FC<props> = ({ value }) => {
             dark_from={"dark:from-cyan-700"}
             dark_via={"dark:via-blue-600"}
             dark_to={"dark:to-emerald-700  "}
+            top={"-top-10"}
           />
           {/* --- 2. THE WINDOW CONTAINER (The "Mac" Shell) --- */}
           <div

@@ -1,97 +1,70 @@
 import { FiZap } from "react-icons/fi";
-import { FaGitAlt } from "react-icons/fa";
 import { MdOutlineHourglassEmpty } from "react-icons/md";
 import { FiUploadCloud } from "react-icons/fi";
-import { BsArrowUpRight, BsPeople } from "react-icons/bs";
-import { FaResearchgate } from "react-icons/fa6";
+import { BsArrowUpRight } from "react-icons/bs";
 import { motion } from "framer-motion";
+import { useAppSelector } from "../store/hooks";
+// import { GravityWell } from "@/components/gravity_well";
 const Why = () => {
-  const cardsData = [
+  const { isDarkMode } = useAppSelector((state) => state.auth);
+  const aboutEureka = [
     {
-      id: 1,
-      title: "Purpose",
-      subtitle: "Authenticity",
+      id: "about-1",
+      title: "The Purpose",
+      subtitle: "Verified Insight",
       description:
-        "Misinformation is everywhere. We can't end it, but we can filter it. Eureka builds a protective layer around your brain, ensuring you consume only verified data.",
-      icon: <FiZap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-      gradient: "from-indigo-500 to-sky-500",
-      badgeColor: "bg-teal-500/10",
-      border: "border-teal-500",
-      img: "/feature1.png",
-      message: "See detail",
+        "Misinformation is everywhere. Eureka builds a protective layer around your brain, filtering the noise to ensure you consume only high-signal, verified data.",
+      icon: <FiZap />,
+      gradient: "from-blue-600 to-cyan-500", // Sharp, intellectual blue
+      badgeColor: "bg-blue-500/10",
+      border: "border-blue-500/50",
+      img: "/purpose.png",
+      message: "Our Mission",
     },
     {
-      id: 2,
-      title: "Problem we solve?",
-      subtitle: "Misinformation",
+      id: "about-2",
+      title: "The Problem",
+      subtitle: "Search is Broken",
       description:
-        "Traditional search is noisy and unverified. You don't need more links; you need the truth. We provide human-verified data backed by AI synthesis.",
-      icon: <FaGitAlt className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-      gradient: "from-emerald-500 to-teal-500",
-      badgeColor: "bg-amber-500/10",
-      border: "border-amber-500",
-      img: "/2.png",
-      message: "See detail",
+        "Traditional search engines prioritize SEO over truth. You don't need more links; you need human-verified data backed by deep AI synthesis.",
+      icon: <MdOutlineHourglassEmpty />,
+      gradient: "from-slate-700 to-slate-900", // "Serious" problem-solving tone
+      badgeColor: "bg-slate-500/10",
+      border: "border-slate-500/50",
+      img: "/problem.png",
+      message: "The Truth",
     },
     {
-      id: 3,
-      title: "How Eureka is different?",
-      subtitle: "Differentiator",
+      id: "about-3",
+      title: "How to Use Eureka",
+      subtitle: "The Workflow",
       description:
-        "Eureka combines AI speed with human trust. Our community-driven knowledge base ensures that information is voted on and verified by experts like you.",
-      icon: (
-        <MdOutlineHourglassEmpty className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-      ),
-      gradient: "from-amber-500 to-red-500",
-      badgeColor: "bg-purple-500/10",
-      border: "border-purple-500",
-      img: "/1.png",
-      message: "Synthesize",
-    },
-    {
-      id: 4,
-      title: "How to use it!",
-      subtitle: "Know-how",
-      description:
-        "1. Choose category → 2. Select subdomain → 3. Ask question → 4. Get AI response from community knowledge → 5. Missing info? Upload a file to teach Eureka and build an authentic knowledge hub.",
-      icon: <FiUploadCloud className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-      gradient: "from-yellow-500 to-pink-500",
+        "Choose a category, ask your question, and get a community-verified response. Missing info? Upload files to teach Eureka and earn reputation.",
+      icon: <FiUploadCloud />,
+      gradient: "from-amber-400 to-orange-600", // Warm, helpful onboarding tone
       badgeColor: "bg-orange-500/10",
-      border: "border-orange-500",
-      img: "/2.png",
-      message: "Query",
-    },
-    {
-      id: 5,
-      title: "Collbarotive Research/Planning",
-      subtitle: "Research with teams",
-      description:
-        "Create Eureka rooms an experience AI powered research room where you can perform from basic web search to advanced multi-file analysis in real time and experience same results in real time.",
-      icon: <BsPeople className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-      gradient: "from-pink-500 to-red-500",
-      badgeColor: "bg-red-500/20",
-      border: "border-red-500",
-      img: "/1.png",
-      message: "Create/Join",
-    },
-    {
-      id: 6,
-      title: "Synthesis Mode",
-      subtitle: "Collaborative Intelligence",
-      description:
-        "Solo or create Eureka Rooms to research as a team. Synthesize insights from private member documents, community knowledge, and the web in a shared, real-time workspace, with the power of deep reasoning.",
-      icon: <FaResearchgate className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-      gradient: "from-purple-500 to-indigo-500",
-      badgeColor: "bg-purple-500/20",
-      border: "border-purple-500",
-      img: "/1.png",
-      message: "Synthesizes",
+      border: "border-orange-500/50",
+      img: "/workflow.png",
+      message: "Start Query",
     },
   ];
   return (
     <>
-      <div className=" bg-gray dark:bg-black text-black dark:text-white relative p-4 ">
-        <div className="z-[-1] absolute top-0 left-0 h-full w-full bg-gradient-to-br from-blue-600/10 to-pink-600/10 blur-3xl"></div>
+      <div className="relative bg-gray md:py-30 dark:bg-black text-black dark:text-white  p-4 z-[2] overflow-hidden ">
+        {isDarkMode === false && (
+          <motion.div
+            animate={{ rotate: [10, 20, 15, 5, -10, -40, -20, 10, 20] }}
+            transition={{
+              duration: 1,
+              ease: "easeInOut",
+              repeat: Infinity,
+            }}
+            className={`  pointer-events-none absolute  bottom-25 -left-35  dark:opacity-60 opacity-80 z-[-20]
+                h-60 w-40 blur-[150px]  bg-gradient-to-r from-indigo-500 via-sky-500 to-teal-500
+                  `}
+          />
+        )}
+
         <section className="p-2 text-center mt-4 mb-8">
           <h1 className="bai-jamjuree-bold text-3xl md:text-4xl">
             Why AskEureka ?
@@ -103,15 +76,15 @@ const Why = () => {
         {/* <div className="grid grid-cols-1 lg:grid-cols-2 w-full gap-8"></div> */}
         {/* cards ssection rendering */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 lg:w-4/5 mx-auto  gap-6 p-4">
-          {cardsData.map((data, index) => {
+          {aboutEureka.map((data, index) => {
             return (
               <>
                 <motion.div
                   key={`${data.id}+${index}_${data.title}`}
-                  className="border bg-gradient-to-br from-gray-50 to-gray-100 dark:from-white/10 dark:to-black  rounded-sm w-full md:w-100 h-auto  p-2 relative group overflow-hidden"
+                  className={`  bg-gradient-to-br from-gray-100 to-gray-200 border dark:text-white dark:from-black/30 dark:to-black rounded-md w-full md:w-100 h-auto  p-2 relative group overflow-hidden group `}
                 >
                   <div
-                    className={`absolute bottom-0 h-20  left-0 rounded-tl-xl rounded-tr-xl blur-[100px] opacity-40 w-full  bg-gradient-to-r ${data.gradient}`}
+                    className={`bg-gradient-to-r ${data.gradient} absolute -bottom-5 w-full left-0 h-20  opacity-70 z-[-3] rounded-full blur-xl `}
                   />
                   <div className=" px-4 py-2 flex items-center justify-start gap-2 rounded-lg">
                     <ul

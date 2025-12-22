@@ -1,358 +1,220 @@
-import { FiCheckCircle, FiLock, FiChevronDown } from "react-icons/fi";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Link } from "react-router";
-import { useAppSelector } from "../store/hooks.tsx";
+import { FiCheckCircle } from "react-icons/fi";
+// import { toast } from "sonner";
+// import { Link } from "react-router";
+// import { useAppSelector } from "../store/hooks.tsx";
+// import { MdScale, MdArrowForward } from "react-icons/md";
+// import { BiPurchaseTag } from "react-icons/bi";
+// import { FAQ } from "./FAQ.tsx";
 
-import { MdScale, MdArrowForward } from "react-icons/md";
 import { BiPurchaseTag } from "react-icons/bi";
+import { BsArrowRight } from "react-icons/bs";
+import { IoCall } from "react-icons/io5";
+
 const Pricing = () => {
   // const stripePromise = loadStripe('your-publishable-key-here');
-  const isDarkMode = useAppSelector((state) => state.auth.isDarkMode);
-
-  const faqs = [
+  const PlanDetails = [
     {
       id: 1,
-      question: "Can I keep my documents private ?",
-      answer:
-        "Yes, you can choose visibility type of the document your document when uploading your files .",
+      planName: "Explorer",
+      price: "$0",
+      label: "Free Forever",
+      description:
+        "Ideal for verifying facts and exploring the public knowledge base.",
+      features: [
+        "Access to Public Knowledge Base",
+        "Community-Verified Search",
+        "Standard Web Search",
+        "Short-Term Context Memory", // Sells the "Long Memory" upgrade
+        "2 Private Documents (max 5 pgs)",
+        "Standard AI Response Mode",
+      ],
+      not_available: [
+        "Neuro-Symbolic Audit Engine",
+        "Synthesis Mode (Team Research)",
+        "Collaborative Eureka Rooms",
+        "Persistent Long-Term Memory",
+        "Unlimited Private RAG",
+      ],
+      validity: "Forever",
+      cta: "Start Exploring",
+      highlight: false,
+    },
+    {
+      id: 4, // Added as a "Sprint" option
+      planName: "Sprint Pass",
+      price: "$7",
+      label: "Single Project",
+      description: "Full power for 7 days. No subscription required.",
+      features: [
+        "All Architect Features",
+        "Verified Neuro-Symbolic Logic",
+        "Priority Compute",
+        "30 queries per day",
+      ],
+      validity: "7 Days",
+      isPass: true, // Special flag for styling
     },
     {
       id: 2,
-      question: "How can I access my personal documents",
-      answer:
-        "In the Query interface you can see an option to see all your private docs which you can simply choose by clicking them and start querying in micro second.",
+      planName: "Architect",
+      price: "$25",
+      label: "Most Popular",
+      description:
+        "For power users who need deep reasoning and massive memory.",
+      features: [
+        "Everything in Explorer",
+        "Neuro-Symbolic Audit Engine", // Your core differentiator
+        "Synthesis Mode (Deep Research)",
+        "Long-Term Persistent Memory",
+        "Unlimited Queries & Web Search",
+        "50 Private Documents (OCR Incl.)",
+        "Priority Verification Quota",
+      ],
+      not_available: ["Custom Enterprise RAG", "Dedicated Room Infrastructure"],
+      validity: "Per Month",
+      cta: "Upgrade to Architect",
+      highlight: true, // Use this to apply your "Arctic Neon" glow to this card
     },
     {
       id: 3,
-      question: "What features does the premium version offers ?",
-      answer:
-        "The premium version has all features from private secure personal documents , access to community contibuted knowledge and many upcoming features as a beta tester .",
-    },
-    {
-      id: 4,
-      question: "Can I cancel my subscription any time ?",
-      answer:
-        "Yes you can cancel your subscription only upto 20 hours of you taking the subscription.",
-    },
-    {
-      id: 5,
-      question: "What are the upcoming features ?",
-      answer:
-        "Upcoming features contains significant changes in how the ai responds and also access to other services and potential offline usage with APIs to access your docs and a plug and use features",
+      planName: "Ecosystem",
+      price: "Custom",
+      label: "Enterprise Scale",
+      description:
+        "Full-scale intelligence infrastructure for large organizations.",
+      features: [
+        "Everything in Architect",
+        "Unlimited Collaborative Rooms",
+        "Unlimited Private Document RAG",
+        "Custom Model Fine-Tuning",
+        "White-Label Knowledge Hub",
+        "API Access for Workflows",
+        "Dedicated Support Engineer",
+        "SSO & Advanced Security",
+      ],
+      not_available: [],
+      validity: "Annual/Custom",
+      cta: "Contact Sales",
+      highlight: false,
     },
   ];
-  const [show, setShow] = useState<Number>(0);
-
   return (
     <>
-      <div
-        className={`pricing relative py-20 px-4 sm:px-6 z-[1] overflow-hidden ${
-          isDarkMode ? "bg-black text-white" : "bg-gray-50 text-black"
-        }`}
-      >
-        {/* Gradient background elements */}
-        {!isDarkMode && (
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-sky-600/20 to-indigo-800/20 blur-3xl z-[-1]" />
-        )}
-
-        {/* Section header */}
-        <div className="max-w-4xl mx-auto text-center mb-16 relative">
-          <h2 className="text-3xl sm:text-4xl bai-jamjuree-medium mb-4">
-            Simple,{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-sky-500">
-              Transparent
-            </span>{" "}
-            Pricing
-          </h2>
-          <p
-            className={` ${
-              isDarkMode ? "text-gray-100" : "text-gray-600"
-            } max-w-2xl mx-auto text-xs md:text-sm space-grotesk`}
-          >
-            Choose the plan that fits your needs. SDK and other premium features
-            for teams.
+      <div className={`bg-white dark:bg-black p-4 w-full h-auto`}>
+        {/* heading section */}
+        <header className="text-center px-2 py-4">
+          <h1 className="bai-jamjuree-bold md:text-3xl text-2xl text-black dark:text-white">
+            Transparent Pricing
+          </h1>
+          <p className="bai-jamjuree-regular text-xs md:text-sm dark:text-gray-300 text-gray-600">
+            Choose the plan that fits your needs
           </p>
-          {/* <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-70"></div> */}
-        </div>
+        </header>
+        {/* the cards rendering */}
+        <div className=" flex  w-full ">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 space-x-2 space-y-4 p-2 mx-auto md:w-4/5 w-full ">
+            {PlanDetails.map((plan, index) => {
+              return (
+                <>
+                  <div
+                    key={index}
+                    className={`relative flex flex-col h-full rounded-2xl p-6 transition-all duration-300 border 
+    ${
+      plan.id === 2
+        ? "bg-white dark:bg-neutral-900 border-cyan-500 shadow-[0_0_40px_-15px_rgba(6,182,212,0.3)] scale-[1.01] "
+        : "bg-gray-50/50 dark:bg-black/40 border-gray-200 dark:border-white/10 shadow-xl"
+    }`}
+                  >
+                    {/* Plan Header */}
+                    <section className="mb-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="bai-jamjuree-bold text-3xl tracking-tight">
+                          {plan.planName}
+                        </h3>
+                        {plan.id === 2 ? (
+                          <span className="bg-cyan-500 text-white text-[10px] uppercase font-bold px-2 py-1 rounded-full">
+                            Recommended
+                          </span>
+                        ) : plan.id === 4 ? (
+                          <span className="bg-amber-500 text-white text-[10px] uppercase font-bold px-2 py-1 rounded-full">
+                            Quick access
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="space-grotesk text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                        {plan.description}
+                      </p>
+                    </section>
 
-        {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {/* Free Tier */}
-          <div
-            className={`group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border  group-hover:border-indigo-500`}
-          >
-            {/* accent gradient background */}
+                    {/* Price Section */}
+                    <section className="mb-8">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl bai-jamjuree-bold tracking-tighter">
+                          {plan.price}
+                        </span>
+                        <span className="text-sm space-grotesk text-gray-400">
+                          /{plan.validity}
+                        </span>
+                      </div>
+                      <p className="text-xs space-grotesk font-medium text-emerald-500 mt-1 uppercase tracking-wider">
+                        {plan.label}
+                      </p>
+                    </section>
 
-            {/* rest of the info */}
-            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-purple-500/30 transition-all duration-500 pointer-events-none "></div>
+                    {/* Features List */}
+                    <section className="flex-grow space-y-4 mb-8">
+                      {/* Available Features */}
+                      {plan.features.map((feat, ind) => (
+                        <div
+                          key={ind}
+                          className="flex items-start gap-3 text-sm space-grotesk group"
+                        >
+                          <FiCheckCircle className="text-emerald-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700 dark:text-gray-300">
+                            {feat}
+                          </span>
+                        </div>
+                      ))}
 
-            <div className="mb-6">
-              <h3 className="bai-jamjuree-semibold text-2xl mb-2">Community</h3>
-              <p
-                className={`space-grotesk ${
-                  isDarkMode ? "text-gray-100" : "text-gray-600"
-                } text-sm`}
-              >
-                Good for casual use and basic information gathering.
-              </p>
-            </div>
+                      {/* Unavailable Features (The "Upsell" visual) */}
+                      {plan.not_available?.map((feat, ind) => (
+                        <div
+                          key={ind}
+                          className="flex items-start gap-3 text-sm space-grotesk opacity-30 grayscale"
+                        >
+                          <FiCheckCircle className="mt-0.5 flex-shrink-0" />
+                          <span className="line-through">{feat}</span>
+                        </div>
+                      ))}
+                    </section>
 
-            <div className="mb-8">
-              <span className="text-4xl bai-jamjuree-bold">$0</span>
-              <span className="space-grotesk text-gray-500">/forever</span>
-            </div>
-
-            <ul
-              className={`"space-y-4 mb-8 space-grotesk ${
-                isDarkMode ? "text-gray-100" : "text-gray-700"
-              } text-sm"`}
-            >
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Public knowledge base access
-              </li>
-
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Community contributions
-              </li>
-              <li className="flex items-center gap-2 ">
-                <FiCheckCircle className="text-green-500" />
-                Web Search
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Customer support
-              </li>
-              <li className="flex items-center gap-2 text-gray-400">
-                <FiLock className="text-gray-400" />
-                Unlimited questions
-              </li>
-              <li className="flex items-center gap-2 text-gray-400">
-                <FiLock className="text-gray-400" />
-                AI powered ChatRooms
-              </li>
-              <li className="flex items-center gap-2 text-gray-400">
-                <FiLock className="text-gray-400" />
-                Limited Private documents
-              </li>
-              <li className="flex items-center gap-2 text-gray-400">
-                <FiLock className="text-gray-400" />
-                Developer API
-              </li>
-            </ul>
-            <Link to="/Interface">
-              <button
-                className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer dark:bg-white dark:text-black bg-black text-white bai-jamjuree-bold`}
-              >
-                Get Started
-                <MdArrowForward />
-              </button>
-            </Link>
-          </div>
-
-          {/* Pro Tier (Featured) */}
-          <div
-            className={`group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border `}
-          >
-            {/* accent gradient background */}
-
-            {/* rest of the info */}
-            <div className="group-hover:border-green-500 absolute -top-3 right-6 bg-gradient-to-r from-teal-500 to-green-500 text-white text-xs bai-jamjuree-medium px-3 py-1 rounded-full">
-              Most Popular
-            </div>
-
-            <div className="mb-6">
-              <h3 className="bai-jamjuree-semibold text-2xl mb-2">Pro</h3>
-              <p
-                className={`space-grotesk ${
-                  isDarkMode ? "text-gray-100" : "text-gray-600"
-                } text-sm`}
-              >
-                Good for Professionals, Teams, Students, Friends group and other
-                Individuals{" "}
-              </p>
-            </div>
-
-            <div className="mb-8">
-              <span className="text-4xl bai-jamjuree-bold">$30</span>
-              <span className="space-grotesk text-gray-500">/month</span>
-            </div>
-
-            <ul
-              className={`"space-y-4 mb-8 space-grotesk ${
-                isDarkMode ? "text-gray-100" : "text-gray-700"
-              } text-sm"`}
-            >
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Everything in Community
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Private documents
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Web Search
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Priority support
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Custom knowledge bases
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Developer API
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                AI powered chatrooms
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                24/7 Customer support
-              </li>
-            </ul>
-            <button
-              onClick={() => {
-                toast(
-                  "Thanks for your intereset but , this feature is currently not active !"
-                );
-              }}
-              className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer dark:bg-white dark:text-black bg-black text-white`}
-            >
-              Subscribe
-              <BiPurchaseTag />
-            </button>
-          </div>
-
-          {/* Enterprise Tier */}
-          <div
-            className={`group relative p-8 bg-gradient-to-br dark:from-black dark:to-white/10 from-white to-gray-200  rounded-xl border`}
-          >
-            {/* accent gradient background */}
-
-            {/* rest of the info */}
-            <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-blue-500/30 transition-all duration-500 pointer-events-none"></div>
-
-            <div className="mb-6">
-              <h3 className="bai-jamjuree-semibold text-2xl mb-2 flex items-center gap-3">
-                Enterprise
-                <span className="text-gray-400 text-sm space-grotesk">
-                  (Will be active soon)
-                </span>
-              </h3>
-
-              <p
-                className={`space-grotesk ${
-                  isDarkMode ? "text-gray-100" : "text-gray-600"
-                } text-xs`}
-              >
-                For large teams & organizations
-              </p>
-            </div>
-
-            <div className="mb-8">
-              <span className="text-4xl bai-jamjuree-bold">Custom</span>
-            </div>
-
-            <ul
-              className={`"space-y-4 mb-8 space-grotesk ${
-                isDarkMode ? "text-gray-100" : "text-gray-700"
-              } text-sm"`}
-            >
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Everything in Pro
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Dedicated instance
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                SSO & advanced security
-              </li>
-              <li className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500" />
-                Custom AI training
-              </li>
-            </ul>
-
-            <button
-              onClick={() => {
-                toast(
-                  "Thanks for your intereset but , this feature is currently not active !"
-                );
-              }}
-              className={`"w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg border border-gray-300 bai-jamjuree-medium  transition-colors cursor-pointer dark:bg-white dark:text-black bg-black text-white`}
-            >
-              Live Soon
-              <MdScale />
-            </button>
-          </div>
-        </div>
-
-        {/* FAQ section */}
-        <div className="max-w-3xl mx-auto mt-20 px-4 sm:px-0">
-          <h3 className="bai-jamjuree-semibold text-2xl md:text-3xl mb-8 text-center text-gray-900 dark:text-white">
-            Frequently Asked Questions
-          </h3>
-
-          <div className="space-y-2">
-            {faqs.map((faq) => (
-              <div
-                key={faq.id}
-                className="border-b border-gray-200 dark:border-gray-700"
-              >
-                <button
-                  onClick={() => setShow(show === faq.id ? 0 : faq.id)}
-                  className="flex justify-between items-center w-full py-4 px-2 text-left cursor-pointer 
-                               focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 rounded-lg
-                               transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  aria-expanded={show === faq.id}
-                  aria-controls={`faq-${faq.id}`}
-                >
-                  <span className="bai-jamjuree-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base">
-                    {faq.question}
-                  </span>
-                  <FiChevronDown
-                    className={`text-purple-600 dark:text-purple-400 transition-transform duration-200 
-                                  ${
-                                    show === faq.id
-                                      ? "rotate-180 transform-gpu"
-                                      : "rotate-0 transform-gpu"
-                                  }`}
-                    style={{ willChange: "transform" }}
-                  />
-                </button>
-
-                <div
-                  id={`faq-${faq.id}`}
-                  className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] 
-                              ${
-                                show === faq.id
-                                  ? "max-h-[500px] opacity-100 translate-y-0"
-                                  : "max-h-0 opacity-0 -translate-y-2"
-                              }`}
-                  style={{
-                    willChange: "height, opacity, transform",
-                    transformStyle: "preserve-3d",
-                  }}
-                >
-                  <div className="pb-4 px-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base space-grotesk">
-                    {faq.answer}
+                    {/* The CTA Button - Full width for PWA touch targets */}
+                    <button
+                      className={`w-full py-4 px-4 rounded-xl bai-jamjuree-semibold flex items-center justify-center gap-2 transition-all active:scale-95
+   bg-black text-white dark:bg-white dark:text-black`}
+                    >
+                      {plan.id === 1 ? (
+                        <>
+                          Try for free <BsArrowRight />
+                        </>
+                      ) : plan.id === 2 || plan.id === 4 ? (
+                        <>
+                          Get Started <BiPurchaseTag />
+                        </>
+                      ) : (
+                        <>
+                          Contact Sales <IoCall />
+                        </>
+                      )}
+                    </button>
                   </div>
-                </div>
-              </div>
-            ))}
+                </>
+              );
+            })}
           </div>
         </div>
+
+        {/* <FAQ /> */}
       </div>
     </>
   );
