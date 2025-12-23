@@ -16,7 +16,7 @@ const SimilarQuestions = () => {
   const { Querycount } = useAppSelector((state) => state.auth);
   return (
     <>
-      <div className="border  rounded-md  space-grotesk  min-h-100 bg-gray-100 dark:bg-black overflow-auto shadow-sm shadow-black dark:shadow-white/20">
+      <div className="border  rounded-md  space-grotesk  min-h-100 bg-gray-100 dark:bg-black overflow-auto shadow-2xl">
         <h1 className="ba-jamjuree-semibold text-md ">
           <section className="flex items-center justify-start gap-3 p-3 ">
             <GoPeople /> Similarties with others
@@ -91,8 +91,8 @@ const SimilarQuestions = () => {
             </div>
           </div>
         ) : (
-          <div className=" text-center space-grotesk text-sm flex items-center justify-center gap-2 p-2">
-            <PiListMagnifyingGlassLight size={32} />{" "}
+          <div className=" text-center space-grotesk text-xs md:text-sm text-red-400 flex items-center justify-center gap-2 p-2 flex-wrap">
+            <PiListMagnifyingGlassLight size={15} />{" "}
             <h1>Not enough data to show this information right now</h1>
           </div>
         )}

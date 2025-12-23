@@ -368,7 +368,6 @@ export const SendJoinNotification = async (
     // console.log(admins)
 
     if (adminError) {
-      console.error("Error fetching room admins:", adminError);
       return { error: "Error while processing your request" };
     }
 

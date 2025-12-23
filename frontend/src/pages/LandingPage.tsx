@@ -7,6 +7,7 @@ const Footer = React.lazy(() => import("@/components/Footer.tsx"));
 import Hero from "@/components/Landing_Hero.tsx";
 import { Features } from "./Features.tsx";
 import { Link } from "react-router";
+import { motion } from "framer-motion";
 ///words that render dynamically
 const words = [
   "Unbiased",
@@ -50,13 +51,20 @@ const LandingPage = () => {
         <div className="relative flex flex-col items-center justify-center gap-6 px-4">
           <h2 className="text-black dark:text-white bai-jamjuree-bold text-2xl md:text-4xl max-w-2xl text-center leading-tight">
             Ready to build a{" "}
-            <span className="text-cyan-500 font-extrabold">
-              hallucination-free
-            </span>{" "}
+            <motion.span
+              className="text-transparent bg-clip-text bg-gradient-to-tr from-cyan-400 via-blue-500 to-emerald-400"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              key={value}
+            >
+              {value}
+            </motion.span>{" "}
             knowledge base?
           </h2>
 
-          <p className="space-grotesk text-gray-500 dark:text-gray-400 text-center max-w-md">
+          <p className="space-grotesk text-xs md:text-sm text-gray-500 dark:text-gray-400 text-center max-w-md">
             Join researchers and architects using Neuro-Symbolic AI to verify
             the truth.
           </p>
@@ -64,13 +72,13 @@ const LandingPage = () => {
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <Link
               to="/Interface"
-              className="bg-black dark:bg-white text-white dark:text-black shadow-[0_20px_50px_rgba(8,_112,_184,_0.1)] hover:shadow-cyan-500/20 transition-all rounded-xl py-3 px-6 bai-jamjuree-semibold text-lg active:scale-95"
+              className="bg-black dark:bg-white text-white dark:text-black shadow-[0_20px_50px_rgba(8,_112,_184,_0.1)] hover:shadow-cyan-500/20 transition-all rounded-xl py-3 px-6 bai-jamjuree-semibold text-sm md:text-md active:scale-95"
             >
               Start Building for Free &rarr;
             </Link>
 
             {/* Secondary link for the "Sprint Pass" curiosity */}
-            <button className="text-gray-500 hover:text-black dark:hover:text-white space-grotesk text-sm transition-colors">
+            <button className="text-gray-500 hover:text-black dark:hover:text-white space-grotesk  transition-colors text-xs md:text-sm">
               <a href="#pricing">View all plans &rarr;</a>
             </button>
           </div>

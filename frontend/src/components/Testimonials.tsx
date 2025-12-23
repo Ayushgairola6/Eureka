@@ -133,22 +133,25 @@ const TestiMonials = () => {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true, margin: "50px" }}
                   transition={{ type: "tween", duration: 0.3 }}
-                  className={`flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 
-                       dark:from-white/10 dark:to-black 
-                   rounded-2xl border backdrop-blur-sm p-6 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] group`}
+                  className={`shadow-2xl flex-shrink-0 w-80 snap-start bg-gradient-to-br  from-gray-100 to-gray-50 
+                       dark:from-neutral-950 dark:to-black 
+                   rounded-2xl  backdrop-blur-sm p-6 hover:shadow-xl transition-all duration-500 hover:scale-[1.02] group overflow-hidden border`}
                 >
+                  <div
+                    className={`absolute top-0 left-0 h-full w-full rotate-60 bg-gradient-to-tr ${card.gradientFrom} ${card.gradientTo} z-[-10] opacity-15 blur-[100px] `}
+                  />
                   <div className="flex items-center gap-3 mb-4">
                     <div
-                      className={`w-12 h-12 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} rounded-xl flex items-center justify-center shadow-lg transition-shadow duration-500 text-white`}
+                      className={`w-8 h-8 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} rounded-xl flex items-center justify-center shadow-lg transition-shadow duration-500 text-white`}
                     >
                       {card.icon}
                     </div>
-                    <h3 className="bai-jamjuree-semibold text-lg">
+                    <h3 className="bai-jamjuree-semibold text-md md:text-lg ">
                       {card.title}
                     </h3>
                   </div>
                   <p
-                    className={`space-grotesk ${
+                    className={`space-grotesk text-sm md:text-sm ${
                       isDarkMode ? "text-gray-300" : "text-gray-700"
                     } mb-6 leading-relaxed`}
                   >

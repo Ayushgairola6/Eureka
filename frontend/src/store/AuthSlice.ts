@@ -104,7 +104,37 @@ const initialState: AuthState = {
   Querycount: 0,
   FeedbackCounts: { upvotes: 0, downvotes: 0, partial_upvotes: 0 },
   AuthenticityScore: 0,
-  chatrooms: [],
+  chatrooms: [
+    // {
+    //   member_id: "me_user_001",
+    //   room_id: "7b23-4a11-92cd",
+    //   chat_rooms: {
+    //     room_id: "7b23-4a11-92cd",
+    //     room_name: "Engineering General",
+    //     room_type: "public",
+    //     created_at: "2023-10-15T09:30:00Z",
+    //     created_by: "user_uuid_101",
+    //     Room_Description: "A place for all engineering-wide announcements.",
+    //     Room_Joining_code: 102938,
+    //     participant_count: 45,
+    //   },
+    // },
+    // {
+    //   member_id: "me_user_001",
+    //   room_id: "ac12-88ff-1102",
+    //   chat_rooms: {
+    //     room_id: "ac12-88ff-1102",
+    //     room_name: "Project Phoenix - Private",
+    //     room_type: "private",
+    //     created_at: "2023-11-01T14:20:00Z",
+    //     created_by: "user_uuid_202",
+    //     Room_Description:
+    //       "Internal discussion for Project Phoenix stakeholders.",
+    //     Room_Joining_code: null,
+    //     participant_count: 5,
+    //   },
+    // },
+  ],
   Contributions_user_id_fkey: [],
   currTab: "Home",
   notificationcount: 0,
@@ -445,7 +475,7 @@ const authSlice = createSlice({
             action.payload.Contributions_user_id_fkey;
           state.Querycount = action.payload.Querycount;
           state.FeedbackCounts = action.payload.FeedbackCounts;
-          state.chatrooms = action.payload.chatrooms;
+          state.chatrooms = [...state.chatrooms, ...action.payload.chatrooms];
           state.notificationcount = action.payload.notificationcount;
           state.notifications = action.payload.notifications;
 

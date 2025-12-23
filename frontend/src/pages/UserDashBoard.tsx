@@ -1,6 +1,4 @@
-import { Link } from "react-router";
 import { motion } from "framer-motion";
-import { FiCalendar, FiFile } from "react-icons/fi";
 import {
   BsFile,
   BsFiletypeDocx,
@@ -10,9 +8,8 @@ import {
   BsFiletypeTxt,
 } from "react-icons/bs";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { TbOctahedron, TbTextCaption } from "react-icons/tb";
 import { useEffect, useState } from "react";
-import { FaFilePdf, FaArrowDown, FaRocketchat } from "react-icons/fa";
+import { FaFilePdf } from "react-icons/fa";
 
 import { toast } from "sonner";
 import { BiError, BiLoaderAlt, BiLogOut } from "react-icons/bi";
@@ -26,8 +23,8 @@ import QuestionAskedChart from "@/components/UserQuestionAskedChart.tsx";
 import UserFeedbackReport from "@/components/UserFeedbackReport.tsx";
 import SimilarQuestions from "@/components/SimilarQueryChart.tsx";
 import PreferenceToggle from "@/components/Preference.tsx";
-import JoinRoomInput from "@/components/room_join_input.tsx";
-import RoomCard from "@/components/Room_card.tsx";
+import { UserContributions } from "@/components/User_contributions.tsx";
+import { UserChatRoom } from "@/components/User_chatrooms.tsx";
 
 const UserDashboard = () => {
   // Mock user data
@@ -35,11 +32,8 @@ const UserDashboard = () => {
   const dispatch = useAppDispatch();
   const Feedback = useAppSelector((state) => state.auth.FeedbackCounts);
   const { AllowedTrainingModels } = useAppSelector((state) => state.auth);
-  const chatrooms = useAppSelector((state) => state.auth.chatrooms);
   const [score, setScore] = useState<number>(0);
   const [showcard, setShowCard] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [IncreaseHeight, setIncreaseHeight] = useState(false);
   const { isLoggingOut, user, isDarkMode } = useAppSelector(
     (state) => state.auth
   );
@@ -71,7 +65,7 @@ const UserDashboard = () => {
         {/* Sidebar */}
         <div className="w-64 p-6 border-r  hidden md:block shadow-sm shadow-black dark:shadow-white/20">
           <div className="flex flex-col items-center justify-center mb-10 ">
-            <span className="rounded-full h-24 w-24 text-5xl flex flex-col items-center justify-center  border-yellow-600 bg-black text-white dark:bg-white dark:text-black mb-4 relative shadow-sm shadow-black dark:shadow-white/20 relative">
+            <span className="rounded-full h-24 w-24 text-5xl flex flex-col items-center justify-center  border-yellow-600 bg-black text-white dark:bg-white dark:text-black mb-4 relative shadow-sm shadow-black dark:shadow-white/20 ">
               {user?.username ? (
                 user?.username.trim().split("_")[0].charAt(0).toUpperCase()
               ) : (
@@ -251,7 +245,7 @@ const UserDashboard = () => {
               {/* user active projects section */}
               <motion.div
                 whileHover={{ y: -5 }}
-                className=" bg-gray-100 dark:bg-black p-6 rounded-xl border shadow-sm shadow-black dark:shadow-white/20"
+                className=" bg-gray-100 dark:bg-black p-6 rounded-xl border shadow-2xl"
               >
                 <h3 className="text-sm opacity-70 font-semibold ">
                   Active Documents
@@ -342,151 +336,11 @@ const UserDashboard = () => {
             <UserFeedbackReport score={score} />
           </div>
           {/* User  Conversations and documents */}
-          <section
-            className={`mb-8 border p-2 space-y-2  rounded-lg ${
-              open === true
-                ? "h-100 overflow-y-scroll"
-                : `${
-                    user && user?.Contributions_user_id_fkey?.length > 0
-                      ? "h-60  "
-                      : "h-30"
-                  } overflow-hidden`
-            } transition-discrete ease-linear duration-500`}
-          >
-            <div className="flex justify-between items-center mb-4 bai-jamjuree-regular flex-wrap">
-              <h2 className="md:text-xl text-lg font-bold flex  items-center justify-center gap-2">
-                Docs <FiFile />
-              </h2>
-              <section className="inline-flex gap-5 ">
-                <Link
-                  to="/user/misallaneous-chats"
-                  className="text-xs md:text-sm text-green-600 dark:text-green-400 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  Other chats <TbOctahedron />
-                </Link>
-                {user && user?.Contributions_user_id_fkey?.length > 0 && (
-                  <button
-                    onClick={() => setOpen(!open)}
-                    className="text-xs md:text-sm text-green-600 dark:text-green-400 cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    View all
-                    <FaArrowDown
-                      className={`${
-                        open === false ? "rotate-0" : "rotate-180"
-                      } transition-discrete duration-500`}
-                      size={10}
-                    />
-                  </button>
-                )}
-              </section>
-            </div>
-
-            {/* users private documents list sections */}
-            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 space-grotesk   rounded-md p-2 "> */}
-            {user?.Contributions_user_id_fkey &&
-            user?.Contributions_user_id_fkey.length > 0 ? (
-              user?.Contributions_user_id_fkey.map((conv, index) => (
-                <motion.div
-                  key={`${conv.chunk_count}_${index}`}
-                  className="p-4 rounded-lg  bg-gray-100 dark:bg-black border   transition-all cursor-pointer shadow-sm shadow-black dark:shadow-white/20"
-                >
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-medium space-grotesk flex items-center justify-center gap-2">
-                      <TbTextCaption color="green" /> {conv.feedback}
-                    </h3>
-                    <span className="text-xs opacity-50 dark:text-white text-black flex items-center justify-center gap-2">
-                      <FiCalendar />
-                      {conv.created_at.split("T")[0]}
-                    </span>
-                  </div>
-                  <p className="text-sm opacity-70 mt-2">
-                    Chunk Count: {conv.chunk_count}
-                  </p>
-
-                  <div className="flex justify-end items-center mt-4">
-                    <Link
-                      onClick={() => {
-                        if (user?.IsPremiumUser === false) {
-                          toast.info(
-                            "Become our premium member to be able to view chat history."
-                          );
-                          return;
-                        }
-                      }}
-                      to={`${
-                        user?.IsPremiumUser === true
-                          ? `/User/document_chat_history/${conv.document_id}`
-                          : `/user/dashboard`
-                      }`}
-                      className="text-xs text-blue-500 hover:underline"
-                    >
-                      View full chat →
-                    </Link>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="bg-black/5 dark:bg-white/5 border  rounded-lg h-full w-full p-4 flex ">
-                <Link to="/Interface" className="m-auto text-sm text-sky-500">
-                  Upload docs +
-                </Link>
-              </div>
-            )}
-            {/* </div> */}
-          </section>
+          <UserContributions />
           {/* Rooms  Section */}
-          <section
-            className={`border ${
-              IncreaseHeight === true
-                ? "h-100 overflow-scroll"
-                : `${chatrooms.length > 0 ? "h-65" : "h-30"} overflow-hidden`
-            } transition-discrete ease-linear duration-300  rounded-md p-2`}
-          >
-            <div className="flex justify-between items-center mb-4 space-grotesk">
-              <h2 className="md:text-xl text-lg  font-bold flex items-center justify-center gap-2">
-                Chatrooms <FaRocketchat />
-              </h2>
-              <section className="inline-flex gap-5">
-                <button
-                  onClick={() => setShowCard(!showcard)}
-                  className="text-xs md:text-sm text-sky-500 hover:underline"
-                >
-                  Creat New +
-                </button>
-                {chatrooms.length > 0 && (
-                  <button
-                    className="text-xs md:text-sm text-green-500 cursor-pointer flex items-center justify-center gap-2"
-                    onClick={() => setIncreaseHeight(!IncreaseHeight)}
-                  >
-                    {IncreaseHeight === true ? "Hide" : "View all"}{" "}
-                    <FaArrowDown
-                      className={`${
-                        IncreaseHeight === false ? "rotate-0" : "rotate-180"
-                      } transition-discrete duration-500`}
-                      size={10}
-                    />
-                  </button>
-                )}
-              </section>
-            </div>
-
-            {/* list of chatrooms section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bai-jamjuree-regular ">
-              {chatrooms.length > 0 ? (
-                chatrooms.map((room, index) => (
-                  <RoomCard room={room} index={index}></RoomCard>
-                ))
-              ) : (
-                <div className=" border  rounded-lg flex bg-gray-100 dark:bg-black">
-                  <h1 className="m-auto space-grotesk text-sm md:text-md p-2">
-                    No active rooms
-                  </h1>
-                </div>
-              )}
-            </div>
-          </section>
+          <UserChatRoom showcard={showcard} setShowCard={setShowCard} />
           {/* join a room with a code section */}
-          <JoinRoomInput />
+
           {/* logout button */}
           <section className=" md:hidden block my-6 w-full">
             <button

@@ -144,16 +144,22 @@ const Footer = () => {
               </div>
             </div>
           </div>
-          <div className="bg-black py-2 px-3 rounded-sm border shadow-xl flex items-center justify-between gap-4 ">
-            <input
-              className="dark:text-white text-black space-grotesk text-xs md:text-sm  ring-0 focus-ring-0 py-2 px-1 w-4/5"
-              placeholder="Your email address"
-              type="text"
-            />
-            <button className="bg-black text-white dark:bg-white dark:text-black rounded-md bai-jamjuree-semibold text-xs md:text-sm">
-              Confirm
-            </button>
-          </div>
+          <section className="my-4 shadow-2xl rounded-md">
+            <h6 className="bai-jamjuree-semibold py-2 ">
+              Get the latest updates before anyone else
+            </h6>
+            <div className="dark:bg-black bg-gray-50 py-2 px-3 rounded-sm border shadow-2xl flex items-center justify-between gap-4 ">
+              <input
+                className="dark:text-white text-black space-grotesk text-xs md:text-sm border-none outline-none focus:ring-0  py-2 px-1 w-4/5"
+                placeholder="Your email address"
+                type="text"
+              />
+              <button className="bg-black text-white dark:bg-white dark:text-black rounded-md bai-jamjuree-semibold text-xs md:text-sm py-2 px-3">
+                Confirm
+              </button>
+            </div>
+          </section>
+
           {/* Bottom footer */}
           <div className="w-full text-center border-t border-gray-400  py-3 flex   justify-center items-center">
             <p className="bai-jamjuree-semibold dark:text-gray-300 text-gray-500 text-sm  ">

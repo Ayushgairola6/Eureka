@@ -167,10 +167,11 @@ export const FetchChatHistory = async (req, res) => {
 
     return res.status(200).send({ message: "History not found", data: [] });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     await notifyMe(
       "An error occured while retriveing chat history from cache",
       error
     );
+    return res.status(500).send({ message: "Something went wrong!" });
   }
 };

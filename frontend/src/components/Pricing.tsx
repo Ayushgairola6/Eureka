@@ -9,6 +9,7 @@ import { FiCheckCircle } from "react-icons/fi";
 import { BiPurchaseTag } from "react-icons/bi";
 import { BsArrowRight } from "react-icons/bs";
 import { IoCall } from "react-icons/io5";
+import { Link } from "react-router";
 
 const Pricing = () => {
   // const stripePromise = loadStripe('your-publishable-key-here');
@@ -115,13 +116,13 @@ const Pricing = () => {
         </header>
         {/* the cards rendering */}
         <div className=" flex  w-full ">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-2 mx-auto md:w-[90%] w-full ">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-5 gap-x-4 p-4 mx-auto md:w-[95%] w-full ">
             {PlanDetails.map((plan, index) => {
               return (
                 <>
                   <div
                     key={index}
-                    className={`relative flex flex-col h-full rounded-2xl p-6 transition-all duration-300 border 
+                    className={`shadow-2xl relative flex flex-col h-full rounded-2xl p-6 transition-all duration-300 border 
     ${
       plan.id === 2
         ? "bg-white dark:bg-neutral-900 border-cyan-500 shadow-[0_0_40px_-15px_rgba(6,182,212,0.3)] scale-[1.03] "
@@ -200,7 +201,12 @@ const Pricing = () => {
                     >
                       {plan.id === 1 ? (
                         <>
-                          Try for free <BsArrowRight />
+                          <Link
+                            className="flex items-center justify-center gap-3"
+                            to="/Interface"
+                          >
+                            Try for free <BsArrowRight />
+                          </Link>
                         </>
                       ) : plan.id === 2 || plan.id === 4 ? (
                         <>

@@ -19,7 +19,7 @@ const eurekaFeatures = [
     icon: <LuBrainCircuit className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
     gradient: "from-indigo-600 via-cyan-500 to-emerald-400", // A "Fusion" gradient
     badgeColor: "bg-cyan-500/10",
-    border: "border-cyan-400/50",
+    border: "hover:border-cyan-400/50",
     img: "/neuro-symbolic.png",
     message: "Explore Architecture",
   },
@@ -32,7 +32,7 @@ const eurekaFeatures = [
     icon: <BsPeople />,
     gradient: "from-purple-600 to-indigo-600", // Collaborative purple
     badgeColor: "bg-purple-500/10",
-    border: "border-purple-500/50",
+    border: "hover:border-purple-500/50",
     img: "/rooms.png",
     message: "Create Room",
   },
@@ -45,7 +45,7 @@ const eurekaFeatures = [
     icon: <FaResearchgate />,
     gradient: "from-emerald-500 to-teal-600", // "Growth" and deep-tech green
     badgeColor: "bg-emerald-500/10",
-    border: "border-emerald-500/50",
+    border: "hover:border-emerald-500/50",
     img: "/synthesis.png",
     message: "Try Synthesis",
   },
@@ -58,7 +58,7 @@ const eurekaFeatures = [
     icon: <FaGitAlt />,
     gradient: "from-rose-500 to-pink-600", // High-value "Premium" feel
     badgeColor: "bg-pink-500/10",
-    border: "border-pink-500/50",
+    border: "hover:border-pink-500/50",
     img: "/memory.png",
     message: "View Tiers",
   },
@@ -71,7 +71,7 @@ const eurekaFeatures = [
     icon: <FiUploadCloud />,
     gradient: "from-cyan-500 to-blue-500", // Your "Arctic Neon" vibe
     badgeColor: "bg-cyan-500/10",
-    border: "border-cyan-500/50",
+    border: "hover:border-cyan-500/50",
     img: "/rag.png",
     message: "Analyze Docs",
   },
@@ -136,7 +136,7 @@ export const Features = () => {
                       viewport={{ once: true, margin: "50px" }}
                       transition={{ type: "tween", duration: 0.3 }}
                       key={`${data.id}+${index}_${data.title}`}
-                      className=" border bg-gradient-to-br from-gray-50 to-gray-100 dark:from-white/10 dark:to-black  rounded-sm w-80 h-auto  p-2 relative group overflow-hidden group "
+                      className={`shadow-2xl cursor-pointer ${data.border} border bg-gradient-to-br from-gray-50 to-gray-100 dark:from-white/10 dark:to-black  rounded-sm w-80 h-auto  p-2 relative group overflow-hidden group transition-all duration-200`}
                     >
                       {/* grid svg background */}
                       <svg

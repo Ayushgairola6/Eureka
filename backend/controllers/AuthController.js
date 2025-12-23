@@ -96,7 +96,7 @@ export const GenerateAccessTokens = (
     );
     return AccessToken;
   } catch (err) {
-    console.error(err);
+    return { err };
   }
 };
 // socket instance
@@ -156,7 +156,8 @@ export const HandleUserRegistration = async (req, res) => {
     const user = { username: username, email: email };
     // send welcome email with verify account email
     const welcomeEmail = await EmailServices.sendWelcomeEmail(user).catch(
-      (error) => console.error("Register email failed ;", error)
+      async (error) =>
+        await notifyMe("Error while sending an email for registration", error)
     );
     const verificationtoken = GenerateEmailVerificationTokens(username, email);
 
@@ -170,7 +171,7 @@ export const HandleUserRegistration = async (req, res) => {
       message: "An email has been sent to your registered email !",
     });
   } catch (error) {
-    console.error(error);
+    await notifyMe("Error while handling user registration", error);
     return res
       .status(500)
       .json({ message: "Error while creating an account !" });
@@ -207,7 +208,7 @@ export const HandleUserLogin = async (req, res) => {
     // console.log(user);
     // if the user is not found in the database or some error occured
     if (userError || !user) {
-      console.log(userError);
+      // console.log(userError);
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -290,8 +291,8 @@ export const HandleUserLogin = async (req, res) => {
       AuthToken: ValidAuthToken,
     });
   } catch (error) {
-    console.error("Login controller error:", error);
-    await notifyMe(`Login controller error: ${JSON.stringify(error)}`);
+    // console.error("Login controller error:", error);
+    await notifyMe(`Login controller error:`, error);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
@@ -378,7 +379,7 @@ const cacheRefreshToken = async (user, refreshToken) => {
       expiration: { type: "EX", value: 800 },
     });
   } catch (error) {
-    console.error("Error caching refresh token:", error);
+    return { error };
   }
 };
 
@@ -401,7 +402,7 @@ const sendLoginNotification = async (req, user) => {
       timestamp: new Date(),
     });
   } catch (error) {
-    console.error("Error sending login notification:", error);
+    await notifyMe("Error while sending login email to the user", error);
   }
 };
 // user logout handler
@@ -410,10 +411,6 @@ export const HandleUserLogout = async (req, res) => {
     const user_id = req.user.user_id;
 
     if (!user_id || !req.user.username) {
-      console.error(
-        "User information not found at logout from jwt token",
-        req.user
-      );
       return res.status(401).send({ message: "Please log in to continue" });
     }
 
@@ -422,7 +419,6 @@ export const HandleUserLogout = async (req, res) => {
       .delete("*")
       .eq("user_id", user_id);
     if (error) {
-      console.error(error);
       return res
         .status(400)
         .send({ message: "Unable to log out of your account" });
@@ -601,12 +597,12 @@ export const GetVerificationEmail = async (req, res) => {
       message: "An email has been sent to you with the verification link",
     });
   } catch (err) {
-    console.error(err);
     await notifyMe(
       `Error while sending the new verification Email to the user= ${JSON.stringify(
         err
       )}`
     );
+    return res.status(500).send({ message: "Something went wrong!" });
   }
 };
 
@@ -665,7 +661,6 @@ export const ResetPassword = async (req, res) => {
   try {
     const AuthHeaders = req.headers.authorization;
     if (!AuthHeaders) {
-      console.log("auth headers not found");
       return res.status(400).send({ message: "Token not found" });
     }
     const { newpassword1, newpassword2 } = req.body;
@@ -690,7 +685,6 @@ export const ResetPassword = async (req, res) => {
       const HashedPassword = await bcrypt.hash(newpassword1, 8);
 
       if (!HashedPassword) {
-        console.log("error generating new password");
         return res
           .status(400)
           .json({ message: "Error setting up you account ." });
@@ -701,7 +695,6 @@ export const ResetPassword = async (req, res) => {
         .update({ password: HashedPassword })
         .eq("id", userId);
       if (error) {
-        console.error(`password update error from db : ${error}`);
         return res.status(400).send({ message: "An error occured" });
       }
       await EmailServices.sendPasswordResetSuccessEmail({
@@ -716,7 +709,6 @@ export const ResetPassword = async (req, res) => {
         .send({ message: "Invalid or expired token. Please try again." });
     }
   } catch (error) {
-    console.error(error);
     return res
       .status(500)
       .send({ message: "Error while processing your request" });
@@ -737,13 +729,6 @@ export const StoreTokens = async (
       typeof user_id !== "string" ||
       !username
     ) {
-      console.log(
-        RefreshToken,
-        AuthToken,
-        user_id,
-        username,
-        "Data has reached the store token function"
-      );
       await notifyMe(`Some data is not available at the store token function`);
       return { error: "No token found" };
     }
@@ -757,7 +742,6 @@ export const StoreTokens = async (
 
     if (error && error.code !== "PGRST116") {
       // PGRST116 is "not found" error
-      console.log(error, "Error from token check function");
       return { error: error };
     }
 
@@ -770,7 +754,6 @@ export const StoreTokens = async (
         .eq("user_id", user_id);
 
       if (updateError) {
-        console.log("Token updation error", updateError);
         return { error: updateError };
       }
     } else {
@@ -782,7 +765,6 @@ export const StoreTokens = async (
       });
 
       if (insertError) {
-        console.log("Token Insertion error", insertError);
         return { error: insertError };
       }
     }
@@ -820,12 +802,10 @@ export const GetUserData = async (user_id) => {
       .single();
 
     if (error) {
-      console.error("Supabase error (GetUserData):", error);
       return { error };
     }
     return { data };
   } catch (error) {
-    console.error("Exception (GetUserData):", error);
     return { error };
   }
 };
@@ -840,12 +820,10 @@ export const GetUserContributions = async (user_id) => {
       .eq("Document_visibility", "Private");
 
     if (error) {
-      console.error("Supabase error (GetUserContributions):", error);
       return { error };
     }
     return { data: data || [] };
   } catch (error) {
-    console.error("Exception (GetUserContributions):", error);
     return { error };
   }
 };
@@ -885,12 +863,10 @@ export const GetUserLikeCount = async (user_id) => {
       .eq("Document_visibility", "Public");
 
     if (error) {
-      console.error("Supabase error (GetUserLikeCount):", error);
       return { error };
     }
     return { data: data || [] };
   } catch (error) {
-    console.error("Exception (GetUserLikeCount):", error);
     return { error };
   }
 };
@@ -904,12 +880,10 @@ export const GetUserChatRooms = async (user_id) => {
       .eq("member_id", user_id);
 
     if (chatRoomError) {
-      console.error("Supabase error (GetUserChatRooms):", chatRoomError);
       return { error: chatRoomError };
     }
     return { data: chatrooms || [] };
   } catch (error) {
-    console.error("Exception (GetUserChatRooms):", error);
     return { error };
   }
 };
@@ -943,7 +917,6 @@ export const GetNotificationsInformations = async (user_id) => {
 
     return { notifications: data || [] };
   } catch (err) {
-    console.error(err);
     return { err };
   }
 };
@@ -1039,7 +1012,7 @@ export const GetUserAccountDetails = async (req, res) => {
     await notifyMe(
       `An error ${error} From User account details function for user ${req.user.username}`
     );
-    console.log(error);
+    // console.log(error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -1073,11 +1046,12 @@ const StoreUserDataInTheCache = async (
         notificationcount: JSON.stringify(notifycount ? notifycount : 0),
         notification: JSON.stringify(notify ? notify : []),
       })
-      .catch((err) =>
-        console.log(
-          err,
-          "an error occured while caching the user dashboard information"
-        )
+      .catch(
+        async (err) =>
+          await notifyMe(
+            "An error occured while caching the users account details",
+            err
+          )
       );
     const now = new Date();
     const endOfDay = new Date(now);
@@ -1099,7 +1073,6 @@ export const Accept_Or_rejectRequest = async (req, res) => {
     const user_id = req.user.user_id;
 
     if (!user_id || typeof user_id !== "string" || !req.user.username) {
-      console.log("Accept_Or_rejectRequest error in user_id");
       return res.status(400).json({ message: "Invalid user id" });
     }
 
@@ -1130,14 +1103,12 @@ export const Accept_Or_rejectRequest = async (req, res) => {
         .eq("user_id", user_id)
         .eq("metadata->>room_id", room_id);
       if (error) {
-        console.error(error);
         return res.status(400).send({ message: "Unable to join the room" });
       }
       // then store the new notification to send the user who requested the roomJoining
       // join the user fu
       const AddInRoom = await JoinTheUser(room_id, requested_user_id);
       if (AddInRoom.error) {
-        console.error(AddInRoom.error);
         return res.status(400).send({ message: "Unable to join the room" });
       }
 
@@ -1157,7 +1128,6 @@ export const Accept_Or_rejectRequest = async (req, res) => {
         "NA"
       );
 
-      console.log(newNotification);
       io.to(requested_user_id).emit("new_Notification", newNotification || []);
 
       return res.status(200).send({ message: "Request has been accepted !" });
@@ -1169,7 +1139,6 @@ export const Accept_Or_rejectRequest = async (req, res) => {
         .eq("user_id", user_id)
         .eq("metadata->>room_id", room_id);
       if (error) {
-        console.error(error);
         return res.status(200).send({ message: "Rejected the request !" });
       }
       const now = new Date();
@@ -1197,7 +1166,6 @@ export const Accept_Or_rejectRequest = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Server exception:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };

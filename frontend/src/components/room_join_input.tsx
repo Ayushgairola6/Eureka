@@ -36,7 +36,7 @@ const JoinRoomInput = () => {
   };
   return (
     <>
-      <div className="min-h-[100vh] w-full flex flex-col items-center justify-center p-4 relative">
+      <div className=" w-full mx-auto flex flex-col items-center justify-center p-4 relative">
         {/* 1. Visual Icon (Optional but nice) */}
         <div className="mb-6 p-3 rounded-full bg-neutral-200 dark:bg-neutral-900 text-neutral-400 dark:text-neutral-500">
           <FaRegComments size={25} />

@@ -33,7 +33,7 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
     <>
       <motion.div
         whileTap={{ scale: 0.98 }}
-        className="bg-gray-100 dark:bg-black p-6 rounded-2xl border  transition-all duration-300 shadow-sm shadow-black dark:shadow-white/20  "
+        className="bg-gray-100 dark:bg-black p-6 rounded-2xl   transition-all duration-300 shadow-2xl border "
       >
         {/* Header */}
         <div className="flex items-center justify-start gap-3 mb-6">

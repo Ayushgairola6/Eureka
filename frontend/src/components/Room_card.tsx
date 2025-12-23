@@ -26,7 +26,7 @@ const RoomCard: React.FC<props> = ({ room, index }) => {
       bg-gray-100 dark:bg-[#0A0A0A] 
       p-5 transition-all duration-300 
        hover:shadow-teal-600/20 shadow-2xl
-      cursor-pointer overflow-hidden"
+      cursor-pointer overflow-hidden flex-none w-fit "
       >
         {/* --- Hover Gradient Effect (Subtle Landing Page Vibe) --- */}
         <div className="absolute top-0 right-0 -mr-10 -mt-10 h-32 w-32 rounded-full bg-blue-500/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />

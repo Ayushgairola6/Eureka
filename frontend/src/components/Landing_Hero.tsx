@@ -93,15 +93,12 @@ const Hero: React.FC<props> = ({ value }) => {
           </div>
         </section>
 
-        {/* ---------- FLOATING PRODUCT CARD ---------- */}
-        <motion.div className="relative z-10 w-full flex justify-center ">
-          {/* --- 1. THE AMBIENT BACKLIGHT (The "Aura") --- */}
-          {/* <motion.div
-            animate={{ rotate: [10, 20, 15, 5, -10, -40, -20, 10, 20] }}
-            transition={{ duration: 3, ease: "linear", repeat: Infinity }}
-            className="pointer-events-none absolute -top-10   
-    h-4/5 w-full md:w-1/2 blur-[100px] bg-gradient-to-r from-cyan-400 via-blue-500 to-emerald-400 dark:from-cyan-700 dark:via-blue-600 dark:to-emerald-700  "
-          /> */}
+        <motion.div
+          initial={{ scale: 1 }}
+          whileInView={{ scale: 1.02 }}
+          transition={{ ease: "linear", duration: 0.4 }}
+          className="relative z-10 w-full flex justify-center "
+        >
           <LightBlob
             from={"from-cyan-400"}
             via={"via-blue-500"}
@@ -132,10 +129,10 @@ const Hero: React.FC<props> = ({ value }) => {
             </div>
 
             {/* --- B. THE IMAGE CONTENT --- */}
-            <div className="relative group">
+            <div className="relative group shadow-2xl">
               {/* The actual image */}
               <img
-                src="/4.png" // replace with your actual UI screenshot
+                src="/cron-with-ss.png" // replace with your actual UI screenshot
                 alt="Agent workspace interface"
                 className="w-full h-auto  block object-fill"
               />
