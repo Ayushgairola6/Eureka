@@ -24,7 +24,7 @@ interface messageInt {
   content: string;
 }
 interface ChatsInterface {
-  id: string;
+  id: string | number;
   sent_by: string;
   message: messageInt;
   sent_at: string;
@@ -56,6 +56,7 @@ interface InterfaceState {
   NeedToRefresh: boolean;
   SynthesisDocuments: string[];
   uploadStatus: string;
+  fetchingSessionHistory: boolean;
 }
 
 const initialState: InterfaceState = {
@@ -92,6 +93,7 @@ const initialState: InterfaceState = {
   NeedToRefresh: false,
   SynthesisDocuments: [],
   uploadStatus: "Processing",
+  fetchingSessionHistory: false,
 };
 
 // Async Thunks
@@ -120,6 +122,30 @@ export const UploadDocuments = createAsyncThunk<any, FormData>(
   }
 );
 
+export const GetSessionHistory = createAsyncThunk<any, any>(
+  "user/sessio-history",
+  async (lastMessageTime, { rejectWithValue }) => {
+    try {
+      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+
+      const response = await axios.post(
+        `${BaseApiUrl}/api/user/session-history`,
+        { lastMessageTime },
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${AuthToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || "Something went wrong"
+      );
+    }
+  }
+);
 export const QueryAIQuestions = createAsyncThunk<any, any>(
   "ask/queryAI",
   async (data, { rejectWithValue }) => {
@@ -405,6 +431,18 @@ const interfaceSlice = createSlice({
     setUploadStatus: (state, action) => {
       state.uploadStatus = action.payload;
     },
+    UpdateSessionChats: (state, action) => {
+      if (action.payload) {
+        // Use a Map or Set to prevent duplicate IDs if necessary
+        const newChats = action.payload;
+        // Overwriting can cause a "flicker" if the source isn't stable.
+        // Try spreading the existing state if you want to keep current messages:
+        state.Chats = [...state.Chats, ...newChats];
+      }
+    },
+    updatefetchingSessionHistory: (state, action) => {
+      state.fetchingSessionHistory = action.payload;
+    },
     resetState: (_state) => {
       return initialState;
     },
@@ -501,6 +539,16 @@ const interfaceSlice = createSlice({
         if (action.payload.docUsed) {
           state.docUsed = [...state.docUsed, action.payload.docUsed];
         }
+      })
+      //fetchigng session data
+      .addCase(GetSessionHistory.pending, (state, _action) => {
+        state.fetchingSessionHistory = true;
+      })
+      .addCase(GetSessionHistory.rejected, (state, _action) => {
+        state.fetchingSessionHistory = false;
+      })
+      .addCase(GetSessionHistory.fulfilled, (state, _action) => {
+        state.fetchingSessionHistory = false;
       });
   },
 });
@@ -532,6 +580,8 @@ export const {
   SetSynthesisDocuments,
   EmptyTheSynthesisArray,
   setUploadStatus,
+  UpdateSessionChats,
+  updatefetchingSessionHistory,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

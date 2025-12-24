@@ -1,11 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import ChatBubble from "@/components/ChatBubble.tsx";
 import InputSection from "@/components/InterfaceInputSection.tsx";
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
 import {
+  GetSessionHistory,
   setSelectedDoc,
   setUploadStatus,
+  updatefetchingSessionHistory,
+  UpdateSessionChats,
   UploadDocuments,
 } from "../store/InterfaceSlice.ts";
 import { setDocs } from "../store/AuthSlice.ts";
@@ -27,8 +30,15 @@ function Interface() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(false);
   const { isLoggedIn, isDarkMode } = useAppSelector((state) => state.auth);
-  const { question, category, visibility, subCategory, Chats, selectedDoc } =
-    useAppSelector((state) => state.interface);
+  const {
+    question,
+    category,
+    visibility,
+    subCategory,
+    Chats,
+    selectedDoc,
+    fetchingSessionHistory,
+  } = useAppSelector((state) => state.interface);
 
   const textareaRef = useRef<HTMLInputElement>(null);
   const adjustTextareaHeight = () => {
@@ -38,10 +48,31 @@ function Interface() {
       textarea.style.height = `${textarea.scrollHeight}px`;
     }
   };
+
   useEffect(() => {
     adjustTextareaHeight();
   }, [question]);
 
+  const FetchCountRef = React.useRef(0);
+  useEffect(() => {
+    // Only fetch if logged in and we haven't loaded history yet
+    if (!isLoggedIn || Chats.length > 0 || FetchCountRef?.current > 0) return;
+
+    // Use a loading flag to prevent multiple simultaneous fetches
+    dispatch(GetSessionHistory("0")) // Or your timestamp logic
+      .unwrap()
+      .then((res) => {
+        if (res.history?.length > 0) {
+          FetchCountRef.current = 1; //flag to toggle state
+          // Map your "single row" DB format to your UI format here
+          // if the reducer doesn't do it
+          dispatch(UpdateSessionChats(res.history));
+          dispatch(updatefetchingSessionHistory(false));
+        }
+      })
+      .catch((err) => console.error(err))
+      .finally(() => (FetchCountRef.current = 1));
+  }, [isLoggedIn, dispatch]);
   // uploading a document
   const handleUpload = async (UserData: FormData) => {
     try {
@@ -115,6 +146,24 @@ function Interface() {
       <div
         className={`w-full  flex items-center justify-between flex-col min-h-[90vh]  dark:bg-black  relative z-[1]  px-4 py-3 `}
       >
+        <div className="fixed top-13 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/5 transition-opacity duration-500">
+          {/* Status Dot */}
+          <div className="relative flex h-2 w-2">
+            {fetchingSessionHistory && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            )}
+            <span
+              className={`relative inline-flex rounded-full h-2 w-2 ${
+                fetchingSessionHistory ? "bg-blue-500" : "bg-emerald-500"
+              }`}
+            ></span>
+          </div>
+
+          {/* Status Text */}
+          <span className="text-[11px] font-medium tracking-wide uppercase dark:text-gray-400 text-gray-600">
+            {fetchingSessionHistory ? "Syncing History..." : "Synced"}
+          </span>
+        </div>
         {/* gradient background for light thtme */}
         {!isDarkMode && (
           <div className="absolute top-0 left-0 w-full h-64 overflow-hidden z-[-2] pointer-events-none">

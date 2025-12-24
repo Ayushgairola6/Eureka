@@ -75,7 +75,7 @@ export async function SearchUserPrivateDocuments(
         });
       }
       // CASE B: "AUTO" (Capture the query to use on selected docs)
-      else if (rawId.trim().toLowerCase() === "auto" || !rawId) {
+      else if ((rawId && rawId.trim().toLowerCase() === "auto") || !rawId) {
         if (rawQuery && rawQuery.trim() !== "") {
           fallbackQuery = rawQuery; // "Summarize this", "Find risks", etc.
         }
@@ -174,8 +174,8 @@ export async function GetChatsForContext(user) {
     const parsedChats = Chats.filter((jsonString) => {
       try {
         // Parse each individual string element
-        const messagesweneed = JSON.parse(jsonString)?.sent_by === "Eureka";
-        return JSON.parse(messagesweneed);
+        // const messagesweneed = JSON.parse(jsonString)?.sent_by === "Eureka";
+        return JSON.parse(parsedChats);
       } catch (error) {
         // Return a placeholder or handle the error as needed
         return {

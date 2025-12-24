@@ -37,6 +37,7 @@ import {
   SUMMARIZATION_ANALYST_PROMPT,
   WEB_SEARCH_DISTRIBUTOR_PROMPT,
 } from "../Prompts/Prompts.js";
+import { GetChatsForContext } from "../Synthesis/phase2_action.js";
 // import {
 //   generateEmbedding,
 //   generateEmbeddingsWithGoogle,
@@ -949,6 +950,13 @@ export const PostTypeWebSearch = async (req, res) => {
         docUsed: [],
       });
     }
+    let history = [];
+    const pastConversation = await GetChatsForContext(req.user);
+    if (!pastConversation || pastConversation.length === 0) {
+      history.push(`Failed to get session chat history`);
+    }
+    history = [...pastConversation];
+
     const WebResults = await SearchQueryResults(question, req.user);
     if (WebResults.error) {
       await notifyMe(WebResults.error);
@@ -972,9 +980,14 @@ export const PostTypeWebSearch = async (req, res) => {
     // update the cache
     await CacheCurrentChat(message, req.user);
     const WebResultPrompt = WEB_SEARCH_DISTRIBUTOR_PROMPT;
+
+    const FinalContext = `This the session_history=${JSON.stringify(
+      history
+    )} and these are the results from the web-${Formattedresult}`;
+
     let Answer = await GenerateResponse(
       question,
-      Formattedresult,
+      FinalContext,
       WebResultPrompt,
       req.user
     );

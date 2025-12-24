@@ -181,7 +181,10 @@ export async function IdentifyRequestInputs(req, res) {
     });
   } catch (SynthesisError) {
     console.error(SynthesisError);
-    await notifyMe("An error occured in the synthesis hanlder", SynthesisError);
+    await notifyMe(
+      "An error occured in the synthesis hanlder line 185 identifier.js",
+      SynthesisError
+    );
     return res
       .status(500)
       .send({ message: "The server failed to generate a response" });
@@ -284,15 +287,19 @@ export async function ExeCuteContextEngines(
     if (doc_data && doc_data.length > 0) {
       GlobalContextObject.AlldocumentInformation = [...doc_data];
     }
+
     //ids that have been already fetched
     const alreadyFetchedIds = (doc_data || []).map(
       (doc) => doc.id || doc.doc_id
     );
+    console.log(alreadyFetchedIds, "Already fetched document ids");
     const doc_data_fromName = await GetDocumentInfoFromName(
       phase1_Context,
       user,
       alreadyFetchedIds || []
     );
+
+    console.log(doc_data_fromName, "document data from name");
 
     if (doc_data_fromName.length > 0) {
       GlobalContextObject.AlldocumentInformation = [

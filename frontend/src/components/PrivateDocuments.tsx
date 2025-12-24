@@ -10,8 +10,9 @@ import { motion } from "framer-motion";
 import { FiFile } from "react-icons/fi";
 import ConfirmationBox from "@/components/ConfirmationBox.tsx";
 import { useState } from "react";
-import { BiPlus, BiRefresh } from "react-icons/bi";
+import { BiCopy, BiPlus, BiRefresh } from "react-icons/bi";
 import { GetUserDashboardData } from "../store/AuthSlice.ts";
+import { toast } from "sonner";
 type PrivateDocProps = {
   selectedDoc: string;
   setSelectedDoc: any;
@@ -51,23 +52,6 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
             {User?.Contributions_user_id_fkey.map((doc: any) => (
               <motion.div
                 key={doc.id}
-                onClick={() => {
-                  if (queryType === "Synthesis") {
-                    // console.log("intiated synthesis mode");
-                    dispatch(SetSynthesisDocuments(doc.document_id)); //add it to the the array of synthessis array only
-                  } else {
-                    if (SynthesisDocuments?.length > 0) {
-                      dispatch(EmptyTheSynthesisArray());
-                    } //empty the synthesis array
-                    dispatch(
-                      setSelectedDoc(
-                        selectedDoc === doc.document_id ? "" : doc.document_id
-                      )
-                    );
-                  }
-
-                  // dispatch(setShowDocs(!showDocs));
-                }}
                 className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200
                       ${
                         selectedDoc === doc.document_id
@@ -81,9 +65,58 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
                       hover:scale-[1.02] active:scale-[0.98] relative`}
                 whileHover={{ y: -2 }}
               >
-                <ul className="absolute top-3 right-3  rounded-full p-1 dark:bg-white bg-black dark:text-black text-white ">
-                  <BiPlus />
-                </ul>
+                <div className="absolute top-3 right-3 flex items-center justify-center gap-2">
+                  <ul
+                    onClick={async () => {
+                      if (doc.feedback) {
+                        await navigator.clipboard.writeText(doc.feedback);
+                        toast("Filename copied");
+                      }
+                    }}
+                    role="button"
+                    className="  rounded-full p-1 dark:bg-white bg-black dark:text-black text-white group cursor-pointer"
+                  >
+                    <label
+                      className="group-hover:opacity-100 opacity-0 absolute -bottom-8 w-24 -left-15 rounded-md transition-all duration dark:bg-gray-50 bg-black text-xs dark:text-black text-white space-grotesk p-1"
+                      htmlFor="tootip"
+                    >
+                      Copy filename
+                    </label>
+                    <BiCopy />
+                  </ul>
+                  <ul
+                    onClick={() => {
+                      if (queryType === "Synthesis") {
+                        // console.log("intiated synthesis mode");
+                        dispatch(SetSynthesisDocuments(doc.document_id)); //add it to the the array of synthessis array only
+                      } else {
+                        if (SynthesisDocuments?.length > 0) {
+                          dispatch(EmptyTheSynthesisArray());
+                        } //empty the synthesis array
+                        dispatch(
+                          setSelectedDoc(
+                            selectedDoc === doc.document_id
+                              ? ""
+                              : doc.document_id
+                          )
+                        );
+                      }
+
+                      // dispatch(setShowDocs(!showDocs));
+                    }}
+                    role="button"
+                    className="  rounded-full p-1 dark:bg-white bg-black dark:text-black text-white group"
+                  >
+                    <label
+                      className="group-hover:opacity-100 opacity-0 absolute -bottom-8 w-18 -left-4 rounded-md transition-all duration dark:bg-gray-50 bg-black text-xs dark:text-black text-white space-grotesk p-1"
+                      htmlFor="tootip"
+                    >
+                      Select file
+                    </label>
+                    <BiPlus />
+                  </ul>
+                </div>
+
                 <h3 className="font-bold text-gray-800 dark:text-white truncate">
                   {doc.feedback || "Untitled Document"}
                 </h3>

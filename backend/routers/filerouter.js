@@ -20,6 +20,7 @@ import {
 } from "../Middlewares/StreamingMiddleware.js";
 import { WebSearchHandle } from "../OnlineSearchHandler/WebSearchHandler.js";
 import { IdentifyRequestInputs } from "../Synthesis/Identifier.js";
+import { HandleUserSessionHistory } from "../controllers/FeaturesController.js";
 Router.post(
   "/upload-pdf",
   VerifyToken,
@@ -35,4 +36,5 @@ Router.post(
   .get("/user/documents", VerifyToken, GetPrivateUserDocs)
   .get("/privateDocs/ask", VerifySSETokens, QueryPersonalDocs)
   .get("/user/web-search", VerifySSETokens, WebSearchHandle)
-  .post("/method/synthesis", VerifyToken, IdentifyRequestInputs);
+  .post("/method/synthesis", VerifyToken, IdentifyRequestInputs)
+  .post("/user/session-history/", VerifyToken, HandleUserSessionHistory);

@@ -1,17 +1,22 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Streamdown } from "streamdown";
 import ResponseFeedback from "./ResponseFeedback.tsx";
 import { BiCopy } from "react-icons/bi";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useTypewriter,
-} from "../store/hooks.tsx";
+import { useAppSelector, useTypewriter } from "../store/hooks.tsx";
 import { toast } from "sonner";
 import { IoHourglass } from "react-icons/io5";
 import DocUsed from "@/components/DocumentsUsed.tsx";
-import { GetCachedSessionHistory } from "../store/InterfaceSlice.ts";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
 type ChatBubbleProps = {
   chatcontainer: React.Ref<HTMLDivElement>;
   isActive: boolean;
@@ -27,7 +32,6 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   const { currentStatus } = useAppSelector((state) => state.socket);
   const [docused, setShowDocUsed] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
-  const dispatch = useAppDispatch();
   // array of welcom messages
   const steps = [
     "Uncovering", // Sounds more exciting than Researching
@@ -54,21 +58,6 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
     return () => clearInterval(interval); //clear the interval on unmount
   }, []);
 
-  // fetch chat cache only once
-  const CountRef = useRef(0);
-  useEffect(() => {
-    if (CountRef.current === 0) {
-      dispatch(GetCachedSessionHistory())
-        .unwrap()
-        .then((_res) => {
-          CountRef.current = 1;
-          // console.log(Chats);
-        })
-        .catch(() => {
-          // console.log(error);
-        });
-    }
-  }, []);
   return (
     <>
       {Chats.length > 0 ? (
@@ -113,10 +102,14 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                   </ul>
                 ) : (
                   <div
-                    className={`px-4 py-2 rounded-2xl w-fit transition-all duration-200 ${
+                    className={`px-4 py-3 rounded-2xl transition-all duration-200 ease-in-out shadow-sm ${
                       chat.sent_by === "You"
-                        ? "dark:bg-white/20 dark:text-white bg-gray-100 text-black rounded-br-none shado justify-self-end "
-                        : "bg-gray-200 dark:bg-white/5 text-gray-800 dark:text-white rounded-bl-none  justify-self-auto w-full"
+                        ? "max-w-[80%] justify-self-end rounded-br-none " +
+                          "bg-black text-white dark:bg-white dark:text-black " + // Slack-ish primary blue
+                          "font-medium self-end"
+                        : "max-w-[90%] w-full justify-self-start rounded-bl-none " +
+                          "bg-gray-100 dark:bg-black border border-gray-200 dark:border-white/10 " + // Slack dark-mode gray
+                          "text-gray-900 dark:text-gray-100"
                     }`}
                   >
                     {chat.sent_by !== "You" && (
@@ -231,10 +224,105 @@ const ChatMessage = ({ chat, lastMessageId }: any) => {
 
   return (
     // <div className={`message-bubble ${chat.sent_by}`}>
-    <Streamdown className="space-grotesk">
+    <Streamdown
+      // isAnimating={isStreaming} // Critical for smooth streaming in Streamdown
+      components={{
+        code(props: any) {
+          const { node, inline, className, children, ...rest } = props;
+          const match = /language-chart/.exec(className || "");
+          const content = String(children).replace(/\n$/, "");
+
+          if (!inline && match) {
+            return <DynamicChart content={content} />;
+          }
+
+          // Fallback to default code rendering for JS, Python, etc.
+          return (
+            <code className={className} {...rest}>
+              {children}
+            </code>
+          );
+        },
+      }}
+      className="space-grotesk"
+    >
       {textToRender}
       {/* Optional: Add a cursor/placeholder when streaming */}
     </Streamdown>
     // </div>
   );
+};
+
+//charts renderer
+const DynamicChart = ({ content }: any) => {
+  try {
+    const chartData = JSON.parse(content);
+
+    // FIX: Transform generic "label/value" data to match your dynamic xAxis/yAxis keys
+    const formattedData = chartData.data.map((item: any) => ({
+      ...item, // Keep original properties
+      [chartData.xAxis]: item.label, // e.g., Maps "label" -> "Feature"
+      [chartData.yAxis]: item.value, // e.g., Maps "value" -> "Persistence Level"
+    }));
+
+    return (
+      <div className="h-72 w-full my-6 p-4 rounded-xl border border-white/10 bg-black/20 backdrop-blur-md shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400 mb-4 ml-2">
+          {chartData.title || "Data Synthesis"}
+        </p>
+
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={formattedData}
+            margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#334155"
+              vertical={false}
+              opacity={0.5}
+            />
+            <XAxis
+              dataKey={chartData.xAxis} // Now finds "Feature" in formattedData
+              stroke="#94a3b8"
+              fontSize={11}
+              tickLine={false}
+              axisLine={false}
+              dy={10} // Add some spacing for the labels
+            />
+            <YAxis
+              stroke="#94a3b8"
+              fontSize={11}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              cursor={{ fill: "rgba(255,255,255,0.05)" }}
+              contentStyle={{
+                backgroundColor: "#0f172a",
+                borderColor: "#334155",
+                borderRadius: "8px",
+                color: "#f1f5f9",
+                fontSize: "12px",
+              }}
+              itemStyle={{ color: "#22d3ee" }}
+            />
+            <Bar
+              dataKey={chartData.yAxis} // Now finds "Persistence Level"
+              fill="#22d3ee"
+              radius={[4, 4, 0, 0]}
+              animationDuration={1500}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  } catch (e) {
+    // Gracefully handle partial/invalid JSON during streaming
+    return (
+      <div className="h-64 w-full my-6 rounded-xl bg-white/5 animate-pulse flex items-center justify-center">
+        <span className="text-white/20 text-sm">Visualizing data...</span>
+      </div>
+    );
+  }
 };
