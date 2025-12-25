@@ -1,3 +1,5 @@
+import { supabase } from "../controllers/supabaseHandler.js";
+
 //gets the basic information related the document from the database or cache if available
 export async function ProcessDocumentInfoGathering(ReferenceArray, user) {
   const Document_Information = [];
@@ -197,14 +199,16 @@ export async function RetrieveMemories(user, ReferenceArray) {}
 
 //fetch last few messages for reminder whwer we left off
 export async function FetchPastMessagesFromDbAndCacheThem(user) {
-  const Limit = user.PaymentStatus === false ? 3 : 10;
+  const limit = user.PaymentStatus === false ? 5 : 10;
   const { data, error } = await supabase
     .from("Conversation_History")
-    .select("created_at,question,AiResponse")
+    .select("created_at,question,AI_Response")
     .eq("user_id", user.user_id)
-    .limit(Limit);
+    .limit(limit)
+    .order("created_at", { ascending: false });
 
-  if (data.length === 0 || error) {
+  if (data?.length === 0 || error) {
+    console.error(error);
     return { message: "There is no past conversation history of this user" };
   }
 

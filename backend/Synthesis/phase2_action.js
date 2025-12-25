@@ -168,7 +168,7 @@ export async function GetChatsForContext(user) {
   const cachekey = `user_id=${user.user_id}_time=${new Date().toDateString()}`;
   const pastConversation = await redisClient.exists(cachekey);
 
-  const limit = user.PaymentStatus === true ? 10 : 2;
+  const limit = user.PaymentStatus === true ? 10 : 5;
   if (pastConversation) {
     const Chats = await redisClient.lRange(cachekey, 0, limit); //last 10 chat messages retrive them
     const parsedChats = Chats.filter((jsonString) => {

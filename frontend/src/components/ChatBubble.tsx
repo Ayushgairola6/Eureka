@@ -70,7 +70,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 }
               }}
               key={`chat-${index}-${chat.sent_by}`}
-              className={`w-full md:w-3/5 relative ${
+              className={`w-full md:w-3/5 relative  overflow-x-hidden ${
                 chat === Chats[Chats.length - 1] && Chats.length > 1
                   ? "mb-50"
                   : "mb-3"
@@ -92,8 +92,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 {chat.sent_by === "Eureka" &&
                 chat.message.content === "" &&
                 chat.id === Chats[Chats.length - 1].id ? (
-                  <ul className="bai-jamjuree-semibold text-lg  my-2 flex items-center justify-start gap-2  w-fit   relative overflow-hidden border rounded-xl border-gray-700 p-[1px]">
-                    <div className=" absolute top-0 left-0   h-full w-full  bg-gradient-to-br from-red-600 via-sky-600 to-yellow-600 z-[-2] ThinkingIndicator" />
+                  <ul className="space-grotesk text-lg  my-2 flex items-center justify-start gap-2  w-fit   relative overflow-hidden border rounded-xl border-gray-700 p-[1px]">
+                    <div className=" absolute top-0 left-0   h-full w-full  bg-gradient-to-br from-red-600 via-sky-600 to-yellow-600 z-[-2] ThinkingIndicator " />
 
                     <p className="flex items-center bg-white dark:bg-black h-[90%] w-full rounded-xl justify-center gap-2 px-2 text-sm">
                       <IoHourglass className="animate-spin" />
@@ -102,12 +102,12 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                   </ul>
                 ) : (
                   <div
-                    className={`px-4 py-3 rounded-2xl transition-all duration-200 ease-in-out shadow-sm ${
+                    className={`px-3 py-2 rounded-2xl transition-all duration-200 ease-in-out shadow-sm text-sm md:text-md text-wrap space-grotesk ${
                       chat.sent_by === "You"
                         ? "max-w-[80%] justify-self-end rounded-br-none " +
                           "bg-black text-white dark:bg-white dark:text-black " + // Slack-ish primary blue
-                          "font-medium self-end"
-                        : "max-w-[90%] w-full justify-self-start rounded-bl-none " +
+                          "font-medium self-end items-center justify-center"
+                        : " w-full justify-self-start rounded-bl-none " +
                           "bg-gray-100 dark:bg-black border border-gray-200 dark:border-white/10 " + // Slack dark-mode gray
                           "text-gray-900 dark:text-gray-100"
                     }`}

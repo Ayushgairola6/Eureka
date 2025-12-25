@@ -5,11 +5,10 @@ import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
 import QueryType from "./Query_type.tsx";
 import { v4 as uuid } from "uuid";
 // import axios from "axios";
-import { FaFileUpload } from "react-icons/fa";
 import { IoOptions } from "react-icons/io5";
 import { IoDocument } from "react-icons/io5";
-import { BiHourglass } from "react-icons/bi";
-import { BsPlusLg, BsStars } from "react-icons/bs";
+import { BiHourglass, BiSend, BiUpload } from "react-icons/bi";
+import { BsMic, BsPlusLg } from "react-icons/bs";
 import { GoZap } from "react-icons/go";
 import {
   UpdateChats,
@@ -473,8 +472,31 @@ const InputSection: React.FC<InputProps> = ({
           ease: "linear",
           duration: 0.4,
         }}
-        className={`relative overflow-y-visible w-full px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3] transition-all duration-150 ease-linear`}
+        className={`relative overflow-y-visible w-full px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border border-black/20 dark:border-white/10 bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3] transition-all duration-150 ease-linear shadow-2xl `}
       >
+        {/* send button */}
+        <motion.button
+          disabled={!question || loading === true}
+          whileTap={{ scale: 1.03 }}
+          whileHover={{ scaleX: 1.05 }}
+          transition={{ duration: 0.3, ease: "circIn" }}
+          onClick={handleAsk}
+          className={`absolute top-5 right-4 cursor-pointer ${
+            loading === true
+              ? "bg-cyan-600  animate-pulse "
+              : "bg-black dark:bg-gray-100"
+          }
+                     
+              text-white dark:text-black  p-1  rounded-full space-grotesk   text-sm flex items-center justify-center gap-2  `}
+        >
+          {loading === false ? (
+            <>{question === "" ? <BsMic size={16} /> : <BiSend size={16} />}</>
+          ) : (
+            <>
+              <BiHourglass className="animate-spin" size={18} />
+            </>
+          )}
+        </motion.button>
         {/* input section */}
         <input
           value={question}
@@ -490,7 +512,7 @@ const InputSection: React.FC<InputProps> = ({
           ref={textareaRef}
           name="input"
           placeholder="What would you like to research today ... ?"
-          className="w-full dark:text-white text-black rounded-lg px-2 py-3 focus:ring-0 ring-0 transition-all duration-200 "
+          className="w-full dark:text-white text-black rounded-lg px-2 py-3 focus:ring-0 ring-0 transition-all duration-200 outline-0 "
         />
         {/* the other options section */}
         <div
@@ -517,9 +539,9 @@ const InputSection: React.FC<InputProps> = ({
                   shwoOptions === true
                     ? "bg-green-600  text-white"
                     : "dark:bg-white bg-black dark:text-black text-white"
-                } rounded-full p-2  h-auto `}
+                } rounded-full p-1  h-auto `}
               >
-                <IoOptions size={18} />
+                <IoOptions size={15} />
               </button>
             </section>
 
@@ -531,9 +553,9 @@ const InputSection: React.FC<InputProps> = ({
                   selectedDoc
                     ? "dark:bg-white bg-black dark:text-black text-white"
                     : "bg-gray-200"
-                } rounded-full p-2  h-auto relative`}
+                } rounded-full p-1  h-auto relative`}
               >
-                <GoZap size={18} />
+                <GoZap size={15} />
                 <QueryType />
               </ul>
             )}
@@ -545,9 +567,9 @@ const InputSection: React.FC<InputProps> = ({
               />
               <button
                 onClick={() => SetShowFeatures(!Showfeatures)}
-                className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-2  h-auto  "
+                className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-1  h-auto  "
               >
-                <BsPlusLg size={18} />
+                <BsPlusLg size={15} />
               </button>
 
               <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-fit">
@@ -559,12 +581,12 @@ const InputSection: React.FC<InputProps> = ({
               onClick={() => {
                 dispatch(setShowUserForm(!shhowUserForm));
               }}
-              className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-2  h-auto relative group"
+              className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-1  h-auto relative group"
             >
               <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-auto">
                 Upload
               </ul>
-              <FaFileUpload size={18} />
+              <BiUpload size={15} />
             </ul>
           </section>
 
@@ -598,8 +620,8 @@ const InputSection: React.FC<InputProps> = ({
           </div>
         </div>
         {/* query type and send button container */}
-        <div className="flex items-center justify-between mt-4">
-          <ul className="  bai-jamjuree-semibold text-sm text-gray-500 d">
+        <div className="flex items-center justify-between mt-1">
+          <ul className="  bai-jamjuree-semibold text-sm text-gray-500 dark:text-gray-400 ">
             {queryType ? (
               <>Process - {queryType}</>
             ) : category ? (
@@ -607,32 +629,6 @@ const InputSection: React.FC<InputProps> = ({
             ) : null}
           </ul>
           {/* query send button at bottom right */}
-          <motion.button
-            disabled={!question || loading === true}
-            whileTap={{ scale: 1.03 }}
-            whileHover={{ scaleX: 1.05 }}
-            transition={{ duration: 0.3, ease: "circIn" }}
-            onClick={handleAsk}
-            className={`cursor-pointer ${
-              loading === true
-                ? "bg-green-600  animate-pulse "
-                : ` ${
-                    question === ""
-                      ? "dark:bg-gray-600 bg-gray-400"
-                      : "bg-black dark:bg-gray-100"
-                  }   dark:text-black`
-            } text-white  p-2  rounded-full space-grotesk   text-sm flex items-center justify-center gap-2  `}
-          >
-            {loading === false ? (
-              <>
-                <BsStars size={18} />
-              </>
-            ) : (
-              <>
-                <BiHourglass className="animate-spin" size={18} />
-              </>
-            )}
-          </motion.button>
         </div>
       </motion.section>
     </>

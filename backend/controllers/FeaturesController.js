@@ -19,10 +19,11 @@ export const HandleUserSessionHistory = async (req, res) => {
     }
     const key = `user_id=${user.user_id}_time=${new Date().toDateString()}`;
 
+    // await redisClient.del(key);
     const exists = await redisClient.exists(key);
     if (exists) {
       // last 10 messages
-      const chats = await redisClient.lRange(key, 0, 10);
+      const chats = await redisClient.lRange(key, 0, 20);
       const parsedChats = chats.map((data) => {
         return JSON.parse(data);
       });
@@ -52,20 +53,20 @@ export const HandleUserSessionHistory = async (req, res) => {
     }
     // await StoreUserSessionHistory(data);
 
-    const FormattedResults = FormatSessionHistory(data);
+    const chronological = data.reverse();
+    const FormattedResults = FormatSessionHistory(chronological);
 
     if (FormattedResults.length === 0) {
       return res.status(400).send({ message: "Something went wrong" });
     }
 
-    const chronological = FormattedResults.reverse();
+    // // // 3. Serialize for Redis
 
-    // // 3. Serialize for Redis
     const serialized = chronological.map((msg) => JSON.stringify(msg));
-    await redisClient.rPush(key, serialized);
+    await redisClient.multi().rPush(key, serialized).expire(key, 5000); //expire after a while
     return res
       .status(200)
-      .send({ message: "Fetched from database", history: chronological });
+      .send({ message: "Fetched from database", history: FormattedResults });
   } catch (error) {
     await notifyMe(
       "An error occured while getting users session history",
@@ -75,14 +76,7 @@ export const HandleUserSessionHistory = async (req, res) => {
   }
 };
 
-// helper function to cache user session history
-
-function StoreUserSessionHistory(dataArray) {
-  if (CheckPresenceAndArrayValidity(dataArray) === false) {
-    return { error: "The array is empty!" };
-  }
-}
-
+//helper function to format the session history
 function FormatSessionHistory(ChatsArray) {
   if (CheckPresenceAndArrayValidity(ChatsArray) === false) {
     return { error: "The array is empty!" };
@@ -117,13 +111,13 @@ function FormatSessionHistory(ChatsArray) {
 
     // user message object
     const UserObject = {
-      id: obj.id,
+      id: `${obj.id}-user`,
       sent_by: "You",
       message: { isComplete: true, content: obj.question },
       sent_at: formattedDate || obj.created_at,
     };
     const ModelObject = {
-      id: obj.id + 1,
+      id: `${obj.id}-eureka`,
       sent_by: "Eureka",
       message: { isComplete: true, content: obj.AI_response },
       sent_at: formattedDate || obj.created_at,

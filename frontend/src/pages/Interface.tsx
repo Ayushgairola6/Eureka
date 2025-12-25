@@ -146,7 +146,7 @@ function Interface() {
       <div
         className={`w-full  flex items-center justify-between flex-col min-h-[90vh]  dark:bg-black  relative z-[1]  px-4 py-3 `}
       >
-        <div className="fixed top-13 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/5 transition-opacity duration-500">
+        <div className="fixed z-[1] top-10 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/5 transition-opacity duration-500 text-xs md:text-sm">
           {/* Status Dot */}
           <div className="relative flex h-2 w-2">
             {fetchingSessionHistory && (

@@ -23,14 +23,17 @@ export const GenerateResponse = async (
       return { error: "Some parameters are missing" };
     }
 
-    const FinalString = SYSTEM_PROMPT + FormattedString;
+    // const FinalString = SYSTEM_PROMPT + FormattedString;
 
     const result = await genAI.models.generateContent({
       model:
         user.PaymentStatus === false
           ? "gemini-2.5-flash-lite"
-          : "gemini-2.5-pro",
-      contents: [{ role: "user", parts: [{ text: FinalString }] }],
+          : "gemini-2.0-pro-exp",
+      contents: [
+        { role: "model", parts: [{ text: "Sytem_prompt:" + SYSTEM_PROMPT }] },
+        { role: "user", parts: [{ text: FormattedString }] },
+      ],
       generationConfig: {
         temperature: user.PaymentStatus === false ? 0.5 : 1,
         topP: 0.95,
@@ -56,7 +59,7 @@ export const GenerateResponse = async (
     // return { error: "Testing out the error fallback function" };
     return responseText;
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return { error: "Error while generating a response by the model" };
   }
 };
@@ -127,33 +130,39 @@ export const SynthesisResponseGenerator = async (
     if (typeof ContextString !== "string") {
       return { error: "Model only accepts string as a source of information" };
     }
-    const FinalString = `${synthesisPrompt} userQuery=${question} ContextBegins from here=>${ContextString}`;
+    const FinalString = `userQuery=${question} ContextBegins from here=>${ContextString}`;
 
-    const result = await genAI.models.generateContent({
-      model:
-        user.PaymentStatus === true
-          ? "gemini-2.5-pro"
-          : "gemini-2.5-flash-lite",
-      contents: [{ role: "user", parts: [{ text: FinalString }] }],
-      generationConfig: {
-        temperature: 0.5,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: user.PaymentStatus === false ? 400 : 1000,
-      },
-      config: {
-        thinkingConfig: {
-          //if user is paid enable it else false
-          includeThoughts: user.PaymentStatus === true ? true : false,
+    const result = await genAI
+      .getGenerativeModel({
+        model: user.PaymentStatus
+          ? "gemini-2.0-pro-exp"
+          : "gemini-2.0-flash-lite",
+      })
+      .generateContent({
+        contents: [
+          {
+            role: "model",
+            parts: [{ text: "System Instructions: " + synthesisPrompt }],
+          },
+          { role: "user", parts: [{ text: FinalString }] },
+        ],
+        generationConfig: {
+          temperature: user.PaymentStatus ? 0.7 : 0.3, // Higher temp for pro reasoning
+          topP: 0.95,
+          maxOutputTokens: user.PaymentStatus ? 2000 : 400, // Pro needs more tokens for CoT
+          // If using a Thinking-enabled model:
+          thinkingConfig: {
+            includeThoughts: user.PaymentStatus, // Boolean
+          },
         },
-      },
-    });
+      });
 
     const responseText = result.text;
     if (!responseText) {
+      console.error(result);
       await notifyMe(
         `Error while generating a response , the code execution results are these`,
-        JSON.stringify(result.codeExecutionResult)
+        JSON.stringify(result)
       );
       return { error: "The server is very busy , please try again !" };
     }

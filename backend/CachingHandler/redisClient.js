@@ -120,7 +120,7 @@ export const CacheCurrentChat = async (message, user) => {
     const multi = redisClient.multi();
 
     multi.rPush(ConversationCacheKey, JSON.stringify(message));
-    multi.expire(ConversationCacheKey, 4000); // 4000 seconds
+    multi.expire(ConversationCacheKey, 5000); // 5000 seconds
 
     //execute the logic atomically
     const result = await multi.exec();
@@ -154,8 +154,6 @@ export const FetchChatHistory = async (req, res) => {
           // Parse each individual string element
           return JSON.parse(jsonString);
         } catch (error) {
-          console.error("Error parsing JSON message:", jsonString, error);
-          // Return a placeholder or handle the error as needed
           return re.status(400).send({ error: "Parse Error", data: [] });
         }
       });
