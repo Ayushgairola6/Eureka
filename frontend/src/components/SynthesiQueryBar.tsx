@@ -76,7 +76,7 @@ const SynthesisPanel: React.FC<prop> = ({
                 sent_by: null,
                 message: res.Answer,
                 room_id: currentRoom?.room_id,
-                users: { username: "EUREKA" },
+                users: { username: "AntiNode" },
               })
             );
           }

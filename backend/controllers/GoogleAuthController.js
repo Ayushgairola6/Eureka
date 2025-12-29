@@ -133,7 +133,7 @@ export const HandleGoogleCallback = async (req, res) => {
     }
 
     // 8. Set authentication cookie
-    res.cookie("Eureka_eta_six_version1_AuthToken", authToken, {
+    res.cookie("AntiNode_eta_six_version1_AuthToken", authToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

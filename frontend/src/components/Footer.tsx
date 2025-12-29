@@ -28,7 +28,7 @@ const Footer = () => {
                   src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
                   alt="logo"
                 />
-                <label htmlFor="logo">AskEureka</label>
+                <label htmlFor="logo">AntiNode</label>
               </Link>
               <p
                 className={`space-grotesk dark:text-gray-300 text-gray-600  text-sm`}
@@ -38,19 +38,19 @@ const Footer = () => {
               </p>
               <div className="flex space-x-4">
                 <a
-                  href="https://github/com/Ayushgairola6/EurekaSdk"
+                  href="https://github/com/Ayushgairola6/AntiNodeSdk"
                   className="text-gray-500 p-2 dark:text-black bg-gray-200 rounded-full hover:text-purple-600 transition-colors"
                 >
                   <FiGithub className="w-5 h-5" />
                 </a>
                 <a
-                  href="https://X.com/askeureka"
+                  href="https://X.com/AntiNode"
                   className="text-gray-500 p-2 dark:text-black bg-gray-200 rounded-full hover:text-blue-600 transition-colors"
                 >
                   <FiTwitter className="w-5 h-5" />
                 </a>
                 <a
-                  href="https://youtube.com/AskEureka"
+                  href="https://youtube.com/AntiNode"
                   className="text-gray-500 p-2 dark:text-black bg-gray-200 rounded-full hover:text-red-600 transition-colors"
                 >
                   <FiYoutube className="w-5 h-5" />
@@ -76,7 +76,7 @@ const Footer = () => {
                   </li>
                   <li>
                     <Link
-                      to="/Api/AskEureka/Know-How"
+                      to="/Api/AntiNode/Know-How"
                       className="dark:text-gray-300 text-gray-600 dark:hover:text-indigo-400 hover:text-purple-600 transition-colors text-sm"
                     >
                       Documentation
@@ -163,7 +163,7 @@ const Footer = () => {
           {/* Bottom footer */}
           <div className="w-full text-center border-t border-gray-400  py-3 flex   justify-center items-center">
             <p className="bai-jamjuree-semibold dark:text-gray-300 text-gray-500 text-sm  ">
-              © {new Date().toDateString()} AskEureka. Knowledge for all.
+              © {new Date().toDateString()} AntiNode. Knowledge for all.
             </p>
           </div>
         </div>

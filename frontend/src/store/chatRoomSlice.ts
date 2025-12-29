@@ -69,7 +69,7 @@ export const CreateChatRoom = createAsyncThunk<ApiResponse, RoomData>(
   "chat/createRoom",
   async (Data: RoomData, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/user/request/create-room`,
         Data,
@@ -97,7 +97,7 @@ export const JoinAChatRoom = createAsyncThunk<ApiResponse, string>(
   "chat/joinRoom",
   async (joincode: string, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/user/request/${joincode}`,
         {},
@@ -122,7 +122,7 @@ export const GetDocumentChatHistory = createAsyncThunk(
   "get/document_chats",
   async (document_id: string, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.get(
         `${BaseApiUrl}/api/user/document/chat-history/${document_id}`,
         {
@@ -148,7 +148,7 @@ export const GetMisallaneousChatHistory = createAsyncThunk<any, any>(
   async (cursor = null, { rejectWithValue }) => {
     // cursor is the created_at timestamp
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
       const params: any = {};
       if (cursor) {
@@ -179,7 +179,7 @@ export const GetSynthesizedResult = createAsyncThunk<any, any>(
   "query/synthesis",
   async (data, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
       const response = await axios.post(
         `${BaseApiUrl}/api/chatroom/synthesis`,

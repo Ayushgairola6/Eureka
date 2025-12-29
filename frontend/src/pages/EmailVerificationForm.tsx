@@ -85,7 +85,7 @@ const EmailVerificationForm = () => {
 
           {/* server response as message */}
           {message && (
-            <div className="w-full  p-2 text-white text-center text-md ">
+            <div className="w-full space-grotesk p-1 dark:text-white text-black text-center text-md ">
               {message}
             </div>
           )}

@@ -3,13 +3,13 @@ import { MdOutlineHourglassEmpty } from "react-icons/md";
 import { FiUploadCloud } from "react-icons/fi";
 import { BsArrowUpRight, BsTerminal } from "react-icons/bs";
 import { motion } from "framer-motion";
-const aboutEureka = [
+const aboutAntiNode = [
   {
     id: "about-1",
     title: "The Purpose",
     subtitle: "Verified Insight",
     description:
-      "Misinformation is everywhere. Eureka builds a protective layer around your brain, filtering the noise to ensure you consume only high-signal, verified data.",
+      "Misinformation is everywhere. AntiNode builds a protective layer around your brain, filtering the noise to ensure you consume only high-signal, verified data.",
     icon: <FiZap />,
     gradient: "from-blue-600 to-cyan-500", // Sharp, intellectual blue
     badgeColor: "bg-blue-500/10",
@@ -35,17 +35,17 @@ const aboutEureka = [
   },
   {
     id: "about-3",
-    title: "How to Use Eureka",
+    title: "How to Use AntiNode",
     subtitle: "The Workflow",
     description:
-      "Choose a category, ask your question, and get a community-verified response. Missing info? Upload files to teach Eureka and earn reputation.",
+      "Choose a category, ask your question, and get a community-verified response. Missing info? Upload files to teach AntiNode and earn reputation.",
     icon: <FiUploadCloud />,
     gradient: "from-green-400 to-green-600", // Warm, helpful onboarding tone
     badgeColor: "bg-green-500/10",
     border: "border-green-500/40",
     img: "/feature1.png",
     message: "Start Query",
-    source: "https://youtube.come/AskEureka/features",
+    source: "https://youtube.come/AntiNodefeatures",
   },
 ];
 const Why = () => {
@@ -54,16 +54,16 @@ const Why = () => {
       <div className="relative bg-gray md:py-30 dark:bg-black text-black dark:text-white  p-4 z-[2] overflow-hidden ">
         <section className="p-2 text-center mt-4 mb-8">
           <h1 className="bai-jamjuree-bold text-3xl md:text-4xl">
-            Why AskEureka ?
+            Why AntiNode?
           </h1>
           <p className="bai-jamjuree-regular text-xs">
-            Find why there is need for a tool like AskEureka{" "}
+            Find why there is need for a tool like AntiNode
           </p>
         </section>
         {/* <div className="grid grid-cols-1 lg:grid-cols-2 w-full gap-8"></div> */}
         {/* cards ssection rendering */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 lg:w-4/5 mx-auto  gap-6 p-4">
-          {aboutEureka.map((data, index) => {
+          {aboutAntiNode.map((data, index) => {
             return (
               <>
                 <motion.div
@@ -138,7 +138,7 @@ const Why = () => {
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-gray-400 font-mono flex items-center gap-1">
                               <BsTerminal className="inline text-[10px]" />{" "}
-                              Find-with-eureka
+                              Find-with-AntiNode
                             </span>
                             <a
                               href={data.source}
@@ -246,7 +246,7 @@ export default Why;
 //                           <div className="flex justify-between items-center text-xs">
 //                             <span className="text-gray-400 font-mono flex items-center gap-1">
 //                               <BsTerminal className="inline text-[10px]" />{" "}
-//                               Find-with-eureka
+//                               Find-with-AntiNode
 //                             </span>
 //                             <Link
 //                               to="/"

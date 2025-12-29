@@ -55,7 +55,7 @@ const EmailVerification = () => {
           // reload the app to get user data
         } else {
           localStorage.setItem(
-            "Eureka_eta_six_version1_AuthToken",
+            "AntiNode_eta_six_version1_AuthToken",
             response.data.AuthToken
           );
           dispatch(GetUserDashboardData());

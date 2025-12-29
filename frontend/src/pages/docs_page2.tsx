@@ -10,7 +10,7 @@ const DocsPage2 = () => {
         {/* Header Section */}
         <div className="text-center space-y-3 w-full">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-            How Eureka Works
+            How AntiNode Works
           </h1>
           <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto space-grotesk">
             Transforming documents into{" "}
@@ -137,7 +137,7 @@ const DocsPage2 = () => {
           </button>
           <Link
             className="flex items-center justify-end  text-green-400  gap-2   hover:underline"
-            to="/Api/AskEureka/Managaging-PrivateDocs"
+            to="/Api/AntiNodeManagaging-PrivateDocs"
           >
             <span>Private Documents</span>
             <FaArrowRight size={12} />

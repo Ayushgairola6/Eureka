@@ -62,7 +62,7 @@ const Navbar = () => {
             src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
             alt="logo"
           />
-          <label htmlFor="logo">AskEureka</label>
+          <label htmlFor="logo">AntiNode</label>
         </Link>
 
         <div

@@ -101,7 +101,7 @@ export const UploadDocuments = createAsyncThunk<any, FormData>(
   "upload/docs",
   async (formData, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/upload-pdf`,
         formData,
@@ -126,7 +126,7 @@ export const GetSessionHistory = createAsyncThunk<any, any>(
   "user/sessio-history",
   async (lastMessageTime, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
       const response = await axios.post(
         `${BaseApiUrl}/api/user/session-history`,
@@ -150,7 +150,7 @@ export const QueryAIQuestions = createAsyncThunk<any, any>(
   "ask/queryAI",
   async (data, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(`${BaseApiUrl}/api/ask-docs`, data, {
         withCredentials: true,
         headers: {
@@ -172,7 +172,7 @@ export const DeleteDocuments = createAsyncThunk<string, any>(
   "delete/documents",
   async (document_id, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
       const response = await axios.delete(
         `${BaseApiUrl}/api/user/private-docs/delete/?document_id=${document_id}`,
@@ -197,7 +197,7 @@ export const QueryPrivateDocuments = createAsyncThunk<any, any>(
   "private-doc/queryAI",
   async (data, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/privateDocs/ask-docs`,
         data,
@@ -222,7 +222,7 @@ export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
   "authenticity/verify",
   async (data, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/doc/authenticity`,
         data,
@@ -246,7 +246,7 @@ export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
 export const WebSearchHandler = createAsyncThunk<any, any>(
   "query/web",
   async ({ question, MessageId, userMessageId }, { rejectWithValue }) => {
-    const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+    const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
     try {
       const response = await axios.post(
@@ -273,7 +273,7 @@ export const GetCachedSessionHistory = createAsyncThunk(
   "get/sessioncache",
   async (_, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
       const response = await axios.get(
         `${BaseApiUrl}/api/user/session-history/cache=true`,
@@ -295,7 +295,7 @@ export const ProcessSynthesis = createAsyncThunk<any, any>(
   "synthesis/request",
   async (data, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/method/synthesis`,
         data,

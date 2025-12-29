@@ -40,7 +40,7 @@ const PrivacyPolicy = () => {
               <li>
                 To enhance your experience and personalizing your dashboard
               </li>
-              <li>Make the AskEureka AI responses accurate</li>
+              <li>Make the AntiNode AI responses accurate</li>
               <li>Enforce rate limits and prevent abuse</li>
               <li>We do not use your data to train our internal models</li>
               <li>Send important service updates via email</li>
@@ -94,7 +94,7 @@ const PrivacyPolicy = () => {
               to="/Feedback"
               className="text-blue-500 text-sm bai-jamjuree-regular"
             >
-              AskEureka Feedback form
+              AntiNodeFeedback form
             </Link>
           </p>
         </div>

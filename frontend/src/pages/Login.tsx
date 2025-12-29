@@ -70,7 +70,7 @@ const Login = () => {
         }, 3000);
         // console.log(response.data)
         localStorage.setItem(
-          "Eureka_six_eta_v1_Authtoken",
+          "AntiNode_six_eta_v1_Authtoken",
           response.data.AuthToken
         );
       }
@@ -88,24 +88,23 @@ const Login = () => {
   return (
     <>
       <div className="relative h-screen flex items-center justify-center  z-[2]  dark:bg-black overflow-hidden">
-        <div className="absolute flex h-full w-full top-0 left-0 blur-2xl  z-[-1] ">
-          <div
-            className="w-[70%] h-[80%] md:w-[40%] m-auto rounded-t-xl    rounded-br-md rounded-bl-sm  opacity-100 Indicator"
-            style={{
-              background: `
+        <motion.section
+          animate={{ rotate: [10, 30, 20, 40, 60, 50, 70, 90, 80] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          className="w-full h-full md:w-[40%] opacity-30 absolute top-10 left-30    rounded-full   blur-[160px]"
+          style={{
+            background: `
           radial-gradient(circle at 30% 30%, #8B5CF6 0%, transparent 50%),
           radial-gradient(circle at 70% 20%, #3B82F6 10%, transparent 50%),
           radial-gradient(circle at 50% 70%, #F59E0B 15%, transparent 50%),
           radial-gradient(circle at 80% 60%, #EC4899 20%, transparent 50%),
           radial-gradient(circle at 20% 50%, #10B981 25%, transparent 50%)
         `,
-              backgroundBlendMode: "screen",
-            }}
-          />
-        </div>
-        {/* )} */}
+            backgroundBlendMode: "screen",
+          }}
+        />
 
-        <div className="relative bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-sm shadow-black cursor-grab border dark:border-gray-400">
+        <div className="relative bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-md gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-2xl cursor-grab border dark:border-white/10 border-black/10">
           <h1 className="text-center bai-jamjuree-bold  md:text-3xl text-2xl ">
             Welcome back!
           </h1>
@@ -122,7 +121,7 @@ const Login = () => {
             </label>
             <input
               ref={Email}
-              className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk"
+              className="border-none outline-none focus:ring-0  px-2 py-1 rounded-lg space-grotesk"
               type="email"
               placeholder="Your email address"
             />
@@ -148,7 +147,7 @@ const Login = () => {
               <input
                 ref={Password}
                 spellCheck
-                className="w-full border border-gray-300 px-2 py-1 rounded-lg space-grotesk"
+                className="w-full border-none outline-none focus:ring-0 px-2 py-1 rounded-lg space-grotesk"
                 type={type}
                 placeholder="Choose a strong password"
               />

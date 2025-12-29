@@ -221,7 +221,7 @@ const OtherChats = () => {
                                 <FaRobot className="w-3 h-3 text-white" />
                               </div>
                               <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                Eureka
+                                AntiNode
                               </span>
                             </div>
 

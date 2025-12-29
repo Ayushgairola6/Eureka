@@ -149,7 +149,7 @@ export const GetUserDashboardData = createAsyncThunk<AuthState, void>(
   "user/getDashboardData",
   async (_, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
       const response = await axios.get(
         `${BaseApiUrl}/api/user/account-details`,
@@ -177,7 +177,7 @@ export const AcceptOrRejectRequest = createAsyncThunk<any, ActionPayload>(
     { rejectWithValue }
   ) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/user/requests/${action_type}/${requested_user_id}/${room_id}/${room_name}/${admin_id}`,
         {},
@@ -202,7 +202,7 @@ export const DeleteNotification = createAsyncThunk(
   "delete/notification",
   async (notification_id, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.put(
         `${BaseApiUrl}/api/user/delete/notification/${notification_id}`,
         {},
@@ -226,7 +226,7 @@ export const UpdatePreference = createAsyncThunk<any, string>(
   "updatevalue/preference",
   async (pref, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.put(
         `${BaseApiUrl}/api/user/update-preference`,
         { value: pref },
@@ -249,7 +249,7 @@ export const LogoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const AuthToken = localStorage.getItem(
-        "Eureka_eta_six_version1_AuthToken"
+        "AntiNode_eta_six_version1_AuthToken"
       );
       const response = await axios.post(
         `${BaseApiUrl}/api/user/session-logout`,
@@ -262,9 +262,9 @@ export const LogoutUser = createAsyncThunk(
         }
       );
       if (response.data.message === "Session revoked") {
-        localStorage.removeItem("Eureka_eta_six_version1_AuthToken");
+        localStorage.removeItem("AntiNode_eta_six_version1_AuthToken");
         document.cookie =
-          "Eureka_eta_six_version1_AuthToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          "AntiNode_eta_six_version1_AuthToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         return response.data;
       }
     } catch (error) {
@@ -279,7 +279,7 @@ export const SetCookies = createAsyncThunk(
   async (newToken, { rejectWithValue }) => {
     try {
       // const AuthToken = localStorage.getItem(
-      //   "Eureka_eta_six_version1_AuthToken"
+      //   "AntiNode_eta_six_version1_AuthToken"
       // );
       const response = await axios.post(
         `${BaseApiUrl}/api/user/refreshSession/`,
@@ -303,11 +303,11 @@ export const SetCookies = createAsyncThunk(
 
 // opening a local indexdb insteance for caching
 export const StoreInIndexDb = () => {
-  const request = window.indexedDB.open("AskEurekaLocalCache", 1);
+  const request = window.indexedDB.open("AntiNodeLocalCache", 1);
 
   return request;
 };
-const DB_NAME = "AskEurekaLocalCache";
+const DB_NAME = "AntiNodeLocalCache";
 const STORE_NAME = "userinfo";
 const DB_VERSION = 1;
 const USER_KEY = "currentUser";

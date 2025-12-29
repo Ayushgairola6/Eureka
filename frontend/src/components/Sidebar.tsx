@@ -42,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             alt="logo"
           />
 
-          <label htmlFor="logo">AskEureka</label>
+          <label htmlFor="logo">AntiNode</label>
         </header>
         {/* HeaderSection */}
         <div className="border-b w-full px-3 py-3">

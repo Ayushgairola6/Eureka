@@ -12,7 +12,7 @@ const Query_Doc = () => {
           </h1>
           <div className="w-full bg-gray-900 text-white dark:bg-white/10 dark:text-sky-300 p-3 rounded-lg overflow-x-auto">
             <pre className="font-mono text-xs sm:text-sm">
-              {`const response = await Eureka.queryDocument(document_id, query , query_type);`}
+              {`const response = await AntiNode.queryDocument(document_id, query , query_type);`}
             </pre>
           </div>
           <p className="bai-jamjuree-regular text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed">
@@ -67,7 +67,7 @@ const Query_Doc = () => {
           </div>
         </div>
         <Link
-          to="/Api/AskEureka/Uploading_Documents"
+          to="/Api/AntiNodeUploading_Documents"
           className="px-5 py-2.5 sm:px-6 sm:py-3  text-green-400 rounded-xl bai-jamjuree-semibold transition-all duration-300 inline-flex items-center gap-2 text-sm sm:text-base"
         >
           Upload Documents

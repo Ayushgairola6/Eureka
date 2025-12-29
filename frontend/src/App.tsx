@@ -9,9 +9,9 @@ const Feedback = lazy(() => import("./pages/FeedbackPage.tsx"));
 const EmailVerificationForm = lazy(
   () => import("./pages/EmailVerificationForm.tsx")
 );
-const LoadingIndicator = lazy(
-  () => import("@/components/LoadingIndicator.tsx")
-);
+// const LoadingIndicator = lazy(
+//   () => import("@/components/LoadingIndicator.tsx")
+// );
 const ResetPassword = lazy(() => import("./pages/ResetPassword.tsx"));
 const API = lazy(() => import("./pages/API.tsx"));
 const DocsPage2 = lazy(() => import("./pages/docs_page2.tsx"));
@@ -56,9 +56,7 @@ import UserChatRooms from "./pages/Rooms.tsx";
 // );
 const App = () => {
   const dispatch = useAppDispatch();
-  const { isDarkMode, isLoggedIn, userStatus } = useAppSelector(
-    (state) => state.auth
-  );
+  const { isDarkMode, isLoggedIn } = useAppSelector((state) => state.auth);
 
   // updating the local states from local cache
   useEffect(() => {
@@ -115,7 +113,7 @@ const App = () => {
     const VerifyLoginState: () => Promise<any> = async () => {
       try {
         setUseStatus("pending");
-        const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+        const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
         const response = await axios.get(`${BaseApiUrl}/api/verify/userstate`, {
           // signal: controller.signal,
           withCredentials: true,
@@ -175,7 +173,7 @@ const App = () => {
     try {
       const themeCookie = document.cookie
         .split(";")
-        .find((cookie) => cookie.trim().startsWith("Eureka_Theme="));
+        .find((cookie) => cookie.trim().startsWith("AntiNode_Theme="));
 
       if (themeCookie) {
         const themeValue = themeCookie.split("=")[1];
@@ -197,10 +195,10 @@ const App = () => {
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
-      document.cookie = "Eureka_Theme=dark; path=/; max-age=31536000"; // 1 year
+      document.cookie = "AntiNode_Theme=dark; path=/; max-age=31536000"; // 1 year
     } else {
       document.documentElement.classList.remove("dark");
-      document.cookie = "Eureka_Theme=light; path=/; max-age=31536000";
+      document.cookie = "AntiNode_Theme=light; path=/; max-age=31536000";
     }
   }, [isDarkMode]);
 
@@ -213,7 +211,7 @@ const App = () => {
   return (
     <>
       {/* Global Loading Overlay */}
-      {userStatus === "pending" && <LoadingIndicator userStatus={userStatus} />}
+      {/* {userStatus === "pending" && <LoadingIndicator userStatus={userStatus} />} */}
 
       {/* main routers */}
       <Suspense
@@ -221,7 +219,7 @@ const App = () => {
           <div className="h-screen bg-black flex items-center justify-center     ">
             <img
               src="/Dark.png"
-              alt="Eureka logo"
+              alt="AntiNode logo"
               className="  h-30 w-30  m-auto"
             />
           </div>
@@ -264,22 +262,22 @@ const App = () => {
 
             <Route element={<DocumentationLayout />}>
               <Route element={<API />} path="/Api/introduction" />
-              <Route element={<DocsPage2 />} path="/Api/AskEureka/Know-How" />
+              <Route element={<DocsPage2 />} path="/Api/AntiNodeKnow-How" />
               <Route
                 element={<Privacy />}
-                path="/Api/AskEureka/Managaging-PrivateDocs"
+                path="/Api/AntiNodeManagaging-PrivateDocs"
               />
               <Route
                 element={<API_functions />}
-                path="/Api/AskEureka/GettingAllDocuments"
+                path="/Api/AntiNodeGettingAllDocuments"
               />
               <Route
                 element={<Query_Doc />}
-                path="/Api/AskEureka/QueryIng-Documents"
+                path="/Api/AntiNodeQueryIng-Documents"
               />
               <Route
                 element={<UploadDocuments />}
-                path="/Api/AskEureka/Uploading_Documents"
+                path="/Api/AntiNodeUploading_Documents"
               />
 
               {/* Add more documentation routes here */}

@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png"],
       manifest: {
-        name: "AskEureka",
-        short_name: "AskEureka",
+        name: "AntiNode",
+        short_name: "AntiNode",
         description: "Your AI research assistant",
         theme_color: "#000000",
         background_color: "#ffffff",

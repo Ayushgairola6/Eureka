@@ -1,6 +1,10 @@
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
-import { GenerateResponse } from "./ModelController.js";
+import {
+  FilterIntent,
+  FindIntent,
+  GenerateResponse,
+} from "./ModelController.js";
 import { Pinecone } from "@pinecone-database/pinecone";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
@@ -18,6 +22,7 @@ dotenv.config();
 import {
   formatForGemini,
   FormatForHumanFallback,
+  SearchQueriesResults,
   SearchQueryResults,
 } from "../OnlineSearchHandler/WebSearchHandler.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
@@ -33,11 +38,18 @@ import {
   ProcessUserQuery,
 } from "./UserCreditLimitController.js";
 import {
+  IntentIdentifier,
   KNOWLEDGE_DISTRIBUTOR_PROMPT,
   SUMMARIZATION_ANALYST_PROMPT,
   WEB_SEARCH_DISTRIBUTOR_PROMPT,
 } from "../Prompts/Prompts.js";
 import { GetChatsForContext } from "../Synthesis/phase2_action.js";
+import {
+  FilterUrlForExtraction,
+  FormattForLLM,
+  GetDataFromSerper,
+  ProcessForLLM,
+} from "../OnlineSearchHandler/WebCrawler.js";
 // import {
 //   generateEmbedding,
 //   generateEmbeddingsWithGoogle,
@@ -574,7 +586,7 @@ export const GetPublicRecords = async (req, res) => {
 
     const AImessage = {
       id: MessageId, //users message Id
-      sent_by: "Eureka", //sent by the user
+      sent_by: "AntiNode", //sent by the user
       message: { isComplete: true, content: AnswerToUsersQuestion },
       sent_at: currentTime,
     };
@@ -874,7 +886,7 @@ export const GetPrivateDocResultss = async (req, res) => {
     }
     const Aimessage = {
       id: MessageId, //AI  message Id
-      sent_by: "Eureka", //sent by the model
+      sent_by: "AntiNode", //sent by the model
       message: { isComplete: true, content: AnswerToUsersQuestion },
       sent_at: currentTime,
     };
@@ -937,7 +949,7 @@ export const PostTypeWebSearch = async (req, res) => {
       });
     }
     const { question, MessageId, userMessageId } = req.body;
-    // if (!question) return res.status(404).send({ message: "Invalid question" });
+    if (!question) return res.status(404).send({ message: "Invalid question" });
 
     // check the current credit limit record for the user
     const UpdateState = await ProcessUserQuery(req.user, "web_search");
@@ -954,21 +966,128 @@ export const PostTypeWebSearch = async (req, res) => {
     const pastConversation = await GetChatsForContext(req.user);
     if (!pastConversation || pastConversation.length === 0) {
       history.push(`Failed to get session chat history`);
+    } else {
+      history = [...pastConversation];
     }
-    history = [...pastConversation];
 
-    const WebResults = await SearchQueryResults(question, req.user);
-    if (WebResults.error) {
-      await notifyMe(WebResults.error);
-      return res.status(400).send({ message: "The server is busy right now" });
+    // get necessary links from serper
+    const response = await GetDataFromSerper(question, req.user);
+
+    if (!response) {
+      return res
+        .status(400)
+        .send({ message: "An error occured while processing your request" });
     }
-    const Formattedresult = formatForGemini(WebResults.response);
-    if (!Formattedresult) {
-      await notifyMe(`${Formattedresult}, "Results formatting error"`);
-      return res.status(400).send({
-        message: "The server is busy right now",
-        favicon: { MessageId, icon: [] },
-      });
+    // const response = {
+    //   searchParameters: {
+    //     q: "what are neural networks?",
+    //     type: "search",
+    //     engine: "google",
+    //   },
+    //   organic: [
+    //     {
+    //       title: "What Is a Neural Network?",
+    //       link: "https://www.ibm.com/think/topics/neural-networks",
+    //       snippet:
+    //         'A neural network is a machine learning model that stacks simple "neurons" in layers and learns pattern-recognizing weights and biases from data to map inputs to ...',
+    //       position: 1,
+    //     },
+    //     {
+    //       title: "Neural network (machine learning)",
+    //       link: "https://en.wikipedia.org/wiki/Neural_network_(machine_learning)",
+    //       snippet:
+    //         "A neural network consists of connected units or nodes called artificial neurons, which loosely model the neurons in the brain. Artificial neuron models that ...",
+    //       position: 2,
+    //     },
+    //     {
+    //       title: "What is a Neural Network?",
+    //       link: "https://www.geeksforgeeks.org/machine-learning/neural-networks-a-beginners-guide/",
+    //       snippet:
+    //         "Neural networks are machine learning models that mimic the complex functions of the human brain. These models consist of interconnected nodes or neurons that ...",
+    //       date: "Dec 16, 2025",
+    //       position: 3,
+    //     },
+    //     {
+    //       title: "ELI5: What are neural networks? : r/explainlikeimfive",
+    //       link: "https://www.reddit.com/r/explainlikeimfive/comments/14he980/eli5_what_are_neural_networks/",
+    //       snippet:
+    //         "Neural networks are a method of machine learning that tries to mimic how a brain would work. It's made up of nodes.",
+    //       date: "2 years ago",
+    //       position: 4,
+    //     },
+    //     {
+    //       title: "What is a Neural Network?",
+    //       link: "https://aws.amazon.com/what-is/neural-network/",
+    //       snippet:
+    //         "A neural network is a method in artificial intelligence (AI) that teaches computers to process data in a way that is inspired by the human brain.",
+    //       position: 5,
+    //     },
+    //     {
+    //       title: "Explained: Neural networks",
+    //       link: "https://news.mit.edu/2017/explained-neural-networks-deep-learning-0414",
+    //       snippet:
+    //         "Neural nets are a means of doing machine learning, in which a computer learns to perform some task by analyzing training examples.",
+    //       date: "Apr 14, 2017",
+    //       position: 6,
+    //     },
+    //     {
+    //       title: "Neural Networks Explained in 5 minutes",
+    //       link: "https://www.youtube.com/watch?v=jmmW0F0biz0",
+    //       snippet:
+    //         "Neural networks reflect the behavior of the human brain allowing computer programs to recognize patterns and solve common problems.",
+    //       date: "3 years ago",
+    //       position: 7,
+    //     },
+    //     {
+    //       title: "What is a neural network? | Types of neural networks",
+    //       link: "https://www.cloudflare.com/learning/ai/what-is-neural-network/",
+    //       snippet:
+    //         "A neural network is a computational system inspired by the human brain that learns to perform tasks by analyzing examples. It consists of interconnected nodes ...",
+    //       position: 8,
+    //     },
+    //     {
+    //       title: "What Is a Neural Network? - MATLAB & Simulink",
+    //       link: "https://www.mathworks.com/discovery/neural-network.html",
+    //       snippet:
+    //         "A neural network (also called an artificial neural network or ANN) is an adaptive system that learns by using interconnected nodes or neurons in a layered ...",
+    //       position: 9,
+    //     },
+    //     {
+    //       title: "Neural Networks: What are they and why do they matter?",
+    //       link: "https://www.sas.com/en_us/insights/analytics/neural-networks.html",
+    //       snippet:
+    //         "Neural networks are computing systems with interconnected nodes that work much like neurons in the human brain.",
+    //       position: 10,
+    //     },
+    //   ],
+    //   credits: 1,
+    // };
+
+    const LinksToFetch = FilterUrlForExtraction(response, req.user);
+
+    if (LinksToFetch.length === 0) {
+      return res
+        .status(400)
+        .send({ message: "An error occured while processing your request" });
+    }
+
+    const CleanedWebData = await ProcessForLLM(
+      LinksToFetch,
+      req.user,
+      question
+    );
+
+    if (CleanedWebData.length === 0) {
+      return res
+        .status(400)
+        .send({ message: "An error occured while processing your request" });
+    }
+    const WebResults = FormattForLLM(CleanedWebData);
+
+    if (WebResults?.error || WebResults.FinalContent.length === 0) {
+      return res
+        .status(400)
+        .send({ message: "An error occured while processing your request" });
     }
 
     const message = {
@@ -981,29 +1100,19 @@ export const PostTypeWebSearch = async (req, res) => {
     await CacheCurrentChat(message, req.user);
     const WebResultPrompt = WEB_SEARCH_DISTRIBUTOR_PROMPT;
 
-    const FinalContext = `This the session_history=${JSON.stringify(
-      history
-    )} and these are the results from the web-${Formattedresult}`;
-
     let Answer = await GenerateResponse(
       question,
-      FinalContext,
+      JSON.stringify(WebResults.FinalContent),
       WebResultPrompt,
       req.user
     );
     if (Answer.error) {
-      console.error(Answer.error, "Gemini response generation error");
-      await notifyMe(
-        `Error while generating a response by gemini :${Answer.error}`
-      );
-      // fallback response
-      const results = await FormatForHumanFallback(WebResults.response);
-      Answer = results.text;
+      return res.status(400).send({ message: "Server busy" });
     }
 
     const AiMessage = {
       id: MessageId,
-      sent_by: "Eureka", //sent by the user
+      sent_by: "AntiNode", //sent by the user
       message: {
         isComplete: true,
         content: Answer,
@@ -1030,7 +1139,7 @@ export const PostTypeWebSearch = async (req, res) => {
       newChats.push({
         created_at: new Date().toISOString(),
         question: question,
-        AI_response: Answer.text,
+        AI_response: Answer,
       });
 
       //update the value of the key
@@ -1044,7 +1153,7 @@ export const PostTypeWebSearch = async (req, res) => {
 
     const FormattedFavicon = {
       MessageId,
-      icon: WebResults.favicon, //favicon array from the web search
+      icon: WebResults.favicons, //favicon array from the web search
     };
 
     //  now that we have generated all the response and data for the user
@@ -1055,6 +1164,7 @@ export const PostTypeWebSearch = async (req, res) => {
       Answer: Answer,
       message: "Results found",
       favicon: FormattedFavicon,
+      urls: WebResults.urls || [],
     });
   } catch (err) {
     await notifyMe(

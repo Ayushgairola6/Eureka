@@ -800,7 +800,7 @@ export const GetMisallaneousChatHistory = async (req, res) => {
   }
 };
 
-export const QueryDocWithEurekaInChatRoom = async (req, res) => {
+export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
   try {
     const userId = req.user.user_id;
     const IsPremiumUser = req.user.PaymentStatus;
@@ -831,15 +831,15 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
           sent_by: null,
           message: `${
             req.user.username || "User"
-          } needs to have an active subscription in order to be able to use Eureka AI in a chat room.`,
+          } needs to have an active subscription in order to be able to use AntiNode AI in a chat room.`,
           room_id: room_id,
-          users: { username: "EUREKA" },
+          users: { username: "AntiNode" },
           sent_at: currentTime || new Date().toISOString(),
         });
       }
       return res.status(200).send({
         answer:
-          "You need to have an active subscription in order to be able to use Eureka AI in a chat room.",
+          "You need to have an active subscription in order to be able to use AntiNode AI in a chat room.",
       });
     }
     // check for matching results from db
@@ -889,7 +889,7 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
     // - ✅ **Real-time delivery** to all users
     // - ✅ **Markdown rendering** in messages
     // - ✅ **Message formatting** and styling
-    // - ✅ **Different sender types** (User, System, Eureka)
+    // - ✅ **Different sender types** (User, System, AntiNode)
 
     // ### Code Block Test:
     // \`\`\`javascript
@@ -927,7 +927,7 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
         sent_by: null,
         message: AnswerToQuestion,
         room_id: room_id,
-        users: { username: "EUREKA" },
+        users: { username: "AntiNode" },
         sent_at: currentTime || new Date().toISOString(),
       });
     }
@@ -945,13 +945,13 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
         `An error occured of critical level occured when storing chat history in the db at ${currentTime}`
       );
     }
-    // update the cache for EUREKA
+    // update the cache for AntiNode
     await UpdateTheRoomChatCache(
       room_id,
       AnswerToQuestion,
       currentTime || new Date().toISOString,
       null,
-      { username: "EUREKA" }
+      { username: "AntiNode" }
     );
     return res.status(200).send({ answer: AnswerToQuestion });
   } catch (error) {
@@ -961,7 +961,7 @@ export const QueryDocWithEurekaInChatRoom = async (req, res) => {
   }
 };
 //web search handler for rooms
-export const QueryWebInEurekaChatRoom = async (req, res) => {
+export const QueryWebInAntiNodeChatRoom = async (req, res) => {
   try {
     const user_id = req.user.user_id;
     const io = getIo();
@@ -1020,7 +1020,7 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
         sent_by: null,
         message: AnswerToQuestion,
         room_id: room_id,
-        users: { username: "EUREKA" },
+        users: { username: "AntiNode" },
         sent_at: currentTime || new Date().toISOString(),
       });
     }
@@ -1037,13 +1037,13 @@ export const QueryWebInEurekaChatRoom = async (req, res) => {
         `An error occured of critical level occured when storing chat history in the db at ${currentTime}`
       );
     }
-    // update the cache for EUREKA
+    // update the cache for AntiNode
     await UpdateTheRoomChatCache(
       room_id,
       AnswerToQuestion,
       currentTime || new Date().toISOString,
       null,
-      { username: "EUREKA" }
+      { username: "AntiNode" }
     );
     const FormattedFavIcon = {
       MessageId: MessageId,
@@ -1095,7 +1095,7 @@ export const GetSyntheSizedResults = async (req, res) => {
         sent_by: null,
         message: ProcessQuery?.SynthesizedResponse,
         room_id: room_id,
-        users: { username: "EUREKA" },
+        users: { username: "AntiNode" },
         sent_at: currentTime || new Date().toISOString(),
       });
     }
@@ -1120,13 +1120,13 @@ export const GetSyntheSizedResults = async (req, res) => {
         docUsed: [],
       });
     }
-    // update the cache for EUREKA
+    // update the cache for AntiNode
     await UpdateTheRoomChatCache(
       room_id,
       ProcessQuery?.SynthesizedResponse,
       currentTime || new Date().toISOString,
       null,
-      { username: "EUREKA" }
+      { username: "AntiNode" }
     );
     return res.send({
       Answer: ProcessQuery?.SynthesizedResponse,

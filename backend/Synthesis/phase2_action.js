@@ -174,7 +174,7 @@ export async function GetChatsForContext(user) {
     const parsedChats = Chats.filter((jsonString) => {
       try {
         // Parse each individual string element
-        // const messagesweneed = JSON.parse(jsonString)?.sent_by === "Eureka";
+        // const messagesweneed = JSON.parse(jsonString)?.sent_by === "AntiNode";
         return JSON.parse(parsedChats);
       } catch (error) {
         // Return a placeholder or handle the error as needed
@@ -190,5 +190,6 @@ export async function GetChatsForContext(user) {
     if (OldChats.message) {
       return [];
     }
+    return OldChats;
   }
 }

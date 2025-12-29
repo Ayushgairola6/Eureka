@@ -108,7 +108,7 @@ const InputSection: React.FC<InputProps> = ({
   // getting sse token before sending a request
   // const GetSSEToken = async () => {
   //   try {
-  //     const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+  //     const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
   //     const response = await axios.get(`${BaseApiUrl}/api/new-sseToken`, {
   //       withCredentials: true,
@@ -171,7 +171,7 @@ const InputSection: React.FC<InputProps> = ({
         UpdateChats({
           id: AiId,
           sent_at: currentTime,
-          sent_by: "Eureka",
+          sent_by: "AntiNode",
           message: {
             isComplete: false,
             content: "",
@@ -248,7 +248,7 @@ const InputSection: React.FC<InputProps> = ({
         UpdateChats({
           id: AiId,
           sent_at: currentTime,
-          sent_by: "Eureka",
+          sent_by: "AntiNode",
           message: {
             isComplete: false,
             content: "",
@@ -311,7 +311,7 @@ const InputSection: React.FC<InputProps> = ({
       UpdateChats({
         id: AiId,
         sent_at: currentTime,
-        sent_by: "Eureka",
+        sent_by: "AntiNode",
         message: {
           isComplete: false,
           content: "",
@@ -416,7 +416,7 @@ const InputSection: React.FC<InputProps> = ({
         UpdateChats({
           id: AiId,
           sent_at: currentTime,
-          sent_by: "Eureka",
+          sent_by: "AntiNode",
           message: {
             isComplete: false,
             content: "",
@@ -474,46 +474,52 @@ const InputSection: React.FC<InputProps> = ({
         }}
         className={`relative overflow-y-visible w-full px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border border-black/20 dark:border-white/10 bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3] transition-all duration-150 ease-linear shadow-2xl `}
       >
-        {/* send button */}
-        <motion.button
-          disabled={!question || loading === true}
-          whileTap={{ scale: 1.03 }}
-          whileHover={{ scaleX: 1.05 }}
-          transition={{ duration: 0.3, ease: "circIn" }}
-          onClick={handleAsk}
-          className={`absolute top-5 right-4 cursor-pointer ${
-            loading === true
-              ? "bg-cyan-600  animate-pulse "
-              : "bg-black dark:bg-gray-100"
-          }
+        {/* input section */}
+        <div className="w-full flex items-center justify-between ">
+          <input
+            value={question}
+            onFocus={() => {
+              dispatch(setShowOptions(false));
+              SetShowFeatures(false);
+              setIsActive(true);
+            }}
+            onChange={(e) => {
+              dispatch(setQuestion(e.target.value));
+            }}
+            onKeyUp={(e) => e.key === "Enter" && handleAsk()}
+            ref={textareaRef}
+            name="input"
+            placeholder="What would you like to research today ... ?"
+            className="w-full dark:text-white text-black rounded-lg px-2 py-3 focus:ring-0 ring-0 transition-all duration-200 outline-0 "
+          />
+          {/* send button */}
+
+          <motion.button
+            disabled={!question || loading === true}
+            whileTap={{ scale: 1.03 }}
+            whileHover={{ scaleX: 1.05 }}
+            transition={{ duration: 0.3, ease: "circIn" }}
+            onClick={handleAsk}
+            className={` top-5 right-4 cursor-pointer ${
+              loading === true
+                ? "bg-cyan-600  animate-pulse "
+                : "bg-black dark:bg-gray-100"
+            }
                      
               text-white dark:text-black  p-1  rounded-full space-grotesk   text-sm flex items-center justify-center gap-2  `}
-        >
-          {loading === false ? (
-            <>{question === "" ? <BsMic size={16} /> : <BiSend size={16} />}</>
-          ) : (
-            <>
-              <BiHourglass className="animate-spin" size={18} />
-            </>
-          )}
-        </motion.button>
-        {/* input section */}
-        <input
-          value={question}
-          onFocus={() => {
-            dispatch(setShowOptions(false));
-            SetShowFeatures(false);
-            setIsActive(true);
-          }}
-          onChange={(e) => {
-            dispatch(setQuestion(e.target.value));
-          }}
-          onKeyUp={(e) => e.key === "Enter" && handleAsk()}
-          ref={textareaRef}
-          name="input"
-          placeholder="What would you like to research today ... ?"
-          className="w-full dark:text-white text-black rounded-lg px-2 py-3 focus:ring-0 ring-0 transition-all duration-200 outline-0 "
-        />
+          >
+            {loading === false ? (
+              <>
+                {question === "" ? <BsMic size={18} /> : <BiSend size={18} />}
+              </>
+            ) : (
+              <>
+                <BiHourglass className="animate-spin" size={18} />
+              </>
+            )}
+          </motion.button>
+        </div>
+
         {/* the other options section */}
         <div
           className={`${
@@ -541,7 +547,7 @@ const InputSection: React.FC<InputProps> = ({
                     : "dark:bg-white bg-black dark:text-black text-white"
                 } rounded-full p-1  h-auto `}
               >
-                <IoOptions size={15} />
+                <IoOptions size={18} />
               </button>
             </section>
 
@@ -555,7 +561,7 @@ const InputSection: React.FC<InputProps> = ({
                     : "bg-gray-200"
                 } rounded-full p-1  h-auto relative`}
               >
-                <GoZap size={15} />
+                <GoZap size={18} />
                 <QueryType />
               </ul>
             )}
@@ -569,7 +575,7 @@ const InputSection: React.FC<InputProps> = ({
                 onClick={() => SetShowFeatures(!Showfeatures)}
                 className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-1  h-auto  "
               >
-                <BsPlusLg size={15} />
+                <BsPlusLg size={18} />
               </button>
 
               <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-fit">
@@ -586,7 +592,7 @@ const InputSection: React.FC<InputProps> = ({
               <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-auto">
                 Upload
               </ul>
-              <BiUpload size={15} />
+              <BiUpload size={18} />
             </ul>
           </section>
 

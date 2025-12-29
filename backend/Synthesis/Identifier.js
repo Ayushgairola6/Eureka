@@ -149,7 +149,7 @@ export async function IdentifyRequestInputs(req, res) {
 
     const AiMessage = {
       id: MessageId,
-      sent_by: "Eureka", //sent by the user
+      sent_by: "AntiNode", //sent by the user
       message: {
         isComplete: true,
         content: ModelResponse,

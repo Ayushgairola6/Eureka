@@ -8,7 +8,7 @@ const API_functions = () => {
       {/* Header Section */}
       <div className="text-center space-y-3 w-full">
         <h1 className="text-2xl sm:text-3xl md:text-4xl bai-jamjuree-semibold text-gray-900 dark:text-white">
-          AskEureka SDK
+          AntiNode SDK
         </h1>
         <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto space-grotesk">
           Programmatic access to your{" "}
@@ -37,21 +37,21 @@ const API_functions = () => {
         </h2>
         <div className="mt-3 bg-gray-900 text-white dark:bg-white/10   rounded-lg p-4 overflow-x-auto">
           <pre className="text-gray-100 text-sm font-mono">
-            <code>npm install AskEurekaV1</code>
+            <code>npm install AntiNode1</code>
           </pre>
         </div>
       </div>
 
       {/* SDK Features */}
       <div className="w-full px-2 sm:px-4 space-y-6">
-        {/* AskEureka Client */}
+        {/* AntiNodeClient */}
         <div className="flex flex-col gap-2 items-center justify-center">
           <h1 className="bai-jamjuree-semibold text-base sm:text-lg flex items-center justify-center gap-2 text-gray-800 dark:text-gray-100">
-            AskEureka SDK Client
+            AntiNodeSDK Client
           </h1>
           <div className="w-full bg-gray-900 text-white dark:bg-white/10 dark:text-sky-300 p-3 rounded-lg overflow-x-auto">
             <pre className="font-mono text-xs sm:text-sm">
-              {`const AskEureka = new AskEurekaClient({
+              {`const AntiNode= newAntiNodeNodeient({
   apiKey: 'YOUR_API_KEY'
 })`}
             </pre>
@@ -65,7 +65,7 @@ const API_functions = () => {
           </h1>
           <div className="w-full bg-gray-900 text-white dark:bg-white/10 dark:text-sky-300 p-3 rounded-lg overflow-x-auto">
             <pre className="font-mono text-xs sm:text-sm">
-              {`const documents = await AskEureka.GetDocumentList();`}
+              {`const documents = await AntiNodeGetDocumentList();`}
             </pre>
           </div>
           {/* here willl be the description */}
@@ -132,7 +132,7 @@ const API_functions = () => {
           <FiArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
         </Link>
         <Link
-          to="/Api/AskEureka/QueryIng-Documents"
+          to="/Api/AntiNodeQueryIng-Documents"
           className="px-5 py-2.5 sm:px-6 sm:py-3  text-green-400 rounded-xl bai-jamjuree-semibold   transition-all duration-300 inline-flex items-center gap-2 text-sm sm:text-base"
         >
           Query Documents

@@ -12,8 +12,8 @@ const TermsAndConditions = () => {
             1. Acceptance of Terms
           </h2>
           <p>
-            By using AskEureka, you agree to these terms. If you disagree,
-            please don't use our service.
+            By using AntiNode, you agree to these terms. If you disagree, please
+            don't use our service.
           </p>
         </section>
 
@@ -37,11 +37,11 @@ const TermsAndConditions = () => {
             <li>Don't use our service for illegal activities</li>
             <li>Don't attempt to reverse engineer our platform</li>
             <li>
-              The AskEureka Sdk for plug and use document and general
-              information based AI systems is currently in beta stage and open
-              source you can access it from our{" "}
+              The AntiNodeSdk for plug and use document and general information
+              based AI systems is currently in beta stage and open source you
+              can access it from our{" "}
               <a
-                href="https://github.com/Ayushgairola6/AskEurekaSdk"
+                href="https://github.com/Ayushgairola6/AntiNodek"
                 className="text-green-500"
               >
                 github repo

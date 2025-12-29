@@ -197,7 +197,7 @@ const Privacy = () => {
       <div className="flex justify-end  text-green-400 items-center text-sm gap-3 w-full mt-4">
         <Link
           className=" space-grotesk     bai-jamjuree-semibold hover:underline"
-          to="/Api/AskEureka/GettingAllDocuments"
+          to="/Api/AntiNode/GettingAllDocuments"
         >
           API functions
         </Link>

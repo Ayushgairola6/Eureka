@@ -9,7 +9,7 @@ import { FiUploadCloud } from "react-icons/fi";
 import { motion } from "framer-motion";
 import React from "react";
 import { LuBrainCircuit } from "react-icons/lu";
-const eurekaFeatures = [
+const AntiNodeFeatures = [
   {
     id: "feat-5",
     title: "Neuro-Symbolic Core",
@@ -67,7 +67,7 @@ const eurekaFeatures = [
     title: "Doc-RAG Engine",
     subtitle: "Knowledge Retrieval",
     description:
-      "Upload complex PDFs or datasets. Eureka cross-references your files against community truths to find the specific answer you need instantly.",
+      "Upload complex PDFs or datasets. AntiNode cross-references your files against community truths to find the specific answer you need instantly.",
     icon: <FiUploadCloud />,
     gradient: "from-cyan-500 to-blue-500", // Your "Arctic Neon" vibe
     badgeColor: "bg-cyan-500/10",
@@ -127,7 +127,7 @@ export const Features = () => {
             className="flex overflow-x-auto pb-8 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory"
           >
             <div className="flex flex-nowrap gap-6 py-2 px-4">
-              {eurekaFeatures.map((data, index) => {
+              {AntiNodeFeatures.map((data, index) => {
                 return (
                   <>
                     <motion.div

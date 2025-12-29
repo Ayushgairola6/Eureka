@@ -166,7 +166,7 @@ export const HandleUserRegistration = async (req, res) => {
       verificationtoken
     );
 
-    await notifyMe(`New user ${username} joined eureka`);
+    await notifyMe(`New user ${username} joined AntiNode`);
     return res.json({
       message: "An email has been sent to your registered email !",
     });
@@ -276,7 +276,7 @@ export const HandleUserLogin = async (req, res) => {
     await cacheRefreshToken(user, RefreshToken);
 
     // Set cookie
-    res.cookie("Eureka_eta_six_version1_AuthToken", ValidAuthToken, {
+    res.cookie("AntiNode_eta_six_version1_AuthToken", ValidAuthToken, {
       httpOnly: true,
       secure: true,
       sameSite: "none",
@@ -303,7 +303,7 @@ export const updateCookies = async (req, res) => {
     if (!newAccessToken) {
       return res.status(401).send({ message: "The token was not found" });
     }
-    res.cookie("Eureka_eta_six_version1_AuthToken", newAccessToken, {
+    res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
       httpOnly: true,
       secure: true,
       sameSite: "none",
@@ -390,7 +390,7 @@ const sendLoginNotification = async (req, user) => {
       req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;
 
     await notifyMe(
-      `User ${user.username} logged into their Eureka account from IP: ${clientIp}`
+      `User ${user.username} logged into their AntiNode account from IP: ${clientIp}`
     );
 
     // Uncomment if you want to send email notifications
@@ -425,7 +425,7 @@ export const HandleUserLogout = async (req, res) => {
     }
     const RefreshTokenKey = `user=${req.user.username}'s_userId=${user_id}`;
     await redisClient.del(RefreshTokenKey);
-    res.clearCookie("Eureka_eta_six_version1_AuthToken");
+    res.clearCookie("AntiNode_eta_six_version1_AuthToken");
     return res.status(200).send({ message: "Session revoked" });
   } catch (error) {
     return res.status(500).send({ message: "Unable to logout " });
@@ -523,7 +523,7 @@ export const VerifyEmail = async (req, res) => {
         .json({ message: "Error while logging in please try again later !" });
     }
 
-    res.cookie("Eureka_eta_six_version1_AuthToken", AuthToken, {
+    res.cookie("AntiNode_eta_six_version1_AuthToken", AuthToken, {
       httpOnly: true,
       secure: true,
       sameSite: "none",

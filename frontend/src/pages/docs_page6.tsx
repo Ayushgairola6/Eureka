@@ -12,7 +12,7 @@ const UploadDocuments = () => {
           </h1>
           <div className="w-full bg-gray-900 text-white dark:bg-white/10 dark:text-sky-300 p-3 rounded-lg overflow-x-auto">
             <pre className="font-mono text-xs sm:text-sm">
-              {`const response = await Eureka.uploadDocument(file, category, subCategory, visibility, title, name);`}
+              {`const response = await AntiNode.uploadDocument(file, category, subCategory, visibility, title, name);`}
             </pre>
           </div>
           <p className="bai-jamjuree-regular text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed">

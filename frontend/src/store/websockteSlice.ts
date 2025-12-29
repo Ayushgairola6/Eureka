@@ -58,6 +58,7 @@ interface chatStates {
   favicon: Favicon[];
   fetchingMoreChats: boolean;
   currentStatus: string;
+  web_search_status: any[];
 }
 const initialState: chatStates = {
   isConnected: false,
@@ -72,12 +73,13 @@ const initialState: chatStates = {
   favicon: [],
   currentStatus: "Analyzing",
   fetchingMoreChats: false,
+  web_search_status: [],
 };
 export const GetChatRoomHistory = createAsyncThunk(
   "room/history",
   async (room_id: string, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.get(
         `${BaseApiUrl}/api/user/chatrooms/${room_id}`,
         {
@@ -97,13 +99,13 @@ export const GetChatRoomHistory = createAsyncThunk(
   }
 );
 export const AskAI = createAsyncThunk<any, any>(
-  "Ai/AskEureka",
+  "Ai/AntiNode",
   async (
     { question, document_id, room_id, user_id, MessageId },
     { rejectWithValue }
   ) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/chat-room/ask-doc`,
         { question, document_id, room_id, user_id, MessageId },
@@ -127,10 +129,10 @@ export const AskAI = createAsyncThunk<any, any>(
 //web search for chatrooms
 
 export const SearchWeb = createAsyncThunk<any, any>(
-  "Search/AskEureka-web",
+  "Search/AntiNodeweb",
   async ({ room_id, MessageId, query }, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/user/chat-room/ask-web`,
         { room_id, MessageId, query },
@@ -160,7 +162,7 @@ export const FetchMoreChatsInTheRoom = createAsyncThunk<any, object>(
   "get/more-chats",
   async (data, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/room/history/chats`,
         data,
@@ -256,6 +258,11 @@ const socketSlice = createSlice({
     SetChatRoomFile: (state, action) => {
       state.chatRoomFile = action.payload;
     },
+    setWebStatus: (state, action) => {
+      if (action.payload && action.payload?.message) {
+        state.web_search_status.push(action.payload);
+      }
+    },
   },
 
   //extrareducers
@@ -312,5 +319,6 @@ export const {
   AddNewMessage,
   setFavicon,
   setCurrentStatus,
+  setWebStatus,
 } = socketSlice.actions;
 export default socketSlice.reducer;

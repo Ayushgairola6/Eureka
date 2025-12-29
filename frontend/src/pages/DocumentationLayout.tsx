@@ -18,31 +18,31 @@ const DocumentationLayout: React.FC<DocLayoutProps> = ({ children }) => {
           Introduction
         </Link>
         <Link
-          to="/Api/AskEureka/Know-How"
+          to="/Api/AntiNode/Know-How"
           className="transition-colors hover:bg-white hover:text-black duration-300 rounded px-3 py-2 "
         >
-          How Eureka works
+          How AntiNode works
         </Link>
         <Link
-          to="/Api/AskEureka/Managaging-PrivateDocs"
+          to="/Api/AntiNodeManagaging-PrivateDocs"
           className="transition-colors hover:bg-white hover:text-black duration-300 rounded px-3 py-2 "
         >
           Private documents
         </Link>
         <Link
-          to="/Api/AskEureka/GettingAllDocuments"
+          to="/Api/AntiNodeGettingAllDocuments"
           className="transition-colors hover:bg-white hover:text-black duration-300 rounded px-3 py-2 "
         >
           Get Document
         </Link>
         <Link
-          to="/Api/AskEureka/QueryIng-Documents"
+          to="/Api/AntiNodeQueryIng-Documents"
           className="transition-colors hover:bg-white hover:text-black duration-300 rounded px-3 py-2 "
         >
           Query Documents
         </Link>
         <Link
-          to="/Api/AskEureka/Uploading_Documents"
+          to="/Api/AntiNodeUploading_Documents"
           className="transition-colors hover:bg-white hover:text-black duration-300 rounded px-3 py-2 "
         >
           Using the API

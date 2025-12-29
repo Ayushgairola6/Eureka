@@ -51,10 +51,10 @@ const InstallPWA: React.FC<Props> = ({ isNew, setIsNew }) => {
           {/* Content Section */}
           <div className="flex-1">
             <h1 className="bai-jamjuree-semibold text-lg text-gray-900 dark:text-white mb-1">
-              Welcome to AskEureka
+              Welcome to AntiNode
             </h1>
             <p className="space-grotesk text-sm text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
-              Install AskEureka for a native app experience anytime, anywhere
+              Install AntiNode for a native app experience anytime, anywhere
             </p>
 
             {/* Action Buttons */}
@@ -63,7 +63,7 @@ const InstallPWA: React.FC<Props> = ({ isNew, setIsNew }) => {
                 onClick={() => {
                   setIsNew("False");
                   localStorage.setItem(
-                    "Eureka-Installation-key",
+                    "AntiNode-Installation-key",
                     JSON.stringify(isNew)
                   );
                   handleInstall();
@@ -76,7 +76,7 @@ const InstallPWA: React.FC<Props> = ({ isNew, setIsNew }) => {
                 onClick={() => {
                   setIsNew("False");
                   localStorage.setItem(
-                    "Eureka-Installation-key",
+                    "AntiNode-Installation-key",
                     JSON.stringify(isNew)
                   );
                 }}
@@ -92,7 +92,7 @@ const InstallPWA: React.FC<Props> = ({ isNew, setIsNew }) => {
             onClick={() => {
               setIsNew("False");
               localStorage.setItem(
-                "Eureka-Installation-key",
+                "AntiNode-Installation-key",
                 JSON.stringify(isNew)
               );
             }}

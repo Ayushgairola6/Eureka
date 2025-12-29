@@ -22,7 +22,7 @@ function Interface() {
   useEffect(() => {
     const SessionId = searchParams.get("SessionId");
     if (SessionId) {
-      localStorage.setItem("Eureka_six_eta_v1_Authtoken", SessionId);
+      localStorage.setItem("AntiNode_six_eta_v1_Authtoken", SessionId);
     }
   }, []);
   const dispatch = useAppDispatch();

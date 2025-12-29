@@ -39,7 +39,7 @@ const Feedback = () => {
       // console.log(InputRef?.current?.value, helpRef.current?.value)
       return;
     }
-    const token = localStorage.getItem("Eureka_six_eta_v1_Auth_token");
+    const token = localStorage.getItem("AntiNode_six_eta_v1_Auth_token");
 
     try {
       const response = await axios.post(
@@ -85,7 +85,7 @@ const Feedback = () => {
               Spare us some time.
             </h1>
             <ul className="bai-jamjuree-regular w-full text-xs text-gray-700 dark:text-gray-300 space-grotesk text-center">
-              You can help us make Eureka better !
+              You can help us make AntiNode better !
             </ul>
           </section>
 
@@ -108,7 +108,7 @@ const Feedback = () => {
               className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2"
               htmlFor="email"
             >
-              <FaResearchgate /> What do you use Eureka for?
+              <FaResearchgate /> What do you use AntiNode for?
             </label>
             <input
               ref={helpRef}
@@ -151,7 +151,7 @@ const Feedback = () => {
               className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2"
               htmlFor="feedback"
             >
-              <FiStar /> Rate the performance of Eureka AI
+              <FiStar /> Rate the performance of AntiNode AI
             </label>
             <button
               onClick={() => setIsActive(!isActive)}
@@ -230,7 +230,7 @@ const Feedback = () => {
             Need help?{" "}
             <a
               className="text-transparent bg-clip-text font-semibold bg-gradient-to-r from-blue-600 to-cyan-600"
-              href="mailto:askeureka25@gmail.com"
+              href="mailto:AntiNode5@gmail.com"
             >
               Contact Support
             </a>

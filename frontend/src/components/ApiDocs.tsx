@@ -39,9 +39,9 @@ const ApiDocs = () => {
         <div className="dark:bg-white/10 bg-black/10 border  rounded-lg p-4 overflow-x-auto">
           <pre className="text-gray-900 dark:text-gray-300   text-sm font-mono">
             <code>
-              {pack === "npm" && "npm install eurekaV1"}
-              {pack === "yarn" && "yarn add eurekaV1"}
-              {pack === "bun" && "bun add eurekaV1"}
+              {pack === "npm" && "npm install AntiNodeV1"}
+              {pack === "yarn" && "yarn add AntiNodeV1"}
+              {pack === "bun" && "bun add AntiNodeV1"}
             </code>
           </pre>
         </div>
@@ -50,10 +50,10 @@ const ApiDocs = () => {
       {/* SDK Introduction */}
       <div className="p-5 bg-gray-100 text-sm dark:bg-white/10  rounded-xl border mb-6 ">
         <h3 className="text-lg font-semibold text-black dark:text-gray-300  gap-2 mb-3 space-grotesk">
-          About Eureka SDK
+          About AntiNode SDK
         </h3>
         <p className="text-gray-900 dark:text-white space-grotesk leading-relaxed ">
-          AskEureka ==={" "}
+          AntiNode==={" "}
           <span className=" text-blue-600">Community-powered {"> "}</span>
           <span className=" text-green-600">Collaborative {"> "}</span>
           <span className=" text-indigo-600">Knowledge Oriented {"> "}</span>
@@ -79,10 +79,10 @@ const ApiDocs = () => {
           Home
         </Link>
         <Link
-          to="/Api/AskEureka/Know-How"
+          to="/Api/AntiNodeKnow-How"
           className=" text-green-400 text-sm   inline-flex items-center gap-2"
         >
-          How Eureka Works
+          How AntiNode Works
           <FiArrowRight className="w-4 h-4" />
         </Link>
       </div>

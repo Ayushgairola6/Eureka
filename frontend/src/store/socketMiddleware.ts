@@ -9,6 +9,7 @@ import {
   whoIsTyping,
   SetChatRoomFile,
   setCurrentStatus,
+  setWebStatus,
 } from "./websockteSlice.ts";
 import {
   NewUserNotification,
@@ -37,12 +38,16 @@ const setupSocketListeners = (dispatch: any) => {
     }
   });
 
+  //the web search event
+  socket.on("query_status", (data) => {
+    dispatch(setWebStatus(data));
+  });
   socket.on("room-info", (data) => {
     dispatch(Setroom_info(data));
   });
 
   socket.on("reauthenticate", (data) => {
-    localStorage.setItem("Eureka_six_eta_v1_Authtoken", data.newAccessToken);
+    localStorage.setItem("AntiNode_six_eta_v1_Authtoken", data.newAccessToken);
     dispatch(SetCookies(data.newAccessToken));
   });
   socket.on("recieved_message", (data) => {
@@ -102,7 +107,7 @@ export const socketMiddleware =
           socket.disconnect();
           listenerInitialized = false;
         }
-        const AuthToken = localStorage.getItem("Eureka_six_eta_v1_Authtoken");
+        const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
         socket = io(ServerUrl, {
           reconnection: true,

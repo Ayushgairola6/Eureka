@@ -17,15 +17,15 @@ export const SearchQueryResults = async (query, user) => {
       return { error: "Invalid query type" };
     }
 
-    const Paid = user.PaymentStatus === true ? true : false;
+    const Paid = user.PaymentStatus;
     const response = await tvly.search(query, {
-      searchDepth: Paid ? "advanced" : "basic",
-      maxTokens: Paid ? 20 : 5,
-      includeAnswer: Paid ? "advanced" : "basic",
+      searchDepth: !Paid ? "advanced" : "basic",
+      maxTokens: !Paid ? 20 : 5,
+      includeAnswer: !Paid ? "advanced" : "basic",
       includeFavicon: true,
-      chunksPerSource: Paid ? 8 : 3,
-      maxResults: Paid ? 14 : 5,
-      include_images: Paid ? true : false,
+      chunksPerSource: !Paid ? 5 : 1,
+      maxResults: !Paid ? 14 : 5,
+      include_images: !Paid ? true : false,
     });
     if (!response) {
       return { error: "Unable to find results online" };
@@ -41,6 +41,85 @@ export const SearchQueryResults = async (query, user) => {
     return { response: response, favicon: favicons };
   } catch (error) {
     return { error };
+  }
+};
+export const SearchQueriesResults = async (queries, user) => {
+  try {
+    if (!Array.isArray(queries) || queries.length === 0) {
+      return { error: "Invalid queries array" };
+    }
+
+    const isPaid = !!(user && user.PaymentStatus);
+
+    const searchOptions = {
+      searchDepth: isPaid ? "basic" : "advanced",
+      maxTokens: isPaid ? 5 : 20,
+      includeAnswer: isPaid ? "basic" : "advanced",
+      includeFavicon: true,
+      chunksPerSource: isPaid ? 1 : 5,
+      maxResults: isPaid ? 5 : 14,
+      include_images: isPaid ? false : true,
+    };
+
+    const promises = queries.map((q) =>
+      tvly.search(String(q), searchOptions).catch((err) => ({ error: err }))
+    );
+
+    const settled = await Promise.all(promises);
+
+    const favicons = [];
+    const sections = [];
+
+    settled.forEach((result, idx) => {
+      const queryText = String(queries[idx] || "");
+      if (!result || result.error) {
+        sections.push(`--- Query: ${queryText} ---\nERROR: Unable to fetch results.\n`);
+        return;
+      }
+
+      // collect favicons
+      if (Array.isArray(result.results)) {
+        result.results.forEach((r) => {
+          if (r && r.favicon && !favicons.includes(r.favicon)) {
+            favicons.push(r.favicon);
+          }
+        });
+      }
+
+      let part = `--- Query: ${queryText} ---\n`;
+      if (result.answer) {
+        part += `Summary: ${result.answer}\n`;
+      }
+
+      if (Array.isArray(result.images) && result.images.length > 0) {
+        part += `Images:\n`;
+        result.images.forEach((img) => {
+          const url = typeof img === "string" ? img : img?.url;
+          if (url) part += `- ${url}\n`;
+        });
+      }
+
+      if (Array.isArray(result.results) && result.results.length > 0) {
+        part += `Sources:\n`;
+        result.results.forEach((r, i) => {
+          if (!r) return;
+          const title = r.title || "No Title";
+          const url = r.url || "No URL";
+          const snippet = r.content ? String(r.content).slice(0, 300) : "";
+          part += `${i + 1}. ${title}\n   Link: ${url}\n   Excerpt: ${snippet}\n`;
+        });
+      } else {
+        part += `No detailed sources found.\n`;
+      }
+
+      sections.push(part);
+    });
+
+    const combined = sections.join("\n");
+
+    return { response: combined || "NO_WEB_RESULTS: No relevant search results found.", favicons };
+  } catch (err) {
+    return { error: err };
   }
 };
 

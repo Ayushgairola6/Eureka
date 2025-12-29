@@ -32,7 +32,7 @@ const Pricing = () => {
       not_available: [
         "Neuro-Symbolic Audit Engine",
         "Synthesis Mode (Team Research)",
-        "Collaborative Eureka Rooms",
+        "Collaborative AntiNode Rooms",
         "Persistent Long-Term Memory",
         "Unlimited Private RAG",
       ],

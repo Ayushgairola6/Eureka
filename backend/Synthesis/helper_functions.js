@@ -202,7 +202,7 @@ export async function FetchPastMessagesFromDbAndCacheThem(user) {
   const limit = user.PaymentStatus === false ? 5 : 10;
   const { data, error } = await supabase
     .from("Conversation_History")
-    .select("created_at,question,AI_Response")
+    .select("created_at,question,AI_response")
     .eq("user_id", user.user_id)
     .limit(limit)
     .order("created_at", { ascending: false });

@@ -5,8 +5,8 @@ import {
   JoinARoom,
   GetDocumentChatHistory,
   GetMisallaneousChatHistory,
-  QueryDocWithEurekaInChatRoom,
-  QueryWebInEurekaChatRoom,
+  QueryDocWithAntiNodeInChatRoom,
+  QueryWebInAntiNodeChatRoom,
   GetSyntheSizedResults,
   FetchMoreMessages,
 } from "../controllers/ChatRoomController.js";
@@ -22,8 +22,8 @@ ChatsRouter.post("/user/request/create-room", VerifyToken, CreateChatRooms)
     VerifyToken,
     GetDocumentChatHistory
   )
-  .post("/chat-room/ask-doc", VerifyToken, QueryDocWithEurekaInChatRoom)
-  .post("/user/chat-room/ask-web/", VerifyToken, QueryWebInEurekaChatRoom)
+  .post("/chat-room/ask-doc", VerifyToken, QueryDocWithAntiNodeInChatRoom)
+  .post("/user/chat-room/ask-web/", VerifyToken, QueryWebInAntiNodeChatRoom)
   .get(
     "/user/doc/misallaneous-history",
     VerifyToken,

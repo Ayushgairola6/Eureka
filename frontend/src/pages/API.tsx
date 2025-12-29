@@ -25,7 +25,7 @@ const API = () => {
         return;
       }
       setGenerating(true);
-      const AuthToken = localStorage.getItem("Eureka_six_eta_v1_AuthToken");
+      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_AuthToken");
       const response = await axios.get(`${BaseApiUrl}/api/get/api-key`, {
         withCredentials: true,
         headers: {
@@ -55,7 +55,7 @@ const API = () => {
           {/* Header Section */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl lg:text-4xl  text-black dark:text-white bai-jamjuree-bold">
-              Eureka API Documentation
+              AntiNode API Documentation
             </h1>
             <p className="bai-jamjuree-regular text-sm text-gray-500 dark:text-gray-300 max-w-2xl">
               The complete guide to integrating with our knowledge discovery
@@ -136,7 +136,7 @@ const API = () => {
             open source so you can look at our{" "}
             <a
               className="text-green-500"
-              href="https://github.com/Ayushgairola6/AskEurekaSdk"
+              href="https://github.com/Ayushgairola6/AntiNodek"
             >
               github
             </a>{" "}

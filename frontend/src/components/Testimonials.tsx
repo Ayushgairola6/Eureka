@@ -11,7 +11,7 @@ const testimonialCards = [
     id: 1,
     title: "The Ultimate Legal Vault",
     description:
-      "I upload 500-page case files to my private vault. Eureka doesn't just search; it maps the logic across the entire document. It's the only tool I trust with sensitive precedents.",
+      "I upload 500-page case files to my private vault. AntiNode doesn't just search; it maps the logic across the entire document. It's the only tool I trust with sensitive precedents.",
     icon: <MdPrivateConnectivity />, // Focus on Privacy/RAG
     gradientFrom: "from-cyan-500",
     gradientTo: "to-blue-600",
@@ -23,7 +23,7 @@ const testimonialCards = [
     id: 2,
     title: "Hallucination-Free Research",
     description:
-      "Standard AI used to 'invent' facts for my thesis. With Eureka's community-verified knowledge base, I get sources I can actually cite in my academic papers.",
+      "Standard AI used to 'invent' facts for my thesis. With AntiNode's community-verified knowledge base, I get sources I can actually cite in my academic papers.",
     icon: <HiOutlineCheckCircle />, // Focus on Verification
     gradientFrom: "from-emerald-500",
     gradientTo: "to-teal-600",
@@ -71,7 +71,7 @@ const TestiMonials = () => {
             Hear From Our Users
           </h1>
           <p className="space-grotesk text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-xs md:text-sm">
-            Discover how Eureka is transforming research and knowledge sharing
+            Discover how AntiNode is transforming research and knowledge sharing
             across industries.
           </p>
         </div>

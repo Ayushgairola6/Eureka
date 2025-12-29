@@ -15,7 +15,7 @@ let io;
 export const initializeSocketIo = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin: ["http://localhost:5173", "https://eureka-six-eta.vercel.app"], // Your frontend URL
+      origin: ["http://localhost:5173", "https://AntiNode-six-eta.vercel.app"], // Your frontend URL
       credentials: true,
       allowedHeaders: [
         "Content-Type",
@@ -35,7 +35,8 @@ export const initializeSocketIo = (httpServer) => {
         ? cookie.parse(socket.handshake.headers.cookie)
         : {};
 
-      const AuthTokenFromCookies = cookies["Eureka_eta_six_version1_AuthToken"];
+      const AuthTokenFromCookies =
+        cookies["AntiNode_eta_six_version1_AuthToken"];
       const AuthTokenFromHandshake = socket.handshake.auth.token;
       const AccessToken = AuthTokenFromCookies || AuthTokenFromHandshake;
 
@@ -429,7 +430,7 @@ const StoreMessage = async (sent_by, message, room_id, message_id, sent_at) => {
     // the one who sent the message
     let final_sent_by = sent_by;
 
-    if (sent_by === "EUREKA" || sent_by === "SYSTEM") {
+    if (sent_by === "AntiNode" || sent_by === "SYSTEM") {
       final_sent_by = null;
     }
 

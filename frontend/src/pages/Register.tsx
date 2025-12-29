@@ -133,25 +133,25 @@ const Register = () => {
       <div className="h-screen flex items-center justify-center relative z-[2] dark:bg-black dark:text-white overflow-hidden">
         {/* gradient accent background */}
 
-        <div className="absolute flex h-full w-full top-0 left-0 blur-2xl  z-[-1] ">
-          <div
-            className="w-[90%] h-[80%] md:w-[50%] m-auto rounded-t-xl    rounded-br-md rounded-bl-sm  opacity-100 Indicator"
-            style={{
-              background: `
+        <motion.div
+          animate={{ rotate: [10, 30, 20, 40, 60, 50, 70, 90, 80] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          className="w-full h-full absolute top-2 left-20 opacity-30 md:w-[50%] blur-[160px] "
+          style={{
+            background: `
                   radial-gradient(circle at 30% 30%, purple 0%, transparent 50%),
                   radial-gradient(circle at 70% 20%, yellow 10%, transparent 50%),
                   radial-gradient(circle at 50% 70%, #F59E0B 15%, transparent 50%),
                   radial-gradient(circle at 80% 60%, #EC4899 20%, transparent 50%),
                   radial-gradient(circle at 20% 50%, #10B981 25%, transparent 50%)
                 `,
-              backgroundBlendMode: "screen",
-            }}
-          />
-        </div>
+            backgroundBlendMode: "screen",
+          }}
+        />
 
-        <div className="bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-sm shadow-black border dark:border-gray-400 cursor-grab relative">
+        <div className="bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-2xl border dark:border-white/10 border-black/10 cursor-grab relative">
           <h1 className="text-center space-grotesk font-bold  text-2xl">
-            Join Eureka{" "}
+            Join AntiNode{" "}
           </h1>
           <span className="text-xs text-gray-700 dark:text-gray-400 space-grotesk text-center">
             Start contributing today and become a part of our community .
@@ -189,7 +189,7 @@ const Register = () => {
                 }
               }}
               ref={Username}
-              className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk"
+              className=" px-2 py-1 rounded-lg space-grotesk border-none outline-none focus:ring-0 "
               type="text"
               placeholder="John_Doe"
             />
@@ -204,7 +204,7 @@ const Register = () => {
             </label>
             <input
               ref={Email}
-              className="border border-gray-300 px-2 py-1 rounded-lg space-grotesk"
+              className="border-none outline-none focus:ring-0 px-2 py-1 rounded-lg space-grotesk"
               type="email"
               placeholder="JohnDoe12@yahoo.com"
             />
@@ -226,7 +226,7 @@ const Register = () => {
                 ref={Password}
                 spellCheck
                 onChange={(e) => ReflectPasswordStrength(e)}
-                className="w-full border border-gray-300 px-2 py-1 rounded-lg space-grotesk"
+                className="w-full border-none outline-none focus:ring-0  px-2 py-1 rounded-lg space-grotesk"
                 type={type}
                 placeholder="A strong password"
               />

@@ -50,7 +50,7 @@
                 </div>
                 <section className="text-center flex items-center justify-center flex-col gap-2">
                     <h1 className="space-grotesk text-4xl md:text-5xl lg:text-7xl font-bold text-center text-gray-800 md:text-black">The Open source , <span className="cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-black/90 to-purple-700/90">Community</span> driven , Custom knowledge based agent</h1>
-                    <h2 className="bai-jamjuree-light text-xs md:text-lg text-center text-gray-500 ">With the help of <Link to="/Interface" className='text-transparent bg-clip-text bg-gradient-to-r from-black/90 to-purple-700/90 font-bold '>EUREKA</Link> anyone can obtain information about any topic based on the data uploaded and verified by community members , making information access and sharing much easier and faster .</h2>
+                    <h2 className="bai-jamjuree-light text-xs md:text-lg text-center text-gray-500 ">With the help of <Link to="/Interface" className='text-transparent bg-clip-text bg-gradient-to-r from-black/90 to-purple-700/90 font-bold '>AntiNode</Link> anyone can obtain information about any topic based on the data uploaded and verified by community members , making information access and sharing much easier and faster .</h2>
                     {/* cta button */}
                     <motion.ul whileHover={{ scale: 1.05, transform: "translateX(50px)" }} transition={{ duration: 0.6 }} whileTap={{ scale: 1.09 }}>
                         <Link

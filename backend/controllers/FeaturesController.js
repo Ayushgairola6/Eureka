@@ -117,8 +117,8 @@ function FormatSessionHistory(ChatsArray) {
       sent_at: formattedDate || obj.created_at,
     };
     const ModelObject = {
-      id: `${obj.id}-eureka`,
-      sent_by: "Eureka",
+      id: `${obj.id}-AntiNode`,
+      sent_by: "AntiNode",
       message: { isComplete: true, content: obj.AI_response },
       sent_at: formattedDate || obj.created_at,
     };

@@ -7,15 +7,16 @@ import { toast } from "sonner";
 import { IoHourglass } from "react-icons/io5";
 import DocUsed from "@/components/DocumentsUsed.tsx";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import WebSearchStatus from "./web_search_status.tsx";
+// import {
+//   Bar,
+//   BarChart,
+//   CartesianGrid,
+//   ResponsiveContainer,
+//   Tooltip,
+//   XAxis,
+//   YAxis,
+// } from "recharts";
 
 type ChatBubbleProps = {
   chatcontainer: React.Ref<HTMLDivElement>;
@@ -29,7 +30,9 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
 }) => {
   const ReceivedResponseId: any = []; //just a tracker array
   const { Chats } = useAppSelector((state) => state.interface);
-  const { currentStatus } = useAppSelector((state) => state.socket);
+  const { currentStatus, web_search_status } = useAppSelector(
+    (state) => state.socket
+  );
   const [docused, setShowDocUsed] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
   // array of welcom messages
@@ -58,6 +61,14 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
     return () => clearInterval(interval); //clear the interval on unmount
   }, []);
 
+  // const colorOption = [
+  //   "bg-cyan-600",
+  //   "bg-blue-600",
+  //   "bg-lime-600",
+  //   "bg-green-600",
+  //   "bg-purple-600",
+  //   "bg-pink-600",
+  // ];
   return (
     <>
       {Chats.length > 0 ? (
@@ -81,31 +92,39 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 {/* the favicon portion */}
 
                 {/* the documents used section for public documents */}
-                {chat.sent_by === "Eureka" && (
+                {chat.sent_by === "AntiNode" && (
                   <DocUsed
                     chat={chat}
                     docused={docused}
                     setShowDocUsed={setShowDocUsed}
                   />
                 )}
+                {/* {chat.sent_by === "AntiNode" &&
+                  chat.id === Chats[Chats.length - 1].id && */}
+                {/* chat.message.isComplete === false && ( */}
+                {/* )} */}
                 {/* Chat Bubble */}
-                {chat.sent_by === "Eureka" &&
+                {chat.sent_by === "AntiNode" &&
                 chat.message.content === "" &&
                 chat.id === Chats[Chats.length - 1].id ? (
-                  <ul className="space-grotesk text-lg  my-2 flex items-center justify-start gap-2  w-fit   relative overflow-hidden border rounded-xl border-gray-700 p-[1px]">
-                    <div className=" absolute top-0 left-0   h-full w-full  bg-gradient-to-br from-red-600 via-sky-600 to-yellow-600 z-[-2] ThinkingIndicator " />
+                  web_search_status?.length > 0 ? (
+                    <WebSearchStatus chat={chat} lastMessageId={chat.id} />
+                  ) : (
+                    <ul className="space-grotesk text-lg  my-2 flex items-center justify-start gap-2  w-fit   relative overflow-hidden border rounded-xl border-gray-700 p-[1px]">
+                      <div className=" absolute top-0 left-0   h-full w-full  bg-gradient-to-br from-red-600 via-sky-600 to-yellow-600 z-[-2] ThinkingIndicator " />
 
-                    <p className="flex items-center bg-white dark:bg-black h-[90%] w-full rounded-xl justify-center gap-2 px-2 text-sm">
-                      <IoHourglass className="animate-spin" />
-                      {currentStatus}
-                    </p>
-                  </ul>
+                      <p className="flex items-center bg-white dark:bg-black h-[90%] w-full rounded-xl justify-center gap-2 px-2 py-2 space-grotesk text-sm">
+                        <IoHourglass className="animate-spin" />
+                        {currentStatus}
+                      </p>
+                    </ul>
+                  )
                 ) : (
                   <div
-                    className={`px-3 py-2 rounded-2xl transition-all duration-200 ease-in-out shadow-sm text-sm md:text-md text-wrap space-grotesk ${
+                    className={`px-3 py-2 rounded-2xl transition-all duration-200 ease-in-out shadow-sm text-md text-wrap space-grotesk ${
                       chat.sent_by === "You"
                         ? "max-w-[80%] justify-self-end rounded-br-none " +
-                          "bg-black text-white dark:bg-white dark:text-black " + // Slack-ish primary blue
+                          "bg-emerald-600 text-white " + // Slack-ish primary blue
                           "font-medium self-end items-center justify-center"
                         : " w-full justify-self-start rounded-bl-none " +
                           "bg-gray-100 dark:bg-black border border-gray-200 dark:border-white/10 " + // Slack dark-mode gray
@@ -134,8 +153,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                       <span
                         className={`text-xs  block mt-1 ${
                           chat.sent_by === "You"
-                            ? "justify-self-end dark:text-white text-gray-400"
-                            : "justify-self-start text-gray-700 dark:text-gray-300"
+                            ? "justify-self-end dark:text-gray-700 text-gray-300"
+                            : "justify-self-start text-gray-700 dark:text-gray-400"
                         }`}
                       >
                         {chat.sent_at}
@@ -146,8 +165,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
 
                 {/* Feedback for AI responses - positioned below the bubble */}
 
-                {/* if the message is last and is not stored in the responsefeedback array and is sent by EUREKA */}
-                {chat.sent_by === "Eureka" &&
+                {/* if the message is last and is not stored in the responsefeedback array and is sent by AntiNode */}
+                {chat.sent_by === "AntiNode" &&
                   !ReceivedResponseId.some(
                     (elem: any) => elem?.chat_id === chat.id
                   ) && (
@@ -210,7 +229,10 @@ const ChatMessage = ({ chat, lastMessageId }: any) => {
   // Conditions:
   //   a. It was NOT sent by the user ('You').
   //   b. It is the LAST message in the entire chat history.
-  const isStreaming = chat?.sent_by !== "You" && chat.id === lastMessageId;
+  const isStreaming =
+    chat?.sent_by !== "You" &&
+    chat.id === lastMessageId &&
+    chat.message.isComplete === false;
 
   // 2. Call the hook UNCONDITIONALLY (Hooks rule!)
   // Hooks must be called in the same order on every render.
@@ -224,105 +246,9 @@ const ChatMessage = ({ chat, lastMessageId }: any) => {
 
   return (
     // <div className={`message-bubble ${chat.sent_by}`}>
-    <Streamdown
-      // isAnimating={isStreaming} // Critical for smooth streaming in Streamdown
-      components={{
-        code(props: any) {
-          const { node, inline, className, children, ...rest } = props;
-          const match = /language-chart/.exec(className || "");
-          const content = String(children).replace(/\n$/, "");
-
-          if (!inline && match) {
-            return <DynamicChart content={content} />;
-          }
-
-          // Fallback to default code rendering for JS, Python, etc.
-          return (
-            <code className={className} {...rest}>
-              {children}
-            </code>
-          );
-        },
-      }}
-      className="space-grotesk"
-    >
-      {textToRender}
-      {/* Optional: Add a cursor/placeholder when streaming */}
-    </Streamdown>
+    <Streamdown className="space-grotesk">{textToRender}</Streamdown>
     // </div>
   );
 };
 
 //charts renderer
-const DynamicChart = ({ content }: any) => {
-  try {
-    const chartData = JSON.parse(content);
-
-    // FIX: Transform generic "label/value" data to match your dynamic xAxis/yAxis keys
-    const formattedData = chartData.data.map((item: any) => ({
-      ...item, // Keep original properties
-      [chartData.xAxis]: item.label, // e.g., Maps "label" -> "Feature"
-      [chartData.yAxis]: item.value, // e.g., Maps "value" -> "Persistence Level"
-    }));
-
-    return (
-      <div className="h-72 w-full my-6 p-4 rounded-xl border border-white/10 bg-black/20 backdrop-blur-md shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400 mb-4 ml-2">
-          {chartData.title || "Data Synthesis"}
-        </p>
-
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={formattedData}
-            margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#334155"
-              vertical={false}
-              opacity={0.5}
-            />
-            <XAxis
-              dataKey={chartData.xAxis} // Now finds "Feature" in formattedData
-              stroke="#94a3b8"
-              fontSize={11}
-              tickLine={false}
-              axisLine={false}
-              dy={10} // Add some spacing for the labels
-            />
-            <YAxis
-              stroke="#94a3b8"
-              fontSize={11}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              cursor={{ fill: "rgba(255,255,255,0.05)" }}
-              contentStyle={{
-                backgroundColor: "#0f172a",
-                borderColor: "#334155",
-                borderRadius: "8px",
-                color: "#f1f5f9",
-                fontSize: "12px",
-              }}
-              itemStyle={{ color: "#22d3ee" }}
-            />
-            <Bar
-              dataKey={chartData.yAxis} // Now finds "Persistence Level"
-              fill="#22d3ee"
-              radius={[4, 4, 0, 0]}
-              animationDuration={1500}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  } catch (e) {
-    // Gracefully handle partial/invalid JSON during streaming
-    return (
-      <div className="h-64 w-full my-6 rounded-xl bg-white/5 animate-pulse flex items-center justify-center">
-        <span className="text-white/20 text-sm">Visualizing data...</span>
-      </div>
-    );
-  }
-};

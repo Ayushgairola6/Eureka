@@ -276,7 +276,7 @@ const ChatRoom = () => {
             sent_by: null,
             message: res.answer,
             room_id: currentRoom?.room_id,
-            users: { username: "EUREKA" },
+            users: { username: "AntiNode" },
           })
         );
 
@@ -293,7 +293,7 @@ const ChatRoom = () => {
             sent_by: null,
             message: _error,
             room_id: currentRoom?.room_id,
-            users: { username: "EUREKA" },
+            users: { username: "AntiNode" },
           })
         );
 
@@ -348,7 +348,7 @@ const ChatRoom = () => {
             sent_by: null,
             message: res.answer,
             room_id: currentRoom?.room_id,
-            users: { username: "EUREKA" },
+            users: { username: "AntiNode" },
           })
         );
         dispatch(setFavicon(res.favicon));
@@ -367,7 +367,7 @@ const ChatRoom = () => {
             sent_by: null,
             message: _error,
             room_id: currentRoom?.room_id,
-            users: { username: "EUREKA" },
+            users: { username: "AntiNode" },
           })
         );
       })
@@ -737,7 +737,7 @@ const ChatRoom = () => {
                       message.sent_by === User?.id
                         ? "justify-end" // User's messages on right
                         : message.sent_by === null
-                        ? "justify-center " // Eureka messages centered
+                        ? "justify-center " // AntiNode messages centered
                         : "justify-start" // Other users on left
                     }`}
                   >
@@ -764,8 +764,8 @@ const ChatRoom = () => {
                         >
                           {message.sent_by === User?.id
                             ? "You"
-                            : message.users?.username || "• Eureka"}
-                          {/* {message.sent_by === null && " • Eureka"} */}
+                            : message.users?.username || "• AntiNode"}
+                          {/* {message.sent_by === null && " • AntiNode"} */}
                         </p>
                         <p className="text-xs text-gray-700 dark:text-gray-400">
                           {message?.sent_at &&

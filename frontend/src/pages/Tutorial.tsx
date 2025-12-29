@@ -35,7 +35,7 @@ const Tutorial = () => {
           {/* Thumbnail image */}
           <img
             src="user2.jpg"
-            alt="Eureka Tutorial Video"
+            alt="AntiNode Tutorial Video"
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             loading="lazy"
           />
@@ -56,7 +56,7 @@ const Tutorial = () => {
 
             {/* Enhanced title with gradient */}
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bai-jamjuree-bold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 dark:from-blue-400 dark:via-purple-400 dark:to-emerald-400 bg-clip-text text-transparent mb-2">
-              Eureka Tutorial
+              AntiNode Tutorial
             </h1>
 
             {/* Enhanced subtitle */}
@@ -67,7 +67,7 @@ const Tutorial = () => {
 
           {/* Enhanced description */}
           <p className="text-gray-600 dark:text-gray-300 space-grotesk text-sm md:text-base mb-8 leading-relaxed bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-2xl p-4 border border-white/50 dark:border-gray-700/50">
-            Watch our 5-minute tutorial to master Eureka's powerful features.
+            Watch our 5-minute tutorial to master AntiNode's powerful features.
             Learn how to upload documents, query knowledge, and contribute to
             the community.
           </p>

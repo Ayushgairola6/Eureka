@@ -17,7 +17,7 @@ export const verifyJwtAsync = (token, secret) =>
 export const VerifyToken = async (req, res, next) => {
   try {
     const AuthTokenFromCookies =
-      req.cookies["Eureka_eta_six_version1_AuthToken"];
+      req.cookies["AntiNode_eta_six_version1_AuthToken"];
     const AuthTokenFromHeaders = req.headers?.authorization?.split(" ")[1];
     const AccessToken = AuthTokenFromCookies || AuthTokenFromHeaders;
 
@@ -105,7 +105,7 @@ export const VerifyToken = async (req, res, next) => {
           .eq("Refresh_Token", refreshToken);
 
         // Set new access token as cookie
-        res.cookie("Eureka_eta_six_version1_AuthToken", newAccessToken, {
+        res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
           httpOnly: true,
           secure: true,
           sameSite: "none",
@@ -139,7 +139,8 @@ export const UpdateUserLoginState = (req, res) => {
 
 export async function authenticateStream(req, res) {
   const accessToken =
-    req.cookies["Eureka_eta_six_version1_AuthToken"] || req.query?.AccessToken;
+    req.cookies["AntiNode_eta_six_version1_AuthToken"] ||
+    req.query?.AccessToken;
 
   if (!accessToken) {
     throw { status: 401, message: "No session token found" };
@@ -208,7 +209,7 @@ export async function authenticateStream(req, res) {
       .eq("Refresh_Token", refreshToken);
 
     // Send back as cookie for browser
-    res.cookie("Eureka_eta_six_version1_AuthToken", newAccessToken, {
+    res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
       httpOnly: true,
       secure: true,
       sameSite: "none",
