@@ -52,7 +52,7 @@ const EmailVerificationForm = () => {
     <>
       <div className="h-screen flex items-center justify-center relative z-[2]  ">
         {/* gradient accent background */}
-        <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-purple-600/20 to-indigo-600/20 dark:from-black dark:to-black blur-2xl z-[-1]"></div>
+        {/* <div className="absolute h-full w-full top-0 left-0 bg-gradient-to-br from-purple-600/20 to-indigo-600/20 dark:from-black dark:to-black blur-2xl z-[-1]"></div> */}
 
         <motion.div
           drag
@@ -85,7 +85,7 @@ const EmailVerificationForm = () => {
 
           {/* server response as message */}
           {message && (
-            <div className="w-full space-grotesk p-1 dark:text-white text-black text-center text-md ">
+            <div className="w-full space-grotesk p-1 dark:text-white text-black text-center text-xs ">
               {message}
             </div>
           )}

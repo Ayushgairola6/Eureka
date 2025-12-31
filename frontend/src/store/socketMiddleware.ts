@@ -17,7 +17,7 @@ import {
   SetCookies,
 } from "./AuthSlice.ts";
 import { store } from "./reduxstore.ts";
-import { setUploadStatus } from "./InterfaceSlice.ts";
+import { ResponseLikeStatus, setUploadStatus } from "./InterfaceSlice.ts";
 const ServerUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 // import { data } from 'react-router';
@@ -42,6 +42,12 @@ const setupSocketListeners = (dispatch: any) => {
   socket.on("query_status", (data) => {
     dispatch(setWebStatus(data));
   });
+
+  //responseliked status
+  socket.on("feedback_recorded", (data) => {
+    if (data && data.id && data.status) dispatch(ResponseLikeStatus(data));
+  });
+  ///getting room_info
   socket.on("room-info", (data) => {
     dispatch(Setroom_info(data));
   });
@@ -140,32 +146,33 @@ export const socketMiddleware =
           socket.off("recieved_message");
           socket.off("Room_notification");
           socket.off("room-info");
-        } else {
-          console.warn("Socket is not connected, unable to leave the chatroom");
         }
         break;
+
       case "socket/ChooseFile":
         const { file, room_id, username } = action.payload;
         if (socket && socket.connected) {
           socket.emit("NewFileSelected", { file, room_id, username });
-        } else {
-          console.warn("Socket is not connected, unable to leave the chatroom");
         }
         break;
-      case "socket/isTyping":
-        const data = action.payload;
+      // case "socket/isTyping":
+      //   const data = action.payload;
+      //   if (socket && socket.connected) {
+      //     socket.emit("isTyping", data);
+      //   }
+      //   break;
+
+      case "interface/likeResponse":
+        const { data, vote_type, user_id, id } = action.payload;
         if (socket && socket.connected) {
-          socket.emit("isTyping", data);
-        } else {
-          console.warn("Socket is not connected, unable to leave the chatroom");
+          socket.emit("liked_response", data, vote_type, user_id, id);
         }
         break;
+
       case "socket/sendMessage":
         const payload = action.payload;
         if (socket && socket.connected) {
           socket.emit("new_message", payload);
-        } else {
-          console.warn("Socket is not connected, unable to send the message");
         }
         break;
 

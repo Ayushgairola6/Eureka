@@ -41,18 +41,16 @@ const UserDashboard = () => {
 
   useEffect(() => {
     const totalVotes =
-      Feedback?.upvotes ||
+      Feedback?.upvote ||
       0 + Feedback?.partial_upvotes ||
-      0 + Feedback?.downvotes ||
+      0 + Feedback?.downvote ||
       0;
     if (totalVotes === 0) {
       // Handle case with no votes, e.g., display 0 or 'N/A'
       setScore(0);
     } else {
       const weightedSum =
-        Feedback?.upvotes * 1 +
-        Feedback?.partial_upvotes * 0.5 -
-        Feedback?.downvotes * 1;
+        Feedback?.upvote + Feedback?.partial_upvotes * -Feedback?.downvote;
       setScore((weightedSum / totalVotes) * 100);
     }
   }, []);
@@ -60,12 +58,19 @@ const UserDashboard = () => {
   return (
     <>
       <div
-        className={`dark:bg-black dark:text-white bg-white text-black relative flex min-h-screen w-full overflow-hidden z-[1] realative`}
+        className={`dark:bg-black dark:text-white bg-white text-black relative flex min-h-screen w-full overflow-hidden z-[1] relative`}
       >
+        {/* <section
+          className={`${CurrentTheme.user} absolute top-0 left-0 h-full w-full `}
+        /> */}
         {/* Sidebar */}
         <div className="w-64 p-6 border-r  hidden md:block shadow-sm shadow-black dark:shadow-white/20">
           <div className="flex flex-col items-center justify-center mb-10 ">
-            <span className="rounded-full h-24 w-24 text-5xl flex flex-col items-center justify-center  border-yellow-600 bg-black text-white dark:bg-white dark:text-black mb-4 relative shadow-sm shadow-black dark:shadow-white/20 ">
+            <span
+              className={
+                "rounded-full h-24 w-24 text-5xl flex flex-col items-center justify-center  border-yellow-600 bg-black text-white dark:bg-white dark:text-black mb-4 relative shadow-sm shadow-black dark:shadow-white/20 "
+              }
+            >
               {user?.username ? (
                 user?.username.trim().split("_")[0].charAt(0).toUpperCase()
               ) : (

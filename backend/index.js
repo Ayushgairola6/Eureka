@@ -20,15 +20,20 @@ import "./controllers/supabaseHandler.js";
 // import formData from 'express-form-data';
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://AntiNode-six-eta.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://antinode-six-eta.vercel.app",
+      "https://eureka-six-eta.vercel.app",
+    ],
     credentials: true,
     allowedHeaders: [
       "Authorization",
       "Content-Type",
       "X-Requested-With",
       "Accept",
+      "Access-Control-Allow-Origin",
     ],
-    exposedHeaders: ["Authorization", "Set-Cookie"],
+
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );

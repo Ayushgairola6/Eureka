@@ -137,7 +137,7 @@ dotenv.config();
 const apiInstance = new Brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(
   Brevo.TransactionalEmailsApiApiKeys.apiKey,
-  process.env.BREVO_AntiNode_KEY
+  process.env.BREVO_ANTINODE
 );
 const commonStyles = `
   body { 

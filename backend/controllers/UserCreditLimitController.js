@@ -47,25 +47,18 @@ export const ProcessUserQuery = async (user, queryType) => {
         const correctCount = dbData.question_asked_count + 1;
 
         // Fix Redis to match reality
-        console.log(
-          "The value was okay so updating the cache with confirmed value"
-        );
         await redisClient.hSet(UserAccountDataKey, "querycount", correctCount); //update the new value for the user if the older data was wrong
         const refreshTime = await redisClient.ttl(UserAccountDataKey);
-        console.log(refreshTime);
         // If the corrected count exceeds limit, stop here
         if (correctCount > DAILY_LIMIT) {
-          console.log("The correct count from db is moew than daily quota");
           return {
             status: "not ok",
             message: `You have reached your daily limit it will reset at ${refreshTime}`,
           };
         }
-        console.log(newCount, "Newcount");
 
         // Sync the increment to DB via RPC
 
-        console.log("Updating the db");
         // await supabase.rpc("rpc_increment_rate_limit", {
         //   p_user_id: user_id,
         //   p_day_date: today,
@@ -94,8 +87,6 @@ export const ProcessUserQuery = async (user, queryType) => {
     }
 
     if (newCount > DAILY_LIMIT) {
-      console.log(newCount, "limit reached");
-
       return {
         status: "not ok",
         message: `You have reached your free tier limit of ${DAILY_LIMIT} queries.`,
@@ -113,7 +104,6 @@ export const ProcessUserQuery = async (user, queryType) => {
     //     error
     //   );
     // }
-    console.log(newCount, "Newcount");
 
     return {
       status: "ok",

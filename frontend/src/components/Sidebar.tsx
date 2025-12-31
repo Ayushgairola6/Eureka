@@ -13,9 +13,7 @@ type SidebarProps = {
 };
 //  = useAppSelector(state => state.auth.isLoggedIn);
 const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
-  const { isLoggedIn, user, isDarkMode } = useAppSelector(
-    (state) => state.auth
-  );
+  const { isLoggedIn, user } = useAppSelector((state) => state.auth);
 
   return (
     <>
@@ -32,15 +30,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
 
           // -translate-y-0 translate-y-90
         }}
-        className={`md:hidden fixed h-full w-70  top-0 rotate-0 bg-white dark:bg-black   z-[20] rounded-tr-md pt-10 rounded-br-md   duration-500 transition-all cursor-pointer flex flex-col items-center justify-start border border-gray-300 dark:border-gray-700`}
+        className={`md:hidden fixed h-full w-70  top-0 rotate-0 bg-white dark:bg-black dark:text-white text-black  z-[20] rounded-tr-md pt-10 rounded-br-md   duration-500 transition-all cursor-pointer flex flex-col items-center justify-start border border-gray-300 dark:border-gray-700`}
       >
         {/* logo  */}
-        <header className="absolute top-2 right-3 text-xs  w-fit flex items-center justify-end gap-1 bai-jamjuree-bold rounded-md border p-1">
-          <img
+        <header className="absolute uppercase  top-2 right-2 text-xs  w-full flex items-center justify-end  bai-jamjuree-bold rounded-md border p-1">
+          {/* <img
             className="h-4 w-4  rounded-xs  "
             src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
             alt="logo"
-          />
+          /> */}
 
           <label htmlFor="logo">AntiNode</label>
         </header>
@@ -63,9 +61,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           </section>
         </div>
         {/*navigation links  */}
-        <section className="grid grid-cols-1 space-y-2  w-full mt-8  text-sm space-grotesk ">
+        <section className="grid grid-cols-1 space-y-2  w-full mt-8  text-sm space-grotesk realative">
+          {/* <ul className="py-2 pl-4 "> <CustomDropdown /> */}
+          {/* </ul> */}
           <Link
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
+            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10 pl-4   hover:pl-12 hover:transition-all duration-300"
             to="/"
           >
             <IoHomeOutline size={22} />
@@ -111,7 +111,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
               Dashboard
             </Link>
           )}
-
           <Link
             className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/Feedback"

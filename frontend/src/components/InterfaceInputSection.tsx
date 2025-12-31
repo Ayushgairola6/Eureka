@@ -33,7 +33,7 @@ import { useNavigate } from "react-router";
 import { SetQueryCount } from "../store/AuthSlice.ts";
 import AccessBar from "@/components/AccessBar.tsx";
 import { useState } from "react";
-import { setCurrentStatus } from "../store/websockteSlice.ts";
+import { setCurrentStatus, setWebStatus } from "../store/websockteSlice.ts";
 type InputProps = {
   textareaRef: React.Ref<HTMLInputElement>;
   isActive: boolean;
@@ -270,16 +270,20 @@ const InputSection: React.FC<InputProps> = ({
             dispatch(SetQueryCount());
           }
         })
-        .catch(() => {
+        .catch((err) => {
           dispatch(
             MimicSSE({
               id: AiId,
               delta:
+                err ||
                 "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
             })
           );
         })
-        .finally(() => setIsActive(false));
+        .finally(() => {
+          setIsActive(false);
+          dispatch(setWebStatus([]));
+        });
       dispatch(setQuestion(""));
     } catch (err: any) {
       toast.error(err.response.data.message);
@@ -448,13 +452,20 @@ const InputSection: React.FC<InputProps> = ({
             dispatch(SetQueryCount());
           }
         })
-        .catch(() => {
-          dispatch(setLoading(false));
-          dispatch(MimicSSE({ id: AiId, delta: "Server busy" }));
+        .catch((err) => {
+          dispatch(
+            MimicSSE({
+              id: AiId,
+              delta: "We are experiencing heavy traffic right now.",
+            })
+          );
 
-          toast.error("Server busy");
+          toast.error(err || "Server busy");
         })
-        .finally(() => setIsActive(false));
+        .finally(() => {
+          setIsActive(false);
+          dispatch(setLoading(false));
+        });
     } catch (err) {
       toast.error("Something went wrong");
     }

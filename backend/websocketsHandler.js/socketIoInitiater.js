@@ -8,6 +8,7 @@ import { verifyJwtAsync } from "../Middlewares/AuthMiddleware.js";
 import { Server } from "socket.io";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
+import { domainToASCII } from "url";
 
 const Room_And_their_members = new Map();
 // Authenticating the user
@@ -167,6 +168,7 @@ export const initializeSocketIo = (httpServer) => {
   io.on("connection", (socket) => {
     // joining a specific chatRoom
     console.log("new user connected");
+
     if (socket.user_id) {
       socket.join(socket.user_id, "this user joined the scoket connection");
     }
@@ -248,11 +250,55 @@ export const initializeSocketIo = (httpServer) => {
       return;
     });
 
+    //liking a response
+    socket.on("liked_response", async (data, vote_type, user_id, id) => {
+      if (!data) {
+        return;
+      }
+      //if the message is old or new
+
+      // store the data in the db
+      if (data.length === 0) {
+        const { error } = await supabase.from("liked_documents").insert({
+          message_id: id,
+          user_id: user_id,
+          vote_type: vote_type,
+        });
+
+        if (error) {
+          console.error(error);
+          return;
+        }
+      } else {
+        const finalArray = [];
+        data.forEach((el) => {
+          finalArray.push({
+            document_id: el,
+            user_id: user_id,
+            vote_type: vote_type,
+            message_id: id,
+          });
+        });
+
+        const { data: finalized, error } = await supabase
+          .from("liked_documents")
+          .upsert(finalArray);
+
+        if (error) {
+          return;
+        }
+      }
+
+      io.to(user_id).emit("feedback_recorded", {
+        id: id,
+        status: "Feedback recorded",
+      });
+    });
+
     // sending new message
     socket.on("new_message", async (data) => {
       const { message_id, sent_by, message, room_id, users, sent_at } = data;
 
-      // console.log(data);
       if (
         !message ||
         !room_id ||

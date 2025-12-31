@@ -24,8 +24,8 @@ interface user {
 }
 
 interface FeedbackCounts {
-  upvotes: number;
-  downvotes: number;
+  upvote: number;
+  downvote: number;
   partial_upvotes: number;
 }
 interface ChatRoom {
@@ -102,7 +102,7 @@ const initialState: AuthState = {
   isDarkMode: false,
   userStatus: "idle",
   Querycount: 0,
-  FeedbackCounts: { upvotes: 0, downvotes: 0, partial_upvotes: 0 },
+  FeedbackCounts: { upvote: 0, downvote: 0, partial_upvotes: 0 },
   AuthenticityScore: 0,
   chatrooms: [
     // {

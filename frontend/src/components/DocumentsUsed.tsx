@@ -16,11 +16,9 @@ const DocUsed: React.FC<props> = ({ chat }) => {
   const sourceIcons = relevantFaviconData?.icon || [];
 
   // Filter docused that actually have IDs (assuming logic matches your backend)
-  const relevantDocs = docUsed
-    ?.find((doc: any) => {
-      doc.MessageId === chat.id;
-    })
-    ?.docs.filter((d) => d.doc_id && d.doc_id.length > 0);
+  const relevantDocs = docUsed?.find((doc: any) => {
+    return doc.MessageId === chat.id;
+  })?.docs;
 
   // 2. Helper: Check if we have anything to show
   const hasSources = sourceIcons.length > 0;
@@ -157,7 +155,7 @@ const DocUsed: React.FC<props> = ({ chat }) => {
                     relevantDocs?.map((doc, idx) => (
                       <div
                         key={`${doc?.doc_id}-${idx}`}
-                        className="flex items-start gap-2 p-2 rounded-md bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30"
+                        className="flex items-start gap-2 p-2 rounded-md bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 w-fit"
                       >
                         <div className="mt-0.5 text-blue-500 dark:text-blue-400">
                           <svg
@@ -176,10 +174,11 @@ const DocUsed: React.FC<props> = ({ chat }) => {
                           </svg>
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <div className="flex gap-2 text-[10px] text-gray-500">
-                            <span>{doc.doc_id.length} pages/chunks</span>
-                            {/* Example: Show votes if relevant */}
-                            {/* {doc.upvotes > 0 && ( */}
+                          <span className="space-grotesk text-xs">
+                            id:{doc.doc_id}
+                          </span>
+                          {/* Example: Show votes if relevant */}
+                          <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500 space-grotesk">
                             <span className="text-green-600">
                               ▲ {doc.upvotes}
                             </span>
@@ -189,7 +188,6 @@ const DocUsed: React.FC<props> = ({ chat }) => {
                             <span className="text-sky-600">
                               ◐ {doc.partial_upvotes}
                             </span>
-                            {/* )} */}
                           </div>
                         </div>
                       </div>

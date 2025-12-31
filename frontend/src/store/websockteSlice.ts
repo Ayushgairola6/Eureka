@@ -261,6 +261,8 @@ const socketSlice = createSlice({
     setWebStatus: (state, action) => {
       if (action.payload && action.payload?.message) {
         state.web_search_status.push(action.payload);
+      } else {
+        state.web_search_status = [];
       }
     },
   },

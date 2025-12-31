@@ -40,7 +40,7 @@ const VerificationLink = () => {
     <>
       <div className="h-screen flex items-center justify-center relative z-[2] overflow-hidden ">
         {/* gradient accent background */}
-        <div className="absolute h-full w-full top-0 left-0 blur-2xl flex  z-[-1]">
+        {/* <div className="absolute h-full w-full top-0 left-0 blur-2xl flex  z-[-1]">
           <div
             style={{
               background: `
@@ -54,7 +54,7 @@ const VerificationLink = () => {
             }}
             className=" h-[70%] w-[90%] md:w-[40%] m-auto  opacity-70 rounded-t-xl    rounded-br-md rounded-bl-sm Indicator"
           ></div>
-        </div>
+        </div> */}
 
         <motion.div
           drag

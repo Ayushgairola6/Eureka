@@ -23,6 +23,7 @@ export const GenerateResponse = async (
       return { error: "Some parameters are missing" };
     }
 
+    // console.log(FormattedString);
     // const FinalString = SYSTEM_PROMPT + FormattedString;
 
     const result = await genAI.models.generateContent({
@@ -59,6 +60,7 @@ export const GenerateResponse = async (
       );
       return { error: "The server is very busy , please try again !" };
     }
+    // const responseText = FormattedString;
     // return { error: "Testing out the error fallback function" };
     return responseText;
   } catch (error) {

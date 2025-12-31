@@ -29,7 +29,7 @@ const Hero: React.FC<props> = ({ value }) => {
               <AnimatePresence mode="wait">
                 <motion.span
                   key={value}
-                  className="text-transparent bg-clip-text bg-gradient-to-tr from-cyan-400 via-blue-500 to-emerald-400"
+                  className={`text-transparent bg-clip-text bg-gradient-to-tr from-cyan-400 via-blue-500 to-emerald-400 `}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -20, opacity: 0 }}

@@ -133,22 +133,6 @@ const Register = () => {
       <div className="h-screen flex items-center justify-center relative z-[2] dark:bg-black dark:text-white overflow-hidden">
         {/* gradient accent background */}
 
-        <motion.div
-          animate={{ rotate: [10, 30, 20, 40, 60, 50, 70, 90, 80] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-          className="w-full h-full absolute top-2 left-20 opacity-30 md:w-[50%] blur-[160px] "
-          style={{
-            background: `
-                  radial-gradient(circle at 30% 30%, purple 0%, transparent 50%),
-                  radial-gradient(circle at 70% 20%, yellow 10%, transparent 50%),
-                  radial-gradient(circle at 50% 70%, #F59E0B 15%, transparent 50%),
-                  radial-gradient(circle at 80% 60%, #EC4899 20%, transparent 50%),
-                  radial-gradient(circle at 20% 50%, #10B981 25%, transparent 50%)
-                `,
-            backgroundBlendMode: "screen",
-          }}
-        />
-
         <div className="bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-2xl border dark:border-white/10 border-black/10 cursor-grab relative">
           <h1 className="text-center space-grotesk font-bold  text-2xl">
             Join AntiNode{" "}

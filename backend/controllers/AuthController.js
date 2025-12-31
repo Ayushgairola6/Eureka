@@ -854,18 +854,14 @@ export const GetUserQuestionAskedCount = async (user_id) => {
 // Function to get user likes
 export const GetUserLikeCount = async (user_id) => {
   try {
-    const { data, error } = await supabase
-      .from("Contributions")
-      .select(
-        "created_at, chunk_count, Doc_Feedback(upvotes, downvotes, partial_upvotes)"
-      )
-      .eq("user_id", user_id)
-      .eq("Document_visibility", "Public");
+    const { data, error } = await supabase.rpc("count_votes_by_user", {
+      p_user_id: user_id,
+    });
 
     if (error) {
       return { error };
     }
-    return { data: data || [] };
+    return { data: data[0] || [] };
   } catch (error) {
     return { error };
   }
@@ -981,7 +977,7 @@ export const GetUserAccountDetails = async (req, res) => {
       userData.data,
       Contributions_user_id_fkey.data,
       countData.count,
-      votesData?.data && votesData.data.length
+      votesData?.data
         ? votesData.data
         : { upvotes: 0, downvotes: 0, partial_upvotes: 0 },
       chatroomsData.data,
@@ -999,10 +995,9 @@ export const GetUserAccountDetails = async (req, res) => {
       user: userData.data,
       Contributions_user_id_fkey: Contributions_user_id_fkey.data || [],
       Querycount: countData.count,
-      FeedbackCounts:
-        votesData.data.length && votesData?.data?.length > 0
-          ? votesData.data
-          : { upvotes: 0, downvotes: 0, partial_upvotes: 0 },
+      FeedbackCounts: votesData.data
+        ? votesData.data
+        : { upvotes: 0, downvotes: 0, partial_upvotes: 0 },
       chatrooms: chatroomsData.data,
       notificationcount: notifications.notifications.length,
       notifications: notifications.notifications,

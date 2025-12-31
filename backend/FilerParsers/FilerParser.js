@@ -217,7 +217,6 @@ export const HandleSourceCreation = async (
     try {
       await HandleChunkProcssing(IdsToFetch, Reference);
     } catch (error) {
-      console.log(error);
       await notifyMe(` error while chunks refrecne procssing`, error);
       return { error: "Error during Pinecone upsert operation." };
     }
@@ -231,10 +230,10 @@ const HandleChunkProcssing = async (chunksToProces, Reference) => {
   if (!Array.isArray(chunksToProces) || chunksToProces.length === 0) return;
   if (!Reference) Reference = { docs: [] };
 
-  const { data, error } = await supabase
-    .from("Doc_Feedback")
-    .select("upvotes,downvotes,partial_upvotes")
-    .eq("document_id", chunksToProces);
+  const { data, error } = await supabase.rpc("get_likes_counts", {
+    doc_ids: chunksToProces,
+  });
+  // chunksToProces = array of
   if (error) {
     await notifyMe(
       "An error occured while searching for feedback report of a document in the db",
@@ -243,19 +242,23 @@ const HandleChunkProcssing = async (chunksToProces, Reference) => {
     return;
   }
   // added them to the array
-  if (data && data.length > 0) {
+  if (data && data?.length > 0) {
     data.forEach((e) => {
       Reference.docs.push({
+        doc_id: e.document_id,
         upvotes: e.upvotes,
         downvotes: e.downvotes,
         partial_upvotes: e.partial_upvotes,
       });
     });
   } else {
-    Reference.docs.push({
-      upvotes: 0,
-      downvotes: 0,
-      partial_upvotes: 0,
+    chunksToProces.forEach((i) => {
+      Reference.docs.push({
+        doc_id: i,
+        upvotes: 0,
+        downvotes: 0,
+        partial_upvotes: 0,
+      });
     });
   }
 };

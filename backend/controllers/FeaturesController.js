@@ -23,7 +23,7 @@ export const HandleUserSessionHistory = async (req, res) => {
     const exists = await redisClient.exists(key);
     if (exists) {
       // last 10 messages
-      const chats = await redisClient.lRange(key, 0, 20);
+      const chats = await redisClient.lRange(key, 0, 5); //current support only 5 last messages
       const parsedChats = chats.map((data) => {
         return JSON.parse(data);
       });
@@ -113,13 +113,13 @@ function FormatSessionHistory(ChatsArray) {
     const UserObject = {
       id: `${obj.id}-user`,
       sent_by: "You",
-      message: { isComplete: true, content: obj.question },
+      message: { isComplete: false, content: obj.question },
       sent_at: formattedDate || obj.created_at,
     };
     const ModelObject = {
       id: `${obj.id}-AntiNode`,
       sent_by: "AntiNode",
-      message: { isComplete: true, content: obj.AI_response },
+      message: { isComplete: false, content: obj.AI_response },
       sent_at: formattedDate || obj.created_at,
     };
     NewArray.push(UserObject); //first add the user message

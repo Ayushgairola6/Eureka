@@ -80,7 +80,7 @@ export const UpdateTheNotificationCache = async (
   //if the user data exists in the cache
   const multi = redisClient.multi();
   multi.exists(UserAccountDataKey);
-  const Oldnotifications = multi.redisClient.hGet(key, "notification");
+  const Oldnotifications = multi.redisClient.exists(key, "notification");
 
   if (Oldnotifications) {
     const ParsedNotifications = JSON.parse(Oldnotifications);

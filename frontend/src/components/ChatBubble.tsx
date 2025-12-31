@@ -29,7 +29,9 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   setIsActive,
 }) => {
   const ReceivedResponseId: any = []; //just a tracker array
-  const { Chats } = useAppSelector((state) => state.interface);
+  const { Chats, ResponseStatus, CurrentTheme } = useAppSelector(
+    (state) => state.interface
+  );
   const { currentStatus, web_search_status } = useAppSelector(
     (state) => state.socket
   );
@@ -69,6 +71,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   //   "bg-purple-600",
   //   "bg-pink-600",
   // ];
+
   return (
     <>
       {Chats.length > 0 ? (
@@ -99,11 +102,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                     setShowDocUsed={setShowDocUsed}
                   />
                 )}
-                {/* {chat.sent_by === "AntiNode" &&
-                  chat.id === Chats[Chats.length - 1].id && */}
-                {/* chat.message.isComplete === false && ( */}
-                {/* )} */}
-                {/* Chat Bubble */}
+
                 {chat.sent_by === "AntiNode" &&
                 chat.message.content === "" &&
                 chat.id === Chats[Chats.length - 1].id ? (
@@ -124,11 +123,10 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                     className={`px-3 py-2 rounded-2xl transition-all duration-200 ease-in-out shadow-sm text-md text-wrap space-grotesk ${
                       chat.sent_by === "You"
                         ? "max-w-[80%] justify-self-end rounded-br-none " +
-                          "bg-emerald-600 text-white " + // Slack-ish primary blue
+                          CurrentTheme.user + // Slack-ish primary blue
                           "font-medium self-end items-center justify-center"
                         : " w-full justify-self-start rounded-bl-none " +
-                          "bg-gray-100 dark:bg-black border border-gray-200 dark:border-white/10 " + // Slack dark-mode gray
-                          "text-gray-900 dark:text-gray-100"
+                          CurrentTheme.ai
                     }`}
                   >
                     {chat.sent_by !== "You" && (
@@ -166,10 +164,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 {/* Feedback for AI responses - positioned below the bubble */}
 
                 {/* if the message is last and is not stored in the responsefeedback array and is sent by AntiNode */}
-                {chat.sent_by === "AntiNode" &&
-                  !ReceivedResponseId.some(
-                    (elem: any) => elem?.chat_id === chat.id
-                  ) && (
+                {chat.sent_by !== "You" &&
+                  ResponseStatus?.find((i) => i.id === chat.id) === false && (
                     <div className="mt-2">
                       <ResponseFeedback
                         ReceivedResponseId={ReceivedResponseId}
@@ -229,10 +225,7 @@ const ChatMessage = ({ chat, lastMessageId }: any) => {
   // Conditions:
   //   a. It was NOT sent by the user ('You').
   //   b. It is the LAST message in the entire chat history.
-  const isStreaming =
-    chat?.sent_by !== "You" &&
-    chat.id === lastMessageId &&
-    chat.message.isComplete === false;
+  const isStreaming = chat?.sent_by !== "You" && chat.id === lastMessageId;
 
   // 2. Call the hook UNCONDITIONALLY (Hooks rule!)
   // Hooks must be called in the same order on every render.

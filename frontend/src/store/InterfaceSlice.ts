@@ -29,6 +29,13 @@ interface ChatsInterface {
   message: messageInt;
   sent_at: string;
 }
+interface currenttheme {
+  id: string;
+  name: string;
+  color: string;
+  user: string;
+  ai: string;
+}
 interface InterfaceState {
   question: string;
   answer: string;
@@ -57,6 +64,8 @@ interface InterfaceState {
   SynthesisDocuments: string[];
   uploadStatus: string;
   fetchingSessionHistory: boolean;
+  ResponseStatus: any[];
+  CurrentTheme: currenttheme;
 }
 
 const initialState: InterfaceState = {
@@ -94,6 +103,15 @@ const initialState: InterfaceState = {
   SynthesisDocuments: [],
   uploadStatus: "Processing",
   fetchingSessionHistory: false,
+  ResponseStatus: [],
+  CurrentTheme: {
+    id: "void-prime",
+    name: "Void Prime",
+    color: "#000000",
+    // Absolute contrast. High-end Swiss style.
+    user: "bg-zinc-950 text-white dark:bg-white dark:text-black rounded-none border-l-[1px] border-zinc-500 pl-4 py-1 my-4 uppercase tracking-widest text-[10px] font-bold",
+    ai: "bg-transparent text-zinc-800 dark:text-zinc-200 border-t border-zinc-100 dark:border-zinc-900/50 pt-6 pb-12 leading-[1.8] tracking-tight",
+  },
 };
 
 // Async Thunks
@@ -261,9 +279,9 @@ export const WebSearchHandler = createAsyncThunk<any, any>(
       );
       return response.data;
     } catch (err: any) {
-      console.error("Error fetching response :", err.response.data.message);
+      console.error("Error fetching response :", err);
       return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to generate a response"
+        err.response.data.message || "Failed to generate a response"
       );
     }
   }
@@ -364,6 +382,9 @@ const interfaceSlice = createSlice({
         state.SynthesisDocuments = [...NewArray];
       }
     },
+    setCurrenTheme: (state, action) => {
+      state.CurrentTheme = action.payload;
+    },
     EmptyTheSynthesisArray: (state) => {
       state.SynthesisDocuments = [];
     },
@@ -378,7 +399,28 @@ const interfaceSlice = createSlice({
     setNeedToRefresh: (state, action) => {
       state.NeedToRefresh = action.payload;
     },
-
+    UpdateResponseStatus: (state, action) => {
+      action.payload.length > 0 &&
+        action.payload.forEach((message: any) => {
+          const obj = {
+            id: message.id,
+            statue: "Feedback recorded",
+          };
+          state.ResponseStatus.push(obj); //updates the array with old messages
+        });
+    },
+    ResponseLikeStatus: (state, action) => {
+      //find the id of the element and update its staus
+      const indexofmessage = state.ResponseStatus.findIndex(
+        (elem) => elem.id === action.payload.id
+      );
+      const data = {
+        id: action.payload.id,
+        status: action.payload.status,
+      };
+      state.ResponseStatus.splice(indexofmessage, 1); //delete it
+      state.ResponseStatus.push(data);
+    },
     setQuestion: (state, action) => {
       state.question = action.payload;
     },
@@ -443,6 +485,7 @@ const interfaceSlice = createSlice({
     updatefetchingSessionHistory: (state, action) => {
       state.fetchingSessionHistory = action.payload;
     },
+    likeResponse: (_state, _action) => {},
     resetState: (_state) => {
       return initialState;
     },
@@ -465,7 +508,7 @@ const interfaceSlice = createSlice({
       })
       .addCase(QueryAIQuestions.fulfilled, (state, action) => {
         state.loading = false;
-        state.docUsed = [...state.docUsed, ...action.payload.docUsed];
+        state.docUsed.push(action.payload.docUsed);
       })
       .addCase(QueryAIQuestions.rejected, (state) => {
         state.loading = false;
@@ -582,6 +625,10 @@ export const {
   setUploadStatus,
   UpdateSessionChats,
   updatefetchingSessionHistory,
+  ResponseLikeStatus,
+  likeResponse,
+  UpdateResponseStatus,
+  setCurrenTheme,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

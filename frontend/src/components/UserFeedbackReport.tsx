@@ -16,17 +16,15 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
   const data = [
     {
       name: "Upvotes",
-      value: FeedbackCounts?.upvotes ? FeedbackCounts?.upvotes : 1,
+      value: FeedbackCounts.upvote,
     },
     {
       name: "Downvotes",
-      value: FeedbackCounts?.downvotes ? FeedbackCounts?.downvotes : 1,
+      value: FeedbackCounts.downvote,
     },
     {
       name: "Partial",
-      value: FeedbackCounts?.partial_upvotes
-        ? FeedbackCounts?.partial_upvotes
-        : 1,
+      value: FeedbackCounts.partial_upvotes,
     },
   ];
   return (
@@ -73,11 +71,11 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
                     className="text-lg font-bold"
                   >
                     {FeedbackCounts.partial_upvotes +
-                    FeedbackCounts.downvotes +
-                    FeedbackCounts.upvotes
+                    FeedbackCounts.downvote +
+                    FeedbackCounts.upvote
                       ? FeedbackCounts.partial_upvotes +
-                        FeedbackCounts.downvotes +
-                        FeedbackCounts.upvotes
+                        FeedbackCounts.downvote +
+                        FeedbackCounts.upvote
                       : 0}
                   </text>
                   <text
@@ -149,8 +147,8 @@ const UserFeedbackReport: React.FC<props> = ({ score }) => {
             {/* Peer Reviews */}
             <div className="text-center text-sm text-gray-600 dark:text-gray-400">
               Based on{" "}
-              {(FeedbackCounts?.upvotes || 0) +
-                (FeedbackCounts?.downvotes || 0) +
+              {(FeedbackCounts?.upvote || 0) +
+                (FeedbackCounts?.downvote || 0) +
                 (FeedbackCounts?.partial_upvotes || 0) || 0}{" "}
               peer reviews
             </div>

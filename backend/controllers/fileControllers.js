@@ -156,27 +156,27 @@ export const FileUploadHandle = async (req, res) => {
     EmitEvent(userid, "UploadStatus", "Creating Chunks");
 
     //limit of texts for free  users
-    if (req.user.PaymentStatus === false && textChunks.length > 25) {
-      return res.status(400).send({
-        message: "Purchase our premium to be able to upload large documents.",
-      });
-    }
+    // if (req.user.PaymentStatus === false && textChunks.length > 25) {
+    //   return res.status(400).send({
+    //     message: "Purchase our premium to be able to upload large documents.",
+    //   });
+    // }
 
     //check user contributioncount
     //currently for only free users
     // later for other tiers as well
-    if (req.user.PaymentStatus === false) {
-      const checkUpperBound = await CheckUserContributionCount(req.user);
+    // if (req.user.PaymentStatus === false) {
+    //   const checkUpperBound = await CheckUserContributionCount(req.user);
 
-      if (
-        checkUpperBound &&
-        checkUpperBound.message.trim().toLowerCase().includes("limit reached")
-      ) {
-        return res.status(400).send({
-          message: `You've reached your limit of 2 private documents for the free tier. Upgrade your plan to upload more and unlock additional features.`,
-        });
-      }
-    }
+    //   if (
+    //     checkUpperBound &&
+    //     checkUpperBound.message.trim().toLowerCase().includes("limit reached")
+    //   ) {
+    //     return res.status(400).send({
+    //       message: `You've reached your limit of 2 private documents for the free tier. Upgrade your plan to upload more and unlock additional features.`,
+    //     });
+    //   }
+    // }
 
     // random id for the doc
     let chunkNumber;
@@ -489,19 +489,19 @@ export const GetPublicRecords = async (req, res) => {
     }
 
     // update the daily quota of the user
-    const UpdateState = await ProcessUserQuery(req.user, "Public");
+    // const UpdateState = await ProcessUserQuery(req.user, "Public");
 
-    // if user has reached the
-    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
-      return res.status(200).send({
-        Answer: UpdateState.message,
-        message: "Todays quota has finished!",
-        docUsed: [],
-      });
-    }
+    // // if user has reached the
+    // if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
+    //   return res.status(200).send({
+    //     Answer: UpdateState.message,
+    //     message: "Todays quota has finished!",
+    //     docUsed: [],
+    //   });
+    // }
 
     // finding info regarding that query
-    const FoundData = `This is the information found from the database that is shared by several contributors :`;
+
     let DocumentsUserForReference;
     //    console.log(fetchResult)
     const response = await index.searchRecords({
@@ -522,6 +522,8 @@ export const GetPublicRecords = async (req, res) => {
         "documentId",
       ],
     });
+
+    let finalinfo;
     // processing the results
     const seen = new Set(); //a set to store processed document ids
     try {
@@ -539,8 +541,9 @@ export const GetPublicRecords = async (req, res) => {
 
       // creating a context string
       const FoundData = await processContextStringCreation(response);
-
-      if (FoundData.message) {
+      // console.log(FoundData);
+      finalinfo = FoundData;
+      if (FoundData.message || !FoundData) {
         return res.status(200).send({
           message: "Unable to generate a response",
           answer: FoundData.message,
@@ -571,7 +574,7 @@ export const GetPublicRecords = async (req, res) => {
 
     const AnswerToUsersQuestion = await GenerateResponse(
       question,
-      `This is the information found from the public knowledgebase =${FoundData}`,
+      finalinfo,
       KNOWLEDGE_DISTRIBUTOR_PROMPT,
       req.user
     );
@@ -580,9 +583,11 @@ export const GetPublicRecords = async (req, res) => {
 
     // const AnswerToUsersQuestion =
     //   "this is a mock answer just to test the information";
-    // // if (AnswerToUsersQuestion.error) {
-    // //   return res.status(200).send({ answer: "Server busy" });
-    // // }
+    if (AnswerToUsersQuestion.error) {
+      return res
+        .status(200)
+        .send({ answer: "An error occured while generatinga  response" });
+    }
 
     const AImessage = {
       id: MessageId, //users message Id
@@ -604,7 +609,7 @@ export const GetPublicRecords = async (req, res) => {
 
     if (storeResponses.error) {
       await notifyMe(
-        `${storeResponses.error} eror while storing the convversation`
+        `${storeResponses.error} error while storing the convversation`
       );
       return res.status(200).json({
         message: "Could not store this request",
@@ -613,6 +618,7 @@ export const GetPublicRecords = async (req, res) => {
       });
     }
 
+    // console.log(AnswerToUsersQuestion);
     // updating the chats cache
     try {
       const misallaneousChatsKey = `user=${req.user.username}'s_misallaneousChats`;
@@ -972,6 +978,7 @@ export const PostTypeWebSearch = async (req, res) => {
 
     // get necessary links from serper
     const response = await GetDataFromSerper(question, req.user);
+    // console.log(response);
 
     if (!response) {
       return res
@@ -1065,6 +1072,8 @@ export const PostTypeWebSearch = async (req, res) => {
 
     const LinksToFetch = FilterUrlForExtraction(response, req.user);
 
+    // console.log(LinksToFetch);
+
     if (LinksToFetch.length === 0) {
       return res
         .status(400)
@@ -1085,6 +1094,7 @@ export const PostTypeWebSearch = async (req, res) => {
     const WebResults = FormattForLLM(CleanedWebData);
 
     if (WebResults?.error || WebResults.FinalContent.length === 0) {
+      // console.log(WebResults.error);
       return res
         .status(400)
         .send({ message: "An error occured while processing your request" });
@@ -1153,15 +1163,16 @@ export const PostTypeWebSearch = async (req, res) => {
 
     const FormattedFavicon = {
       MessageId,
-      icon: WebResults.favicons, //favicon array from the web search
+      icon: WebResults.favicons,
+      url: WebResults.urls, //favicon array from the web search
     };
 
-    //  now that we have generated all the response and data for the user
-    // we need to check if the user is within the credit limit or does even has a record in db and cache
-    //if true we update the value in both else we create a new record
+    // //  now that we have generated all the response and data for the user
+    // // we need to check if the user is within the credit limit or does even has a record in db and cache
+    // //if true we update the value in both else we create a new record
 
     return res.send({
-      Answer: Answer,
+      Answer: Answer || JSON.stringify(WebResults.FinalContent),
       message: "Results found",
       favicon: FormattedFavicon,
       urls: WebResults.urls || [],

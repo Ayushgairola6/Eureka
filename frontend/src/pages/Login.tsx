@@ -88,22 +88,6 @@ const Login = () => {
   return (
     <>
       <div className="relative h-screen flex items-center justify-center  z-[2]  dark:bg-black overflow-hidden">
-        <motion.section
-          animate={{ rotate: [10, 30, 20, 40, 60, 50, 70, 90, 80] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-          className="w-full h-full md:w-[40%] opacity-30 absolute top-10 left-30    rounded-full   blur-[160px]"
-          style={{
-            background: `
-          radial-gradient(circle at 30% 30%, #8B5CF6 0%, transparent 50%),
-          radial-gradient(circle at 70% 20%, #3B82F6 10%, transparent 50%),
-          radial-gradient(circle at 50% 70%, #F59E0B 15%, transparent 50%),
-          radial-gradient(circle at 80% 60%, #EC4899 20%, transparent 50%),
-          radial-gradient(circle at 20% 50%, #10B981 25%, transparent 50%)
-        `,
-            backgroundBlendMode: "screen",
-          }}
-        />
-
         <div className="relative bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-md gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-2xl cursor-grab border dark:border-white/10 border-black/10">
           <h1 className="text-center bai-jamjuree-bold  md:text-3xl text-2xl ">
             Welcome back!
@@ -211,7 +195,7 @@ const Login = () => {
             </motion.button>
           </span>
           {/* links to other pages */}
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/10">
+          <div className="space-grotesk flex items-center justify-between mt-6 pt-4 border-t border-white/10">
             {/* Register - Outlined Glass Chip */}
             <Link
               to="/Register"
