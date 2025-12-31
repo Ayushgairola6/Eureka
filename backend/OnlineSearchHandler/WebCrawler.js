@@ -77,6 +77,7 @@ export const ProcessForLLM = async (links, user, userQuery) => {
     storageClient: new MemoryStorage(),
   });
 
+  log.setLevel(log.LEVELS.OFF);
   const crawler = new CheerioCrawler(
     {
       minConcurrency: 1,
