@@ -445,13 +445,16 @@ export const UpdateTheRoomChatCache = async (
     users: users,
   };
   const stringifiedMessage = JSON.stringify(MessageObject);
+  const MAX_HISTORY = 20;
 
   try {
     // 1. Start the single atomic block (Pipeline).
     const multi = redisClient.multi();
 
     // 2. ALWAYS push the message. The list is created if it doesn't exist.
-    multi.rPush(roomChatCacheKey, stringifiedMessage);
+    multi
+      .rPush(roomChatCacheKey, stringifiedMessage)
+      .lTrim(ConversationCacheKey, -MAX_HISTORY, -1); //remove and older message after reaching a certain limit
 
     // 3. ALWAYS reset the expiry (to keep the cache alive with activity).
     // This is the correct behavior for chat cache (time should reset on new message).

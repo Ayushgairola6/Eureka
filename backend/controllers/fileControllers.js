@@ -155,28 +155,28 @@ export const FileUploadHandle = async (req, res) => {
 
     EmitEvent(userid, "UploadStatus", "Creating Chunks");
 
-    //limit of texts for free  users
-    // if (req.user.PaymentStatus === false && textChunks.length > 25) {
-    //   return res.status(400).send({
-    //     message: "Purchase our premium to be able to upload large documents.",
-    //   });
-    // }
+    // limit of texts for free  users
+    if (req.user.PaymentStatus === false && textChunks.length > 25) {
+      return res.status(400).send({
+        message: "Purchase our premium to be able to upload large documents.",
+      });
+    }
 
     //check user contributioncount
     //currently for only free users
     // later for other tiers as well
-    // if (req.user.PaymentStatus === false) {
-    //   const checkUpperBound = await CheckUserContributionCount(req.user);
+    if (req.user.PaymentStatus === false) {
+      const checkUpperBound = await CheckUserContributionCount(req.user);
 
-    //   if (
-    //     checkUpperBound &&
-    //     checkUpperBound.message.trim().toLowerCase().includes("limit reached")
-    //   ) {
-    //     return res.status(400).send({
-    //       message: `You've reached your limit of 2 private documents for the free tier. Upgrade your plan to upload more and unlock additional features.`,
-    //     });
-    //   }
-    // }
+      if (
+        checkUpperBound &&
+        checkUpperBound.message.trim().toLowerCase().includes("limit reached")
+      ) {
+        return res.status(400).send({
+          message: `You've reached your limit of 2 private documents for the free tier. Upgrade your plan to upload more and unlock additional features.`,
+        });
+      }
+    }
 
     // random id for the doc
     let chunkNumber;

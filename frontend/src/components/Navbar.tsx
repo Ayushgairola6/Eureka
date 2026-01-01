@@ -12,6 +12,7 @@ import NotificationPanel from "@/components/notificationBar.tsx";
 import Settings from "@/components/settings.tsx";
 import { GoMoon } from "react-icons/go";
 import { CustomDropdown } from "./Theme_Picker.tsx";
+import { LogoRender } from "./LogoRender.tsx";
 const Navbar = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -56,16 +57,14 @@ const Navbar = () => {
         {/* navlinks */}
         <Link
           to="/"
-          className="  text-md  w-fit flex items-center justify-center gap-1 bai-jamjuree-bold rounded-md  cursor-pointer  p-1"
+          className="  text-md  w-fit flex items-center justify-center bai-jamjuree-bold rounded-md  cursor-pointer  p-1"
         >
           {/* <img
             className="h-4 w-4  rounded-xs   "
             src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
             alt="logo"
           /> */}
-          <label className="uppercase" htmlFor="logo">
-            AntiNode
-          </label>
+          <LogoRender />
         </Link>
 
         <div
@@ -91,7 +90,9 @@ const Navbar = () => {
 
         <div className="flex items-center justify-center gap-2 bai-jamjuree-regular text-sm overflow-visible ">
           {/* settings icon */}
-          <CustomDropdown />
+          <ul className="hidden md:block border rounded-sm">
+            <CustomDropdown />
+          </ul>
 
           <Settings
             showSettings={showSettings}
@@ -110,7 +111,6 @@ const Navbar = () => {
                   {notificationcount}
                 </span>
               )}
-              <NotificationPanel />
             </ul>
           )}
           {/* small screen theme icon */}
@@ -155,6 +155,7 @@ const Navbar = () => {
             />
           )}
         </div>
+        <NotificationPanel />
       </nav>
       <Sidebar isVisble={isVisible} setIsVisible={setIsVisible} />
     </>

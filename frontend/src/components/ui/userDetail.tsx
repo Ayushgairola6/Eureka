@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { FaRegFile, FaEye, FaCloudUploadAlt } from "react-icons/fa";
+import { FaRegFile, FaEye, FaCloudUploadAlt, FaLock } from "react-icons/fa";
 import { FaCircleNodes } from "react-icons/fa6";
 import { useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   setCategory,
@@ -12,9 +12,9 @@ import {
 } from "../../store/InterfaceSlice";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { Categories, SubCategories } from "../../../utlis/Info.ts";
-import { BiCategory, BiDetail, BiHourglass, BiUpload } from "react-icons/bi";
-import { FiChevronDown } from "react-icons/fi";
-import { LuArrowLeft } from "react-icons/lu";
+import { BiDetail, BiHourglass, BiSearch, BiUpload } from "react-icons/bi";
+import { FiChevronRight, FiCpu } from "react-icons/fi";
+import { LuFileCode, LuX } from "react-icons/lu";
 // declaring props type
 type FormProps = {
   setSelectedFile?: React.Dispatch<React.SetStateAction<File | null>>;
@@ -48,7 +48,7 @@ const UserForm: React.FC<FormProps> = ({
 
   const {
     shhowUserForm,
-    loading,
+    // loading,
     category,
     subCategory,
     uploading,
@@ -114,146 +114,189 @@ const UserForm: React.FC<FormProps> = ({
       dispatch(setCategory(category?.parent));
     }
   }
+
+  // Helper to determine file icon
+  const getFileIcon = (fileName: string) => {
+    if (fileName.endsWith("pdf")) return <FaRegFile className="text-red-500" />;
+    if (fileName.endsWith("json") || fileName.endsWith("csv"))
+      return <LuFileCode className="text-yellow-500" />;
+    return <FaRegFile className="text-blue-500" />;
+  };
   return (
     <>
       <div
-        className={`fixed top-0 left-0 ${
-          shhowUserForm === true ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 z-[1] w-full md:w-[600px] px-4 py-10 overflow-y-scroll  bg-white/40 dark:bg-black/40 backdrop-blur-xs h-screen mt-10`}
+        className={`fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-[2] transition-opacity duration-200 ${
+          shhowUserForm
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => dispatch(setShowUserForm(false))}
+      />
+
+      {/* Main Panel */}
+      <div
+        className={`fixed top-0 right-0 h-screen w-full md:w-[600px]  z-[3] bg-white dark:bg-[#0a0a0a] border-l border-neutral-200 dark:border-neutral-800 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col font-sans ${
+          shhowUserForm ? "translate-x-0" : "translate-x-full"
+        }`}
       >
-        <button
-          onClick={() => dispatch(setShowUserForm(false))}
-          className="absolute top-12 right-8 bg-white/20 text-black dark:text-gray-100  p-0.5 rounded-full cursor-pointer"
-        >
-          <LuArrowLeft />
-        </button>
-        <section
-          className={`h-auto  py-4 flex items-center justify-center gap-2 opacity-100   overflow-y-auto px-3 bg-gray-100 text-black dark:bg-black dark:text-white  overflow-hidden transition-all duration-500 rounded-lg     flex-col border border-gray-300 `}
-        >
-          <div className="flex items-start justify-start gap-3 flex-col  w-full rounded-lg p-2">
-            <label
-              className="text-sm md:text-md font-semibold flex items-center justify-cente gap-2 bai-jamjuree-semibold"
-              htmlFor="Feeback"
-            >
-              <FaCircleNodes />
-              File name
-            </label>
-            <textarea
-              onChange={(e) => {
-                setFeedback(e.target.value);
-              }}
-              value={feedback}
-              className="border text-sm py-1 space-grotesk  border-black dark:border-white rounded-sm px-2 font-normal w-full"
-              placeholder="Fifty shades of C++ ... "
-              rows={2}
-            />
+        {/* --- Header: Sharp & Technical --- */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0a0a0a]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-neutral-100 dark:bg-neutral-900 rounded-sm border border-neutral-200 dark:border-neutral-800">
+              <FiCpu className="text-black dark:text-white" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-wider bai-jamjuree-semibold text-neutral-900 dark:text-white">
+                Ingest Resource
+              </h2>
+              <p className="text-[10px] text-neutral-500 space-grotesk uppercase tracking-widest">
+                Research Agent / Knowledge Base
+              </p>
+            </div>
           </div>
-          <div className="flex items-start justify-start gap-3 flex-col  w-full rounded-lg p-2">
-            <label
-              className="text-sm md:text-md font-semibold flex items-center justify-cente gap-2 bai-jamjuree-semibold"
-              htmlFor="Feeback"
-            >
-              <BiDetail />
-              Brief description
-            </label>
-            <p className="text-red-600 text-xs">
-              * We recommend using bullet points, as this information will help
-              the model process your document easier across all sources
-            </p>
-            <textarea
-              onChange={(e) => {
-                setDescription(e.target.value);
-              }}
-              value={description}
-              className="border text-sm py-1 space-grotesk  border-black dark:border-white rounded-sm px-2 font-normal w-full"
-              placeholder="Project deadlines and current progress detailed report"
-              rows={2}
-            />
-          </div>
-          {/* categories */}
-          <div className="flex items-start justify-start gap-3 flex-col  w-full rounded-lg p-2">
-            {/* domain heading and input */}
-            <section className="flex items-center justify-between w-full relative">
-              <label
-                className="text-sm md:text-md font-semibold flex items-center justify-center gap-2 bai-jamjuree-semibold"
-                htmlFor="Feedback"
-              >
-                <BiCategory />
-                Domain
-              </label>
-              <div className="relative space-grotesk  bg-gradient-to-br from-blue-600 via-yellow-600 to-red-600 p-0.5 rounded-xl">
+          <button
+            onClick={() => dispatch(setShowUserForm(false))}
+            className="text-neutral-500 hover:text-black dark:hover:text-white transition-colors"
+          >
+            <LuX size={20} />
+          </button>
+        </div>
+
+        {/* --- Scrollable Content --- */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent p-6 space-y-8">
+          {/* 1. Meta Data Section */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-bold bg-black dark:bg-white text-white dark:text-black px-1.5 py-0.5 space-grotesk">
+                01
+              </span>
+              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide bai-jamjuree-semibold">
+                Metadata
+              </span>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="group relative">
+                <label className="text-[10px] font-semibold text-neutral-500 uppercase mb-1  space-grotesk flex items-center gap-1">
+                  <FaCircleNodes size={10} /> File Identifier
+                </label>
                 <input
-                  onChange={handleSearchResults}
                   type="text"
-                  placeholder="Search domains..."
-                  className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm space-grotesk rounded-xl text-xs px-2 py-1 w-full md:w-80 focus:outline-none focus:ring-2 focus:ring-gray-100/10 border border-gray-300/50 dark:border-gray-600/50 "
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="enter_file_name_v1"
+                  className="w-full bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-700 text-sm px-3 py-2 space-grotesk text-neutral-900 dark:text-neutral-200 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 focus:ring-1 focus:ring-blue-600/20 transition-all rounded-sm placeholder:text-neutral-600"
                 />
-
-                {/* Results Dropdown */}
-                {searchResult.length > 0 && (
-                  <div className="absolute top-full left-0 w-full mt-2 z-50">
-                    <div className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600  shadow-lg max-h-40 overflow-y-auto">
-                      {searchResult.map((res: any, index: number) => (
-                        <div
-                          key={`result-${index}`}
-                          className="px-3 py-2 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
-                          onClick={() => {
-                            SetValues(res.name);
-                            SetSearchResult([]); // Clear results after selection
-                          }}
-                        >
-                          {res.type === "category" ? "📁" : "📄"} {res.name}
-                          {res.type === "subcategory" && ` (${res.parent})`}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-            </section>
 
-            <section className="flex items-center justify-evenly gap-2 flex-wrap max-h-40 overflow-auto  space-grotesk py-4">
-              {Categories.map((cat) => (
-                <button
-                  key={cat.name}
-                  onClick={() => dispatch(setCategory(cat.name))}
-                  className="p-1 rounded-lg text-xs flex flex-col items-center gap-0.5"
-                  title={cat.name}
-                >
-                  <div
-                    className={`w-6 h-6  ${
+              <div>
+                <label className="text-[10px] font-semibold text-neutral-500 uppercase mb-1  space-grotesk flex items-center gap-1">
+                  <BiDetail size={12} /> Synopsis
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="> Brief description for vectorization context..."
+                  rows={3}
+                  className="w-full bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-700 text-sm px-3 py-2 space-grotesk text-neutral-900 dark:text-neutral-200 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 focus:ring-1 focus:ring-blue-600/20 transition-all rounded-sm resize-none placeholder:text-neutral-600"
+                />
+                <p className="text-[10px] text-neutral-500 mt-1 text-right space-grotesk">
+                  Markdown supported
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <hr className="border-neutral-200 dark:border-neutral-800 border-dashed" />
+
+          {/* 2. Taxonomy Section */}
+          <section className="space-y-4 relative">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-bold bg-black dark:bg-white text-white dark:text-black px-1.5 py-0.5 space-grotesk">
+                02
+              </span>
+              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide bai-jamjuree-semibold">
+                Taxonomy
+              </span>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <BiSearch className="text-neutral-500" />
+              </div>
+              <input
+                onChange={handleSearchResults}
+                type="text"
+                placeholder="Search domain ontology..."
+                className="w-full pl-9 pr-4 py-2 bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-sm text-xs space-grotesk focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 text-neutral-900 dark:text-white"
+              />
+
+              {/* Search Results Popover */}
+              {searchResult.length > 0 && (
+                <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-black border border-neutral-300 dark:border-neutral-700 shadow-xl z-50 max-h-48 overflow-y-auto scrollbar-thin">
+                  {searchResult.map((res: any, index: number) => (
+                    <button
+                      key={index}
+                      className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-neutral-100 dark:hover:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 last:border-0 flex items-center gap-2 text-neutral-700 dark:text-neutral-300"
+                      onClick={() => {
+                        SetValues(res.name);
+                        SetSearchResult([]);
+                      }}
+                    >
+                      <span className="text-blue-500">
+                        {res.type === "category" ? ">" : "#"}
+                      </span>
+                      {res.name}
+                      {res.type === "subcategory" && (
+                        <span className="opacity-50 ml-auto text-[10px]">
+                          [{res.parent}]
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Domains Grid - Compact & Dense */}
+            <div>
+              <label className="text-[10px] font-semibold text-neutral-500 uppercase mb-2 block space-grotesk">
+                Select Domain
+              </label>
+              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto scrollbar-thin pr-1">
+                {Categories.map((cat) => (
+                  <button
+                    key={cat.name}
+                    onClick={() => dispatch(setCategory(cat.name))}
+                    className={`px-3 py-1 text-[11px] border rounded-sm transition-all space-grotesk ${
                       category === cat.name
-                        ? "bg-green-500/20 border-green-500 text-green-500"
-                        : "text-white dark:text-black bg-black dark:bg-gray-100"
-                    } hover:underline   rounded-md flex items-center justify-center`}
+                        ? "bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white font-bold"
+                        : "bg-white dark:bg-black text-neutral-600 dark:text-neutral-400 border-neutral-300 dark:border-neutral-700 hover:border-neutral-500 dark:hover:border-neutral-500"
+                    }`}
                   >
-                    {cat.name.slice(0, 2)}
-                  </div>
-                  <span className="text-[10px] truncate w-full text-center">
-                    {cat.name.length > 8
-                      ? `${cat.name.slice(0, 8)}...`
-                      : cat.name}
-                  </span>
-                </button>
-              ))}
-            </section>
-          </div>
-          {/* subCategories */}
-          <div className="flex items-start justify-start gap-3 flex-col  w-full rounded-lg p-2">
-            <label
-              className="text-sm md:text-md font-semibold flex items-center justify-cente gap-2 bai-jamjuree-semibold "
-              htmlFor="Feeback"
-            >
-              SubDomain <FiChevronDown />
-            </label>
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-            <section className="flex items-center justify-center gap-2 flex-wrap space-grotesk">
+            {/* Subcategories - Horizontal Strip */}
+            <AnimatePresence>
               {category && (
-                <div className="mt-3">
-                  <label className="text-sm font-semibold">
-                    Subcategories for {category}
-                  </label>
-                  <div className="flex flex-wrap gap-1 mt-2 max-h-24 overflow-auto">
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <FiChevronRight className="text-neutral-500 text-xs" />
+                    <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase space-grotesk">
+                      {category} Sub-Nodes
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 bg-neutral-50 dark:bg-neutral-900/30 p-2 border border-neutral-200 dark:border-neutral-800 rounded-sm">
                     {SubCategories.find(
                       (cat) => cat.parent === category
                     )?.subcategories.map((sub) => (
@@ -261,292 +304,201 @@ const UserForm: React.FC<FormProps> = ({
                         key={sub}
                         onClick={() => {
                           dispatch(setSubCategory(sub));
-
                           const category = SubCategories.find((e) =>
                             e.subcategories.find((elm) => elm === sub)
                           );
-
-                          // console.log(category?.parent);
                           dispatch(setCategory(category?.parent));
                         }}
-                        className={`px-2 py-1 text-xs rounded-full border ${
+                        className={`px-2 py-0.5 text-[10px] uppercase tracking-wide border rounded-sm ${
                           subCategory === sub
-                            ? "bg-blue-500   border-blue-500"
-                            : "bg-black dark:bg-gray-200 border"
-                        } text-white dark:text-black`}
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "bg-transparent border-neutral-300 dark:border-neutral-700 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300"
+                        }`}
                       >
                         {sub}
                       </button>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               )}
-            </section>
-          </div>
-          {/* category and subCategory */}
+            </AnimatePresence>
+          </section>
 
-          <div className="space-y-1 border border-gray-500 rounded-md my-2 w-full p-2">
-            {category && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 dark:text-gray-400 bai-jamjuree-regular">
-                  Category
-                </span>
-                <span className="font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-full space-grotesk">
-                  {category ? category : "Not selected"}
-                </span>
-              </div>
-            )}
-            {subCategory && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 dark:text-gray-400 bai-jamjuree-regular">
-                  Subcategory
-                </span>
-                <span className="font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-full space-grotesk">
-                  {subCategory}
-                </span>
-              </div>
-            )}
-          </div>
-          {/* ) : (
-            <div className="border p-2 space-grotesk w-full text-center rounded-sm mb-2">
-              <span>Please select a domain first !</span>
+          <hr className="border-neutral-200 dark:border-neutral-800 border-dashed" />
+
+          {/* 3. Upload & Visibility */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-bold bg-black dark:bg-white text-white dark:text-black px-1.5 py-0.5 space-grotesk">
+                03
+              </span>
+              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide bai-jamjuree-semibold">
+                Source & Scope
+              </span>
             </div>
-          )} */}
-          <div className="flex items-start justify-start gap-3 flex-col w-full p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-black">
-            <label className="flex items-center justify-between w-full font-bold text-sm md:text-md bai-jamjuree-semibold">
-              <span>Choose your file</span>
+
+            <div className="grid grid-cols-1 gap-4">
+              {/* File Dropzone */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 rounded-full dark:bg-gray-300 bg-gray-400 hover:bg-gray-600 transition-all duration-300 cursor-pointer z-[1] text-white dark:text-black hover:scale-110"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add(
+                    "border-blue-500",
+                    "bg-blue-50/10"
+                  );
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove(
+                    "border-blue-500",
+                    "bg-blue-50/10"
+                  );
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove(
+                    "border-blue-500",
+                    "bg-blue-50/10"
+                  );
+                  const file = e.dataTransfer.files[0];
+                  if (file && isSupportedFormat(file.name))
+                    setSelectedFile?.(file);
+                }}
+                className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 bg-neutral-50 dark:bg-neutral-900/20 rounded-sm p-6 cursor-pointer transition-all group relative"
               >
-                <FaRegFile className="transition-transform duration-300 hover:rotate-12" />
-              </div>
-            </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.docx,.txt,.md,.json,.csv,.pptx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setSelectedFile?.(file);
+                  }}
+                />
 
-            {/* File type indicators */}
-            <div className="w-full">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                Supported formats:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {["pdf", "docx", "txt", "md", "json", "csv", "pptx"].map(
-                  (format) => (
-                    <span
-                      key={format}
-                      className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-md text-xs font-medium"
+                {selectedFile ? (
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">
+                        {getFileIcon(selectedFile.name)}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-neutral-900 dark:text-white space-grotesk">
+                          {selectedFile.name}
+                        </p>
+                        <p className="text-[10px] text-neutral-500 font-mono">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (setSelectedFile) {
+                          setSelectedFile(null);
+                        }
+                      }}
+                      className="text-xs text-red-500 hover:underline"
                     >
-                      .{format}
-                    </span>
-                  )
+                      [REMOVE]
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <FaCloudUploadAlt className="mx-auto text-2xl text-neutral-400 mb-2 group-hover:scale-110 transition-transform" />
+                    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 bai-jamjuree-semibold">
+                      DRAG FILE OR CLICK TO BROWSE
+                    </p>
+                    <p className="text-[9px] text-neutral-400 mt-1 font-mono">
+                      PDF, DOCX, TXT, MD, JSON, CSV
+                    </p>
+                  </div>
                 )}
               </div>
-            </div>
 
-            {/* Selected file display */}
-            {selectedFile && (
-              <div className="w-full p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FaRegFile className="text-green-600" />
-                    <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                      {selectedFile.name}
-                    </span>
-                  </div>
-                  <span className="text-xs text-green-600 dark:text-green-400">
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                  </span>
-                </div>
+              {/* Visibility Toggle */}
+              <div className="bg-neutral-100 dark:bg-neutral-900 p-1 rounded-sm flex border border-neutral-200 dark:border-neutral-800">
+                {["Public", "Private"].map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => dispatch(setVisibility(option))}
+                    className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-medium rounded-sm transition-all space-grotesk ${
+                      visibility === option
+                        ? "bg-white dark:bg-neutral-800 text-black dark:text-white shadow-sm border border-neutral-200 dark:border-neutral-700"
+                        : "text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+                    }`}
+                  >
+                    {option === "Public" ? (
+                      <FaEye size={10} />
+                    ) : (
+                      <FaLock size={10} />
+                    )}
+                    {option.toUpperCase()}
+                  </button>
+                ))}
               </div>
-            )}
-
-            <input
-              onChange={(e) => {
-                const file = e.target.files?.[0] ?? null;
-                setSelectedFile?.(file);
-              }}
-              ref={fileInputRef}
-              className="hidden"
-              type="file"
-              accept=".pdf,.docx,.txt,.md,.json,.csv,.pptx"
-            />
-
-            {/* Drag and drop area */}
-            <div
-              className="w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-center cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors duration-300"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.add("border-blue-400", "bg-blue-50");
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.remove(
-                  "border-blue-400",
-                  "bg-blue-50"
-                );
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.remove(
-                  "border-blue-400",
-                  "bg-blue-50"
-                );
-                const file = e.dataTransfer.files[0];
-                if (file && isSupportedFormat(file.name)) {
-                  setSelectedFile?.(file);
-                }
-              }}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <FaCloudUploadAlt className="mx-auto text-3xl text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Drag and drop your file here or click to browse
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                Supports: PDF, DOCX, TXT, MD, JSON, CSV, PPTX
-              </p>
             </div>
+          </section>
+        </div>
+
+        {/* --- Footer: Action & Status --- */}
+        <div className="p-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#0a0a0a]">
+          {/* Status Bar */}
+          {uploading && (
+            <div className="mb-3 flex items-center gap-2 text-xs font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 px-3 py-2 border-l-2 border-blue-500">
+              <BiHourglass className="animate-spin" />
+              <span>STATUS: {uploadStatus || "INITIALIZING STREAM..."}</span>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => dispatch(setShowUserForm(false))}
+              className="px-4 py-3 text-xs font-bold uppercase tracking-wider bg-transparent border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors w-1/3 rounded-sm space-grotesk"
+            >
+              Cancel
+            </button>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              disabled={uploading}
+              onClick={() => {
+                if (!feedback || !description) {
+                  // Assuming you have toast imported
+                  toast.error(
+                    "MISSING FIELDS: Filename and Description required"
+                  );
+                  return;
+                }
+                if (!selectedFile) {
+                  toast.error("MISSING RESOURCE: No file selected");
+                  return;
+                }
+
+                const UserData = new FormData();
+                UserData.append("feedback", feedback);
+                UserData.append("about", description);
+                // Append other fields if your backend expects them separately or relying on state
+                handleUpload?.(UserData);
+              }}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-sm transition-all shadow-sm space-grotesk ${
+                uploading
+                  ? "bg-neutral-200 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed"
+                  : "bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200"
+              }`}
+            >
+              {uploading ? (
+                "PROCESSING..."
+              ) : (
+                <>
+                  <BiUpload size={14} /> INGEST DOCUMENT
+                </>
+              )}
+            </motion.button>
           </div>
-          {/* visibility section */}
-          <div className="flex items-start justify-start gap-3 flex-col w-full rounded-lg p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
-            <label className="text-sm font-semibold flex items-center gap-2 bai-jamjuree-semibold text-black dark:text-gray-300">
-              Visibility <FaEye className="text-blue-500" />
-            </label>
-
-            <section className="flex items-center gap-4 w-full space-grotesk">
-              {/* Public Option */}
-              <label className="flex-1 cursor-pointer group">
-                <input
-                  value="Public"
-                  onChange={(e) => dispatch(setVisibility(e.target.value))}
-                  name="visibility"
-                  type="radio"
-                  className="sr-only" // Hide default radio
-                />
-                <div
-                  className={`p-3 rounded-xl border-2 transition-all duration-200 group-hover:scale-105 ${
-                    visibility === "Public"
-                      ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-lg shadow-green-500/20"
-                      : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 group-hover:border-green-400"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                        visibility === "Public"
-                          ? "border-green-500 bg-green-500"
-                          : "border-gray-400 dark:border-gray-500 group-hover:border-green-400"
-                      }`}
-                    >
-                      {visibility === "Public" && (
-                        <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
-                      )}
-                    </div>
-                    <div>
-                      <span
-                        className={`font-medium text-sm block ${
-                          visibility === "Public"
-                            ? "text-green-700 dark:text-green-300"
-                            : "text-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        Public
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        Anyone can access
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </label>
-
-              {/* Private Option */}
-              <label className="flex-1 cursor-pointer group">
-                <input
-                  value="Private"
-                  onChange={(e) => dispatch(setVisibility(e.target.value))}
-                  name="visibility"
-                  type="radio"
-                  className="sr-only"
-                />
-                <div
-                  className={`p-3 rounded-xl border-2 transition-all duration-200 group-hover:scale-105 ${
-                    visibility === "Private"
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg shadow-blue-500/20"
-                      : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 group-hover:border-blue-400"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                        visibility === "Private"
-                          ? "border-blue-500 bg-blue-500"
-                          : "border-gray-400 dark:border-gray-500 group-hover:border-blue-400"
-                      }`}
-                    >
-                      {visibility === "Private" && (
-                        <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
-                      )}
-                    </div>
-                    <div>
-                      <span
-                        className={`font-medium text-sm block ${
-                          visibility === "Private"
-                            ? "text-blue-700 dark:text-blue-300"
-                            : "text-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        Private
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        Only you can access
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </label>
-            </section>
-          </div>
-          <motion.button
-            onClick={() => {
-              const UserData = new FormData();
-              if (!feedback || !description) {
-                toast.info("Please fill in all fields");
-                return;
-              }
-
-              UserData.append("feedback", feedback);
-              UserData.append("about", description);
-              handleUpload?.(UserData);
-            }}
-            disabled={uploading === true}
-            whileDrag={{ scale: 2 }}
-            whileTap={{ scale: 1.09, boxShadow: "2px 2px 2px gray" }}
-            className={` ${
-              loading === true ? "bg-green-500 " : "bg-black dark:bg-white"
-            } text-white  dark:text-black rounded-xl px-3 py-2  text-sm  cursor-pointer  transition-all duration-300 z-[1] bai-jamjuree-regular flex items-center justify-center gap-2 bai-jamjuree-semibold w-full`}
-          >
-            {uploading === true ? (
-              <>
-                {uploadStatus} <BiHourglass className="animate-spin" />
-              </>
-            ) : (
-              <>
-                Upload Document
-                <BiUpload size={20} />
-              </>
-            )}
-          </motion.button>
-          <p className="text-xs text-gray-600 dark:text-gray-300 space-grotesk text-center">
-            Note - The upload time depends on your subscription and the number
-            of pages in the file
-          </p>
-          <button
-            onClick={() => dispatch(setShowUserForm(!shhowUserForm))}
-            className="dark:bg-white/10 rounded-xl px-3 py-2  text-sm  cursor-pointer  transition-all duration-300 z-[1] bai-jamjuree-regular flex items-center justify-center gap-2 bai-jamjuree-semibold w-full"
-          >
-            Cancel
-          </button>
-        </section>
+        </div>
       </div>
     </>
   );

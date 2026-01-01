@@ -7,6 +7,8 @@ import { MdKey } from "react-icons/md";
 import { useAppSelector } from "../store/hooks.tsx";
 import { BsPeople } from "react-icons/bs";
 import { motion } from "framer-motion";
+import { CustomDropdown } from "./Theme_Picker.tsx";
+import { LogoRender } from "./LogoRender.tsx";
 type SidebarProps = {
   isVisble: boolean;
   setIsVisible: React.Dispatch<React.SetStateAction<boolean>>;
@@ -14,6 +16,7 @@ type SidebarProps = {
 //  = useAppSelector(state => state.auth.isLoggedIn);
 const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
   const { isLoggedIn, user } = useAppSelector((state) => state.auth);
+  const { CurrentTheme } = useAppSelector((state) => state.interface);
 
   return (
     <>
@@ -23,13 +26,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           x: isVisble === true ? 0 : -500,
         }}
         transition={{ duration: 0.3, ease: "backInOut" }}
-        onClick={() => {
-          if (isVisble === true) {
-            setIsVisible(false);
-          }
-
-          // -translate-y-0 translate-y-90
-        }}
         className={`md:hidden fixed h-full w-70  top-0 rotate-0 bg-white dark:bg-black dark:text-white text-black  z-[20] rounded-tr-md pt-10 rounded-br-md   duration-500 transition-all cursor-pointer flex flex-col items-center justify-start border border-gray-300 dark:border-gray-700`}
       >
         {/* logo  */}
@@ -40,14 +36,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             alt="logo"
           /> */}
 
-          <label htmlFor="logo">AntiNode</label>
+          <LogoRender />
         </header>
+
         {/* HeaderSection */}
-        <div className="border-b w-full px-3 py-3">
+        <div className="border-b w-full px-3 py-3 relative">
+          <ul className="md:hidden text-xs space-grotesk absolute border rounded-sm -bottom-8 right-9 flex items-center justify-center">
+            Theme
+            <CustomDropdown />
+          </ul>
           <section className="space-y-3">
             <h1 className="bai-jamjuree-semibold flex items-center justify-start gap-3">
               <Link
-                className="p-1 flex items-center justify-center h-6 w-6 rounded-full dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold"
+                className={`p-1 flex items-center justify-center h-6 w-6 rounded-full ${CurrentTheme.user} space-grotesk font-semibold`}
                 role="button"
                 to="/user/dashboard"
               >
@@ -61,10 +62,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           </section>
         </div>
         {/*navigation links  */}
-        <section className="grid grid-cols-1 space-y-2  w-full mt-8  text-sm space-grotesk realative">
-          {/* <ul className="py-2 pl-4 "> <CustomDropdown /> */}
-          {/* </ul> */}
+        <section className="grid grid-cols-1 space-y-2  w-full mt-8  text-sm space-grotesk relative">
           <Link
+            onClick={() => {
+              if (isVisble === true) {
+                setIsVisible(false);
+              }
+
+              // -translate-y-0 translate-y-90
+            }}
             className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10 pl-4   hover:pl-12 hover:transition-all duration-300"
             to="/"
           >
@@ -72,6 +78,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             Home
           </Link>
           <Link
+            onClick={() => {
+              if (isVisble === true) {
+                setIsVisible(false);
+              }
+
+              // -translate-y-0 translate-y-90
+            }}
             className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/Interface"
           >
@@ -79,6 +92,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             Try Now
           </Link>
           <Link
+            onClick={() => {
+              if (isVisble === true) {
+                setIsVisible(false);
+              }
+
+              // -translate-y-0 translate-y-90
+            }}
             className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/user/rooms"
           >
@@ -87,6 +107,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           </Link>
           {isLoggedIn === false && user?.email === "" && (
             <Link
+              onClick={() => {
+                if (isVisble === true) {
+                  setIsVisible(false);
+                }
+
+                // -translate-y-0 translate-y-90
+              }}
               className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
               to="/Register"
             >
@@ -96,6 +123,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           )}
           {isLoggedIn === false && user?.email === "" ? (
             <Link
+              onClick={() => {
+                if (isVisble === true) {
+                  setIsVisible(false);
+                }
+
+                // -translate-y-0 translate-y-90
+              }}
               className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
               to="/Login"
             >
@@ -104,6 +138,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             </Link>
           ) : (
             <Link
+              onClick={() => {
+                if (isVisble === true) {
+                  setIsVisible(false);
+                }
+
+                // -translate-y-0 translate-y-90
+              }}
               className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
               to="user/dashboard"
             >
@@ -112,6 +153,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             </Link>
           )}
           <Link
+            onClick={() => {
+              if (isVisble === true) {
+                setIsVisible(false);
+              }
+
+              // -translate-y-0 translate-y-90
+            }}
             className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/Feedback"
           >
@@ -119,6 +167,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             Feedback
           </Link>
           <Link
+            onClick={() => {
+              if (isVisble === true) {
+                setIsVisible(false);
+              }
+
+              // -translate-y-0 translate-y-90
+            }}
             className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
             to="/Api/introduction"
           >

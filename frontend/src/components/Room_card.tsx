@@ -32,7 +32,7 @@ const RoomCard: React.FC<props> = ({ room, index }) => {
         <div className="absolute top-0 right-0 -mr-10 -mt-10 h-32 w-32 rounded-full bg-blue-500/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
         {/* --- TOP SECTION: Header & Badge --- */}
-        <div className="space-y-4 relative z-10">
+        <div className="space-y-4 relative ">
           <div className="flex items-start justify-between gap-3">
             {/* Room Type Badge */}
             <span
@@ -80,7 +80,7 @@ const RoomCard: React.FC<props> = ({ room, index }) => {
         </div>
 
         {/* --- BOTTOM SECTION: Meta Data --- */}
-        <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-white/5 flex items-end justify-between relative z-10">
+        <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-white/5 flex items-end justify-between relative ">
           {/* Left: Participant Count */}
           <div className="flex flex-col gap-1">
             <span className="text-[10px] uppercase tracking-wider text-neutral-400 space-grotesk">

@@ -111,16 +111,20 @@ export const CacheCurrentChat = async (message, user) => {
 
   const exists = await redisClient.exists(ConversationCacheKey);
   if (exists) {
-    const Chats = await redisClient.rPush(
-      ConversationCacheKey,
-      JSON.stringify(message)
-    ); //update the list
+    const MAX_HISTORY = 10; // Set your strict limit here
+
+    await redisClient
+      .multi()
+      .rPush(ConversationCacheKey, JSON.stringify(message)) // 1. Add new message
+      .lTrim(ConversationCacheKey, -MAX_HISTORY, -1) // 2. Keep only the last 50
+      .exec();
+    //update the list
   } else {
     //using redis multi to execute two operations together to avoid race conditions
     const multi = redisClient.multi();
 
     multi.rPush(ConversationCacheKey, JSON.stringify(message));
-    multi.expire(ConversationCacheKey, 5000); // 5000 seconds
+    multi.expire(ConversationCacheKey, 1000); // 5000 seconds
 
     //execute the logic atomically
     const result = await multi.exec();

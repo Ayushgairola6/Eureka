@@ -30,7 +30,7 @@ import {
 // const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
-import { SetQueryCount } from "../store/AuthSlice.ts";
+import { SetQueryCount, setVariant } from "../store/AuthSlice.ts";
 import AccessBar from "@/components/AccessBar.tsx";
 import { useState } from "react";
 import { setCurrentStatus, setWebStatus } from "../store/websockteSlice.ts";
@@ -549,7 +549,7 @@ const InputSection: React.FC<InputProps> = ({
                   if (selectedDoc) dispatch(setSelectedDoc(""));
                   dispatch(setShowOptions(!shwoOptions));
                   SetShowFeatures(false);
-
+                  dispatch(setVariant("signal-break"));
                   dispatch(setQueryType(""));
                 }}
                 className={` cursor-pointer  ${
@@ -565,7 +565,10 @@ const InputSection: React.FC<InputProps> = ({
             {/* query type for personal documents */}
             {selectedDoc && (
               <ul
-                onClick={() => dispatch(setShowType(!showType))}
+                onClick={() => {
+                  dispatch(setShowType(!showType));
+                  dispatch(setVariant("binary-cut"));
+                }}
                 className={`  cursor-pointer ${
                   selectedDoc
                     ? "dark:bg-white bg-black dark:text-black text-white"
@@ -583,7 +586,11 @@ const InputSection: React.FC<InputProps> = ({
                 SetShowFeatures={SetShowFeatures}
               />
               <button
-                onClick={() => SetShowFeatures(!Showfeatures)}
+                onClick={() => {
+                  dispatch(setVariant("split-badge-original"));
+
+                  SetShowFeatures(!Showfeatures);
+                }}
                 className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-1  h-auto  "
               >
                 <BsPlusLg size={18} />
@@ -596,6 +603,8 @@ const InputSection: React.FC<InputProps> = ({
 
             <ul
               onClick={() => {
+                dispatch(setVariant("bracketed-identity"));
+
                 dispatch(setShowUserForm(!shhowUserForm));
               }}
               className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-1  h-auto relative group"

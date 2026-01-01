@@ -77,6 +77,7 @@ interface AuthState {
   isLoggedIn: boolean;
   isLoggingOut: boolean;
   isCleaning: boolean;
+  variant: string;
 }
 interface ActionPayload {
   action_type: string;
@@ -96,6 +97,7 @@ const initialState: AuthState = {
     IsPremiumUser: false,
     AllowedTrainingModels: "YES",
   },
+  variant: "stacked-microtype",
   AllowedTrainingModels: "YES",
   loading: false,
   error: null,
@@ -402,6 +404,9 @@ const authSlice = createSlice({
     setCurrTab: (state, action) => {
       state.currTab = action.payload;
     },
+    setVariant: (state, action) => {
+      state.variant = action.payload;
+    },
     SetNotifications: (state, action) => {
       // console.log(action.payload)
       state.notifications = state.notifications.filter(
@@ -528,5 +533,6 @@ export const {
   DeleteFromDocs,
   togglePreference,
   UpdatedPreference,
+  setVariant,
 } = authSlice.actions;
 export default authSlice.reducer;

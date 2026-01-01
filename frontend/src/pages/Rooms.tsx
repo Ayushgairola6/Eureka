@@ -20,7 +20,7 @@ const UserChatRooms = () => {
               </h1>
               <button
                 onClick={() => setView(!view)}
-                className=" z-[3]  rounded-sm py-1 px-2  text-xs space-grotesk flex items-center justify-center dark:bg-white/10 lg:hidden bg-black/10 dark:text-white text-black md:hidden  gap-2 hover:shadow-blue-600/30 shadow-xl transition-all duration-300"
+                className="   rounded-sm py-1 px-2  text-xs space-grotesk flex items-center justify-center dark:bg-white/10 lg:hidden bg-black/10 dark:text-white text-black md:hidden  gap-2 hover:shadow-blue-600/30 shadow-xl transition-all duration-300"
               >
                 Analytics <BsArrowLeft />
               </button>
