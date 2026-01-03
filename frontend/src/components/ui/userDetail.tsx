@@ -125,7 +125,7 @@ const UserForm: React.FC<FormProps> = ({
   return (
     <>
       <div
-        className={`fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-[2] transition-opacity duration-200 ${
+        className={`fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-[2] transition-opacity duration-200 top-10 ${
           shhowUserForm
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"

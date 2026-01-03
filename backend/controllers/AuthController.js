@@ -831,15 +831,15 @@ export const GetUserContributions = async (user_id) => {
 // Function to get user question count
 export const GetUserQuestionAskedCount = async (user_id) => {
   try {
-    //local timezone
-    const today = new Date().toISOString().split("T")[0]; //only the date part
+    const date = new Date();
+    const currentMonthKey = `${date.getFullYear()}-${date.getMonth() + 1}`; //only the date part
 
     //fetch only todays limits
     const { data, error } = await supabase
       .from("Question_Rate_Limits")
       .select("question_asked_count")
       .eq("user_id", user_id)
-      .eq("day_date", today)
+      .eq("Month-Year", currentMonthKey)
       .single();
 
     if (error) {

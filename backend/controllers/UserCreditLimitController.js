@@ -1,125 +1,147 @@
-import dayjs from "dayjs"; // Recommended for easy TTL calc, or use your Date math
 import { redisClient } from "../CachingHandler/redisClient.js";
 import { supabase } from "./supabaseHandler.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
-
+import dotenv from "dotenv";
+dotenv.config();
 //handles limit check and update all at once
+export async function GlobalRequestRateLimit(req, res, next) {
+  const LIMIT = process.env.AGENT_REQUESTS_PER_MINUTE; //requests allowed for agent per minute
+  const WINDOW_SECONDS = 60; // 1 minute
+
+  //unique integer for every minute
+  const currentMinuteEpoch = Math.floor(Date.now() / 60000);
+  const key = `Anti-Node_global_rate_limit:${currentMinuteEpoch}`;
+
+  try {
+    //if value does not exist add a new one else increment existing one
+    const currentCount = await redisClient.incr(key);
+
+    // if this is the first value of minute set an expiry
+    if (currentCount === 1) {
+      await redisClient.expire(key, WINDOW_SECONDS + 5);
+    }
+
+    //  Check Limit
+    if (currentCount > LIMIT) {
+      return res.status(429).send({ message: "Too many requests" });
+    }
+
+    next();
+  } catch (err) {
+    await notifyMe("Error in redis based global rate limit handler", err);
+    // Fail OPEN: If Redis goes down, allow traffic so you don't kill your app.
+    next();
+  }
+}
+
 export const ProcessUserQuery = async (user, queryType) => {
   const user_id = user.user_id;
-  const DAILY_LIMIT = 10;
+  const Monthly_Quota = parseInt(process.env.USER_QUOTA_LIMIT || 20); // Always parse env vars
 
   // 1. Premium Check (Fastest exit)
   if (user.PaymentStatus === true) {
     return { status: "ok", message: "Premium user - no limits" };
   }
 
-  // measure for day_date field
-  const today = new Date().toISOString().split("T")[0];
-
   try {
-    //atomic update for the user to avoid race conditions
-    const UserAccountDataKey = `user_id=${user_id}'s_dashboardData`;
+    // FIX 1: Passed the required arguments (user_id, queryType)
+    const CurrentCount = await CheckQuotaInCacheAndDB(user_id, queryType);
 
-    let newCount;
-
-    //one synthesisQuery==5 queries
-    if (queryType === "Synthesis") {
-      newCount = await IncrementCache(UserAccountDataKey, 5);
-    } else {
-      newCount = await IncrementCache(UserAccountDataKey, 1);
-    } //This is an upsert operation
-    // If Redis says count is '1', it implies this is the first request of the day.
-    // BUT, Redis might have just crashed or evicted the key.
-    // We must check the DB *once* to be sure we aren't resetting a user who actually has 15 queries.
-
-    if (newCount === 1) {
-      // Verify against DB to ensure this isn't a false reset
-      // We read the DB only on the "first" request of the cached session
-      const { data: dbData } = await supabase
-        .from("Question_Rate_Limits")
-        .select("question_asked_count")
-        .eq("user_id", user_id)
-        .eq("day_date", today) //value that only matches today
-        .single();
-
-      // If DB has data (e.g., 15) but Redis said 1, we sync Redis to DB + 1
-      if (dbData && dbData.question_asked_count > 0) {
-        const correctCount = dbData.question_asked_count + 1;
-
-        // Fix Redis to match reality
-        await redisClient.hSet(UserAccountDataKey, "querycount", correctCount); //update the new value for the user if the older data was wrong
-        const refreshTime = await redisClient.ttl(UserAccountDataKey);
-        // If the corrected count exceeds limit, stop here
-        if (correctCount > DAILY_LIMIT) {
-          return {
-            status: "not ok",
-            message: `You have reached your daily limit it will reset at ${refreshTime}`,
-          };
-        }
-
-        // Sync the increment to DB via RPC
-
-        // await supabase.rpc("rpc_increment_rate_limit", {
-        //   p_user_id: user_id,
-        //   p_day_date: today,
-        // }); ///use the rpc fnction to upsert the informaiton
-
-        const { data: newCount, error } = await supabase
-          .from("Question_Rate_Limits")
-          .update({ question_asked_count: newCount, day_date: today })
-          .eq("user_id", user.user_id)
-          .eq("day_date", today)
-          .select()
-          .single();
-
-        if (error) {
-          console.error(
-            "An error occured whileupdating users quota details",
-            error
-          );
-        }
-
-        return {
-          status: "ok",
-          message: `Query ${correctCount} of ${DAILY_LIMIT}`,
-        };
-      }
-    }
-
-    if (newCount > DAILY_LIMIT) {
+    // Check if the NEW count exceeds limit
+    if (CurrentCount > Monthly_Quota) {
       return {
         status: "not ok",
-        message: `You have reached your free tier limit of ${DAILY_LIMIT} queries.`,
+        message: "You have exhausted your monthly quota",
       };
     }
 
-    //if the query fails once try it again once more
-    // const { error } = await supabase.rpc("rpc_increment_rate_limit", {
-    //   p_user_id: user_id,
-    //   p_day_date: today,
-    // });
-    // if (error) {
-    //   await notifyMe(
-    //     "An error occured in the rate_limit rpc function check asap",
-    //     error
-    //   );
-    // }
-
-    return {
-      status: "ok",
-      message: `Query ${newCount} of ${DAILY_LIMIT}`,
-    };
+    return { status: "ok" }; // Explicit success return
   } catch (error) {
-    console.error(error);
-    await notifyMe("Something went wrong in the rateLimiterController", error);
-    return { status: "not ok", message: "Service temporarily unavailable" };
+    await notifyMe("Rate Limit Error", error);
+    // Fail Open: If system breaks, let user through (better UX)
+    return { status: "ok", message: "System bypass" };
   }
 };
+async function updateDbQuota(user_id, monthKey, count) {
+  // We use upsert so it handles both "Update" and "Insert new month" logic
+  const { error } = await supabase.from("Question_Rate_Limits").upsert(
+    {
+      user_id: user_id,
+      "Month-Year": monthKey,
+      question_asked_count: count,
+    },
+    { onConflict: 'user_id, "Month-Year"' }
+  );
 
-async function IncrementCache(key, value) {
-  const exists = await redisClient.exists(key);
-  if (exists) {
-    await redisClient.hIncrBy(key, "querycount", JSON.stringify(value));
+  if (error) console.error("Failed to sync quota to DB:", error);
+}
+//checks the user quota in cache as well as db and then caches it
+export async function CheckQuotaInCacheAndDB(user_id, query_type) {
+  const date = new Date();
+  // Format: "2026-01" (YYYY-MM)
+  const currentMonthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+  const redisKey = `quota:${user_id}:${currentMonthKey}`;
+
+  const CACHE_TTL = 86400;
+
+  try {
+    // If key doesn't exist, Redis returns 1.
+    // We need to verify if this is a "real" 1 (new month) or a "fake" 1 (cache expired).
+    const exists = await redisClient.exists(redisKey);
+
+    let newCount;
+
+    if (exists) {
+      // --- SCENARIO A: Cache Hit (Fast Path) ---
+      if (query_type === "Synthesis") {
+        newCount = await redisClient.incrBy(redisKey, 2);
+      } else {
+        newCount = await redisClient.incr(redisKey);
+      }
+
+      // OPTIONAL: Update DB asynchronously (Fire and Forget)
+      // We don't await this because we don't want to slow down the user.
+      // We assume Redis is the source of truth for the active session.
+      updateDbQuota(user_id, currentMonthKey, newCount);
+    } else {
+      // --- SCENARIO B: Cache Miss (Redis expired or New Month) ---
+
+      // A. Get the "True" count from Supabase
+      const { data, error } = await supabase
+        .from("Question_Rate_Limits")
+        .select("question_asked_count")
+        .eq("user_id", user_id)
+        .eq("Month-Year", currentMonthKey)
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid error on empty rows
+
+      // B. Determine starting point
+      let dbCount = 0;
+      if (data) {
+        dbCount = data.question_asked_count;
+      }
+
+      // C. Calculate new count
+      if (query_type === "Synthesis") {
+        newCount = dbCount + 2;
+      } else {
+        newCount = dbCount + 1;
+      }
+
+      // D. "Warm up" the cache
+      // We set the value to the new count.
+      await redisClient.set(redisKey, newCount, "EX", CACHE_TTL);
+
+      // E. Ensure DB row exists/updates
+      // We await this one to ensure the row is created if it's a brand new month
+      await updateDbQuota(user_id, currentMonthKey, newCount);
+    }
+
+    return newCount;
+  } catch (error) {
+    await notifyMe("error in user monthly quota handler", error);
+    // Fail Safe: If Redis dies, maybe return -1 or allow access?
+    // Usually better to fail open (allow) than block legitimate users.
+    return 1;
   }
 }
 ///check the user conribution information

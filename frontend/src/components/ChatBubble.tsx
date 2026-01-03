@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Streamdown } from "streamdown";
 import ResponseFeedback from "./ResponseFeedback.tsx";
 import { BiCopy } from "react-icons/bi";
-import { useAppSelector, useTypewriter } from "../store/hooks.tsx";
+import { useAppSelector } from "../store/hooks.tsx";
 import { toast } from "sonner";
 import { IoHourglass } from "react-icons/io5";
 import DocUsed from "@/components/DocumentsUsed.tsx";
-import { AnimatePresence, motion } from "framer-motion";
 import WebSearchStatus from "./web_search_status.tsx";
+import { ChatMessage } from "./Streaming_Component.tsx";
+import { AgentWelcome } from "./InterfaceWelcome_Components.tsx";
 // import {
 //   Bar,
 //   BarChart,
@@ -36,7 +36,6 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
     (state) => state.socket
   );
   const [docused, setShowDocUsed] = useState(false);
-  const { user } = useAppSelector((state) => state.auth);
   // array of welcom messages
   const steps = [
     "Uncovering", // Sounds more exciting than Researching
@@ -86,8 +85,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
               key={`chat-${index}-${chat.sent_by}`}
               className={`w-full md:w-3/5 relative  overflow-x-hidden ${
                 chat === Chats[Chats.length - 1] && Chats.length > 1
-                  ? "mb-50"
-                  : "mb-3"
+                  ? "mb-160"
+                  : "mb-5"
               }`}
             >
               {/* Chat Bubble Container */}
@@ -181,67 +180,16 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
           );
         })
       ) : (
-        <div
-          onClick={() => {
-            if (isActive === true) {
-              setIsActive(false);
-            }
-          }}
-          className="text-center  py-8  m-auto w-full  flex items-center justify-center flex-col gap-1"
-        >
-          <h1 className="md:text-5xl text-3xl  bai-jamjuree-bold ">
-            Welcome{" "}
-            {user?.username
-              ? user?.username.split("_")[0].toLocaleUpperCase()
-              : "Cadet"}{" "}
-          </h1>
-          <span className="text-md dark:text-gray-400 text-gray-700 space-grotesk font-semibold">
-            What are we {/* Apply your custom class here */}
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={text}
-                className="text-transparent  bg-clip-text bg-gradient-to-r from-blue-600 to-sky-600  "
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: -20, opacity: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                {text}
-              </motion.span>
-            </AnimatePresence>
-            {"  today?"}
-          </span>
-        </div>
+        <AgentWelcome
+          text={text}
+          isActive={isActive}
+          setIsActive={setIsActive}
+        />
       )}
     </>
   );
 };
 
 export default ChatBubble;
-
-//the render component for sse like effect
-const ChatMessage = ({ chat, lastMessageId }: any) => {
-  // 1. Determine if this message should be streaming
-  // Conditions:
-  //   a. It was NOT sent by the user ('You').
-  //   b. It is the LAST message in the entire chat history.
-  const isStreaming = chat?.sent_by !== "You" && chat.id === lastMessageId;
-
-  // 2. Call the hook UNCONDITIONALLY (Hooks rule!)
-  // Hooks must be called in the same order on every render.
-  // We pass the full content, but the hook is smart enough to manage the speed.
-  const streamingText = useTypewriter(chat.message.content, 10);
-
-  // 3. Determine which text source to use for rendering
-  const textToRender = isStreaming
-    ? streamingText // Use the animating text if streaming
-    : chat.message.content; // Use the full, final content if it's history
-
-  return (
-    // <div className={`message-bubble ${chat.sent_by}`}>
-    <Streamdown className="space-grotesk">{textToRender}</Streamdown>
-    // </div>
-  );
-};
 
 //charts renderer

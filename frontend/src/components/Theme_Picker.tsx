@@ -14,7 +14,7 @@ export const CHAT_THEMES = [
     name: "Obsidian",
     color: "#ffffff",
     user: "bg-white text-black font-mono border-b-4 border-black px-4 py-1",
-    ai: "bg-[#050505] text-[#00ff00] font-mono p-6 border border-zinc-800", // Matrix/Terminal style
+    ai: "bg-[#050505] text-indigo-400 font-mono p-6 border border-zinc-800", // Matrix/Terminal style
     // NEW: condensed terminal block with tuned green for readable contrast
     aiSharp:
       "px-3 py-2 leading-tight rounded-sm border border-zinc-800 bg-[#050505] dark:bg-[#000] font-mono text-[#7CFF9A] dark:text-[#66FF99] max-w-prose break-words shadow-[0_6px_18px_-14px_rgba(0,255,153,0.08)]",

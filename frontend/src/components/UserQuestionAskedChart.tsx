@@ -51,7 +51,7 @@ const QuestionAskedChart = () => {
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-500">Progress</span>
               <span className="text-sm font-bold text-green-500">
-                {Querycount / (user.IsPremiumUser === false ? 20 : 100)}%
+                {(user.IsPremiumUser === false ? 20 : 100) / Querycount}%
               </span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2">
@@ -59,7 +59,7 @@ const QuestionAskedChart = () => {
                 className="bg-green-500 h-2 rounded-full transition-all duration-500"
                 style={{
                   width: `${
-                    Querycount / (user.IsPremiumUser === false ? 20 : 100)
+                    (user.IsPremiumUser === false ? 20 : 100) / Querycount
                   }%`,
                 }}
               ></div>

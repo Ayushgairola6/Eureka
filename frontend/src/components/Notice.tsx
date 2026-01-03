@@ -13,7 +13,7 @@ export const Notice = () => {
   }, []);
 
   return (
-    <div className="fixed top-15 left-2  transition-all duration-300">
+    <div className="fixed top-20 left-2   transition-all duration-300">
       {showNotice ? (
         // EXPANDED STATE: The full warning
         <div className="flex flex-col gap-1 p-3 w-64 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-amber-200 dark:border-amber-900/50 rounded-lg shadow-xl ring-1 ring-black/5">

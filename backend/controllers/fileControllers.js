@@ -964,8 +964,7 @@ export const PostTypeWebSearch = async (req, res) => {
     if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
         Answer: UpdateState.message,
-        message: "Todays quota has finished!",
-        docUsed: [],
+        message: "Quota reached",
       });
     }
     let history = [];
@@ -977,100 +976,111 @@ export const PostTypeWebSearch = async (req, res) => {
     }
 
     // get necessary links from serper
-    const response = await GetDataFromSerper(question, req.user);
-    // console.log(response);
+    // const response = await GetDataFromSerper(question, req.user);
 
-    if (!response) {
-      return res
-        .status(400)
-        .send({ message: "An error occured while processing your request" });
-    }
-    // const response = {
-    //   searchParameters: {
-    //     q: "what are neural networks?",
-    //     type: "search",
-    //     engine: "google",
-    //   },
-    //   organic: [
-    //     {
-    //       title: "What Is a Neural Network?",
-    //       link: "https://www.ibm.com/think/topics/neural-networks",
-    //       snippet:
-    //         'A neural network is a machine learning model that stacks simple "neurons" in layers and learns pattern-recognizing weights and biases from data to map inputs to ...',
-    //       position: 1,
-    //     },
-    //     {
-    //       title: "Neural network (machine learning)",
-    //       link: "https://en.wikipedia.org/wiki/Neural_network_(machine_learning)",
-    //       snippet:
-    //         "A neural network consists of connected units or nodes called artificial neurons, which loosely model the neurons in the brain. Artificial neuron models that ...",
-    //       position: 2,
-    //     },
-    //     {
-    //       title: "What is a Neural Network?",
-    //       link: "https://www.geeksforgeeks.org/machine-learning/neural-networks-a-beginners-guide/",
-    //       snippet:
-    //         "Neural networks are machine learning models that mimic the complex functions of the human brain. These models consist of interconnected nodes or neurons that ...",
-    //       date: "Dec 16, 2025",
-    //       position: 3,
-    //     },
-    //     {
-    //       title: "ELI5: What are neural networks? : r/explainlikeimfive",
-    //       link: "https://www.reddit.com/r/explainlikeimfive/comments/14he980/eli5_what_are_neural_networks/",
-    //       snippet:
-    //         "Neural networks are a method of machine learning that tries to mimic how a brain would work. It's made up of nodes.",
-    //       date: "2 years ago",
-    //       position: 4,
-    //     },
-    //     {
-    //       title: "What is a Neural Network?",
-    //       link: "https://aws.amazon.com/what-is/neural-network/",
-    //       snippet:
-    //         "A neural network is a method in artificial intelligence (AI) that teaches computers to process data in a way that is inspired by the human brain.",
-    //       position: 5,
-    //     },
-    //     {
-    //       title: "Explained: Neural networks",
-    //       link: "https://news.mit.edu/2017/explained-neural-networks-deep-learning-0414",
-    //       snippet:
-    //         "Neural nets are a means of doing machine learning, in which a computer learns to perform some task by analyzing training examples.",
-    //       date: "Apr 14, 2017",
-    //       position: 6,
-    //     },
-    //     {
-    //       title: "Neural Networks Explained in 5 minutes",
-    //       link: "https://www.youtube.com/watch?v=jmmW0F0biz0",
-    //       snippet:
-    //         "Neural networks reflect the behavior of the human brain allowing computer programs to recognize patterns and solve common problems.",
-    //       date: "3 years ago",
-    //       position: 7,
-    //     },
-    //     {
-    //       title: "What is a neural network? | Types of neural networks",
-    //       link: "https://www.cloudflare.com/learning/ai/what-is-neural-network/",
-    //       snippet:
-    //         "A neural network is a computational system inspired by the human brain that learns to perform tasks by analyzing examples. It consists of interconnected nodes ...",
-    //       position: 8,
-    //     },
-    //     {
-    //       title: "What Is a Neural Network? - MATLAB & Simulink",
-    //       link: "https://www.mathworks.com/discovery/neural-network.html",
-    //       snippet:
-    //         "A neural network (also called an artificial neural network or ANN) is an adaptive system that learns by using interconnected nodes or neurons in a layered ...",
-    //       position: 9,
-    //     },
-    //     {
-    //       title: "Neural Networks: What are they and why do they matter?",
-    //       link: "https://www.sas.com/en_us/insights/analytics/neural-networks.html",
-    //       snippet:
-    //         "Neural networks are computing systems with interconnected nodes that work much like neurons in the human brain.",
-    //       position: 10,
-    //     },
-    //   ],
-    //   credits: 1,
-    // };
+    // if (!response) {
+    //   return res
+    //     .status(400)
+    //     .send({ message: "An error occured while processing your request" });
+    // }
+    // // const response = {
+    // //   searchParameters: {
+    // //     q: "what are neural networks?",
+    // //     type: "search",
+    // //     engine: "google",
+    // //   },
+    // //   organic: [
+    // //     {
+    // //       title: "What Is a Neural Network?",
+    // //       link: "https://www.ibm.com/think/topics/neural-networks",
+    // //       snippet:
+    // //         'A neural network is a machine learning model that stacks simple "neurons" in layers and learns pattern-recognizing weights and biases from data to map inputs to ...',
+    // //       position: 1,
+    // //     },
+    // //     {
+    // //       title: "Neural network (machine learning)",
+    // //       link: "https://en.wikipedia.org/wiki/Neural_network_(machine_learning)",
+    // //       snippet:
+    // //         "A neural network consists of connected units or nodes called artificial neurons, which loosely model the neurons in the brain. Artificial neuron models that ...",
+    // //       position: 2,
+    // //     },
+    // //     {
+    // //       title: "What is a Neural Network?",
+    // //       link: "https://www.geeksforgeeks.org/machine-learning/neural-networks-a-beginners-guide/",
+    // //       snippet:
+    // //         "Neural networks are machine learning models that mimic the complex functions of the human brain. These models consist of interconnected nodes or neurons that ...",
+    // //       date: "Dec 16, 2025",
+    // //       position: 3,
+    // //     },
+    // //     {
+    // //       title: "ELI5: What are neural networks? : r/explainlikeimfive",
+    // //       link: "https://www.reddit.com/r/explainlikeimfive/comments/14he980/eli5_what_are_neural_networks/",
+    // //       snippet:
+    // //         "Neural networks are a method of machine learning that tries to mimic how a brain would work. It's made up of nodes.",
+    // //       date: "2 years ago",
+    // //       position: 4,
+    // //     },
+    // //     {
+    // //       title: "What is a Neural Network?",
+    // //       link: "https://aws.amazon.com/what-is/neural-network/",
+    // //       snippet:
+    // //         "A neural network is a method in artificial intelligence (AI) that teaches computers to process data in a way that is inspired by the human brain.",
+    // //       position: 5,
+    // //     },
+    // //     {
+    // //       title: "Explained: Neural networks",
+    // //       link: "https://news.mit.edu/2017/explained-neural-networks-deep-learning-0414",
+    // //       snippet:
+    // //         "Neural nets are a means of doing machine learning, in which a computer learns to perform some task by analyzing training examples.",
+    // //       date: "Apr 14, 2017",
+    // //       position: 6,
+    // //     },
+    // //     {
+    // //       title: "Neural Networks Explained in 5 minutes",
+    // //       link: "https://www.youtube.com/watch?v=jmmW0F0biz0",
+    // //       snippet:
+    // //         "Neural networks reflect the behavior of the human brain allowing computer programs to recognize patterns and solve common problems.",
+    // //       date: "3 years ago",
+    // //       position: 7,
+    // //     },
+    // //     {
+    // //       title: "What is a neural network? | Types of neural networks",
+    // //       link: "https://www.cloudflare.com/learning/ai/what-is-neural-network/",
+    // //       snippet:
+    // //         "A neural network is a computational system inspired by the human brain that learns to perform tasks by analyzing examples. It consists of interconnected nodes ...",
+    // //       position: 8,
+    // //     },
+    // //     {
+    // //       title: "What Is a Neural Network? - MATLAB & Simulink",
+    // //       link: "https://www.mathworks.com/discovery/neural-network.html",
+    // //       snippet:
+    // //         "A neural network (also called an artificial neural network or ANN) is an adaptive system that learns by using interconnected nodes or neurons in a layered ...",
+    // //       position: 9,
+    // //     },
+    // //     {
+    // //       title: "Neural Networks: What are they and why do they matter?",
+    // //       link: "https://www.sas.com/en_us/insights/analytics/neural-networks.html",
+    // //       snippet:
+    // //         "Neural networks are computing systems with interconnected nodes that work much like neurons in the human brain.",
+    // //       position: 10,
+    // //     },
+    // //   ],
+    // //   credits: 1,
+    // // };
 
-    const LinksToFetch = FilterUrlForExtraction(response, req.user);
+    // const LinksToFetch = FilterUrlForExtraction(response, req.user);
+    const LinksToFetch = [
+      "https://www.hostinger.com/tutorials/llm-statistics",
+      "https://knowledge.wharton.upenn.edu/article/how-large-language-models-could-impact-jobs/",
+      "https://menlovc.com/perspective/2025-mid-year-llm-market-update/",
+      "https://kadence.com/en-us/knowledge/how-large-language-models-are-changing-market-research-2/",
+      "https://explodingtopics.com/blog/llm-search",
+      "https://www.amplework.com/blog/impact-of-large-language-models/",
+      "https://www.gofurther.com/blog/the-impact-of-llms-on-search-and-your-brand",
+      "https://medium.com/%40ashwinnaidu1991/the-transformative-impact-of-large-language-models-in-financial-services-market-growth-and-0fcb73c47036",
+      "https://www.jellyfish.com/en-us/news/jellyfish-launches-the-share-of-model-platform/",
+      "https://threadgillagency.com/the-rise-of-the-llm-in-digital-marketing/",
+    ];
 
     // console.log(LinksToFetch);
 
@@ -1086,6 +1096,7 @@ export const PostTypeWebSearch = async (req, res) => {
       question
     );
 
+    // console.log(CleanedWebData);
     if (CleanedWebData.length === 0) {
       return res
         .status(400)
@@ -1164,7 +1175,7 @@ export const PostTypeWebSearch = async (req, res) => {
     const FormattedFavicon = {
       MessageId,
       icon: WebResults.favicons,
-      url: WebResults.urls, //favicon array from the web search
+      url: [], //favicon array from the web search
     };
 
     // //  now that we have generated all the response and data for the user
@@ -1172,7 +1183,7 @@ export const PostTypeWebSearch = async (req, res) => {
     // //if true we update the value in both else we create a new record
 
     return res.send({
-      Answer: Answer || JSON.stringify(WebResults.FinalContent),
+      Answer: Answer,
       message: "Results found",
       favicon: FormattedFavicon,
       urls: WebResults.urls || [],

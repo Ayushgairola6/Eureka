@@ -31,16 +31,9 @@ function Interface() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(false);
-  const { isLoggedIn, isDarkMode } = useAppSelector((state) => state.auth);
-  const {
-    question,
-    category,
-    visibility,
-    subCategory,
-    Chats,
-    selectedDoc,
-    fetchingSessionHistory,
-  } = useAppSelector((state) => state.interface);
+  const { isLoggedIn } = useAppSelector((state) => state.auth);
+  const { question, category, visibility, subCategory, Chats, selectedDoc } =
+    useAppSelector((state) => state.interface);
 
   const textareaRef = useRef<HTMLInputElement>(null);
   const adjustTextareaHeight = () => {
@@ -150,56 +143,13 @@ function Interface() {
         className={`w-full  flex items-center justify-between flex-col min-h-[90vh]  dark:bg-black  relative z-[1]  px-4 py-3 `}
       >
         <Notice />
-        <div className="fixed z-[1] top-10 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/5 transition-opacity duration-500 text-xs md:text-sm">
-          {/* Status Dot */}
 
-          {fetchingSessionHistory && (
-            <section>
-              <div className="relative flex h-2 w-2">
-                {fetchingSessionHistory && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                )}
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    fetchingSessionHistory ? "bg-blue-500" : "bg-emerald-500"
-                  }`}
-                ></span>
-              </div>
-
-              {/* Status Text */}
-              <span className="text-[11px] font-medium tracking-wide uppercase dark:text-gray-400 text-gray-600">
-                {fetchingSessionHistory ? "Syncing History..." : "Synced"}
-              </span>
-            </section>
-          )}
-        </div>
-        {/* gradient background for light thtme */}
-        {!isDarkMode && (
-          <div className="absolute top-0 left-0 w-full h-64 overflow-hidden z-[-2] pointer-events-none">
-            {/* 1. Primary Light: Deep Indigo (Left) */}
-            <div
-              className="absolute -top-24 -left-20 w-96 h-96 
-      bg-indigo-500/30 rounded-full blur-[100px] 
-      animate-pulse mix-blend-multiply"
-            />
-
-            {/* 2. Secondary Light: Bright Cyan (Right) */}
-            <div
-              className="absolute -top-32 right-0 w-[500px] h-[500px] 
-      bg-cyan-400/20 rounded-full blur-[120px] 
-      animate-pulse"
-            />
-
-            {/* 3. The "Fade Out" Mask to ensure it blends down smoothly */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-white" />
-          </div>
-        )}
         <ChatBubble
           isActive={isActive}
           setIsActive={setIsActive}
           chatcontainer={chatcontainer}
         />
-        <div className="w-full flex items-center justify-center fixed bottom-0 py-0.5 left-0 md:px-2 px-0.5  rounded-sm dark:bg-black ">
+        <div className="w-full flex items-center justify-center fixed bottom-0 py-0.5 left-0 md:px-2 px-0.5   dark:bg-black bg-white ">
           <PrivateDocuments
             selectedDoc={selectedDoc}
             setSelectedDoc={setSelectedDoc}

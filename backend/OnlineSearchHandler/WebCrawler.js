@@ -74,17 +74,21 @@ export const ProcessForLLM = async (links, user, userQuery) => {
   const validLinks = filterResearchLinks(links);
 
   const config = new Configuration({
-    storageClient: new MemoryStorage(),
+    persistStorage: false,
+    storageClient: new MemoryStorage({ persistStorage: false }),
   });
 
   log.setLevel(log.LEVELS.OFF);
   const crawler = new CheerioCrawler(
     {
-      minConcurrency: 1,
-      maxConcurrency: 5, // Only 1 page at a time to save CPU for the recording
-      maxRequestRetries: 1, // Don't keep trying if it fails once
-      requestHandlerTimeoutSecs: 15, // Keep it snappy
-
+      minConcurrency: 10,
+      maxConcurrency: 20,
+      maxRequestRetries: 2, // Don't keep trying if it fails once
+      requestHandlerTimeoutSecs: 20, // Keep it snappy
+      useSessionPool: false,
+      failedRequestHandler: ({ request }) => {
+        // console.log(`Skipping slow/dead link: ${request.url}`);
+      },
       async requestHandler({ request, body, $ }) {
         EmitEvent(user.user_id, "query_status", {
           message: "reading_links",
@@ -104,36 +108,25 @@ export const ProcessForLLM = async (links, user, userQuery) => {
           if (markdown.length < 200) return;
           const wordCount = article.textContent.split(/\s+/).length;
 
-          const density = article.textContent.length / body.length;
-
-          const queryLower = userQuery.toLowerCase();
-          const hasKeywords = article.textContent
-            .toLowerCase()
-            .includes(queryLower)
-            ? 1.5
-            : 1;
-          const hasProximity = article.textContent.match(
-            new RegExp(`(${queryLower}).{0,50}(${queryLower})`, "g")
-          )
-            ? 1.2
-            : 1;
-
-          const finalScore = Math.floor(
-            (wordCount / 10) * density * hasKeywords * hasProximity
+          const ProcessedPage = extractHighValueChunks(
+            { url: request.url, title: article.title, content: markdown },
+            userQuery
           );
-
           const object = {
             title: article.title,
             url: request.url,
             favicon: `https://www.google.com/s2/favicons?domain=${
               new URL(request.url).hostname
             }&sz=64`,
-            markdown: extractHighValueChunks(markdown, userQuery),
-            score: finalScore,
+            markdown: ProcessedPage.content,
+            score: ProcessedPage.score,
             estimatedTokens: Math.ceil(markdown.length / 4),
           };
-          await notifyMe(JSON.stringify(object));
-
+          // await notifyMe(JSON.stringify(object));
+          EmitEvent(user.user_id, "query_status", {
+            message: "Cleaning_Context",
+            data: [ProcessedPage.content.slice(0, 1000)],
+          });
           dataset.push(object);
         }
       },
@@ -147,6 +140,7 @@ export const ProcessForLLM = async (links, user, userQuery) => {
 
 //formatting for the llm
 export function FormattForLLM(ScrapedData) {
+  console.log("Scrapeddata", ScrapedData);
   if (!ScrapedData || !Array.isArray(ScrapedData) || ScrapedData.length === 0) {
     return { error: "The scraped data array empty or not valid" };
   }
@@ -271,23 +265,117 @@ const filterResearchLinks = (links) => {
 };
 
 //find relevant information from the chunks
-function extractHighValueChunks(text, query, maxTokens = 3000) {
-  const words = query.toLowerCase().split(" ");
-  const chunks = text.split("\n\n"); // Break by paragraphs
+// function extractHighValueChunks(text, query, maxTokens = 3000) {
+//   const words = query.toLowerCase().split(" ");
+//   const chunks = text.split("\n\n"); // Break by paragraphs
 
-  const scoredChunks = chunks.map((chunk) => {
+//   const scoredChunks = chunks.map((chunk) => {
+//     let score = 0;
+//     words.forEach((word) => {
+//       if (chunk.toLowerCase().includes(word)) score += 1;
+//     });
+//     return { chunk, score };
+//   });
+
+//   // Sort by relevance and take the top ones until we hit the token limit
+//   const bestChunks = scoredChunks
+//     .sort((a, b) => b.score - a.score)
+//     .filter((item) => item.score > 0)
+//     .slice(0, 5); // Take top 5 relevant paragraphs
+
+//   return bestChunks.map((c) => c.chunk).join("\n\n");
+// }
+function extractHighValueChunks(page, query, maxTokens = 3500) {
+  const queryWords = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 2);
+
+  const estimateTokens = (text) => Math.ceil(text.length / 4);
+
+  // ---------- scoring helpers ----------
+
+  function scoreChunk(chunk) {
+    const lower = chunk.toLowerCase();
     let score = 0;
-    words.forEach((word) => {
-      if (chunk.toLowerCase().includes(word)) score += 1;
-    });
-    return { chunk, score };
-  });
 
-  // Sort by relevance and take the top ones until we hit the token limit
-  const bestChunks = scoredChunks
-    .sort((a, b) => b.score - a.score)
-    .filter((item) => item.score > 0)
-    .slice(0, 5); // Take top 5 relevant paragraphs
+    // keyword relevance
+    for (const word of queryWords) {
+      if (lower.includes(word)) score += 1;
+    }
 
-  return bestChunks.map((c) => c.chunk).join("\n\n");
+    // numeric / factual density
+    if (/\$|%|\b\d{4}\b/.test(chunk)) score += 3;
+
+    // projections / analysis language
+    if (/forecast|projected|estimate|cagr|expected|by \d{4}/i.test(chunk))
+      score += 2;
+
+    // discrepancies / contrast cues
+    if (/however|but|whereas|contrast|although|discrepancy/i.test(chunk))
+      score += 2;
+
+    // source indicators
+    if (/report|study|survey|according to|source/i.test(chunk)) score += 1;
+
+    return score;
+  }
+
+  function scorePage(text) {
+    let score = 0;
+    if (/\$|%|\b\d{4}\b/.test(text)) score += 3;
+    if (/report|study|analysis|data|survey/i.test(text)) score += 2;
+    if (/blog|opinion|thoughts/i.test(text)) score -= 1;
+    return score;
+  }
+
+  // ---------- page scoring ----------
+
+  const pageScore = scorePage(page.content);
+  let tokenBudget = maxTokens;
+
+  // ---------- chunk extraction ----------
+
+  const rawChunks = page.content
+    .split(/\n{2,}/)
+    .map((c) => c.trim())
+    .filter((c) => c.length > 80);
+
+  const scoredChunks = rawChunks
+    .map((chunk, idx) => ({
+      chunk,
+      idx,
+      score: scoreChunk(chunk),
+    }))
+    .filter((c) => c.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  let pageContext = "";
+  let pageTokens = 0;
+
+  for (const item of scoredChunks) {
+    // expand with neighbor context (±1)
+    const combined = [
+      rawChunks[item.idx - 1],
+      item.chunk,
+      rawChunks[item.idx + 1],
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const tokens = estimateTokens(combined);
+
+    if (pageTokens + tokens > maxTokens || tokenBudget - tokens < 0) break;
+
+    pageContext += combined + "\n\n";
+    pageTokens += tokens;
+    tokenBudget -= tokens;
+  }
+
+  if (!pageContext.trim()) return null;
+
+  return {
+    score: pageScore,
+    content: pageContext.trim(),
+  };
 }

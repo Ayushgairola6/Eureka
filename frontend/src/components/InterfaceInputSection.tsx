@@ -34,6 +34,7 @@ import { SetQueryCount, setVariant } from "../store/AuthSlice.ts";
 import AccessBar from "@/components/AccessBar.tsx";
 import { useState } from "react";
 import { setCurrentStatus, setWebStatus } from "../store/websockteSlice.ts";
+import { currentTime } from "../../utlis/Date.ts";
 type InputProps = {
   textareaRef: React.Ref<HTMLInputElement>;
   isActive: boolean;
@@ -61,48 +62,7 @@ const InputSection: React.FC<InputProps> = ({
   // const { setCurrentStatus } = useAppSelector((state) => state.socket);
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAppSelector((state) => state.auth);
-  const now = new Date();
-  const hour = now.getHours();
-  const minute = now.getMinutes();
 
-  // Array of month names for clarity
-  const monthNames = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  // Array of day names
-  const dayNames = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-
-  const dayOfMonth = now.getDate();
-  const dayOfWeek = dayNames[now.getDay()];
-  const year = now.getFullYear();
-  const month = monthNames[now.getMonth()];
-
-  // Format time in 12-hour format with AM/PM
-  const formattedTime = `${hour > 12 ? hour - 12 : hour}:${minute
-    .toString()
-    .padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
-
-  // Combine all parts into a single string using a delimiter
-  const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
   const [Showfeatures, SetShowFeatures] = useState(false);
 
   // getting sse token before sending a request
@@ -483,7 +443,7 @@ const InputSection: React.FC<InputProps> = ({
           ease: "linear",
           duration: 0.4,
         }}
-        className={`relative overflow-y-visible w-full px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border border-black/20 dark:border-white/10 bai-jamjuree-regular text-md rounded-tr-lg rounded-tl-lg z-[3] transition-all duration-150 ease-linear shadow-2xl `}
+        className={`relative overflow-y-visible w-full px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border border-black/20 dark:border-white/10 bai-jamjuree-regular text-md rounded-lg z-[3] transition-all duration-150 ease-linear shadow-2xl `}
       >
         {/* input section */}
         <div className="w-full flex items-center justify-between ">
@@ -648,9 +608,9 @@ const InputSection: React.FC<InputProps> = ({
         {/* query type and send button container */}
         <div className="flex items-center justify-between mt-1">
           <ul className="  bai-jamjuree-semibold text-sm text-gray-500 dark:text-gray-400 ">
-            {queryType ? (
+            {isActive === true && queryType ? (
               <>Process - {queryType}</>
-            ) : category ? (
+            ) : isActive === true && category ? (
               <>Category - {category}</>
             ) : null}
           </ul>

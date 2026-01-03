@@ -73,7 +73,39 @@ const initialState: chatStates = {
   favicon: [],
   currentStatus: "Analyzing",
   fetchingMoreChats: false,
-  web_search_status: [],
+  web_search_status: [
+    // {
+    //   message: "processing_links",
+    //   data: [
+    //     "http://youtube.com",
+    //     "https://facebook.com",
+    //     "https://facebook.com",
+    //     "https://facebook.com",
+    //   ],
+    // },
+    // {
+    //   message: "reading_links",
+    //   data: ["https://youtube.com"],
+    // },
+    // {
+    //   message: "reading_links",
+    //   data: ["https://facebook.com"],
+    // },
+    // {
+    //   message: "reading_links",
+    //   data: ["https://github.com"],
+    // },
+    // {
+    //   message: "reading_links",
+    //   data: ["https://fhub.com"],
+    // },
+    // {
+    //   message: "Cleaning_Context",
+    //   data: [
+    //     "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quasi, excepturi fugiat labore aliquid illo a voluptatem atque laboriosam unde incidunt, dignissimos at, omnis perspiciatis consectetur deserunt libero quo odio ipsam!",
+    //   ],
+    // },
+  ],
 };
 export const GetChatRoomHistory = createAsyncThunk(
   "room/history",

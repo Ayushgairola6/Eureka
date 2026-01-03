@@ -29,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
         className={`md:hidden fixed h-full w-70  top-0 rotate-0 bg-white dark:bg-black dark:text-white text-black  z-[20] rounded-tr-md pt-10 rounded-br-md   duration-500 transition-all cursor-pointer flex flex-col items-center justify-start border border-gray-300 dark:border-gray-700`}
       >
         {/* logo  */}
-        <header className="absolute uppercase  top-2 right-2 text-xs  w-full flex items-center justify-end  bai-jamjuree-bold rounded-md border p-1">
+        <header className="absolute uppercase  top-2 right-2 text-xs  w-fit flex items-center justify-end  bai-jamjuree-bold rounded-md  p-1">
           {/* <img
             className="h-4 w-4  rounded-xs  "
             src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
@@ -41,7 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
 
         {/* HeaderSection */}
         <div className="border-b w-full px-3 py-3 relative">
-          <ul className="md:hidden text-xs space-grotesk absolute border rounded-sm -bottom-8 right-9 flex items-center justify-center">
+          <ul className="md:hidden text-xs space-grotesk absolute  rounded-sm -bottom-10 right-4 flex items-center justify-center">
             Theme
             <CustomDropdown />
           </ul>

@@ -21,20 +21,66 @@ import {
 import { WebSearchHandle } from "../OnlineSearchHandler/WebSearchHandler.js";
 import { IdentifyRequestInputs } from "../Synthesis/Identifier.js";
 import { HandleUserSessionHistory } from "../controllers/FeaturesController.js";
+import { GlobalRequestRateLimit } from "../controllers/UserCreditLimitController.js";
 Router.post(
   "/upload-pdf",
   VerifyToken,
   uploadFile.single("file"),
   FileUploadHandle
 )
-  .post("/ask-docs", VerifyToken, GetPublicRecords)
+  .post("/ask-docs", GlobalRequestRateLimit, VerifyToken, GetPublicRecords)
   .delete("/user/private-docs/delete", VerifyToken, DeleteFileHandle)
-  .post("/privateDocs/ask-docs", VerifyToken, GetPrivateDocResultss)
-  .post("/query/web-search", VerifyToken, PostTypeWebSearch)
-  .get("/new-sseToken", VerifyToken, GenerateSSEspecificTokens)
-  .get("/ask-pdf", VerifySSETokens, FindMatchingResponse)
-  .get("/user/documents", VerifyToken, GetPrivateUserDocs)
-  .get("/privateDocs/ask", VerifySSETokens, QueryPersonalDocs)
-  .get("/user/web-search", VerifySSETokens, WebSearchHandle)
-  .post("/method/synthesis", VerifyToken, IdentifyRequestInputs)
-  .post("/user/session-history/", VerifyToken, HandleUserSessionHistory);
+  .post(
+    "/privateDocs/ask-docs",
+    GlobalRequestRateLimit,
+    VerifyToken,
+    GetPrivateDocResultss
+  )
+  .post(
+    "/query/web-search",
+    GlobalRequestRateLimit,
+    VerifyToken,
+    PostTypeWebSearch
+  )
+  .get(
+    "/new-sseToken",
+    GlobalRequestRateLimit,
+    VerifyToken,
+    GenerateSSEspecificTokens
+  )
+  .get(
+    "/ask-pdf",
+    GlobalRequestRateLimit,
+    VerifySSETokens,
+    FindMatchingResponse
+  )
+  .get(
+    "/user/documents",
+    GlobalRequestRateLimit,
+    VerifyToken,
+    GetPrivateUserDocs
+  )
+  .get(
+    "/privateDocs/ask",
+    GlobalRequestRateLimit,
+    VerifySSETokens,
+    QueryPersonalDocs
+  )
+  .get(
+    "/user/web-search",
+    GlobalRequestRateLimit,
+    VerifySSETokens,
+    WebSearchHandle
+  )
+  .post(
+    "/method/synthesis",
+    GlobalRequestRateLimit,
+    VerifyToken,
+    IdentifyRequestInputs
+  )
+  .post(
+    "/user/session-history/",
+    GlobalRequestRateLimit,
+    VerifyToken,
+    HandleUserSessionHistory
+  );

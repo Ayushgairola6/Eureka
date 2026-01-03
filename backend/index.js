@@ -16,7 +16,7 @@ import { ReviewRouter } from "./routers/ReviewRouter.js";
 import { API_Router } from "./routers/ApiRouter.js";
 import { SdkRouter } from "./routers/sdkRouter.js";
 import "./controllers/supabaseHandler.js";
-
+// import "./Tests/tests.js";
 // import formData from 'express-form-data';
 app.use(
   cors({

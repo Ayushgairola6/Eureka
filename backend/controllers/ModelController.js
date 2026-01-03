@@ -42,7 +42,7 @@ export const GenerateResponse = async (
         temperature: user.PaymentStatus === false ? 0.5 : 1,
         topP: 0.95,
         topK: user.PaymentStatus === false ? 40 : 80,
-        maxOutputTokens: user.PaymentStatus === false ? 1000 : 2000,
+        maxOutputTokens: user.PaymentStatus === false ? 2000 : 3000,
       },
       config: {
         thinkingConfig: {
