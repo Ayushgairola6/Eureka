@@ -24,7 +24,7 @@ app.use(
       "http://localhost:5173",
       "https://antinode-six-eta.vercel.app",
       "https://eureka-six-eta.vercel.app",
-      'https://antinodeai.space"
+      "https://antinodeai.space"
     ],
     credentials: true,
     allowedHeaders: [
