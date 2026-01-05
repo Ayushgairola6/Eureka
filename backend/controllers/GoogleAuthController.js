@@ -135,9 +135,10 @@ export const HandleGoogleCallback = async (req, res) => {
     // 8. Set authentication cookie
     res.cookie("AntiNode_eta_six_version1_AuthToken", authToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 20 * 60 * 1000, // 20 minutes
+  secure: true, // Required for sameSite: "none"
+  sameSite: "none", // Allows the cookie to survive the jump from api. to www.
+  domain: ".antinodeai.space", // The leading dot is the "Subdomain Unlock"
+  maxAge: 24 * 60 * 60 * 1000,
     });
 
     // 9. Send notification
