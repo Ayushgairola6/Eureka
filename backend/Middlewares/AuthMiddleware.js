@@ -60,16 +60,10 @@ export const VerifyToken = async (req, res, next) => {
           }
           refreshToken = data[0].Refresh_Token;
           // store the token in the cache
-          await redisClient.set(
+          await redisClient.multi().set(
             RefreshTokenKey,
-            JSON.stringify(data[0].Refresh_Token),
-            {
-              expiration: {
-                type: "EX",
-                value: 800,
-              },
-            }
-          );
+            JSON.stringify(data[0].Refresh_Token)
+          ).expire(RefreshTokenKey,1000);
         }
 
         let refreshDecoded;
@@ -95,7 +89,8 @@ export const VerifyToken = async (req, res, next) => {
           refreshDecoded.user_id,
           refreshDecoded.email,
           refreshDecoded.username,
-          refreshDecoded.PaymentStatus
+          refreshDecoded.PaymentStatus,
+          refreshDecoded.AllowedTrainingModels
         );
 
         // Update the access token in DB
@@ -108,6 +103,7 @@ export const VerifyToken = async (req, res, next) => {
         res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
           httpOnly: true,
           secure: true,
+          domain:".antinodeai.space",
           sameSite: "none",
           maxAge: 24 * 60 * 60 * 1000,
         });
@@ -178,9 +174,7 @@ export async function authenticateStream(req, res) {
       refreshToken = data.Refresh_Token;
 
       // Cache it for 10 min
-      await redisClient.set(refreshKey, JSON.stringify(refreshToken), {
-        EX: 600,
-      });
+      await redisClient.multi().set(refreshKey, JSON.stringify(refreshToken)).expire(refreshKey,1000);
     }
 
     let refreshDecoded;
@@ -199,7 +193,7 @@ export async function authenticateStream(req, res) {
       refreshDecoded.user_id,
       refreshDecoded.email,
       refreshDecoded.username,
-      refreshDecoded.PaymentStatus
+      refreshDecoded.PaymentStatus,refreshDecoded.AllowedTrainingModels
     );
 
     // Update DB
@@ -212,6 +206,7 @@ export async function authenticateStream(req, res) {
     res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
       httpOnly: true,
       secure: true,
+      domain:".antinodeai.space",
       sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     });

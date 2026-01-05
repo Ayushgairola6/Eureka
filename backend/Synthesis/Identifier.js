@@ -52,14 +52,15 @@ export async function IdentifyRequestInputs(req, res) {
       .send({ message: "Invalid data has been sent to the server" });
   }
 
-  // const rateLimitStatus = await ProcessUserQuery(user, "Synthesis");
-  // if (rateLimitStatus?.status.trim().toLowerCase().includes("not ok")) {
-  //   console.log(rateLimitStatus, "rate-limit-status");
-  //   return res.status(400).send({
-  //     Answer: rateLimitStatus.message,
-  //     message: "You have finished your free quota for the day.",
-  //   });
-  // }
+  const rateLimitStatus = await ProcessUserQuery(user, "Synthesis");
+  if (rateLimitStatus?.status.trim().toLowerCase().includes("not ok")) {
+    return res.status(400).send({
+      message: "Response generated",
+      Answer:
+        "You have exhausted your monthly quota, please wait till next month or get our premium pass and enjoy all features without limits",
+      favicon: formattedFavicon,
+    });
+  }
 
   try {
     let FinalString = `${IDENTIFIER_PROMPT}_This is the users question=${question}and these are the manually selected user documents ${JSON.stringify(

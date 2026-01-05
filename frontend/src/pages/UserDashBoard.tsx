@@ -184,12 +184,12 @@ const UserDashboard = () => {
         {/* Main Content */}
         <div className="flex-1 p-6 overflow-auto">
           {/* Header */}
-          <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-red-600">
+          <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 ">
             <div
               className={`w-full min-w-0 border-l-4 ${score > 70 ? "border-green-500" : score > 30 ? "border-sky-500" : "border-indigo-500"
                 } pl-4 py-1`}
             >
-              <h1 className="text-3xl md:text-4xl font-bold bai-jamjuree-bold text-slate-900 dark:text-white break-all leading-tight bg-red-600">
+              <h1 className="text-3xl md:text-4xl font-bold bai-jamjuree-bold text-slate-900 dark:text-white break-all leading-tight ">
                 {user?.username.trim().toUpperCase()}
               </h1>
 

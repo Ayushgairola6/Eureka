@@ -25,7 +25,7 @@ app.use(
       "https://antinode-six-eta.vercel.app",
       "https://eureka-six-eta.vercel.app",
       "https://antinodeai.space",
-      "www.antinodeai.space",
+      "https://www.antinodeai.space",
     ],
     credentials: true,
     allowedHeaders: [
@@ -33,13 +33,14 @@ app.use(
       "Content-Type",
       "X-Requested-With",
       "Accept",
-      "Access-Control-Allow-Origin",
     ],
 
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 
+// Set this if your app is behind a reverse proxy (e.g., Heroku, Nginx)
+app.set("trust proxy", 1);
 // middlewares
 app.use(express.json());
 app.use(cookieParser());

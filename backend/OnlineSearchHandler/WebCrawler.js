@@ -125,7 +125,7 @@ export const ProcessForLLM = async (links, user, userQuery) => {
           // await notifyMe(JSON.stringify(object));
           EmitEvent(user.user_id, "query_status", {
             message: "Cleaning_Context",
-            data: [ProcessedPage.content.slice(0, 1000)],
+            data: [ProcessedPage.content.slice(0, 200)],
           });
           dataset.push(object);
         }
@@ -140,7 +140,7 @@ export const ProcessForLLM = async (links, user, userQuery) => {
 
 //formatting for the llm
 export function FormattForLLM(ScrapedData) {
-  console.log("Scrapeddata", ScrapedData);
+  
   if (!ScrapedData || !Array.isArray(ScrapedData) || ScrapedData.length === 0) {
     return { error: "The scraped data array empty or not valid" };
   }

@@ -306,8 +306,7 @@ export const FileUploadHandle = async (req, res) => {
       insertData: StoredContribution.InsertedData || {},
     });
   } catch (error) {
-    console.log(error);
-    await notifyMe(error);
+    await notifyMe("Error in file upload handler", error);
     return res.status(500).json({ message: "Internal Server error" });
   }
 };
@@ -489,16 +488,16 @@ export const GetPublicRecords = async (req, res) => {
     }
 
     // update the daily quota of the user
-    // const UpdateState = await ProcessUserQuery(req.user, "Public");
+    const UpdateState = await ProcessUserQuery(req.user, "Public");
 
-    // // if user has reached the
-    // if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
-    //   return res.status(200).send({
-    //     Answer: UpdateState.message,
-    //     message: "Todays quota has finished!",
-    //     docUsed: [],
-    //   });
-    // }
+    // if user has reached the
+    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
+      return res.status(200).send({
+        answer: UpdateState.message,
+        message: "Todays quota has finished!",
+        docUsed: [],
+      });
+    }
 
     // finding info regarding that query
 
@@ -770,7 +769,8 @@ export const GetPrivateDocResultss = async (req, res) => {
     // if user has reached the
     if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
-        Answer: UpdateState.message,
+        Answer:
+          "You have exhausted your monthly quota, please wait till next month or get our premium membership and enjoy unlimited researching",
         message: "Todays quota has finished!",
         docUsed: [],
       });
@@ -963,8 +963,10 @@ export const PostTypeWebSearch = async (req, res) => {
     // if user has reached the
     if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
-        Answer: UpdateState.message,
-        message: "Quota reached",
+        Answer:
+          "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research",
+        message: "Response found",
+        favicons: { MessageId, icon: [] },
       });
     }
     let history = [];
@@ -983,94 +985,8 @@ export const PostTypeWebSearch = async (req, res) => {
         .status(400)
         .send({ message: "An error occured while processing your request" });
     }
-    // const response = {
-    //   searchParameters: {
-    //     q: "what are neural networks?",
-    //     type: "search",
-    //     engine: "google",
-    //   },
-    //   organic: [
-    //     {
-    //       title: "What Is a Neural Network?",
-    //       link: "https://www.ibm.com/think/topics/neural-networks",
-    //       snippet:
-    //         'A neural network is a machine learning model that stacks simple "neurons" in layers and learns pattern-recognizing weights and biases from data to map inputs to ...',
-    //       position: 1,
-    //     },
-    //     {
-    //       title: "Neural network (machine learning)",
-    //       link: "https://en.wikipedia.org/wiki/Neural_network_(machine_learning)",
-    //       snippet:
-    //         "A neural network consists of connected units or nodes called artificial neurons, which loosely model the neurons in the brain. Artificial neuron models that ...",
-    //       position: 2,
-    //     },
-    //     {
-    //       title: "What is a Neural Network?",
-    //       link: "https://www.geeksforgeeks.org/machine-learning/neural-networks-a-beginners-guide/",
-    //       snippet:
-    //         "Neural networks are machine learning models that mimic the complex functions of the human brain. These models consist of interconnected nodes or neurons that ...",
-    //       date: "Dec 16, 2025",
-    //       position: 3,
-    //     },
-    //     {
-    //       title: "ELI5: What are neural networks? : r/explainlikeimfive",
-    //       link: "https://www.reddit.com/r/explainlikeimfive/comments/14he980/eli5_what_are_neural_networks/",
-    //       snippet:
-    //         "Neural networks are a method of machine learning that tries to mimic how a brain would work. It's made up of nodes.",
-    //       date: "2 years ago",
-    //       position: 4,
-    //     },
-    //     {
-    //       title: "What is a Neural Network?",
-    //       link: "https://aws.amazon.com/what-is/neural-network/",
-    //       snippet:
-    //         "A neural network is a method in artificial intelligence (AI) that teaches computers to process data in a way that is inspired by the human brain.",
-    //       position: 5,
-    //     },
-    //     {
-    //       title: "Explained: Neural networks",
-    //       link: "https://news.mit.edu/2017/explained-neural-networks-deep-learning-0414",
-    //       snippet:
-    //         "Neural nets are a means of doing machine learning, in which a computer learns to perform some task by analyzing training examples.",
-    //       date: "Apr 14, 2017",
-    //       position: 6,
-    //     },
-    //     {
-    //       title: "Neural Networks Explained in 5 minutes",
-    //       link: "https://www.youtube.com/watch?v=jmmW0F0biz0",
-    //       snippet:
-    //         "Neural networks reflect the behavior of the human brain allowing computer programs to recognize patterns and solve common problems.",
-    //       date: "3 years ago",
-    //       position: 7,
-    //     },
-    //     {
-    //       title: "What is a neural network? | Types of neural networks",
-    //       link: "https://www.cloudflare.com/learning/ai/what-is-neural-network/",
-    //       snippet:
-    //         "A neural network is a computational system inspired by the human brain that learns to perform tasks by analyzing examples. It consists of interconnected nodes ...",
-    //       position: 8,
-    //     },
-    //     {
-    //       title: "What Is a Neural Network? - MATLAB & Simulink",
-    //       link: "https://www.mathworks.com/discovery/neural-network.html",
-    //       snippet:
-    //         "A neural network (also called an artificial neural network or ANN) is an adaptive system that learns by using interconnected nodes or neurons in a layered ...",
-    //       position: 9,
-    //     },
-    //     {
-    //       title: "Neural Networks: What are they and why do they matter?",
-    //       link: "https://www.sas.com/en_us/insights/analytics/neural-networks.html",
-    //       snippet:
-    //         "Neural networks are computing systems with interconnected nodes that work much like neurons in the human brain.",
-    //       position: 10,
-    //     },
-    //   ],
-    //   credits: 1,
-    // };
 
     const LinksToFetch = FilterUrlForExtraction(response, req.user);
-
-    // console.log(LinksToFetch);
 
     if (LinksToFetch.length === 0) {
       return res
@@ -1084,7 +1000,6 @@ export const PostTypeWebSearch = async (req, res) => {
       question
     );
 
-    // console.log(CleanedWebData);
     if (CleanedWebData.length === 0) {
       return res
         .status(400)
@@ -1093,7 +1008,6 @@ export const PostTypeWebSearch = async (req, res) => {
     const WebResults = FormattForLLM(CleanedWebData);
 
     if (WebResults?.error || WebResults.FinalContent.length === 0) {
-      // console.log(WebResults.error);
       return res
         .status(400)
         .send({ message: "An error occured while processing your request" });
@@ -1181,7 +1095,7 @@ export const PostTypeWebSearch = async (req, res) => {
       "An error occured in the postTypewebsearch controller function",
       err
     );
-    console.error(err);
+
     return res.status(500).send({ message: "Something went wrong" });
   }
 };

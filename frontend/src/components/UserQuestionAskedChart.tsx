@@ -26,7 +26,7 @@ const QuestionAskedChart = () => {
         className="h-40 bg-gray-100 dark:bg-black p-6 rounded-xl border shadow-2xl"
       >
         <h3 className="text-sm md:text-lg opacity-70 bai-jamjuree-semibold mb-4">
-          Your daily credit limit
+          Your monthly credit limit
         </h3>
 
         <div className="flex items-center gap-4">
@@ -55,6 +55,7 @@ const QuestionAskedChart = () => {
 
           {/* Stats */}
           <div className="flex-1 space-y-2">
+<<<<<<< HEAD
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-500">Usage Progress</span>
               <span className={`text-sm font-bold ${progressPercentage > 90 ? 'text-red-500' : 'text-green-500'}`}>
@@ -70,9 +71,28 @@ const QuestionAskedChart = () => {
             <p className="text-[10px] text-gray-400">
               {Querycount} / {limit} queries used
             </p>
-          </div>
-        </div>
-      </motion.div>
+          </div >
+=======
+    <div className="flex justify-between items-center">
+      <span className="text-xs text-gray-500">Usage Progress</span>
+      <span className={`text-sm font-bold ${progressPercentage > 90 ? 'text-red-500' : 'text-green-500'}`}>
+        {Math.round(progressPercentage)}%
+      </span>
+    </div>
+    <div className="w-full bg-gray-700 rounded-full h-2">
+      <div
+        className="bg-green-500 h-2 rounded-full transition-all duration-500"
+        style={{ width: `${progressPercentage}%` }}
+      ></div>
+    </div>
+    <p className="text-[10px] text-gray-400">
+      {Querycount} / {limit} queries used
+    </p>
+  </div>
+          <div></div>
+>>>>>>> 8164b5b3618bb63a0380cf580a28b14eaa7fd639
+        </div >
+      </motion.div >
     </>
   );
 };

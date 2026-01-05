@@ -85,7 +85,7 @@ export const HandleGoogleCallback = async (req, res) => {
       );
     }
 
-    const { access_token, id_token } = tokenResponse.data;
+    const { access_token } = tokenResponse.data;
     // 4. Get user profile from Google
     const userProfile = await getUserProfile(access_token);
 
@@ -95,24 +95,30 @@ export const HandleGoogleCallback = async (req, res) => {
     const user = await findOrCreateUser({
       email,
       name,
-
       picture,
       googleId,
     });
 
     if (user?.error) {
+      const errorrMessage = encodeURIComponent(user.error)
       return res.redirect(
-        `${process.env.CLIENT_URL}/client/OAuthCallback?error=${user.error}`
+        `${process.env.CLIENT_URL}/client/OAuthCallback?error=${errorrMessage}`
       );
     }
     // 6. Generate application tokens (using your existing functions)
+    const paymentStatus = user.IsPremiumUser ||false;
+    const AllowedTrainingModels = user.AllowedTrainingModels||"TRUE"
     const refreshToken = GenerateRefreshTokens(
       user.id,
       user.email,
-      user.username
+      user.username,
+      paymentStatus,AllowedTrainingModels
     );
     // generate new sesstion token
-    const authToken = GenerateAccessTokens(user.id, user.email, user.username);
+    const authToken = GenerateAccessTokens(user.id,
+      user.email,
+      user.username,
+      paymentStatus,AllowedTrainingModels);
 
     if (!refreshToken || !authToken) {
       throw new Error("Token generation failed");
@@ -135,9 +141,10 @@ export const HandleGoogleCallback = async (req, res) => {
     // 8. Set authentication cookie
     res.cookie("AntiNode_eta_six_version1_AuthToken", authToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 20 * 60 * 1000, // 20 minutes
+  secure: true, // Required for sameSite: "none"
+  sameSite: "none", // Allows the cookie to survive the jump from api. to www.
+  domain: ".antinodeai.space", // The leading dot is the "Subdomain Unlock"
+  maxAge: 24 * 60 * 60 * 1000,
     });
 
     // 9. Send notification
@@ -147,6 +154,8 @@ export const HandleGoogleCallback = async (req, res) => {
     return res.redirect(
       `${process.env.CLIENT_URL}/Interface?SessionId=${authToken}`
     );
+
+    
   } catch (error) {
     await notifyMe("Something went wrong in the google auth controller", error);
   }
@@ -204,16 +213,15 @@ async function findOrCreateUser(googleUser) {
     .single();
 
   if (selectError && !existingUser) {
-    // If the error is NOT 'no rows found' (i.e., a real DB error), stop.
-    // Supabase sets data to null and error to non-null on 0 rows,
-    // but the error object is often large, so this is a safety check.
-    if (!selectError.details.includes("0 rows")) {
+    // FIX: Correct logic for checking error code
+    // PGRST116 is the code for "Row not found" (which is expected for new users)
+    if (selectError.code !== 'PGRST116') {
       await notifyMe("Critical DB Error during user selection", selectError);
       return { error: "Database error during login check." };
     }
   }
 
-  // --- 2. Scenario: New User (ExistingUser is null) ---
+  // --- 2. Scenario: New User ---
   if (!existingUser) {
     const newUser = await createNewUser(name, emailLower, googleId);
 
@@ -228,33 +236,22 @@ async function findOrCreateUser(googleUser) {
     return newUser;
   }
 
-  // Case A: User existed, but signed up with email/password (no Google ID).
+  // --- 3. Scenario: Existing User Logic ---
+  
+  // Case A: User exists but no Google ID (Password user)
   if (!existingUser.Google_Id) {
-    // SECURITY CHOICE: If you want to allow them to link their account:
-    // This is where you would update their Google_Id with the new value.
-    // If you want to BLOCK them (your original intention):
+    // Optional: Auto-link account here if you want to support it
     return {
-      error:
-        "This account already exists. Please login with your password first to link the account.",
+      error: "This account already exists. Please login with your password first to link the account.",
     };
   }
 
-  // Case B: User already signed up via Google, but maybe the ID changed (rare) or you want to update the ID.
+  // Case B: Google ID Mismatch
   if (existingUser.Google_Id !== googleId) {
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({ Google_Id: googleId })
-      .eq("id", existingUser.id);
-
-    if (updateError) {
-      await notifyMe(
-        "Error while updating the Google ID of an existing user",
-        updateError
-      );
-    }
+    await notifyMe(`GoogleId mismatch for ${email}. DB:${existingUser.Google_Id}, New:${googleId}`);
+    // FIX: Added missing closing brace below
   }
 
-  // Return the existing (potentially updated) user object
   return existingUser;
 }
 
@@ -281,6 +278,8 @@ async function createNewUser(name, email, googleId) {
       Google_Id: googleId,
       isVerified: true,
       password: null,
+      IsPremiumUser:false,
+      AllowedTrainingModels:true
     })
     .select("*")
     .single();
