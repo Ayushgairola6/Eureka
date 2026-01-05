@@ -24,7 +24,8 @@ app.use(
       "http://localhost:5173",
       "https://antinode-six-eta.vercel.app",
       "https://eureka-six-eta.vercel.app",
-      "https://antinodeai.space"
+      "https://antinodeai.space",
+      "https://www.antinodeai.space"
     ],
     credentials: true,
     allowedHeaders: [
@@ -32,7 +33,6 @@ app.use(
       "Content-Type",
       "X-Requested-With",
       "Accept",
-      "Access-Control-Allow-Origin",
     ],
 
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
