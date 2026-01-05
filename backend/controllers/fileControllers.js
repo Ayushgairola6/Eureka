@@ -965,7 +965,7 @@ export const PostTypeWebSearch = async (req, res) => {
     // if user has reached the
     if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
-        Answer: "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research,
+        Answer: "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research",
         message: "Response found",
         favicons: {MessageId,icon:[}},
       });
