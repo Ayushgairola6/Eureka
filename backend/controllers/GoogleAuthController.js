@@ -85,7 +85,7 @@ export const HandleGoogleCallback = async (req, res) => {
       );
     }
 
-    const { access_token, id_token } = tokenResponse.data;
+    const { access_token } = tokenResponse.data;
     // 4. Get user profile from Google
     const userProfile = await getUserProfile(access_token);
 
@@ -95,24 +95,30 @@ export const HandleGoogleCallback = async (req, res) => {
     const user = await findOrCreateUser({
       email,
       name,
-
       picture,
       googleId,
     });
 
     if (user?.error) {
+      const errorrMessage = encodeURIComponent(user.error)
       return res.redirect(
-        `${process.env.CLIENT_URL}/client/OAuthCallback?error=${user.error}`
+        `${process.env.CLIENT_URL}/client/OAuthCallback?error=${errorrMessage}`
       );
     }
     // 6. Generate application tokens (using your existing functions)
+    const paymentStatus = user.IsPremiumUser ||false;
+    const AllowedTrainingModels = user.AllowedTrainingModels||false
     const refreshToken = GenerateRefreshTokens(
       user.id,
       user.email,
-      user.username
+      user.username,
+      paymentStatus,AllowedTrainingModels
     );
     // generate new sesstion token
-    const authToken = GenerateAccessTokens(user.id, user.email, user.username);
+    const authToken = GenerateAccessTokens(user.id,
+      user.email,
+      user.username,
+      paymentStatus,AllowedTrainingModels);
 
     if (!refreshToken || !authToken) {
       throw new Error("Token generation failed");
@@ -148,6 +154,8 @@ export const HandleGoogleCallback = async (req, res) => {
     return res.redirect(
       `${process.env.CLIENT_URL}/Interface?SessionId=${authToken}`
     );
+
+    
   } catch (error) {
     await notifyMe("Something went wrong in the google auth controller", error);
   }
@@ -205,10 +213,9 @@ async function findOrCreateUser(googleUser) {
     .single();
 
   if (selectError && !existingUser) {
-    // If the error is NOT 'no rows found' (i.e., a real DB error), stop.
-    // Supabase sets data to null and error to non-null on 0 rows,
-    // but the error object is often large, so this is a safety check.
-    if (!selectError.details.includes("0 rows")) {
+
+    // not exists error code
+    if (!selectError.code!=='PGRST116') {
       await notifyMe("Critical DB Error during user selection", selectError);
       return { error: "Database error during login check." };
     }
@@ -242,17 +249,7 @@ async function findOrCreateUser(googleUser) {
 
   // Case B: User already signed up via Google, but maybe the ID changed (rare) or you want to update the ID.
   if (existingUser.Google_Id !== googleId) {
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({ Google_Id: googleId })
-      .eq("id", existingUser.id);
-
-    if (updateError) {
-      await notifyMe(
-        "Error while updating the Google ID of an existing user",
-        updateError
-      );
-    }
+  await notifyMe(`GoogleId mismatch for ${email}. DB:${existingUser.Google_ID},New:${googleId}`  
   }
 
   // Return the existing (potentially updated) user object
