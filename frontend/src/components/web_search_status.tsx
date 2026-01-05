@@ -1,10 +1,15 @@
 import React from "react";
 import {
   Loader2,
-  // Globe,
-  // CheckCircle2,
-  Search,
   BrainCircuit,
+  Code2,
+  Workflow,
+  Globe,
+  FileText,
+  Search,
+  Database,
+  Files,
+  ScanSearch,
 } from "lucide-react";
 import { useAppSelector } from "../store/hooks";
 
@@ -171,6 +176,203 @@ const WebSearchStatus: React.FC<WebSearchStatusProps> = ({
                   {chunk}
                 </p>
               </div>
+            </StatusWrapper>
+          );
+        }
+        if (msg === "Understanding Request") {
+          return (
+            <StatusWrapper
+              key={index}
+              icon={BrainCircuit}
+              title="Analyzing Intent"
+              colorClass="text-purple-500"
+            >
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                </span>
+                <p className="text-[11px] text-zinc-500 font-medium">
+                  Orchestrating tools...
+                </p>
+              </div>
+            </StatusWrapper>
+          );
+        }
+
+        // 2. PHASE: FUNCTION GENERATION
+        if (msg === "Creating functions") {
+          // Try to parse to show a count, fallback to raw string
+          let funcCount = 0;
+          try {
+            const parsed = JSON.parse(data[0]);
+            // Assuming ExtractedFunctions is an object or array
+            funcCount = Array.isArray(parsed)
+              ? parsed.length
+              : Object.keys(parsed).length;
+          } catch (e) {
+            funcCount = 1;
+          }
+
+          return (
+            <StatusWrapper
+              key={index}
+              icon={Code2}
+              title="Generating Logic"
+              colorClass="text-amber-500"
+            >
+              <div className="flex items-center gap-2">
+                <div className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded border border-amber-200 dark:border-amber-800">
+                  <p className="text-[10px] text-amber-600 dark:text-amber-400 font-mono">
+                    {funcCount} Functions
+                  </p>
+                </div>
+                <p className="text-[11px] text-zinc-400">mapped</p>
+              </div>
+            </StatusWrapper>
+          );
+        }
+
+        // 3. PHASE: STRATEGIC PHASES
+        if (msg === "Creating phases") {
+          return (
+            <StatusWrapper
+              key={index}
+              icon={Workflow}
+              title="Building Execution Plan"
+              colorClass="text-indigo-500"
+            >
+              <div className="h-1 w-24 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                {/* Striped progress bar for "planning" feel */}
+                <div className="h-full w-full bg-indigo-400 opacity-50 bg-[length:10px_10px] bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] animate-[progress-loading_1s_linear_infinite]" />
+              </div>
+            </StatusWrapper>
+          );
+        }
+
+        // 4. PHASE: WEB SEARCH
+        if (msg === "Searching web" || msg.includes("Searching web")) {
+          const cleanData = Array.isArray(data) ? data[0] : data;
+          // Extract just the query if the string is messy
+          const displaySafe = cleanData
+            .replace("Searced web for", "")
+            .replace(/"/g, "")
+            .slice(0, 25);
+
+          return (
+            <StatusWrapper
+              key={index}
+              icon={Globe}
+              title="Browsing External Data"
+              colorClass="text-sky-500"
+            >
+              <div className="flex items-center gap-2 max-w-full">
+                <Search className="w-3 h-3 text-sky-400" />
+                <p className="text-[11px] text-sky-600 dark:text-sky-400 truncate max-w-[140px]">
+                  {displaySafe}...
+                </p>
+              </div>
+            </StatusWrapper>
+          );
+        }
+
+        // 5. PHASE: READING DOCUMENTS (Private)
+        if (msg === "Reading docs") {
+          return (
+            <StatusWrapper
+              key={index}
+              icon={FileText}
+              title="Analyzing Documents"
+              colorClass="text-emerald-600"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-emerald-500 font-bold">
+                  RAG
+                </span>
+                <div className="h-1 w-1 rounded-full bg-emerald-400" />
+                <p className="text-[11px] text-zinc-500 truncate">
+                  Contextual extraction
+                </p>
+              </div>
+            </StatusWrapper>
+          );
+        }
+
+        // 6. PHASE: MEMORY SCAN
+        if (msg === "Scanning memories") {
+          return (
+            <StatusWrapper
+              key={index}
+              icon={ScanSearch} // or History
+              title="Recalling Preferences"
+              colorClass="text-rose-500"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex space-x-1">
+                  <div className="w-1 h-1 bg-rose-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                  <div className="w-1 h-1 bg-rose-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                  <div className="w-1 h-1 bg-rose-400 rounded-full animate-bounce"></div>
+                </div>
+                <span className="text-[11px] text-rose-400/80">
+                  Querying long-term memory
+                </span>
+              </div>
+            </StatusWrapper>
+          );
+        }
+
+        // 7. PHASE: FOUND DOCUMENTS (Metadata)
+        if (msg === "found-documents-by-name") {
+          // Extract number if possible, e.g. "Found 3 documents..."
+          const text = Array.isArray(data) ? data[0] : data;
+          const match = text.match(/\d+/);
+          const count = match ? match[0] : "?";
+
+          return (
+            <StatusWrapper
+              key={index}
+              icon={Files}
+              title="Locating Files"
+              colorClass="text-teal-500"
+            >
+              <div className="flex items-center gap-2">
+                <span className="bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-[10px] font-bold px-1.5 rounded">
+                  {count}
+                </span>
+                <span className="text-[11px] text-zinc-500">
+                  files identified
+                </span>
+              </div>
+            </StatusWrapper>
+          );
+        }
+
+        // 8. PHASE: KNOWLEDGE BASE (Public/Static)
+        if (msg === "Reading public knowledgebase") {
+          return (
+            <StatusWrapper
+              key={index}
+              icon={Database}
+              title="Consulting Knowledge"
+              colorClass="text-blue-600"
+            >
+              <div className="w-full h-1 bg-gray-200 dark:bg-zinc-700 rounded overflow-hidden">
+                <div className="h-full bg-blue-500 w-1/2 animate-[shimmer_1.5s_infinite]" />
+              </div>
+            </StatusWrapper>
+          );
+        }
+
+        // 9. PHASE: GATHERED INFO (Completion of a step)
+        if (msg === "Gathered DocumentInformation") {
+          return (
+            <StatusWrapper
+              key={index}
+              icon={FileText} // Or CheckCircle
+              title="Context Secured"
+              colorClass="text-green-600"
+            >
+              <p className="text-[11px] text-zinc-500">Ready to synthesize</p>
             </StatusWrapper>
           );
         }

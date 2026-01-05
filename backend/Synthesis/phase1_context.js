@@ -52,11 +52,10 @@ export async function GetDocumentInfo(phase1_Context, selectedDocuments, user) {
 
     // --- 5. Update Global Context ---
     if (docdata.length > 0) {
-      EmitEvent(
-        user.user_id,
-        "SynthesisStatus",
-        "Gathered DocumentInformation"
-      );
+      EmitEvent(user.user_id, "quer_status", {
+        message: "Gathered DocumentInformation",
+        data: [`Gathering document information ${JSON.stringify(docdata)}`],
+      });
 
       return docdata; //an array of information
     } else {
@@ -87,11 +86,10 @@ export async function GetDocumentInfoFromName(
 
   //store only valid non duplicate documents
   if (rawResults && rawResults.length > 0) {
-    EmitEvent(
-      user.user_id,
-      "SynthesisStatus",
-      `Found ${rawResults.length} documents by name`
-    );
+    EmitEvent(user.user_id, "query_status", {
+      message: "found-documents-by-name",
+      date: [`Found ${rawResults.length} documents by name`],
+    });
 
     const FinalArray = [];
     for (const docs of rawResults) {
@@ -128,12 +126,15 @@ export async function GetKnowledgebaseInfo(
     );
 
     if (PublicKnowledge && PublicKnowledge.length > 0) {
-      EmitEvent(
-        user.user_id,
-        "SynthesisStatus",
-        `Reading public knowledgebase`
-      );
-      console.log(PublicKnowledge, "publicknowledge from db");
+      EmitEvent(user.user_id, "query_status", {
+        message: `Reading public knowledgebase`,
+        data: [
+          `Reading public knowledgebase:${PublicKnowledge[0]?.text?.slice(
+            0,
+            50
+          )}`,
+        ],
+      });
 
       return PublicKnowledge; //array of object shape information
     }

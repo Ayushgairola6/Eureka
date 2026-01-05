@@ -6,9 +6,11 @@ import {
 import { supabase } from "../controllers/supabaseHandler.js";
 import { NeoGraphdriver } from "../GraphDb/Neo4j.js";
 import {
-  SearchQueryResults,
-  formatForGemini,
-} from "../OnlineSearchHandler/WebSearchHandler.js";
+  FilterUrlForExtraction,
+  FormattForLLM,
+  GetDataFromSerper,
+  ProcessForLLM,
+} from "../OnlineSearchHandler/WebCrawler.js";
 
 //handles the tools and their function execution
 export const ToolRegistry = {
@@ -208,7 +210,7 @@ RETURN new_m
       return records;
     },
   },
-  ask_private: {
+  get_all_chunks: {
     description:
       "Find the data of a document whose document id is available to us",
     importance: 2,
@@ -258,32 +260,100 @@ RETURN new_m
       return ResultString;
     },
   },
-  search_web: {
+  get_selected_chunks: {
     description:
       "Find the data of a document whose document id is available to us",
     importance: 2,
-    execute: async (query, user) => {
-      if (!query || typeof query !== "string") {
+    execute: async (docId, question, user) => {
+      if (
+        !question ||
+        typeof question !== "string" ||
+        !docId ||
+        typeof docId !== "string"
+      ) {
         return { message: "Invalid arguments" };
       }
 
       // getting the text chunks from the db
-      let favicons = [];
-      const webResults = await SearchQueryResults(query, user.PaymentStatus); //web results
+      const response = await index.searchRecords({
+        query: {
+          topK: user.PaymentStatus === true ? 20 : 10,
+          inputs: { text: question },
+          filter: {
+            documentId: { $eq: docId },
+            visibility: { $eq: "Private" },
+            contributor: { $eq: user.user_id },
+          },
+        },
+        fields: ["text"], //only return the text
+      });
 
-      if (webResults.error) {
-        return "No web results found";
+      if (response.result.hits.length < 0) {
+        return `No info in knowledge-base regard this query`;
+      }
+      let ResultString = "";
+
+      response.result.hits.forEach((e) => {
+        if (e.fields.text) {
+          ResultString += `score=${e.fields._score}&text=${e.fields.text}`;
+        }
+      });
+      return ResultString;
+    },
+  },
+  search_web: {
+    description:
+      "Find the data of a document whose document id is available to us",
+    importance: 2,
+    execute: async (question, user) => {
+      if (!question || typeof query !== "string") {
+        return { message: "Invalid arguments" };
       }
 
-      favicons = [...webResults.favicon]; //favicon of current results
-      const FormattedResults = await formatForGemini(webResults.response);
+      // fetch relevant links from the seper
+      const response = await GetDataFromSerper(question, user);
 
-      if (!FormattedResults) {
-        return "Unable to find any information regarding the user query from the web";
+      if (!response) {
+        return {
+          message: "An error occured while processing your request",
+        };
       }
+
+      // format the response into array of links
+      const LinksToFetch = FilterUrlForExtraction(response, req.user);
+
+      if (LinksToFetch.length === 0) {
+        return {
+          message: "An error occured while processing your request",
+        };
+      }
+
+      // extract only necessary chunks for context
+      const CleanedWebData = await ProcessForLLM(
+        LinksToFetch,
+        req.user,
+        question
+      );
+
+      if (CleanedWebData.length === 0) {
+        return { message: "An error occured while processing your request" };
+      }
+
+      //Foramt for llm
+      const WebResults = FormattForLLM(CleanedWebData);
+
+      if (WebResults?.error || WebResults.FinalContent.length === 0) {
+        return {
+          message: "An error occured while processing your request",
+        };
+      }
+
       // const FormattedResults = "These are the web results";
       // console.log("These are web search results", FormattedResults);
-      return { FormattedResults, favicons };
+      return {
+        FormattedResults: WebResults?.FinalContent,
+        favicons: WebResults.favicons,
+      };
     },
   },
   Search_InRoomChat: {

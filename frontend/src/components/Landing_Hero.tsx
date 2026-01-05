@@ -15,6 +15,7 @@ const Hero: React.FC<props> = ({ value }) => {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-white text-black dark:bg-black dark:text-white flex items-center justify-center ">
       {/* ================= MAIN CONTENT ================= */}
+      <h1 className="hidden">AntiNode</h1>
       <div className="relative z-1 mx-auto w-full px-2 py-4 flex flex-col items-center gap-16">
         {/* ---------- TEXT ---------- */}
         <section className="text-center  max-w-full flex flex-col items-center gap-2 ">

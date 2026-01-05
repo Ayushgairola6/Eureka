@@ -54,32 +54,37 @@ export async function IdentifyRequestInputs(req, res) {
 
   // const rateLimitStatus = await ProcessUserQuery(user, "Synthesis");
   // if (rateLimitStatus?.status.trim().toLowerCase().includes("not ok")) {
+  //   console.log(rateLimitStatus, "rate-limit-status");
   //   return res.status(400).send({
   //     Answer: rateLimitStatus.message,
   //     message: "You have finished your free quota for the day.",
   //   });
   // }
-  // if (user.PaymentStatus === false) {
-  //   return res.status(400).json({ message: "" });
-  // }
+
   try {
     let FinalString = `${IDENTIFIER_PROMPT}_This is the users question=${question}and these are the manually selected user documents ${JSON.stringify(
       selectedDocuments
     )}`; //command for the model
 
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: [{ role: "user", parts: [{ text: FinalString }] }],
-      generationConfig: {
-        temperature: 0.4,
-        topP: 0.95,
-        topK: 20,
-        maxOutputTokens: 300, ///maximum 300 characters output
-      },
-    });
+    // const result = await genAI.models.generateContent({
+    //   model: "gemini-2.5-flash-lite",
+    //   contents: [{ role: "user", parts: [{ text: FinalString }] }],
+    //   generationConfig: {
+    //     temperature: 0.4,
+    //     topP: 0.95,
+    //     topK: 10,
+    //     maxOutputTokens: 500, ///maximum 300 characters output
+    //   },
+    // });
 
-    const responseText = result.text;
-    // console.log(responseText);
+    // const responseText = result.text;
+    const responseText = `{
+  "confidence_score": "0.7",
+  "suggested_functions": "get_all_chunks(doc_id='7d87c23e-9e8f-40be-86f1-385dc1ec38b7', query='summarize this document')\nsearch_web(query='what are my competitors doing')",
+  "enrichment_queries": "To provide a more comprehensive answer about competitor activities, please specify which industry or market you are interested in, or if there are any specific competitors you would like to know about."
+}`;
+    // const responseText = `searchByName(filename="Nebuala_AI_Q3_Report.txt"); get_selected_chunks(doc_id="c7d5adf5-05be-4a2c-8792-d3e28105e4bb", query="summarize report and compare against competitors"); GetDoc_info(doc_id="c7d5adf5-05be-4a2c-8792-d3e28105e4bb")`;
+    console.log(responseText);
     // search_web(query="node-cron cron.schedule to keep server awake")
     // const responseText = `searchByName(filename="Nebuala_AI_Q3_Report.txt");ask_private(doc_id="AUTO", query="synthesize")`;
     if (!responseText) {
@@ -92,7 +97,10 @@ export async function IdentifyRequestInputs(req, res) {
         .send({ message: "The server is very busy , please try again !" });
     }
 
-    EmitEvent(user.user_id, "SynthesisStatus", "Understanding Request");
+    EmitEvent(user.user_id, "query_status", {
+      message: "Understanding Request",
+      data: ["Calling tools"],
+    });
 
     const ExtractedFunctions = CentralFunctionProcessor(responseText); //clearing the function string
     // console.log(ExtractedFunctions);
@@ -104,7 +112,10 @@ export async function IdentifyRequestInputs(req, res) {
     }
 
     // console.log(ExtractedFunctions);
-    EmitEvent(user.user_id, "SynthesisStatus", "Creating functions ");
+    EmitEvent(user.user_id, "query_status", {
+      message: "Creating functions",
+      data: [JSON.stringify(ExtractedFunctions)],
+    });
 
     const message = {
       id: userMessageId, //users message Id
@@ -200,6 +211,8 @@ export function CentralFunctionProcessor(resultString) {
     };
   }
 
+  const ParsedObject = JSON.parse(resultString);
+
   //filterting the response string of the model and extracting function names and parameters from it
   const FilteredFunc = [];
 
@@ -266,7 +279,16 @@ export async function ExeCuteContextEngines(
       }
     });
 
-    EmitEvent(user.user_id, "SynthesisStatus", "Creating phases");
+    EmitEvent(user.user_id, "query_status", {
+      message: "Creating phases",
+      data: [
+        phase1_Context.length > 0
+          ? JSON.stringify(phase1_Context)
+          : phase2_Action.length > 0
+          ? JSON.stringify(phase2_Action)
+          : ["No functions required"],
+      ],
+    });
 
     let GlobalContextObject = {
       AlldocumentInformation: [],
@@ -292,14 +314,12 @@ export async function ExeCuteContextEngines(
     const alreadyFetchedIds = (doc_data || []).map(
       (doc) => doc.id || doc.doc_id
     );
-    console.log(alreadyFetchedIds, "Already fetched document ids");
+
     const doc_data_fromName = await GetDocumentInfoFromName(
       phase1_Context,
       user,
       alreadyFetchedIds || []
     );
-
-    console.log(doc_data_fromName, "document data from name");
 
     if (doc_data_fromName.length > 0) {
       GlobalContextObject.AlldocumentInformation = [
@@ -362,7 +382,10 @@ export async function ExeCuteContextEngines(
 
     return { GlobalContextObject, favicons };
   } catch (processingError) {
-    console.error(processingError);
+    await notifyMe(
+      "An error occured in synthesis context gathering algorithm at line:380",
+      processingError
+    );
     return { error: processingError };
   }
 }

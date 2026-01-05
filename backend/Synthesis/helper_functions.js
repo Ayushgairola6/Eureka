@@ -1,4 +1,5 @@
 import { supabase } from "../controllers/supabaseHandler.js";
+import { extractUUID } from "./phase2_action.js";
 
 //gets the basic information related the document from the database or cache if available
 export async function ProcessDocumentInfoGathering(ReferenceArray, user) {
@@ -41,7 +42,6 @@ export async function ProcessKnowledgeBaseContextGathering(
     await Promise.all(
       ReferenceArray.map(async (req) => {
         try {
-          console.log(MetaDataArray, "metadata array");
           //find the category-subCategory-description of the document from the metadat
           const current = MetaDataArray.find(
             (func) => func.doc_id === extractUUID(req?.arguments?.query) //if the query has the uuid of any document
@@ -78,7 +78,10 @@ export async function ProcessKnowledgeBaseContextGathering(
 
           // console.log(result);
         } catch (error) {
-          console.error(error, "error while fetching info from public sources");
+          console.error(
+            error,
+            "error while fetching info from public sources helper_functions line:82"
+          );
         }
       })
     );
@@ -208,7 +211,6 @@ export async function FetchPastMessagesFromDbAndCacheThem(user) {
     .order("created_at", { ascending: false });
 
   if (data?.length === 0 || error) {
-    console.error(error);
     return { message: "There is no past conversation history of this user" };
   }
 

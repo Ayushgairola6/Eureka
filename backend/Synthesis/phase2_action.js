@@ -25,7 +25,14 @@ export async function CheckWebForInformation(
     );
 
     if (webResult?.FinalResult?.length > 0) {
-      EmitEvent(user.user_id, "SynthesisStatus", `Searching online`);
+      EmitEvent(user.user_id, "query_status", {
+        message: `Searching web`,
+        data: [
+          `Searced web for ${webResult.JSON.stringify(
+            FinalResult.slice(0, 30)
+          )}`,
+        ],
+      });
 
       return {
         results: webResult.FinalResult,
@@ -36,19 +43,19 @@ export async function CheckWebForInformation(
   return [];
 }
 
-//gathers information from uses private documents
+//gathers information from uses private documents by fetching all chunks
 export async function SearchUserPrivateDocuments(
   phase2_Action,
   user,
   GlobalContextObject
 ) {
   const askPrivateRequests = phase2_Action.filter(
-    (li) => li.function_name === "ask_private"
+    (li) => li.function_name === "get_all_chunks"
   );
 
   // We need the config to execute later
   if (askPrivateRequests.length > 0) {
-    const privateToolConfig = ToolRegistry["ask_private"];
+    const privateToolConfig = ToolRegistry["get_all_chunks"];
 
     // Map to handle deduplication: Key = doc_id
     const privateDocsMap = new Map();
@@ -107,7 +114,101 @@ export async function SearchUserPrivateDocuments(
     const CleanedRequest = Array.from(privateDocsMap.values()); //make an array of it
 
     if (CleanedRequest.length > 0) {
-      EmitEvent(user.user_id, "SynthesisStatus", `Reading private documents`);
+      EmitEvent(user.user_id, "query_status", {
+        message: `Reading docs`,
+        data: [`Reading documents ${JSON.stringify(CleanedRequest)}`],
+      });
+
+      // Now we pass the cleaner array to your helper
+      // Note: You might need to adjust CheckPrivateDocs to accept this array structure
+      const PrivateInfo = await CheckPrivateDocs(
+        CleanedRequest,
+        user,
+        GlobalContextObject.AlldocumentInformation
+      );
+      if (PrivateInfo) {
+        return PrivateInfo;
+      }
+    }
+  }
+  return [];
+}
+
+//gather only certain chunks
+export async function GatherCertainChunks(
+  phase2_Action,
+  user,
+  GlobalContextObject
+) {
+  const askPrivateRequests = phase2_Action.filter(
+    (li) => li.function_name === "get_selected_chunks"
+  );
+
+  // We need the config to execute later
+  if (askPrivateRequests.length > 0) {
+    const privateToolConfig = ToolRegistry["get_selected_chunks"];
+
+    // Map to handle deduplication: Key = doc_id
+    const privateDocsMap = new Map();
+
+    // Variable to store the "General Query" if the LLM uses AUTO
+    let fallbackQuery = "Extract relevant information based on user request";
+
+    // ---------------------------------------------------------
+    // STEP 1: Process LLM Requests
+    // ---------------------------------------------------------
+    askPrivateRequests.forEach((req) => {
+      const rawId = req.arguments.doc_id;
+      const rawQuery = req.arguments.query;
+      const cleanId = extractUUID(rawId); // to see if the model mixed the document_id with some false keyword
+
+      // CASE A: Valid, Specific UUID
+      if (cleanId) {
+        privateDocsMap.set(cleanId, {
+          arguments: {
+            doc_id: cleanId,
+            query: rawQuery || fallbackQuery,
+          }, //in the same format we extract from the function
+          config: privateToolConfig,
+        });
+      }
+      // CASE B: "AUTO" (Capture the query to use on selected docs)
+      else if ((rawId && rawId.trim().toLowerCase() === "auto") || !rawId) {
+        if (rawQuery && rawQuery.trim() !== "") {
+          fallbackQuery = rawQuery; // "Summarize this", "Find risks", etc.
+        }
+      }
+    });
+
+    // ---------------------------------------------------------
+    // STEP 2: Process Selected Documents (The "Podium")
+    // We use 'GlobalContextObject.AlldocumentInformation' because
+    // Phase 1 has already validated that these docs exist.
+    // ---------------------------------------------------------
+    const validDocsFromPhase1 =
+      GlobalContextObject.AlldocumentInformation || [];
+
+    //if there are valid docs
+    if (validDocsFromPhase1.length > 0) {
+      validDocsFromPhase1.forEach((docObj) => {
+        const docId = docObj.doc_id || docObj.id;
+
+        if (docId && !privateDocsMap.has(docId)) {
+          privateDocsMap.set(docId, {
+            arguments: { doc_id: docId, query: fallbackQuery },
+            config: privateToolConfig,
+          });
+        }
+      });
+    }
+
+    const CleanedRequest = Array.from(privateDocsMap.values()); //make an array of it
+
+    if (CleanedRequest.length > 0) {
+      EmitEvent(user.user_id, "query_status", {
+        message: `Reading docs`,
+        data: [`Reading documents ${JSON.stringify(CleanedRequest)}`],
+      });
 
       // Now we pass the cleaner array to your helper
       // Note: You might need to adjust CheckPrivateDocs to accept this array structure
@@ -160,7 +261,10 @@ export async function GetUserMemory(phase2_Action, user) {
     );
 
     if (storedMemories) {
-      EmitEvent(user.user_id, "SynthesisStatus", `Scanning memories`);
+      EmitEvent(user.user_id, "query_status", {
+        message: `Scanning memories`,
+        data: ["Looking for memories"],
+      });
     }
   }
 }

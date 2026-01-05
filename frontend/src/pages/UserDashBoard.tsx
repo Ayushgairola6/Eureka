@@ -58,7 +58,7 @@ const UserDashboard = () => {
   return (
     <>
       <div
-        className={`dark:bg-black dark:text-white bg-white text-black relative flex min-h-screen w-full overflow-hidden z-[1] relative`}
+        className={`dark:bg-black dark:text-white bg-white text-black relative flex min-h-screen w-full overflow-hidden z-[1] `}
       >
         {/* <section
           className={`${CurrentTheme.user} absolute top-0 left-0 h-full w-full `}
@@ -102,18 +102,16 @@ const UserDashboard = () => {
               className={`
       relative group flex items-center justify-center gap-3 px-4 py-2.5 w-full rounded-xl shadow-sm 
       text-white font-medium tracking-wide transition-all duration-300 ease-out
-      ${
-        isLoggingOut
-          ? "cursor-not-allowed bg-red-400/80"
-          : "cursor-pointer bg-red-600 hover:bg-red-700 hover:shadow-red-500/25 active:scale-[0.98]"
-      }
+      ${isLoggingOut
+                  ? "cursor-not-allowed bg-red-400/80"
+                  : "cursor-pointer bg-red-600 hover:bg-red-700 hover:shadow-red-500/25 active:scale-[0.98]"
+                }
     `}
             >
               {/* Content Container (Fades out on loading) */}
               <div
-                className={`flex items-center gap-3 ${
-                  isLoggingOut ? "opacity-0" : "opacity-100"
-                } transition-opacity duration-300`}
+                className={`flex items-center gap-3 ${isLoggingOut ? "opacity-0" : "opacity-100"
+                  } transition-opacity duration-300`}
               >
                 <span>Logout</span>
                 <BiLogOut size={20} />
@@ -121,9 +119,8 @@ const UserDashboard = () => {
 
               {/* Loader (Fades in on loading) */}
               <div
-                className={`absolute inset-0 flex items-center justify-center ${
-                  isLoggingOut ? "opacity-100" : "opacity-0"
-                } transition-opacity duration-300 pointer-events-none`}
+                className={`absolute inset-0 flex items-center justify-center ${isLoggingOut ? "opacity-100" : "opacity-0"
+                  } transition-opacity duration-300 pointer-events-none`}
               >
                 <BiLoaderAlt className="animate-spin" size={22} />
               </div>
@@ -160,11 +157,10 @@ const UserDashboard = () => {
                   className={`
           relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
           transition-colors duration-200 ease-in-out focus:outline-none 
-          ${
-            AllowedTrainingModels === "YES"
-              ? "bg-sky-500"
-              : "bg-gray-300 dark:bg-gray-600"
-          }
+          ${AllowedTrainingModels === "YES"
+                      ? "bg-sky-500"
+                      : "bg-gray-300 dark:bg-gray-600"
+                    }
         `}
                 >
                   <span className="sr-only">Use setting</span>
@@ -173,11 +169,10 @@ const UserDashboard = () => {
                     className={`
             pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 
             transition duration-200 ease-in-out
-            ${
-              AllowedTrainingModels === "YES"
-                ? "translate-x-5"
-                : "translate-x-0"
-            }
+            ${AllowedTrainingModels === "YES"
+                        ? "translate-x-5"
+                        : "translate-x-0"
+                      }
           `}
                   />
                 </button>
@@ -189,25 +184,20 @@ const UserDashboard = () => {
         {/* Main Content */}
         <div className="flex-1 p-6 overflow-auto">
           {/* Header */}
-          <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-red-600">
             <div
-              className={`border-l-4 ${
-                score > 70
-                  ? "border-green-500"
-                  : score > 30
-                  ? "border-sky-500"
-                  : "border-indigo-500"
-              } pl-4 py-1`}
+              className={`w-full min-w-0 border-l-4 ${score > 70 ? "border-green-500" : score > 30 ? "border-sky-500" : "border-indigo-500"
+                } pl-4 py-1`}
             >
-              <h1 className="text-3xl md:text-4xl font-bold bai-jamjuree-bold text-slate-900 dark:text-white tracking-tight">
-                {user?.username.trim().split(" ")[0].toUpperCase()}
+              <h1 className="text-3xl md:text-4xl font-bold bai-jamjuree-bold text-slate-900 dark:text-white break-all leading-tight bg-red-600">
+                {user?.username.trim().toUpperCase()}
               </h1>
 
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mt-2">
-                <span className="space-grotesk text-xs font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500 uppercase tracking-wider">
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mt-2 w-full">
+                <span className="space-grotesk text-xs font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500 uppercase tracking-wider shrink-0">
                   Personal dashboard
                 </span>
-                <p className="text-xs md:text-sm text-slate-500 space-grotesk">
+                <p className="text-xs md:text-sm text-slate-500 space-grotesk truncate">
                   Overview of your personal information.
                 </p>
               </div>
@@ -222,8 +212,8 @@ const UserDashboard = () => {
                       score > 70
                         ? "/high.png"
                         : score > 30
-                        ? "/medium.png"
-                        : "/low.png"
+                          ? "/medium.png"
+                          : "/low.png"
                     }
                     className="w-full h-full object-contain drop-shadow-md"
                   />
@@ -268,64 +258,56 @@ const UserDashboard = () => {
                       return (
                         <>
                           <ul
-                            className={`${
-                              doc.feedback.trim().split(".")[1] == "txt"
-                                ? "text-teal-500"
-                                : doc.feedback.trim().split(".")[1] === "pdf"
+                            className={`${doc.feedback.trim().split(".")[1] == "txt"
+                              ? "text-teal-500"
+                              : doc.feedback.trim().split(".")[1] === "pdf"
                                 ? "text-red-500"
                                 : doc.feedback.trim().split(".")[1] === "docx"
-                                ? "text-lime-500"
-                                : doc.feedback.trim().split(".")[1] === "md"
-                                ? "text-green-500"
-                                : doc.feedback.trim().split(".")[1] === "json"
-                                ? "text-purple-500"
-                                : doc.feedback.trim().split(".")[1] === "pptx"
-                                ? "text-pink-500"
-                                : "text-blue-500"
-                            }   bai-jamjuree-regular  truncate flex items-center justify-center gap-2 border rounded-sm px-2`}
+                                  ? "text-lime-500"
+                                  : doc.feedback.trim().split(".")[1] === "md"
+                                    ? "text-green-500"
+                                    : doc.feedback.trim().split(".")[1] === "json"
+                                      ? "text-purple-500"
+                                      : doc.feedback.trim().split(".")[1] === "pptx"
+                                        ? "text-pink-500"
+                                        : "text-blue-500"
+                              }   bai-jamjuree-regular  truncate flex items-center justify-center gap-2 border rounded-sm px-2`}
                             key={`${doc.chunk_count}_${doc.created_at}`}
                           >
                             {doc.feedback.trim().split(".")[1] == "txt" ? (
                               <BsFiletypeTxt
-                                color={`${
-                                  isDarkMode === true ? "white" : "black"
-                                }`}
+                                color={`${isDarkMode === true ? "white" : "black"
+                                  }`}
                               />
                             ) : doc.feedback.trim().split(".")[1] === "pdf" ? (
                               <FaFilePdf
-                                color={`${
-                                  isDarkMode === true ? "white" : "black"
-                                }`}
+                                color={`${isDarkMode === true ? "white" : "black"
+                                  }`}
                               />
                             ) : doc.feedback.trim().split(".")[1] === "docx" ? (
                               <BsFiletypeDocx
-                                color={`${
-                                  isDarkMode === true ? "white" : "black"
-                                }`}
+                                color={`${isDarkMode === true ? "white" : "black"
+                                  }`}
                               />
                             ) : doc.feedback.trim().split(".")[1] === "md" ? (
                               <BsFiletypeMd
-                                color={`${
-                                  isDarkMode === true ? "white" : "black"
-                                }`}
+                                color={`${isDarkMode === true ? "white" : "black"
+                                  }`}
                               />
                             ) : doc.feedback.trim().split(".")[1] === "json" ? (
                               <BsFiletypeJson
-                                color={`${
-                                  isDarkMode === true ? "white" : "black"
-                                }`}
+                                color={`${isDarkMode === true ? "white" : "black"
+                                  }`}
                               />
                             ) : doc.feedback.trim().split(".")[1] === "pptx" ? (
                               <BsFiletypePptx
-                                color={`${
-                                  isDarkMode === true ? "white" : "black"
-                                }`}
+                                color={`${isDarkMode === true ? "white" : "black"
+                                  }`}
                               />
                             ) : (
                               <BsFile
-                                color={`${
-                                  isDarkMode === true ? "white" : "black"
-                                }`}
+                                color={`${isDarkMode === true ? "white" : "black"
+                                  }`}
                               />
                             )}
                             {doc.feedback.trim()}
@@ -354,17 +336,15 @@ const UserDashboard = () => {
               className={`
     relative flex items-center justify-center justify-self-end gap-4 px-3 py-1 rounded-md
     text-white font-semibold transition-all duration-300 
-    ${
-      isLoggingOut
-        ? "cursor-not-allowed bg-red-400"
-        : "cursor-pointer bg-red-600 hover:bg-red-700 active:scale-95"
-    }
+    ${isLoggingOut
+                  ? "cursor-not-allowed bg-red-400"
+                  : "cursor-pointer bg-red-600 hover:bg-red-700 active:scale-95"
+                }
   `}
             >
               <span
-                className={`${
-                  isLoggingOut ? "opacity-0" : "opacity-100"
-                } transition-opacity duration-300`}
+                className={`${isLoggingOut ? "opacity-0" : "opacity-100"
+                  } transition-opacity duration-300`}
               >
                 Logout
               </span>
@@ -376,9 +356,8 @@ const UserDashboard = () => {
               )}
 
               <span
-                className={`${
-                  isLoggingOut ? "opacity-0" : "opacity-100"
-                } transition-opacity duration-300`}
+                className={`${isLoggingOut ? "opacity-0" : "opacity-100"
+                  } transition-opacity duration-300`}
               >
                 <BiLogOut />
               </span>
