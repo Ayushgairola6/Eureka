@@ -189,25 +189,20 @@ const UserDashboard = () => {
         {/* Main Content */}
         <div className="flex-1 p-6 overflow-auto">
           {/* Header */}
-          <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-red-600">
             <div
-              className={`border-l-4 ${
-                score > 70
-                  ? "border-green-500"
-                  : score > 30
-                  ? "border-sky-500"
-                  : "border-indigo-500"
-              } pl-4 py-1`}
+              className={`w-full min-w-0 border-l-4 ${score > 70 ? "border-green-500" : score > 30 ? "border-sky-500" : "border-indigo-500"
+                } pl-4 py-1`}
             >
-              <h1 className="text-3xl md:text-4xl font-bold bai-jamjuree-bold text-slate-900 dark:text-white tracking-tight">
-                {user?.username.trim().split(" ")[0].toUpperCase()}
+              <h1 className="text-3xl md:text-4xl font-bold bai-jamjuree-bold text-slate-900 dark:text-white break-all leading-tight bg-red-600">
+                {user?.username.trim().toUpperCase()}
               </h1>
 
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mt-2">
-                <span className="space-grotesk text-xs font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500 uppercase tracking-wider">
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mt-2 w-full">
+                <span className="space-grotesk text-xs font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500 uppercase tracking-wider shrink-0">
                   Personal dashboard
                 </span>
-                <p className="text-xs md:text-sm text-slate-500 space-grotesk">
+                <p className="text-xs md:text-sm text-slate-500 space-grotesk truncate">
                   Overview of your personal information.
                 </p>
               </div>
@@ -222,8 +217,8 @@ const UserDashboard = () => {
                       score > 70
                         ? "/high.png"
                         : score > 30
-                        ? "/medium.png"
-                        : "/low.png"
+                          ? "/medium.png"
+                          : "/low.png"
                     }
                     className="w-full h-full object-contain drop-shadow-md"
                   />
