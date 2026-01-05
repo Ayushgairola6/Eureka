@@ -967,7 +967,7 @@ export const PostTypeWebSearch = async (req, res) => {
       return res.status(200).send({
         Answer: "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research",
         message: "Response found",
-        favicons: {MessageId,icon:[}},
+        favicons: {MessageId,icon:[]},
       });
     }
     let history = [];
