@@ -107,7 +107,7 @@ export const HandleGoogleCallback = async (req, res) => {
     }
     // 6. Generate application tokens (using your existing functions)
     const paymentStatus = user.IsPremiumUser ||false;
-    const AllowedTrainingModels = user.AllowedTrainingModels||false
+    const AllowedTrainingModels = user.AllowedTrainingModels||"TRUE"
     const refreshToken = GenerateRefreshTokens(
       user.id,
       user.email,
