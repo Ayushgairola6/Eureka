@@ -489,16 +489,16 @@ export const GetPublicRecords = async (req, res) => {
     }
 
     // update the daily quota of the user
-    // const UpdateState = await ProcessUserQuery(req.user, "Public");
+    const UpdateState = await ProcessUserQuery(req.user, "Public");
 
-    // // if user has reached the
-    // if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
-    //   return res.status(200).send({
-    //     Answer: UpdateState.message,
-    //     message: "Todays quota has finished!",
-    //     docUsed: [],
-    //   });
-    // }
+    // if user has reached the
+    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
+      return res.status(200).send({
+        Answer: UpdateState.message,
+        message: "Todays quota has finished!",
+        docUsed: [],
+      });
+    }
 
     // finding info regarding that query
 
@@ -960,11 +960,14 @@ export const PostTypeWebSearch = async (req, res) => {
     // check the current credit limit record for the user
     const UpdateState = await ProcessUserQuery(req.user, "web_search");
 
+   
+
     // if user has reached the
     if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
-        Answer: UpdateState.message,
-        message: "Quota reached",
+        Answer: "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research,
+        message: "Response found",
+        favicons: {MessageId,icon:[}},
       });
     }
     let history = [];
@@ -1096,7 +1099,7 @@ export const PostTypeWebSearch = async (req, res) => {
       "An error occured in the postTypewebsearch controller function",
       err
     );
-    console.error(err);
+    
     return res.status(500).send({ message: "Something went wrong" });
   }
 };
