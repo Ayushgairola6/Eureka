@@ -305,9 +305,10 @@ export const updateCookies = async (req, res) => {
     }
     res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000,
+  secure: true, // Required for sameSite: "none"
+  sameSite: "none", // Allows the cookie to survive the jump from api. to www.
+  domain: ".antinodeai.space", // The leading dot is the "Subdomain Unlock"
+  maxAge: 24 * 60 * 60 * 1000,
     });
 
     return res.send({ message: "cookies updated" });
