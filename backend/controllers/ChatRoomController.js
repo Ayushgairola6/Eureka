@@ -1075,7 +1075,16 @@ export const GetSyntheSizedResults = async (req, res) => {
       // console.log(req.body);
       return res.status(400).send({ message: "Some fields are missing" });
     }
+const UpdateState = await ProcessUserQuery(req.user, "Synthesis");
 
+    // if user has reached the
+    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
+      return res.status(200).send({
+        Answer: UpdateState.message,
+        message: "Response found",
+        docUsed: [],
+      });
+    }
     //process the request and gather context
     const ProcessQuery = await IdentifyRequestInputs(
       user,
@@ -1221,7 +1230,7 @@ export async function IdentifyRequestInputs(
     }
 
     //incremetn query counter
-    const UpdateState = await ProcessUserQuery(user);
+    
 
     return { SynthesizedResponse: ModelResponse };
   } catch (SynthesisError) {
