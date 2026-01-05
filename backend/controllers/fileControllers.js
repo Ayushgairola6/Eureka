@@ -306,8 +306,7 @@ export const FileUploadHandle = async (req, res) => {
       insertData: StoredContribution.InsertedData || {},
     });
   } catch (error) {
-    console.log(error);
-    await notifyMe(error);
+    await notifyMe("Error in file upload handler",error);
     return res.status(500).json({ message: "Internal Server error" });
   }
 };
@@ -494,7 +493,7 @@ export const GetPublicRecords = async (req, res) => {
     // if user has reached the
     if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
-        Answer: UpdateState.message,
+        answer: UpdateState.message,
         message: "Todays quota has finished!",
         docUsed: [],
       });
@@ -770,7 +769,7 @@ export const GetPrivateDocResultss = async (req, res) => {
     // if user has reached the
     if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
-        Answer: UpdateState.message,
+        Answer: "You have exhausted your monthly quota, please wait till next month or get our premium membership and enjoy unlimited researching",
         message: "Todays quota has finished!",
         docUsed: [],
       });
