@@ -235,13 +235,16 @@ export const HandleUserLogin = async (req, res) => {
     // if the token is validated and a new authToken has been generated
     if (!isStillValid?.error && isStillValid?.AuthToken) {
       ValidAuthToken = isStillValid.AuthToken;
-      RefreshToken = user.Tokens[0].Refresh_Token;
+      RefreshToken = user?.Tokens[0]?.Refresh_Token;
+      if(!RefreshToken){
+        RefreshToken = GenerateRefreshTokens(user.id,user.email,user.username,user.IsPremiumUser,user.AllowedTrainingModels)
+      }
     } else {
       // else generate a new session Token and refreshToken
       ValidAuthToken = GenerateAccessTokens(
         user.id,
         user.email,
-        user.email,
+        user.username,
         user.IsPremiumUser,
         user.AllowedTrainingModels
       );
@@ -279,12 +282,13 @@ export const HandleUserLogin = async (req, res) => {
     res.cookie("AntiNode_eta_six_version1_AuthToken", ValidAuthToken, {
       httpOnly: true,
       secure: true,
+      domain:".antinodeai.space",//allow cookies with this domain
       sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     });
 
     // Send login notification
-    await sendLoginNotification(req, user);
+     sendLoginNotification(req, user);
 
     return res.status(200).json({
       message: "Login successful",
@@ -337,7 +341,7 @@ const CheckPastToken = async (user) => {
         user.id,
         user.email,
         user.username,
-        PaymentStatus
+        user.IsPremiumUser,user.AllowedTrainingModels
       );
 
       if (!authToken) {
@@ -366,7 +370,7 @@ const CheckPastToken = async (user) => {
     } catch (refreshTokenError) {
       await notifyMe("RefreshToken error", refreshTokenError);
       // Refresh token is invalid, proceed to generate new tokens
-      return { error: refreshTokenError };
+      return { error: "No existing token found" };
     }
   }
 };
@@ -458,7 +462,7 @@ export const VerifyEmail = async (req, res) => {
     const email = decoded.email;
     const { data, error: dbError } = await supabase
       .from("users")
-      .select("isVerified,username,email,id")
+      .select("*")
       .eq("email", email)
       .single();
     if (dbError) {
@@ -492,16 +496,14 @@ export const VerifyEmail = async (req, res) => {
     }
 
     // logg the user in for the first time automatically;
-    const AuthToken = GenerateAccessTokens(data.id, data.email, data.username);
+    const AuthToken = GenerateAccessTokens(data.id, data.email, data.username,data.IsPremiumUser,data.AllowedTrainingModels);
 
     if (!AuthToken) {
       return res.status(400).send({ message: "An error occurred" });
     }
 
     const RefreshToken = GenerateRefreshTokens(
-      data.id,
-      data.email,
-      data.username
+      data.id, data.email, data.username,data.IsPremiumUser,data.AllowedTrainingModels
     );
     if (!RefreshToken) {
       return res.status(400).send({ message: "An error occurred" });
@@ -527,6 +529,7 @@ export const VerifyEmail = async (req, res) => {
     res.cookie("AntiNode_eta_six_version1_AuthToken", AuthToken, {
       httpOnly: true,
       secure: true,
+      domain:".antinodeai.space",
       sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     });
@@ -734,54 +737,17 @@ export const StoreTokens = async (
       return { error: "No token found" };
     }
 
-    // Check if a token record already exists for this user
-    const { data, error } = await supabase
-      .from("Tokens")
-      .select("user_id")
-      .eq("user_id", user_id)
-      .single();
+    //upsert the tokens and check for user_id being unique
+    const {error} = await supabase.from("Tokens").upsert({user_id:user_id,Refresh_Token:RefreshToken,Access_Token:AuthToken},{onConflict:'user_id'})
 
-    if (error && error.code !== "PGRST116") {
-      // PGRST116 is "not found" error
-      return { error: error };
+    if(error){
+      return {error:error}
     }
-
-    // If the user_id is present in the database, update the tokens
-    if (data?.user_id) {
-      // Update existing token record
-      const { error: updateError } = await supabase
-        .from("Tokens")
-        .update({ Access_Token: AuthToken, Refresh_Token: RefreshToken })
-        .eq("user_id", user_id);
-
-      if (updateError) {
-        return { error: updateError };
-      }
-    } else {
-      // Insert new token record
-      const { error: insertError } = await supabase.from("Tokens").insert({
-        Refresh_Token: RefreshToken,
-        Access_Token: AuthToken,
-        user_id: user_id,
-      });
-
-      if (insertError) {
-        return { error: insertError };
-      }
-    }
-
     // Add both tokens to the cache - FIXED THIS LINE
     const RefreshTokenKey = `user=${username}'s_userId=${user_id}`;
-    await redisClient.set(
+    await redisClient.multi().set(
       RefreshTokenKey,
-      JSON.stringify(RefreshToken), // Use the RefreshToken parameter directly
-      {
-        expiration: {
-          type: "EX",
-          value: 800,
-        },
-      }
-    );
+      JSON.stringify(RefreshToken)).expire(RefreshTokenKey,800);
 
     return { message: "Token stored successfully" };
   } catch (err) {
