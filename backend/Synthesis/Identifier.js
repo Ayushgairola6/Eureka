@@ -55,8 +55,9 @@ export async function IdentifyRequestInputs(req, res) {
   const rateLimitStatus = await ProcessUserQuery(user, "Synthesis");
   if (rateLimitStatus?.status.trim().toLowerCase().includes("not ok")) {
     return res.status(400).send({
-      Answer: rateLimitStatus.message,
-      message: "You have finished your free quota for the day.",
+      message: "Response generated",
+      Answer: "You have exhausted your monthly quota, please wait till next month or get our premium pass and enjoy all features without limits",
+      favicon: formattedFavicon,
     });
   }
   if (user.PaymentStatus === false) {
