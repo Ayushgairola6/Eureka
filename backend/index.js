@@ -39,6 +39,8 @@ app.use(
   })
 );
 
+// Set this if your app is behind a reverse proxy (e.g., Heroku, Nginx)
+app.set('trust proxy', 1);
 // middlewares
 app.use(express.json());
 app.use(cookieParser());
