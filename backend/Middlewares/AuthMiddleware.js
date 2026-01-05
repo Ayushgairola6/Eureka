@@ -60,16 +60,10 @@ export const VerifyToken = async (req, res, next) => {
           }
           refreshToken = data[0].Refresh_Token;
           // store the token in the cache
-          await redisClient.set(
+          await redisClient.multi().set(
             RefreshTokenKey,
-            JSON.stringify(data[0].Refresh_Token),
-            {
-              expiration: {
-                type: "EX",
-                value: 800,
-              },
-            }
-          );
+            JSON.stringify(data[0].Refresh_Token)
+          ).expire(RefreshTokenKey,1000);
         }
 
         let refreshDecoded;
@@ -109,7 +103,7 @@ export const VerifyToken = async (req, res, next) => {
         res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
           httpOnly: true,
           secure: true,
-          domain:".antinodeai.space"
+          domain:".antinodeai.space",
           sameSite: "none",
           maxAge: 24 * 60 * 60 * 1000,
         });
