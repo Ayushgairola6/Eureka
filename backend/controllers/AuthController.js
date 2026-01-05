@@ -35,8 +35,8 @@ export const GenerateRefreshTokens = (
         email: email,
         username: username,
         isVerified: true,
-        PaymentStatus: PaymentStatus,
-        AllowedTrainingModels: AllowedTrainingModels,
+        PaymentStatus: PaymentStatus ||false,
+        AllowedTrainingModels: AllowedTrainingModels||"TRUE",
       },
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "20d" }
@@ -88,8 +88,8 @@ export const GenerateAccessTokens = (
         email: email,
         username: username,
         isVerified: true,
-        PaymentStatus: PaymentStatus,
-        AllowedTrainingModels: AllowedTrainingModels,
+        PaymentStatus: PaymentStatus||false,
+        AllowedTrainingModels: AllowedTrainingModels||"TRUE",
       },
       Secret,
       { expiresIn: "20min" }
@@ -118,7 +118,7 @@ export const HandleUserRegistration = async (req, res) => {
 
     const { data, error } = await supabase
       .from("users")
-      .select()
+      .select("*")
       .eq("email", email);
 
     if (error) {
@@ -144,7 +144,7 @@ export const HandleUserRegistration = async (req, res) => {
     const NewUserAccount = await supabase.from("users").insert({
       username: username.trim(),
       email: email.toLowerCase(),
-      password: HashedPassword,
+      password: HashedPassword,IsPremiumUser:false,AllowedTrainingModels:"TRUE"
     });
 
     if (NewUserAccount.error) {
