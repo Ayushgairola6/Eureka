@@ -5,9 +5,9 @@ import {
   setShowDocs,
   SetSynthesisDocuments,
 } from "../store/InterfaceSlice.ts";
-import { FaArrowLeft, FaSearch, FaTimes } from "react-icons/fa";
+import { FaSearch, FaTimes } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiFile, FiFilter } from "react-icons/fi";
+import { FiFile } from "react-icons/fi";
 import ConfirmationBox from "@/components/ConfirmationBox.tsx";
 import { useState, useMemo } from "react";
 import { BiCopy, BiPlus, BiRefresh, BiSortAlt2 } from "react-icons/bi";

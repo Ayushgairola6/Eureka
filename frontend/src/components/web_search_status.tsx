@@ -285,8 +285,8 @@ const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }
   const [isOpen, setIsOpen] = useState(true);
 
   // Logic to determine if this component should even show
-  // const isActive = (!lastMessageId) || (chat?.id || chat?.message_id) === lastMessageId;
-  // if (!isActive) return null;
+  const isActive = (!lastMessageId) || (chat?.id || chat?.message_id) === lastMessageId;
+  if (!isActive) return null;
 
   const isProcessActive = showProcess?.status === false && showProcess.message_id !== (chat?.id || chat?.message_id);
   // if (!isActive || !web_search_status || web_search_status.length === 0) return null;

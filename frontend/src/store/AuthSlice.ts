@@ -234,7 +234,7 @@ export const UpdatePreference = createAsyncThunk<any, string>(
         }
       );
       return response.data;
-    } catch (error: any) {
+    } catch (err: any) {
       if (axios.isAxiosError(err)) {
         // You can access err.message, err.response, etc. safely here
         return rejectWithValue(err.message || err.response?.data.message);
@@ -273,10 +273,18 @@ export const LogoutUser = createAsyncThunk(
           "AntiNode_eta_six_version1_AuthToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         return response.data;
       }
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to logout"
-      );
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -298,7 +306,7 @@ export const SetCookies = createAsyncThunk(
         }
       );
       return response.data;
-    } catch (error) {
+    } catch (err) {
       if (axios.isAxiosError(err)) {
         // You can access err.message, err.response, etc. safely here
         return rejectWithValue(err.message || err.response?.data.message);

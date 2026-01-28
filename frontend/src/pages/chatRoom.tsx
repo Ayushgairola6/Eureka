@@ -190,7 +190,7 @@ const ChatRoom = () => {
       };
 
       dispatch(joinAChatRoom(roomInfo));
-      // dispatch(GetChatRoomHistory(id));
+      dispatch(GetChatRoomHistory(id));
 
       joinRef.current = true; // Block further joins
 
