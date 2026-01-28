@@ -1,9 +1,10 @@
 import {
   CacheCurrentChat,
-  redisClient,
+  // redisClient,
 } from "../CachingHandler/redisClient.js";
 import {
-  genAI,
+  IdentifyUserRequest,
+  // genAI,
   SynthesisResponseGenerator,
 } from "../controllers/ModelController.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
@@ -16,7 +17,7 @@ import {
 } from "../controllers/fileControllers.js";
 import { ProcessUserQuery } from "../controllers/UserCreditLimitController.js";
 import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
-import { supabase } from "../controllers/supabaseHandler.js";
+// import { supabase } from "../controllers/supabaseHandler.js";
 import {
   GetDocumentInfo,
   GetDocumentInfoFromName,
@@ -27,9 +28,13 @@ import {
   GetChatsForContext,
   SearchUserPrivateDocuments,
 } from "./phase2_action.js";
-
+import {
+  HandlePreProcessFunctions,
+  ProcessDocumentInfoGathering,
+} from "./helper_functions.js";
+import { supabase } from "../controllers/supabaseHandler.js";
 //function to identify the functions needed to process the request
-
+// import jsonData from "../Tests/response.json" with { type: "json" };
 export async function IdentifyRequestInputs(req, res) {
   const user = req.user;
   if (!user) {
@@ -55,39 +60,67 @@ export async function IdentifyRequestInputs(req, res) {
   const rateLimitStatus = await ProcessUserQuery(user, "Synthesis");
   if (rateLimitStatus?.status.trim().toLowerCase().includes("not ok")) {
     return res.status(400).send({
-      message: "Response generated",
+      message:
+        "You have exhausted your monthly quota, please wait till next month or get our premium pass and enjoy all features without limits",
       Answer:
         "You have exhausted your monthly quota, please wait till next month or get our premium pass and enjoy all features without limits",
-      favicon: formattedFavicon,
+    });
+  }
+
+  let metadata = [];
+  if (selectedDocuments?.length > 0) {
+    await Promise.all(
+      selectedDocuments.map(async (id) => {
+        if (id) {
+          const { data, error } = await supabase
+            .from("Contributions")
+            .select("feedback,metadata")
+            .eq("document_id", id)
+            .eq("user_id", user.user_id)
+            .single();
+          if (error) {
+            return res.status(400).send({
+              message: "There is not such document in the cloud bucket",
+              data: "",
+            });
+          }
+          metadata.push(data);
+        }
+      })
+    );
+    // console.log(metadata);
+    if (!metadata || metadata?.length === 0) {
+      return res.status(400).send({
+        message:
+          "Please select a valid document and specfic about your request.",
+      });
+    }
+  }
+
+  // ];
+  //if metadata was updated send the user an update
+  if (metadata) {
+    EmitEvent(user.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: "Metadata_analysis",
+        data: [
+          `Analyzed the metadata of the for selected-documents ${JSON.stringify(
+            selectedDocuments
+          )}`,
+        ],
+      },
     });
   }
 
   try {
-    let FinalString = `${IDENTIFIER_PROMPT}_This is the users question=${question}and these are the manually selected user documents ${JSON.stringify(
+    const context = `This is the users question=${question}and these are the manually selected user documents ${JSON.stringify(
       selectedDocuments
-    )}`; //command for the model
+    )}and this is the information of selected documents=${
+      metadata ? metadata : "['No data found in the database']"
+    } `; //command for the model
 
-    // const result = await genAI.models.generateContent({
-    //   model: "gemini-2.5-flash-lite",
-    //   contents: [{ role: "user", parts: [{ text: FinalString }] }],
-    //   generationConfig: {
-    //     temperature: 0.4,
-    //     topP: 0.95,
-    //     topK: 10,
-    //     maxOutputTokens: 500, ///maximum 300 characters output
-    //   },
-    // });
-
-    // const responseText = result.text;
-    const responseText = `{
-  "confidence_score": "0.7",
-  "suggested_functions": "get_all_chunks(doc_id='7d87c23e-9e8f-40be-86f1-385dc1ec38b7', query='summarize this document')\nsearch_web(query='what are my competitors doing')",
-  "enrichment_queries": "To provide a more comprehensive answer about competitor activities, please specify which industry or market you are interested in, or if there are any specific competitors you would like to know about."
-}`;
-    // const responseText = `searchByName(filename="Nebuala_AI_Q3_Report.txt"); get_selected_chunks(doc_id="c7d5adf5-05be-4a2c-8792-d3e28105e4bb", query="summarize report and compare against competitors"); GetDoc_info(doc_id="c7d5adf5-05be-4a2c-8792-d3e28105e4bb")`;
-    console.log(responseText);
-    // search_web(query="node-cron cron.schedule to keep server awake")
-    // const responseText = `searchByName(filename="Nebuala_AI_Q3_Report.txt");ask_private(doc_id="AUTO", query="synthesize")`;
+    const responseText = await IdentifyUserRequest(context, IDENTIFIER_PROMPT);
     if (!responseText) {
       await notifyMe(
         `Error while generating a response , the code execution results are these`
@@ -99,23 +132,105 @@ export async function IdentifyRequestInputs(req, res) {
     }
 
     EmitEvent(user.user_id, "query_status", {
-      message: "Understanding Request",
-      data: ["Calling tools"],
+      MessageId,
+      status: {
+        message: "Understanding Request",
+        data: ["Calling tools"],
+      },
     });
 
-    const ExtractedFunctions = CentralFunctionProcessor(responseText); //clearing the function string
+    const ExtractedFunctions = CentralFunctionProcessor(
+      responseText,
+      user,
+      MessageId
+    ); //clearing the function string
     // console.log(ExtractedFunctions);
 
-    if (ExtractedFunctions.length < 0) {
+    //if there is no confidence score or the functions or error
+    if (
+      !ExtractedFunctions?.confidence ||
+      ExtractedFunctions.PreProcessFunctions.length === 0 ||
+      ExtractedFunctions.error
+    ) {
       return res
         .status(400)
         .send({ message: "An error occured while processing your request" });
     }
 
+    //if there is a message
+    if (ExtractedFunctions.message) {
+      return res.status(200).send({
+        message: ExtractedFunctions.message,
+        favicon: { MessageId, icon: [] },
+      });
+    }
+
+    let PreProcessedData;
+    //if the confidence is low call the functions that are required
+    if (ExtractedFunctions.confidence === "low") {
+      PreProcessedData = await HandlePreProcessFunctions(
+        ExtractedFunctions.PreProcessFunctions,
+        user,
+        selectedDocuments
+      );
+
+      if (!PreProcessedData || PreProcessedData?.error) {
+        return res.status(400).send({
+          message:
+            "Looks like something went wrong while processing your request.",
+        });
+      }
+
+      // if both the fields are empty
+      if (
+        PreProcessedData.AlldocumentInformation?.length === 0 &&
+        PreProcessedData.context_by_uuid.length === 0
+      ) {
+        return res.status(400).send({
+          message:
+            "Looks like something went wrong while processing your request.",
+        });
+      }
+    }
+
+    //if there is preprocesed data re run the loop
+    const SecondTimeresponseText = await IdentifyUserRequest(
+      context,
+      IDENTIFIER_PROMPT
+    );
+    if (!SecondTimeresponseText) {
+      await notifyMe(
+        `Error while generating a response , the code execution results are these`
+        // JSON.stringify(result.codeExecutionResult)
+      );
+      return res
+        .status(400)
+        .send({ message: "The server is very busy , please try again !" });
+    }
+
+    const ExtractFUnctionsAgain = CentralFunctionProcessor(
+      SecondTimeresponseText,
+      user,
+      MessageId
+    ); //clearing the function string
+
+    //if there is no confidence score or the functions or error
+    if (
+      !ExtractFUnctionsAgain?.confidence ||
+      ExtractFUnctionsAgain.PreProcessFunctions.length === 0 ||
+      ExtractFUnctionsAgain.error
+    ) {
+      return res
+        .status(400)
+        .send({ message: "An error occured while processing your request" });
+    }
     // console.log(ExtractedFunctions);
     EmitEvent(user.user_id, "query_status", {
-      message: "Creating functions",
-      data: [JSON.stringify(ExtractedFunctions)],
+      MessageId,
+      status: {
+        message: "Creating functions",
+        data: [JSON.stringify(ExtractedFunctions)],
+      },
     });
 
     const message = {
@@ -127,9 +242,10 @@ export async function IdentifyRequestInputs(req, res) {
     await CacheCurrentChat(message, req.user);
 
     const smartExecResult = await ExeCuteContextEngines(
-      ExtractedFunctions,
+      ExtractFUnctionsAgain,
       user,
-      selectedDocuments
+      selectedDocuments,
+      MessageId
     );
 
     if (!smartExecResult.GlobalContextObject || smartExecResult.error) {
@@ -142,7 +258,7 @@ export async function IdentifyRequestInputs(req, res) {
     //get prevoious chats and append them as well
     const OldChats = await GetChatsForContext(user);
     if (OldChats.length !== 0) {
-      smartExecResult.pastConversation = [...OldChats];
+      smartExecResult.GlobalContextObject.pastConversation = [...OldChats];
     }
 
     const ModelResponse = await SynthesisResponseGenerator(
@@ -204,63 +320,57 @@ export async function IdentifyRequestInputs(req, res) {
 }
 
 //central funciton that will process the request based on the functionname
-export function CentralFunctionProcessor(resultString) {
-  if (!resultString || typeof resultString !== "string") {
-    return {
-      message:
-        "Invalid arguments all the information is needed to process the request",
-    };
-  }
-
+export function CentralFunctionProcessor(resultString, user, MessageId) {
   const ParsedObject = JSON.parse(resultString);
 
-  //filterting the response string of the model and extracting function names and parameters from it
-  const FilteredFunc = [];
+  if (!ParsedObject) {
+    return {
+      error:
+        "I had some internal errors that is why right now i am unable to create a plan for your request please wait before trying again.",
+    };
+  }
+  // functions that are needed to be proceeded to get a more distinct response
+  const PreProcessFunctions = [];
 
-  // 1. Split by semicolon
-  const rawFunctions = resultString.split(";");
+  // if the confidence score it low get the functions that are needed in order to find the documents for the user
+  //find what are the suggested functions by the model
+  if (!ParsedObject?.suggested_functions) {
+    return { message: "Model suggested no functions to process the prompt" };
+  }
 
-  rawFunctions.forEach((element) => {
-    const cleanStr = element.trim();
-    if (!cleanStr) {
-      return { message: "function information is invalid" };
-    }
-    const mainRegex = /^(\w+)\s*\((.*)\)$/;
-    const match = cleanStr.match(mainRegex);
-    if (match) {
-      const funcName = match[1]; //the function name
-      const argsString = match[2]; //the arguments
-      //clearning the arguments string
-      const args = [];
-      const argRegex = /(\w+)="([^"]*)"/g;
-      let argsMatch;
-
-      //while there are not null values in the string
-      while ((argsMatch = argRegex.exec(argsString)) !== null) {
-        const key = argsMatch[1];
-        const value = argsMatch[2];
-        args[key] = value; //adding the vlue in the array as object pair
-      }
-      if (funcName && args) {
-        FilteredFunc.push({
-          function_name: funcName,
-          arguments: args,
-        });
-      }
-    }
+  EmitEvent(user.user_id, "query_status", {
+    MessageId,
+    status: {
+      message: "new_thread",
+      data: [ParsedObject?.thought],
+    },
   });
+  //trigger the function asked by the model cause we always need to filter out the functions
+  const list = ParsedObject.suggested_functions;
+  if (list?.length > 0) {
+    list.forEach((obj) => {
+      PreProcessFunctions.push({
+        function_name: obj.function_name,
+        arguments: obj.arguments,
+      });
+    });
+  }
+  if (ParsedObject?.confidence_score && ParsedObject.confidence_score < 0.5) {
+    return { confidence: "low", PreProcessFunctions };
+  }
 
-  return FilteredFunc;
+  return { confidence: "high", PreProcessFunctions };
 }
 
 //call the functions and execute them based on their priority list from the ToolRegistry
 export async function ExeCuteContextEngines(
   functionsArray,
   user,
-  selectedDocuments
+  selectedDocuments,
+  MessageId
 ) {
   try {
-    if (!functionsArray.length < 0) {
+    if (functionsArray?.PreProcessFunctions?.length === 0) {
       return { error: "No functions found in the array" };
     }
 
@@ -269,7 +379,7 @@ export async function ExeCuteContextEngines(
     let phase2_Action = [];
 
     //distributing the context and action
-    functionsArray.forEach((func) => {
+    functionsArray.PreProcessFunctions.forEach((func) => {
       const config = ToolRegistry[func.function_name];
       if (!config) return; // Skip unknown functions
 
@@ -281,14 +391,18 @@ export async function ExeCuteContextEngines(
     });
 
     EmitEvent(user.user_id, "query_status", {
-      message: "Creating phases",
-      data: [
-        phase1_Context.length > 0
-          ? JSON.stringify(phase1_Context)
-          : phase2_Action.length > 0
-          ? JSON.stringify(phase2_Action)
-          : ["No functions required"],
-      ],
+      MessageId,
+      status: {
+        message: "Creating phases",
+
+        data: [
+          phase1_Context.length > 0
+            ? JSON.stringify(phase1_Context)
+            : phase2_Action.length > 0
+            ? JSON.stringify(phase2_Action)
+            : ["No functions required"],
+        ],
+      },
     });
 
     let GlobalContextObject = {
@@ -304,7 +418,8 @@ export async function ExeCuteContextEngines(
     const doc_data = await GetDocumentInfo(
       phase1_Context,
       selectedDocuments,
-      user
+      user,
+      MessageId
     );
 
     if (doc_data && doc_data.length > 0) {
@@ -319,7 +434,8 @@ export async function ExeCuteContextEngines(
     const doc_data_fromName = await GetDocumentInfoFromName(
       phase1_Context,
       user,
-      alreadyFetchedIds || []
+      alreadyFetchedIds || [],
+      MessageId
     );
 
     if (doc_data_fromName.length > 0) {
@@ -329,23 +445,24 @@ export async function ExeCuteContextEngines(
       ];
     }
 
+    // handle by id
     const private_doc_results = await SearchUserPrivateDocuments(
       phase2_Action,
       user,
-      GlobalContextObject // Contains the AlldocumentInformation we just found
+      GlobalContextObject,
+      MessageId // Contains the AlldocumentInformation we just found
     );
 
     if (private_doc_results?.length > 0) {
       GlobalContextObject.privateFilesResponse = [...private_doc_results];
     }
-    if (private_doc_results?.length > 0) {
-      GlobalContextObject.privateFilesResponse = [...private_doc_results];
-    }
+
     //get iformation from pubic contributed knowledgebase
     const knowledgebaseContext = await GetKnowledgebaseInfo(
       phase1_Context,
       GlobalContextObject,
-      user
+      user,
+      MessageId
     );
 
     if (knowledgebaseContext && knowledgebaseContext.length > 0) {
@@ -356,7 +473,8 @@ export async function ExeCuteContextEngines(
     const webContext = await CheckWebForInformation(
       phase2_Action,
       GlobalContextObject,
-      user
+      user,
+      MessageId
     );
 
     let favicons = [];

@@ -2,6 +2,7 @@ import { redisClient } from "../CachingHandler/redisClient.js";
 import { supabase } from "./supabaseHandler.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import dotenv from "dotenv";
+import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 dotenv.config();
 //handles limit check and update all at once
 export async function GlobalRequestRateLimit(req, res, next) {
@@ -34,12 +35,14 @@ export async function GlobalRequestRateLimit(req, res, next) {
   }
 }
 
+//main handler for user question request as middleware
 export const ProcessUserQuery = async (user, queryType) => {
   const user_id = user.user_id;
   const Monthly_Quota = parseInt(process.env.USER_QUOTA_LIMIT || 20); // Always parse env vars
 
-  // 1. Premium Check (Fastest exit)
-  if (user.PaymentStatus === true) {
+  // check if the user is a paid member
+  const PaymentStatus = await CheckUserPlanStatus(user_id);
+  if (PaymentStatus?.isPaid === true) {
     return { status: "ok", message: "Premium user - no limits" };
   }
 
@@ -62,8 +65,9 @@ export const ProcessUserQuery = async (user, queryType) => {
     return { status: "ok", message: "System bypass" };
   }
 };
+
+// update the database
 async function updateDbQuota(user_id, monthKey, count) {
-  // We use upsert so it handles both "Update" and "Insert new month" logic
   const { error } = await supabase.from("Question_Rate_Limits").upsert(
     {
       user_id: user_id,
@@ -75,46 +79,39 @@ async function updateDbQuota(user_id, monthKey, count) {
 
   if (error) console.error("Failed to sync quota to DB:", error);
 }
+
 //checks the user quota in cache as well as db and then caches it
 export async function CheckQuotaInCacheAndDB(user_id, query_type) {
   const date = new Date();
-  // Format: "2026-01" (YYYY-MM)
-  const currentMonthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
-  const redisKey = `quota:${user_id}:${currentMonthKey}`;
 
-  const CACHE_TTL = 86400;
+  const currentMonthKey = `${date.getFullYear()}-${date.getMonth() + 1}`; //year-month foramat
+  const redisKey = `quota:${user_id}:${currentMonthKey}`; //the current year and month is also the key
+
+  const CACHE_TTL = 86400; // 86400/60*60 minutes
 
   try {
-    // If key doesn't exist, Redis returns 1.
-    // We need to verify if this is a "real" 1 (new month) or a "fake" 1 (cache expired).
     const exists = await redisClient.exists(redisKey);
 
+    // counter variable to track down the type of query being processed
     let newCount;
 
     if (exists) {
-      // --- SCENARIO A: Cache Hit (Fast Path) ---
       if (query_type === "Synthesis") {
         newCount = await redisClient.incrBy(redisKey, 2);
       } else {
         newCount = await redisClient.incr(redisKey);
       }
 
-      // OPTIONAL: Update DB asynchronously (Fire and Forget)
-      // We don't await this because we don't want to slow down the user.
-      // We assume Redis is the source of truth for the active session.
+      // update the database and do not wait for the promist to be resolved
       updateDbQuota(user_id, currentMonthKey, newCount);
     } else {
-      // --- SCENARIO B: Cache Miss (Redis expired or New Month) ---
-
-      // A. Get the "True" count from Supabase
       const { data, error } = await supabase
         .from("Question_Rate_Limits")
         .select("question_asked_count")
         .eq("user_id", user_id)
         .eq("Month-Year", currentMonthKey)
-        .maybeSingle(); // Use maybeSingle() instead of single() to avoid error on empty rows
+        .maybeSingle();
 
-      // B. Determine starting point
       let dbCount = 0;
       if (data) {
         dbCount = data.question_asked_count;

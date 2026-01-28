@@ -1,186 +1,226 @@
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { IoHomeOutline } from "react-icons/io5";
 import { IoChatboxEllipsesOutline } from "react-icons/io5";
 import { MdDashboard, MdFeedback, MdLogin } from "react-icons/md";
 import { FaRegRegistered } from "react-icons/fa";
 import { MdKey } from "react-icons/md";
 import { useAppSelector } from "../store/hooks.tsx";
-import { BsPeople } from "react-icons/bs";
-import { motion } from "framer-motion";
-import { CustomDropdown } from "./Theme_Picker.tsx";
+import { BsChatSquare, BsPeople } from "react-icons/bs";
+import { motion, AnimatePresence } from "framer-motion";
 import { LogoRender } from "./LogoRender.tsx";
+import { FiX } from "react-icons/fi";
+
 type SidebarProps = {
   isVisble: boolean;
   setIsVisible: React.Dispatch<React.SetStateAction<boolean>>;
 };
-//  = useAppSelector(state => state.auth.isLoggedIn);
+
 const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
   const { isLoggedIn, user } = useAppSelector((state) => state.auth);
   const { CurrentTheme } = useAppSelector((state) => state.interface);
+  const location = useLocation();
+
+  const handleLinkClick = () => {
+    if (isVisble) {
+      setIsVisible(false);
+    }
+  };
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  const navLinks = [
+    {
+      path: "/",
+      icon: IoHomeOutline,
+      label: "Home",
+      show: true,
+    },
+    {
+      path: "/Interface",
+      icon: IoChatboxEllipsesOutline,
+      label: "Try Now",
+      show: true,
+    },
+    {
+      path: "/user/misallaneous-chats",
+      icon: BsChatSquare,
+      label: "History",
+      show: true,
+    },
+    {
+      path: "/user/rooms",
+      icon: BsPeople,
+      label: "Rooms",
+      show: true,
+    },
+    {
+      path: "/Register",
+      icon: FaRegRegistered,
+      label: "Register",
+      show: !isLoggedIn && user?.email === "",
+    },
+    {
+      path: "/Login",
+      icon: MdLogin,
+      label: "Login",
+      show: !isLoggedIn && user?.email === "",
+    },
+    {
+      path: "/user/dashboard",
+      icon: MdDashboard,
+      label: "Dashboard",
+      show: isLoggedIn || user?.email !== "",
+    },
+    {
+      path: "/Feedback",
+      icon: MdFeedback,
+      label: "Feedback",
+      show: true,
+    },
+    {
+      path: "/userManual/AntiNode/Know-How",
+      icon: MdKey,
+      label: "User Manual",
+      show: true,
+    },
+  ];
 
   return (
     <>
+      {/* Backdrop */}
+      <AnimatePresence>
+        {isVisble && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[19]"
+            onClick={() => setIsVisible(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
       <motion.div
         initial={{ x: -400 }}
         animate={{
-          x: isVisble === true ? 0 : -500,
+          x: isVisble ? 0 : -500,
         }}
-        transition={{ duration: 0.3, ease: "backInOut" }}
-        className={`md:hidden fixed h-full w-70  top-0 rotate-0 bg-white dark:bg-black dark:text-white text-black  z-[20] rounded-tr-md pt-10 rounded-br-md   duration-500 transition-all cursor-pointer flex flex-col items-center justify-start border border-gray-300 dark:border-gray-700`}
+        transition={{ duration: 0.3, ease: "easeInOut", type: "spring", damping: 20 }}
+        className="md:hidden fixed h-full w-[300px] top-0 bg-white dark:bg-neutral-950 dark:text-white text-black z-[20] shadow-2xl flex flex-col border-r border-gray-200 dark:border-gray-800"
       >
-        {/* logo  */}
-        <header className="absolute uppercase  top-2 right-2 text-xs  w-fit flex items-center justify-end  bai-jamjuree-bold rounded-md  p-1">
-          {/* <img
-            className="h-4 w-4  rounded-xs  "
-            src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
-            alt="logo"
-          /> */}
+        {/* Header */}
+        <div className="relative p-4 border-b border-gray-200 dark:border-gray-800">
+          {/* Close Button */}
+          <motion.button
+            onClick={() => setIsVisible(false)}
+            className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <FiX size={20} className="text-gray-600 dark:text-gray-400" />
+          </motion.button>
 
-          <LogoRender />
-        </header>
+          {/* Logo */}
+          <div className="mb-4">
+            <LogoRender />
+          </div>
 
-        {/* HeaderSection */}
-        <div className="border-b w-full px-3 py-3 relative">
-          <ul className="md:hidden text-xs space-grotesk absolute  rounded-sm -bottom-10 right-4 flex items-center justify-center">
-            Theme
-            <CustomDropdown />
-          </ul>
-          <section className="space-y-3">
-            <h1 className="bai-jamjuree-semibold flex items-center justify-start gap-3">
+          {/* User Info */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
               <Link
-                className={`p-1 flex items-center justify-center h-6 w-6 rounded-full ${CurrentTheme.user} space-grotesk font-semibold`}
-                role="button"
                 to="/user/dashboard"
+                onClick={handleLinkClick}
+                className={`p-2 flex items-center justify-center h-10 w-10 rounded-full ${CurrentTheme.user} space-grotesk font-semibold text-base shadow-md hover:shadow-lg transition-shadow`}
               >
-                {user?.username.trim().split("")[0]}
+                {user?.username?.trim().split("")[0] || "C"}
               </Link>
-              {user?.username || "Cadet"}
-            </h1>
-            <h2 className="bai-jamjuree-regular text-xs text-gray-400">
-              {user?.email || "Cadet@unknown.com"}
-            </h2>
-          </section>
+              <div className="flex-1 min-w-0">
+                <h1 className="bai-jamjuree-semibold text-base truncate">
+                  {user?.username || "Cadet"}
+                </h1>
+                <h2 className="bai-jamjuree-regular text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {user?.email || "Cadet@unknown.com"}
+                </h2>
+              </div>
+            </div>
+          </div>
+
+          {/* Theme Picker */}
+          {/* <div className="mt-4 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <span className="text-xs space-grotesk text-gray-600 dark:text-gray-400">
+              Theme
+            </span>
+            <CustomDropdown />
+          </div> */}
         </div>
-        {/*navigation links  */}
-        <section className="grid grid-cols-1 space-y-2  w-full mt-8  text-sm space-grotesk relative">
-          <Link
-            onClick={() => {
-              if (isVisble === true) {
-                setIsVisible(false);
-              }
 
-              // -translate-y-0 translate-y-90
-            }}
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10 pl-4   hover:pl-12 hover:transition-all duration-300"
-            to="/"
-          >
-            <IoHomeOutline size={22} />
-            Home
-          </Link>
-          <Link
-            onClick={() => {
-              if (isVisble === true) {
-                setIsVisible(false);
-              }
+        {/* Navigation Links */}
+        <nav className="flex-1 overflow-y-auto py-4 px-2">
+          <div className="space-y-1">
+            {navLinks.map(
+              (link) =>
+                link.show && (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={handleLinkClick}
+                    className={`
+                      group relative flex items-center gap-4 px-4 py-3 rounded-xl
+                      text-sm space-grotesk font-medium transition-all duration-200
+                      ${isActive(link.path)
+                        ? "bg-neutral-900 text-white dark:bg-gray-100 dark:text-black shadow-lg shadow-blue-500/30"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700"
+                      }
+                    `}
+                  >
+                    {/* Active Indicator */}
+                    {isActive(link.path) && (
+                      <motion.div
+                        layoutId="activeNav"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-green-500 rounded-r-full"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
 
-              // -translate-y-0 translate-y-90
-            }}
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
-            to="/Interface"
-          >
-            <IoChatboxEllipsesOutline size={22} />
-            Try Now
-          </Link>
-          <Link
-            onClick={() => {
-              if (isVisble === true) {
-                setIsVisible(false);
-              }
+                    {/* Icon */}
+                    <link.icon
+                      size={22}
+                      className={`
+                        transition-transform duration-200
+                        ${isActive(link.path)
+                          ? "scale-110"
+                          : "group-hover:scale-110"
+                        }
+                      `}
+                    />
 
-              // -translate-y-0 translate-y-90
-            }}
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
-            to="/user/rooms"
-          >
-            <BsPeople size={22} />
-            Rooms
-          </Link>
-          {isLoggedIn === false && user?.email === "" && (
-            <Link
-              onClick={() => {
-                if (isVisble === true) {
-                  setIsVisible(false);
-                }
+                    {/* Label */}
+                    <span>{link.label}</span>
 
-                // -translate-y-0 translate-y-90
-              }}
-              className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
-              to="/Register"
-            >
-              <FaRegRegistered size={22} />
-              Register
-            </Link>
-          )}
-          {isLoggedIn === false && user?.email === "" ? (
-            <Link
-              onClick={() => {
-                if (isVisble === true) {
-                  setIsVisible(false);
-                }
+                    {/* Hover Effect */}
+                    {!isActive(link.path) && (
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-blue-600/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                        initial={false}
+                      />
+                    )}
+                  </Link>
+                )
+            )}
+          </div>
+        </nav>
 
-                // -translate-y-0 translate-y-90
-              }}
-              className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
-              to="/Login"
-            >
-              <MdLogin size={22} />
-              Login
-            </Link>
-          ) : (
-            <Link
-              onClick={() => {
-                if (isVisble === true) {
-                  setIsVisible(false);
-                }
-
-                // -translate-y-0 translate-y-90
-              }}
-              className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
-              to="user/dashboard"
-            >
-              <MdDashboard size={22} />
-              Dashboard
-            </Link>
-          )}
-          <Link
-            onClick={() => {
-              if (isVisble === true) {
-                setIsVisible(false);
-              }
-
-              // -translate-y-0 translate-y-90
-            }}
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
-            to="/Feedback"
-          >
-            <MdFeedback size={22} />
-            Feedback
-          </Link>
-          <Link
-            onClick={() => {
-              if (isVisble === true) {
-                setIsVisible(false);
-              }
-
-              // -translate-y-0 translate-y-90
-            }}
-            className=" w-full py-2 flex items-center justify-start gap-6 hover:bg-white/10   pl-4 hover:pl-12 hover:transition-all duration-300"
-            to="/Api/introduction"
-          >
-            <MdKey size={22} />
-            API{" "}
-          </Link>
-        </section>
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+          <div className="text-xs text-center text-gray-500 dark:text-gray-400 space-grotesk">
+            <p>© 2026 AntiNode</p>
+          </div>
+        </div>
       </motion.div>
     </>
   );

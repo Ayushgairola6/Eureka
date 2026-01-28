@@ -44,6 +44,10 @@ interface Favicon {
   MessageId: string;
   favicon: any[];
 }
+interface WebSearchStatus {
+  MessageId: string;
+  status: { message: string; data: any[] }[]; // ← Array notation after the type
+}
 // the states that we are gonna need for the user experience
 interface chatStates {
   isConnected: boolean;
@@ -58,7 +62,8 @@ interface chatStates {
   favicon: Favicon[];
   fetchingMoreChats: boolean;
   currentStatus: string;
-  web_search_status: any[];
+  web_search_status: WebSearchStatus[];
+  showProcess: { message_id: string; status: boolean } | null;
 }
 const initialState: chatStates = {
   isConnected: false,
@@ -75,37 +80,37 @@ const initialState: chatStates = {
   fetchingMoreChats: false,
   web_search_status: [
     // {
-    //   message: "processing_links",
-    //   data: [
-    //     "http://youtube.com",
-    //     "https://facebook.com",
-    //     "https://facebook.com",
-    //     "https://facebook.com",
-    //   ],
-    // },
-    // {
-    //   message: "reading_links",
-    //   data: ["https://youtube.com"],
-    // },
-    // {
-    //   message: "reading_links",
-    //   data: ["https://facebook.com"],
-    // },
-    // {
-    //   message: "reading_links",
-    //   data: ["https://github.com"],
-    // },
-    // {
-    //   message: "reading_links",
-    //   data: ["https://fhub.com"],
-    // },
-    // {
-    //   message: "Cleaning_Context",
-    //   data: [
-    //     "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quasi, excepturi fugiat labore aliquid illo a voluptatem atque laboriosam unde incidunt, dignissimos at, omnis perspiciatis consectetur deserunt libero quo odio ipsam!",
+    //   MessageId: "12345",
+    //   status: [
+    //     {
+    //       message: "reading_links",
+    //       data: [
+    //         "https://youtube.com",
+    //         "https://pornhub.com",
+    //         "https://brazzers.com",
+    //         "https://blacked.com",
+    //         "https://cum4k.com",
+    //       ],
+    //     },
+    //     {
+    //       message: "Understanding_Intent",
+    //       data: [
+    //         "I am now trying to understand the intent behind my boss'es request to gather the best porn from the depths of the web",
+    //       ],
+    //     },
+    //     {
+    //       message: "Crawling_deep_web",
+    //       data: [
+    //         "I am now crawling deep web to search for best porn playlist for my boss.",
+    //       ],
+    //     },
+    //     { message: "fetching_url", data: ["https://xvideos.com"] },
+    //     { message: "fetching_url", data: ["https://KinComiX.com"] },
+    //     { message: "fetching_url", data: ["https://sexKomix.com"] },
     //   ],
     // },
   ],
+  showProcess: null,
 };
 export const GetChatRoomHistory = createAsyncThunk(
   "room/history",
@@ -124,9 +129,17 @@ export const GetChatRoomHistory = createAsyncThunk(
       // console.log(response.data)
       return response.data.chats;
     } catch (err: any) {
-      return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to fetch history"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -149,11 +162,18 @@ export const AskAI = createAsyncThunk<any, any>(
         }
       );
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error?.response?.data?.message ||
-          "I was unable to find relevant information about the question you asked in this document"
-      );
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -162,12 +182,15 @@ export const AskAI = createAsyncThunk<any, any>(
 
 export const SearchWeb = createAsyncThunk<any, any>(
   "Search/AntiNodeweb",
-  async ({ room_id, MessageId, query }, { rejectWithValue }) => {
+  async (
+    { room_id, MessageId, query, web_search_depth },
+    { rejectWithValue }
+  ) => {
     try {
       const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/user/chat-room/ask-web`,
-        { room_id, MessageId, query },
+        { room_id, MessageId, query, web_search_depth },
         {
           withCredentials: true,
           headers: {
@@ -179,12 +202,18 @@ export const SearchWeb = createAsyncThunk<any, any>(
         answer: response.data.answer,
         favicon: response.data.favicon || [],
       };
-    } catch (error: any) {
-      console.error(error);
-      return rejectWithValue(
-        error?.response?.data?.message ||
-          "I am having some trouble generating a response right now !"
-      );
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -206,8 +235,18 @@ export const FetchMoreChatsInTheRoom = createAsyncThunk<any, object>(
         }
       );
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error?.response?.data?.message);
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -222,6 +261,18 @@ const socketSlice = createSlice({
       // console.log("socket has connected")
       state.isConnected = true;
     },
+    setProcess: (state, action) => {
+      //if the message is selected twice
+      if (state?.showProcess?.message_id && state?.showProcess.status) {
+        if (state.showProcess?.message_id === action.payload) {
+          state.showProcess.message_id = "";
+          state.showProcess.status = !state.showProcess.status;
+        } else {
+          state.showProcess.message_id = action.payload.message;
+          state.showProcess.status = true;
+        }
+      }
+    },
     setCurrentStatus: (state, action) => {
       state.currentStatus = action.payload;
     },
@@ -230,11 +281,15 @@ const socketSlice = createSlice({
     },
     AddNewMessage: (state, action) => {
       // if the message is not already in the array
-      const ItIncludes = state.newMessage.find(
+      const ItIncludes = state.newMessage.findIndex(
         (msg) => msg.message_id === action.payload.message_id
       );
+      // if the message is new let it rip
       if (!ItIncludes) {
         state.newMessage.push(action.payload);
+      } else {
+        //finish the answer of the existing pushed message and replace with the new value to it
+        state.newMessage[ItIncludes].message = action.payload.message;
       }
     },
     // update the array for local updates
@@ -291,10 +346,23 @@ const socketSlice = createSlice({
       state.chatRoomFile = action.payload;
     },
     setWebStatus: (state, action) => {
-      if (action.payload && action.payload?.message) {
-        state.web_search_status.push(action.payload);
-      } else {
-        state.web_search_status = [];
+      if (action.payload) {
+        const existingIndex = state.web_search_status.findIndex(
+          (e) => e.MessageId === action.payload.MessageId
+        );
+
+        if (existingIndex !== -1) {
+          // Update existing message - push new status
+          state.web_search_status[existingIndex].status.push(
+            action.payload.status
+          );
+        } else {
+          // New message - add with status as array
+          state.web_search_status.push({
+            MessageId: action.payload.MessageId,
+            status: [action.payload.status],
+          });
+        }
       }
     },
   },
@@ -354,5 +422,6 @@ export const {
   setFavicon,
   setCurrentStatus,
   setWebStatus,
+  setProcess,
 } = socketSlice.actions;
 export default socketSlice.reducer;

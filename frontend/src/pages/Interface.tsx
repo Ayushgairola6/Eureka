@@ -3,24 +3,34 @@ import { toast } from "sonner";
 import ChatBubble from "@/components/ChatBubble.tsx";
 import InputSection from "@/components/InterfaceInputSection.tsx";
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
+import { currentTime } from "../../utlis/Date.ts";
 import {
+  MimicSSE,
+  setQueryType,
+  setQuestion,
   // GetSessionHistory,
   setSelectedDoc,
   setUploadStatus,
+  UpdateChats,
+  updateFavicon,
   // updatefetchingSessionHistory,
   // UpdateResponseStatus,
   // UpdateSessionChats,
+  setSearchDepth,
   UploadDocuments,
+  WebSearchHandler,
 } from "../store/InterfaceSlice.ts";
-import { setDocs } from "../store/AuthSlice.ts";
+import { setDocs, SetQueryCount } from "../store/AuthSlice.ts";
 import UserForm from "@/components/ui/userDetail.tsx";
 import { useSearchParams } from "react-router";
 import PrivateDocuments from "@/components/PrivateDocuments.tsx";
 import PublicQueryOptions from "@/components/PublicQueryOptions.tsx";
 import { Notice } from "@/components/Notice.tsx";
+import { v4 as uuid } from 'uuid'
 // import { HandleSSEConnection } from "../store/SSEHandler.tsx";
 function Interface() {
   const [searchParams] = useSearchParams();
+  // handling google auth localstorage sessionToken storage
   useEffect(() => {
     const SessionId = searchParams.get("SessionId");
     if (SessionId) {
@@ -32,7 +42,7 @@ function Interface() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(false);
   const { isLoggedIn } = useAppSelector((state) => state.auth);
-  const { question, category, visibility, subCategory, Chats, selectedDoc } =
+  const { question, category, visibility, subCategory, Chats, selectedDoc, search_depth, queryType } =
     useAppSelector((state) => state.interface);
 
   const textareaRef = useRef<HTMLInputElement>(null);
@@ -44,10 +54,118 @@ function Interface() {
     }
   };
 
+  //self up moving message input container 
   useEffect(() => {
     adjustTextareaHeight();
   }, [question]);
 
+  // checking if there is any prompt based saved from redirect url
+  useEffect(() => {
+    // if the app has not loaded completely yet
+    if (typeof window === 'undefined') return;
+
+    // if the user is not logged In 
+    if (isLoggedIn === false) return;
+
+    const value = sessionStorage.getItem("AntiNode_Redirect_prompt");
+    if (!value) return;
+    dispatch(setQuestion((value)));
+    dispatch(setQueryType("Web Search"));
+    dispatch(setSearchDepth('surface_web'));
+
+
+    try {
+      const search_depths = ['surface_web', 'deep_web']
+      if (!question || question === "") {
+        toast.error("Please type a message first");
+        return;
+      }
+      if (!queryType || queryType !== 'Web Search') {
+        toast.message("Invalid mode")
+        return;
+      }
+      if (!search_depth || search_depth === '' || !search_depths.includes(search_depth)) {
+        toast.message("Invalid search-depth")
+        return
+      }
+
+
+      const user_id = uuid()
+
+      const AiId = uuid();
+      // Insert user message
+      dispatch(
+        UpdateChats({
+          id: user_id,
+          sent_at: currentTime,
+          sent_by: "You",
+          message: {
+            isComplete: true,
+            content: question,
+          },
+        })
+      );
+
+      // Insert empty AI message
+      dispatch(
+        UpdateChats({
+          id: AiId,
+          sent_at: currentTime,
+          sent_by: "AntiNode",
+          message: {
+            isComplete: false,
+            content: "",
+          },
+        })
+      );
+
+      dispatch(
+        WebSearchHandler({ question, MessageId: AiId, userMessageId: user_id, web_search_depth: search_depth })
+      )
+        .unwrap()
+        .then((res) => {
+          if (res.message === "Results found") {
+            dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
+            dispatch(updateFavicon(res.favicon));
+            dispatch(SetQueryCount());
+            sessionStorage.removeItem("AntiNode_Redirect_prompt");
+
+          }
+        })
+        .catch((err: any) => {
+          dispatch(
+            MimicSSE({
+              id: AiId,
+              delta:
+                err ||
+                "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
+            })
+          );
+          // dispatch(setWebStatus([]));
+          setIsActive(false);
+          sessionStorage.removeItem("AntiNode_Redirect_prompt");
+
+        })
+        .finally(() => {
+          dispatch(
+            MimicSSE({
+              id: AiId,
+              delta:
+
+                "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
+            })
+          );
+          setIsActive(false);
+          // dispatch(setWebStatus([]));
+          dispatch(setQuestion(""));
+          sessionStorage.removeItem("AntiNode_Redirect_prompt");
+
+        });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message);
+    }
+
+  }, [dispatch])
   // const FetchCountRef = React.useRef(0);
   // useEffect(() => {
   //   // Only fetch if logged in and we haven't loaded history yet
@@ -174,6 +292,9 @@ function Interface() {
                 setIsActive={setIsActive}
                 textareaRef={textareaRef}
               />
+              <div className='space-grotesk text-xs text-gray-700 dark:text-gray-500 text-center '>
+                Antinode can make mistakes, please do not trust it blindly!
+              </div>
             </div>
           </div>
         </div>

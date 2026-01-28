@@ -14,6 +14,70 @@ export const AnswerAndData = [
       "https://www.uptodate.com/contents/whats-new-in-oncology",
       "https://www.nature.com/natcancer/",
     ],
+    events: [
+      {
+        MessageId: 1,
+        status: {
+          message: "new_thread",
+          data: ["th_982347561_cancer_research"],
+        },
+      },
+      {
+        MessageId: 1,
+        status: {
+          message: "Understanding Request",
+          data: [
+            "Analyzing the request for 2025-2026 cancer breakthroughs, focusing on KRAS proteins, mRNA vaccines, and AI diagnostics.",
+          ],
+        },
+      },
+      {
+        MessageId: 1,
+        status: {
+          message: "Searching web",
+          data: [
+            'Searched web for "latest cancer treatment breakthroughs 2025 2026 KRAS mRNA vaccines"',
+          ],
+        },
+      },
+      {
+        MessageId: 1,
+        status: {
+          message: "processing_links",
+          data: [
+            "https://www.worldwidecancerresearch.org/our-latest-news/news-and-press/our-top-cancer-research-breakthroughs-of-2025/",
+            "https://ccr.cancer.gov/news/new-discoveries",
+            "https://www.ucsf.edu/news/2025/11/431086/undruggable-unstoppable-new-cancer-cure-target-emerges",
+          ],
+        },
+      },
+      {
+        MessageId: 1,
+        status: {
+          message: "reading_links",
+          data: [
+            "https://www.mskcc.org/news/top-cancer-treatment-advances-at-msk-in-2025",
+            "https://www.weforum.org/stories/2025/02/cancer-treatment-and-diagnosis-breakthroughs/",
+          ],
+        },
+      },
+      {
+        MessageId: 1,
+        status: {
+          message: "Reading docs",
+          data: [
+            "Extracting information regarding sotorasib and adagrasib FDA approvals and Phase 2 trials for ID1 protein targeting.",
+          ],
+        },
+      },
+      {
+        MessageId: 1,
+        status: {
+          message: "Gathered DocumentInformation",
+          data: null,
+        },
+      },
+    ],
     markdown: `### Research Report: Advancements in Cancer Treatment
 
 This report synthesizes recent findings and ongoing research in cancer treatment, drawing from the provided context. It highlights key areas of progress, emerging strategies, and significant discoveries.
@@ -156,6 +220,74 @@ This comprehensive overview illustrates a dynamic and rapidly evolving landscape
       "https://www.jellyfish.com/en-us/news/jellyfish-launches-the-share-of-model-platform/",
       "https://threadgillagency.com/the-rise-of-the-llm-in-digital-marketing/",
     ],
+    events: [
+      {
+        MessageId: 2,
+        status: {
+          message: "Understanding_Intent",
+          data: [
+            "Deconstructing market impact into three pillars: Consumer Behavior, SEO/Digital Marketing shifts, and Financial Service automation.",
+          ],
+        },
+      },
+      {
+        MessageId: 2,
+        status: {
+          message: "Creating functions",
+          data: [
+            { name: "get_market_stats", params: ["LLM_adoption_2025"] },
+            {
+              name: "analyze_job_market_impact",
+              params: ["white_collar_automation"],
+            },
+          ],
+        },
+      },
+      {
+        MessageId: 2,
+        status: {
+          message: "Creating phases",
+          data: [
+            "1. Aggregate usage statistics from Hostinger. 2. Cross-reference job displacement data from Wharton. 3. Synthesize SEO shift projections for 2028.",
+          ],
+        },
+      },
+      {
+        MessageId: 2,
+        status: {
+          message: "Crawling_deep_web",
+          data: [
+            "https://knowledge.wharton.upenn.edu/article/how-large-language-models-could-impact-jobs/",
+          ],
+        },
+      },
+      {
+        MessageId: 2,
+        status: {
+          message: "fetching_url",
+          data: [
+            [
+              "https://menlovc.com/perspective/2025-mid-year-llm-market-update/",
+              "https://explodingtopics.com/blog/llm-search",
+            ],
+          ],
+        },
+      },
+      {
+        MessageId: 2,
+        status: {
+          message: "Metadata_analysis",
+          data: ["sector:finance, trend:generative-ai, impact:high-certainty"],
+        },
+      },
+      {
+        MessageId: 2,
+        status: {
+          message: "Gathered DocumentInformation",
+          data: null,
+        },
+      },
+    ],
     markdown: `# Report: Impact of Large Language Models on Markets
 
 **Executive Summary:** Large Language Models (LLMs) are significantly impacting various markets by altering consumer behavior, revolutionizing digital marketing and SEO, transforming industries like market research and finance, and reshaping the job market. LLMs are influencing purchase decisions through recommendations, driving changes in how brands optimize their online presence, and creating new opportunities for automation and efficiency. While adoption is widespread, concerns about accuracy, bias, and the long-term impact on employment persist. The market for LLM-powered tools and services is experiencing rapid growth, indicating a fundamental shift in how information is accessed and utilized across industries.
@@ -281,127 +413,127 @@ This comprehensive overview illustrates a dynamic and rapidly evolving landscape
 *   **How Large Language Models Could Impact Jobs** — [https://knowledge.wharton.upenn.edu/article/how-large-language-models-could-impact-jobs/](https://knowledge.wharton.upenn.edu/article/how-large-language-models-could-impact-jobs/) — 2024 (estimated)
     *   Relevance: Discusses the potential impact of LLMs on employment, focusing on knowledge workers and the long-term evolution of job roles.`,
   },
-  {
-    id: 3,
-    prompt: "Why getting a job has become so hard?",
-    Links: [
-      "https://www.reddit.com/r/jobs/comments/1hw9cd1/why_is_it_so_hard_to_land_any_job/",
-      "https://www.youtube.com/watch?v=wkW__E8MwM8",
-      "https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR",
-      "https://www.indeed.com/career-advice/finding-a-job/why-finding-a-job-is-so-hard",
-      "https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now",
-      "https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/",
-      "https://medium.com/swlh/why-its-so-hard-to-find-a-job-right-now-07e46dffa81b",
-      "https://www.quora.com/Why-is-it-so-hard-to-get-a-job-I-ve-applied-to-about-30-in-the-last-2-days",
-      "https://www.youtube.com/watch?v=2MfQ2KCIUWo",
-      "https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it",
-    ],
-    markdown: `# Report: Analysis of Challenges in the Current Job Market
+  //   {
+  //     id: 3,
+  //     prompt: "Why getting a job has become so hard?",
+  //     Links: [
+  //       "https://www.reddit.com/r/jobs/comments/1hw9cd1/why_is_it_so_hard_to_land_any_job/",
+  //       "https://www.youtube.com/watch?v=wkW__E8MwM8",
+  //       "https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR",
+  //       "https://www.indeed.com/career-advice/finding-a-job/why-finding-a-job-is-so-hard",
+  //       "https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now",
+  //       "https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/",
+  //       "https://medium.com/swlh/why-its-so-hard-to-find-a-job-right-now-07e46dffa81b",
+  //       "https://www.quora.com/Why-is-it-so-hard-to-get-a-job-I-ve-applied-to-about-30-in-the-last-2-days",
+  //       "https://www.youtube.com/watch?v=2MfQ2KCIUWo",
+  //       "https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it",
+  //     ],
+  //     markdown: `# Report: Analysis of Challenges in the Current Job Market
 
-**Executive Summary:** The difficulty in securing employment is attributed to a confluence of factors rather than individual inadequacy. Key drivers include market oversaturation due to increased application volumes, significant layoffs and restructuring, the impact of AI on hiring processes, and a decrease in remote work opportunities. These conditions create intense competition, particularly for white-collar roles, leading to a prolonged and often frustrating job search experience for candidates. Confidence in this summary is High.
+  // **Executive Summary:** The difficulty in securing employment is attributed to a confluence of factors rather than individual inadequacy. Key drivers include market oversaturation due to increased application volumes, significant layoffs and restructuring, the impact of AI on hiring processes, and a decrease in remote work opportunities. These conditions create intense competition, particularly for white-collar roles, leading to a prolonged and often frustrating job search experience for candidates. Confidence in this summary is High.
 
-**Methods & Scope**
-This report synthesizes information from six provided web context snippets. The data primarily focuses on the reasons why job searching has become difficult in the current market, with several sources offering similar explanations and candidate experiences. Conflicting information was not present within the provided context. The analysis assumes the provided context accurately reflects general trends in the job market.
+  // **Methods & Scope**
+  // This report synthesizes information from six provided web context snippets. The data primarily focuses on the reasons why job searching has become difficult in the current market, with several sources offering similar explanations and candidate experiences. Conflicting information was not present within the provided context. The analysis assumes the provided context accurately reflects general trends in the job market.
 
-**Findings**
+  // **Findings**
 
-1.  **Increased Competition and Application Volume:** The number of applications per job opening has significantly increased, leading to a more competitive landscape.
-    *   [Why is it So Hard to Find a Job Right Now? (2025 Data on Why No One is Hiring)](https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/) — score: 5
-        *   "Application numbers are climbing, with more candidates applying to each open role. From 2023 to 2024, applications increased by 44%."
-        *   Interpretation: A substantial rise in job applications means more individuals are vying for each available position.
-    *   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — score: 19
-        *   "In Q3 2024, recruiters received an average of 588 applications per role – an increase of 26% since the same time the previous year."
-        *   Interpretation: This highlights a significant increase in the volume of applications recruiters handle.
+  // 1.  **Increased Competition and Application Volume:** The number of applications per job opening has significantly increased, leading to a more competitive landscape.
+  //     *   [Why is it So Hard to Find a Job Right Now? (2025 Data on Why No One is Hiring)](https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/) — score: 5
+  //         *   "Application numbers are climbing, with more candidates applying to each open role. From 2023 to 2024, applications increased by 44%."
+  //         *   Interpretation: A substantial rise in job applications means more individuals are vying for each available position.
+  //     *   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — score: 19
+  //         *   "In Q3 2024, recruiters received an average of 588 applications per role – an increase of 26% since the same time the previous year."
+  //         *   Interpretation: This highlights a significant increase in the volume of applications recruiters handle.
 
-2.  **Market Saturation and Layoffs:** Broader economic factors, including corporate restructuring and layoffs, have led to more candidates entering the job market.
-    *   [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR) — score: Unknown
-        *   "Employers have slashed headcounts to improve shareholder value."
-        *   Interpretation: Companies have reduced staff numbers, contributing to fewer available positions.
-    *   [Why is it So Hard to Find a Job Right Now? (2025 Data on Why No One is Hiring)](https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/) — score: 5
-        *   "Part of that surge is being driven by larger market forces, including significant layoffs and restructuring."
-        *   Interpretation: Layoffs and company reorganizations are pushing more people to seek new employment.
-    *   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — score: 19
-        *   "According to Layoffs.fyi, over 500,000 tech workers have lost their jobs since the start of 2022."
-        *   Interpretation: A large number of job losses, particularly in the tech sector, have increased the pool of job seekers.
+  // 2.  **Market Saturation and Layoffs:** Broader economic factors, including corporate restructuring and layoffs, have led to more candidates entering the job market.
+  //     *   [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR) — score: Unknown
+  //         *   "Employers have slashed headcounts to improve shareholder value."
+  //         *   Interpretation: Companies have reduced staff numbers, contributing to fewer available positions.
+  //     *   [Why is it So Hard to Find a Job Right Now? (2025 Data on Why No One is Hiring)](https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/) — score: 5
+  //         *   "Part of that surge is being driven by larger market forces, including significant layoffs and restructuring."
+  //         *   Interpretation: Layoffs and company reorganizations are pushing more people to seek new employment.
+  //     *   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — score: 19
+  //         *   "According to Layoffs.fyi, over 500,000 tech workers have lost their jobs since the start of 2022."
+  //         *   Interpretation: A large number of job losses, particularly in the tech sector, have increased the pool of job seekers.
 
-3.  **Impact of Artificial Intelligence (AI):** AI is influencing hiring processes and, in some cases, slowing down recruitment or altering job requirements.
-    *   [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR) — score: Unknown
-        *   "AI has slowed down hiring in some sectors, too."
-        *   Interpretation: AI adoption may be contributing to a more cautious or slower hiring pace.
-    *   [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now) — score: 1
-        *   "[_Fast Company_](https://www.fastcompany.com/91114022/why-is-it-so-hard-to-find-a-job-right-now) cited the use of artificial intelligence to improve resumés and 'layoff spillover' from the pandemic years, when companies over-hired, as other reasons it’s generally trickier for workers to land a job."
-        *   Interpretation: AI's role in resume optimization and its broader use in recruitment are cited as factors making job acquisition more complex.
-    *   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — score: 19
-        *   "Others are turning to AI."
-        *   Interpretation: Companies are increasingly employing AI in their recruitment processes.
+  // 3.  **Impact of Artificial Intelligence (AI):** AI is influencing hiring processes and, in some cases, slowing down recruitment or altering job requirements.
+  //     *   [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR) — score: Unknown
+  //         *   "AI has slowed down hiring in some sectors, too."
+  //         *   Interpretation: AI adoption may be contributing to a more cautious or slower hiring pace.
+  //     *   [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now) — score: 1
+  //         *   "[_Fast Company_](https://www.fastcompany.com/91114022/why-is-it-so-hard-to-find-a-job-right-now) cited the use of artificial intelligence to improve resumés and 'layoff spillover' from the pandemic years, when companies over-hired, as other reasons it’s generally trickier for workers to land a job."
+  //         *   Interpretation: AI's role in resume optimization and its broader use in recruitment are cited as factors making job acquisition more complex.
+  //     *   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — score: 19
+  //         *   "Others are turning to AI."
+  //         *   Interpretation: Companies are increasingly employing AI in their recruitment processes.
 
-4.  **Reduced Remote Work Opportunities:** The decline in remote job availability forces more individuals to compete for local positions, intensifying competition in specific geographic areas.
-    *   [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR) — score: Unknown
-        *   "And with remote jobs becoming increasingly rare, more people are forced to look locally."
-        *   Interpretation: A decrease in remote roles compels a larger number of job seekers to compete within a more localized job market.
+  // 4.  **Reduced Remote Work Opportunities:** The decline in remote job availability forces more individuals to compete for local positions, intensifying competition in specific geographic areas.
+  //     *   [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR) — score: Unknown
+  //         *   "And with remote jobs becoming increasingly rare, more people are forced to look locally."
+  //         *   Interpretation: A decrease in remote roles compels a larger number of job seekers to compete within a more localized job market.
 
-5.  **Candidate Experience and Perceived Inadequacy:** Many job seekers feel frustrated by the lengthy application processes, ghosting, and the feeling that their qualifications are insufficient, leading to self-doubt.
-    *   [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now) — score: 1
-        *   "Three to five years of experience for an entry-level job. Sitting through rounds of interviews only to ultimately get ghosted. Lengthy applications that seem to disappear into the void of LinkedIn or hiring-page portals."
-        *   Interpretation: The current job search involves arduous processes and a lack of communication from employers, which is disheartening.
-    *   [Why It’s So Hard To Find a Job Right Now](https://medium.com/swlh/why-its-so-hard-to-find-a-job-right-now-07e46dffa81b) — score: Unknown
-        *   "Most people apply to dozens of jobs every week, customize their resume for each one, and spend hours writing personalized cover letters, only to receive no response at all, not even a rejection email."
-        *   Interpretation: Job seekers are investing significant effort with minimal or no response, leading to frustration.
-    *   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — score: 19
-        *   "The reality for so-called “white-collar workers,” especially in tech, paints a different picture. According to Layoffs.fyi, over 500,000 tech workers have lost their jobs since the start of 2022. Meanwhile, the rate of hiring in tech has dropped significantly. In short, there are fewer white-collar jobs and more workers looking for roles after being laid off. Competition is fierce."
-        *   Interpretation: The tech sector, in particular, faces a high competition rate due to layoffs and reduced hiring.
+  // 5.  **Candidate Experience and Perceived Inadequacy:** Many job seekers feel frustrated by the lengthy application processes, ghosting, and the feeling that their qualifications are insufficient, leading to self-doubt.
+  //     *   [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now) — score: 1
+  //         *   "Three to five years of experience for an entry-level job. Sitting through rounds of interviews only to ultimately get ghosted. Lengthy applications that seem to disappear into the void of LinkedIn or hiring-page portals."
+  //         *   Interpretation: The current job search involves arduous processes and a lack of communication from employers, which is disheartening.
+  //     *   [Why It’s So Hard To Find a Job Right Now](https://medium.com/swlh/why-its-so-hard-to-find-a-job-right-now-07e46dffa81b) — score: Unknown
+  //         *   "Most people apply to dozens of jobs every week, customize their resume for each one, and spend hours writing personalized cover letters, only to receive no response at all, not even a rejection email."
+  //         *   Interpretation: Job seekers are investing significant effort with minimal or no response, leading to frustration.
+  //     *   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — score: 19
+  //         *   "The reality for so-called “white-collar workers,” especially in tech, paints a different picture. According to Layoffs.fyi, over 500,000 tech workers have lost their jobs since the start of 2022. Meanwhile, the rate of hiring in tech has dropped significantly. In short, there are fewer white-collar jobs and more workers looking for roles after being laid off. Competition is fierce."
+  //         *   Interpretation: The tech sector, in particular, faces a high competition rate due to layoffs and reduced hiring.
 
-6.  **Shifting Job Requirements and Salary Discrepancies:** Some entry-level positions demand more experience than previously, and salaries may not keep pace with increased requirements or inflation.
-    *   [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now) — score: 1
-        *   "They added more years [of experience] that they wanted for the person to fill the role... but they lowered the salary.”
-        *   Interpretation: An example illustrates how job requirements can increase while compensation decreases.
+  // 6.  **Shifting Job Requirements and Salary Discrepancies:** Some entry-level positions demand more experience than previously, and salaries may not keep pace with increased requirements or inflation.
+  //     *   [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now) — score: 1
+  //         *   "They added more years [of experience] that they wanted for the person to fill the role... but they lowered the salary.”
+  //         *   Interpretation: An example illustrates how job requirements can increase while compensation decreases.
 
-**Discrepancies & Uncertainty**
-No direct discrepancies were found in the provided context. The sources generally align on the key reasons for the difficulty in finding employment. Uncertainty exists regarding the precise impact and implementation of AI in different sectors, as the provided text offers general observations rather than specific data.
+  // **Discrepancies & Uncertainty**
+  // No direct discrepancies were found in the provided context. The sources generally align on the key reasons for the difficulty in finding employment. Uncertainty exists regarding the precise impact and implementation of AI in different sectors, as the provided text offers general observations rather than specific data.
 
-**Analysis & Reasoning**
-1.  **Problem Identification:** The user asks why getting a job has become difficult.
-2.  **Evidence Gathering:** Multiple sources indicate that the difficulty is not due to a lack of candidate talent or skills. Instead, the primary causes are external market conditions.
-3.  **Market Oversaturation:** The context consistently points to a surge in applications and a decrease in available roles. This is driven by:
-    *   Layoffs and corporate restructuring (sources 1, 5, 6).
-    *   Increased applicant numbers (source 4).
-    *   Reduction in remote work, forcing more competition locally (source 1).
-4.  **Technological Impact:** AI is mentioned as a factor influencing hiring, potentially slowing processes or altering resume expectations (sources 1, 3, 6).
-5.  **Candidate Experience:** The application and interview process is described as lengthy, with a high likelihood of being ghosted, leading to candidate frustration and self-doubt (sources 3, 5).
-6.  **Evolving Job Demands:** Some roles, especially entry-level ones, now require more experience, sometimes coupled with reduced salary offers (source 3).
-7.  **Conclusion:** The combination of increased competition, fewer openings (especially remote), and a challenging, often opaque hiring process creates the current difficult job market.
+  // **Analysis & Reasoning**
+  // 1.  **Problem Identification:** The user asks why getting a job has become difficult.
+  // 2.  **Evidence Gathering:** Multiple sources indicate that the difficulty is not due to a lack of candidate talent or skills. Instead, the primary causes are external market conditions.
+  // 3.  **Market Oversaturation:** The context consistently points to a surge in applications and a decrease in available roles. This is driven by:
+  //     *   Layoffs and corporate restructuring (sources 1, 5, 6).
+  //     *   Increased applicant numbers (source 4).
+  //     *   Reduction in remote work, forcing more competition locally (source 1).
+  // 4.  **Technological Impact:** AI is mentioned as a factor influencing hiring, potentially slowing processes or altering resume expectations (sources 1, 3, 6).
+  // 5.  **Candidate Experience:** The application and interview process is described as lengthy, with a high likelihood of being ghosted, leading to candidate frustration and self-doubt (sources 3, 5).
+  // 6.  **Evolving Job Demands:** Some roles, especially entry-level ones, now require more experience, sometimes coupled with reduced salary offers (source 3).
+  // 7.  **Conclusion:** The combination of increased competition, fewer openings (especially remote), and a challenging, often opaque hiring process creates the current difficult job market.
 
-**Recommendations**
+  // **Recommendations**
 
-1.  **High** — **Focus on Brand Development and Skill Highlighting:** Given the oversaturation, candidates should emphasize their unique problem-solving abilities and tailor their personal brand (resume, LinkedIn) to highlight these specific skills and achievements.
-    *   Rationale: The context suggests the problem is competition, not qualification. Developing a strong brand addresses this directly. [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR)
-2.  **High** — **Prioritize Targeted Networking:** Leverage networking to bypass the high volume of applications and gain insights into unadvertised roles or gain a referral.
-    *   Rationale: Networking is presented as a method to "skip the line" in a crowded market. [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR)
-3.  **Medium** — **Investigate AI in Recruitment:** Understand how AI is used by potential employers for screening or resume analysis to optimize application materials accordingly.
-    *   Rationale: AI is cited as a factor in the hiring process and resume enhancement, suggesting candidates should be aware of its role. [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now)
-4.  **Medium** — **Be Prepared for Longer Search Cycles:** Adjust expectations regarding the time commitment for job searching and the potential for delayed responses or ghosting. Maintain resilience and focus on learning from each application and interview.
-    *   Rationale: The experience of lengthy applications, ghosting, and delayed feedback is a common theme, indicating this is a persistent challenge. [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now)
-5.  **Low** — **Research Companies Thoroughly for Misaligned Requirements:** Be critical of job postings that demand significantly more experience than standard for entry-level roles or offer lower salaries, and consider if the company's expectations align with market realities.
-    *   Rationale: A specific example highlights this trend, suggesting it may be a notable, albeit potentially less universal, issue. [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now)
+  // 1.  **High** — **Focus on Brand Development and Skill Highlighting:** Given the oversaturation, candidates should emphasize their unique problem-solving abilities and tailor their personal brand (resume, LinkedIn) to highlight these specific skills and achievements.
+  //     *   Rationale: The context suggests the problem is competition, not qualification. Developing a strong brand addresses this directly. [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR)
+  // 2.  **High** — **Prioritize Targeted Networking:** Leverage networking to bypass the high volume of applications and gain insights into unadvertised roles or gain a referral.
+  //     *   Rationale: Networking is presented as a method to "skip the line" in a crowded market. [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR)
+  // 3.  **Medium** — **Investigate AI in Recruitment:** Understand how AI is used by potential employers for screening or resume analysis to optimize application materials accordingly.
+  //     *   Rationale: AI is cited as a factor in the hiring process and resume enhancement, suggesting candidates should be aware of its role. [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now)
+  // 4.  **Medium** — **Be Prepared for Longer Search Cycles:** Adjust expectations regarding the time commitment for job searching and the potential for delayed responses or ghosting. Maintain resilience and focus on learning from each application and interview.
+  //     *   Rationale: The experience of lengthy applications, ghosting, and delayed feedback is a common theme, indicating this is a persistent challenge. [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now)
+  // 5.  **Low** — **Research Companies Thoroughly for Misaligned Requirements:** Be critical of job postings that demand significantly more experience than standard for entry-level roles or offer lower salaries, and consider if the company's expectations align with market realities.
+  //     *   Rationale: A specific example highlights this trend, suggesting it may be a notable, albeit potentially less universal, issue. [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now)
 
-**Limitations & Assumptions**
-*   The provided context is primarily based on recent observations (2024-2025 data cited) and anecdotal evidence, lacking large-scale statistical analysis beyond application volume increases.
-*   The context focuses on "white-collar" or office-type jobs, particularly mentioning tech, and may not fully represent challenges in other sectors.
-*   The LinkedIn post, while offering practical advice, is one person's perspective.
-*   The provided context does not delve into specific geographical variations or industry-specific nuances beyond a general mention of tech.
-*   It is assumed that the sources are representative of common experiences and trends in the current job market.
+  // **Limitations & Assumptions**
+  // *   The provided context is primarily based on recent observations (2024-2025 data cited) and anecdotal evidence, lacking large-scale statistical analysis beyond application volume increases.
+  // *   The context focuses on "white-collar" or office-type jobs, particularly mentioning tech, and may not fully represent challenges in other sectors.
+  // *   The LinkedIn post, while offering practical advice, is one person's perspective.
+  // *   The provided context does not delve into specific geographical variations or industry-specific nuances beyond a general mention of tech.
+  // *   It is assumed that the sources are representative of common experiences and trends in the current job market.
 
-**Actionable Artifacts**
+  // **Actionable Artifacts**
 
-*   **Short Summary for Job Seekers:** "Finding a job is hard now due to intense competition from many applicants, fewer available roles (especially remote ones), and impacts from layoffs and AI in hiring. It's not about your skills, but market conditions. Focus on building your personal brand, networking strategically, and preparing for a longer, more demanding search process."
+  // *   **Short Summary for Job Seekers:** "Finding a job is hard now due to intense competition from many applicants, fewer available roles (especially remote ones), and impacts from layoffs and AI in hiring. It's not about your skills, but market conditions. Focus on building your personal brand, networking strategically, and preparing for a longer, more demanding search process."
 
-**Appendix — Sources**
+  // **Appendix — Sources**
 
-*   [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR) — URL: 'https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR' — Date: Unknown (Post date likely recent based on content) — Note: Attributes difficulty to market oversaturation, AI, reduced remote jobs, and offers actionable advice on branding and networking.
-*   [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now) — URL: 'https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now' — Date: Unknown (Content references 2023, 2024, 2025 data) — Note: Details candidate experiences with ghosting, long applications, AI use in resumes, and shifting job requirements for entry-level roles. Cites Fortune, Fast Company, NBC News, USA Today.
-*   [Why is it So Hard to Find a Job Right Now? (2025 Data on Why No One is Hiring)](https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/) — URL: 'https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/' — Date: Unknown (Content references 2023-2024 and 2025 data) — Note: Highlights increasing application numbers and the impact of layoffs/restructuring.
-*   [Why It’s So Hard To Find a Job Right Now](https://medium.com/swlh/why-its-so-hard-to-find-a-job-right-now-07e46dffa81b) — URL: 'https://medium.com/swlh/why-its-so-hard-to-find-a-job-right-now-07e46dffa81b' — Date: Unknown — Note: Describes the frustration of applying extensively with no response and the potential for self-doubt.
-*   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — URL: 'https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it' — Date: Unknown (Mentions 2024 data) — Note: Discusses fierce competition, especially in tech, citing layoffs and increased applications per role, and mentions companies turning to AI.
-*   [Troubleshooting Cloudflare Errors](https://support.indeed.com/hc/en-us/articles/33465379855501-Troubleshooting-Cloudflare-Errors) — URL: 'https://www.indeed.com/career-advice/finding-a-job/why-finding-a-job-is-so-hard' — Date: Unknown — Note: This appears to be a service/support page and does not contain relevant information to the user's query about job market difficulties`,
-  },
+  // *   [The reason why finding a job is so hard right now isn't that:](https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR) — URL: 'https://www.linkedin.com/posts/bryancreely_the-reason-why-finding-a-job-is-so-hard-right-activity-7291130972257812480-DgMR' — Date: Unknown (Post date likely recent based on content) — Note: Attributes difficulty to market oversaturation, AI, reduced remote jobs, and offers actionable advice on branding and networking.
+  // *   [Why Getting a Job Is So Hard Right Now, From Mass Layoffs to Fewer Entry-Level Jobs](https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now) — URL: 'https://www.teenvogue.com/story/why-getting-a-job-so-hard-right-now' — Date: Unknown (Content references 2023, 2024, 2025 data) — Note: Details candidate experiences with ghosting, long applications, AI use in resumes, and shifting job requirements for entry-level roles. Cites Fortune, Fast Company, NBC News, USA Today.
+  // *   [Why is it So Hard to Find a Job Right Now? (2025 Data on Why No One is Hiring)](https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/) — URL: 'https://verisinsights.com/blogs/why-job-searching-feels-so-hard-right-now/' — Date: Unknown (Content references 2023-2024 and 2025 data) — Note: Highlights increasing application numbers and the impact of layoffs/restructuring.
+  // *   [Why It’s So Hard To Find a Job Right Now](https://medium.com/swlh/why-its-so-hard-to-find-a-job-right-now-07e46dffa81b) — URL: 'https://medium.com/swlh/why-its-so-hard-to-find-a-job-right-now-07e46dffa81b' — Date: Unknown — Note: Describes the frustration of applying extensively with no response and the potential for self-doubt.
+  // *   [Why is Job Hunting So Soul-Crushing and What Can Be Done About It](https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it) — URL: 'https://my.greenhouse.com/blogs/why-is-job-hunting-so-soul-crushing-and-what-can-be-done-about-it' — Date: Unknown (Mentions 2024 data) — Note: Discusses fierce competition, especially in tech, citing layoffs and increased applications per role, and mentions companies turning to AI.
+  // *   [Troubleshooting Cloudflare Errors](https://support.indeed.com/hc/en-us/articles/33465379855501-Troubleshooting-Cloudflare-Errors) — URL: 'https://www.indeed.com/career-advice/finding-a-job/why-finding-a-job-is-so-hard' — Date: Unknown — Note: This appears to be a service/support page and does not contain relevant information to the user's query about job market difficulties`,
+  //   },
 ];

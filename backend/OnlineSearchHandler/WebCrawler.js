@@ -6,25 +6,41 @@ import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
 import axios from "axios";
 import dotenv from "dotenv";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+import { getJson } from "serpapi";
 dotenv.config();
 
 const turndown = new TurndownService();
 
 // serper query
-export async function GetDataFromSerper(query, user) {
-  if (!query?.trim()) {
+export async function GetDataFromSerper(query, user, MessageId, room_id) {
+  if (!query?.trim() || !cleanAndSplitQueries(query)) {
     return { error: "Query parameter is required and cannot be empty" };
   }
-
-  EmitEvent(user.user_id, "query_status", {
-    message: "fetching_url",
-    data: [`Searching for ${query}`],
-  });
+  const cleanedQuery = cleanAndSplitQueries(query);
+  // if the query is from a room_send the event to the whole room
+  if (room_id) {
+    EmitEvent(room_id, "query_status", {
+      MessageId,
+      status: {
+        message: "fetching_url",
+        data: [`Searching for ${cleanedQuery}`],
+      },
+    });
+  } else {
+    // else send it the solo user
+    EmitEvent(user.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: "fetching_url",
+        data: [`Searching for ${cleanedQuery}`],
+      },
+    });
+  }
 
   try {
     const response = await axios.post(
       "https://google.serper.dev/search",
-      { q: query, num: 10 },
+      { q: cleanedQuery, num: user.PaymentStatus === true ? 10 : 5 },
       {
         headers: {
           "X-API-KEY": process.env.SERPER_WEB_API,
@@ -36,7 +52,7 @@ export async function GetDataFromSerper(query, user) {
 
     return response.data;
   } catch (error) {
-    console.error(error);
+    await notifyMe("An error has been sent by serper", error);
     return {
       error: "Error while processing web search",
       details: error?.response?.data?.message || error.message,
@@ -44,10 +60,31 @@ export async function GetDataFromSerper(query, user) {
   }
 }
 
+/// serper api backup
+export const GetDataFromSerpApi = async (query, user) => {
+  try {
+    const PaymentStatus = user.IsPremiumUser;
+    const SERPAPI_KEY = process.env.SERP_API;
+    const response = await getJson({
+      engine: "google_light",
+      api_key: SERPAPI_KEY,
+      q: query,
+      google_domain: "google.com",
+      hl: "en",
+      num: PaymentStatus === false ? 1 : 5,
+    });
+
+    return response.data;
+  } catch (error) {
+    await notifyMe("An error has been sent by serperAPI", error);
+    return { error: error }; // Return empty array so your scraper doesn't crash
+  }
+};
 // filter the results into links and ready them for jina-reader
 
-export function FilterUrlForExtraction(data, user) {
+export function FilterUrlForExtraction(data, user, MessageId, room_id) {
   const LinksToProcess = [];
+
   if (data?.organic && data.organic?.length > 0) {
     data.organic.forEach((obj) => {
       if (obj.link) {
@@ -56,15 +93,36 @@ export function FilterUrlForExtraction(data, user) {
     });
   }
 
-  EmitEvent(user.user_id, "query_status", {
-    message: "processing_links",
-    data: LinksToProcess,
-  });
+  // if a room request send the event to the room else send it  to the user
+  if (room_id) {
+    EmitEvent(room_id, "query_status", {
+      MessageId,
+      status: {
+        message: "processing_links",
+        data: LinksToProcess,
+      },
+    });
+  } else {
+    EmitEvent(user.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: "processing_links",
+        data: LinksToProcess,
+      },
+    });
+  }
+
   return LinksToProcess;
 }
 
 // scraping the data from web
-export const ProcessForLLM = async (links, user, userQuery) => {
+export const ProcessForLLM = async (
+  links,
+  user,
+  userQuery,
+  MessageId,
+  room_id
+) => {
   const dataset = [];
   const turndown = new TurndownService({ headingStyle: "atx" });
   turndown.remove(["img", "iframe", "script", "style", "noscript"]);
@@ -81,19 +139,33 @@ export const ProcessForLLM = async (links, user, userQuery) => {
   log.setLevel(log.LEVELS.OFF);
   const crawler = new CheerioCrawler(
     {
+      // config,
+      // proxyConfig,
       minConcurrency: 10,
       maxConcurrency: 20,
       maxRequestRetries: 2, // Don't keep trying if it fails once
       requestHandlerTimeoutSecs: 20, // Keep it snappy
       useSessionPool: false,
-      failedRequestHandler: ({ request }) => {
-        // console.log(`Skipping slow/dead link: ${request.url}`);
-      },
+      failedRequestHandler: ({ request }) => {},
       async requestHandler({ request, body, $ }) {
-        EmitEvent(user.user_id, "query_status", {
-          message: "reading_links",
-          data: [`Reading: ${new URL(request.url).hostname}`],
-        });
+        if (room_id) {
+          EmitEvent(room_id, "query_status", {
+            MessageId,
+            status: {
+              message: "reading_links",
+              data: [`Reading: ${new URL(request.url).hostname}`],
+            },
+          });
+        } else {
+          EmitEvent(user.user_id, "query_status", {
+            MessageId,
+            status: {
+              message: "reading_links",
+              data: [`Reading: ${new URL(request.url).hostname}`],
+            },
+          });
+        }
+
         // 1. Quick Check: If Cheerio ($) sees the page is empty or tiny, skip immediately
         if (body.length < 500) return;
 
@@ -123,10 +195,25 @@ export const ProcessForLLM = async (links, user, userQuery) => {
             estimatedTokens: Math.ceil(markdown.length / 4),
           };
           // await notifyMe(JSON.stringify(object));
-          EmitEvent(user.user_id, "query_status", {
-            message: "Cleaning_Context",
-            data: [ProcessedPage.content.slice(0, 200)],
-          });
+
+          if (room_id) {
+            EmitEvent(room_id, "query_status", {
+              MessageId,
+              status: {
+                message: "Cleaning_Context",
+                data: [ProcessedPage.content.slice(0, 500)],
+              },
+            });
+          } else {
+            EmitEvent(user.user_id, "query_status", {
+              MessageId,
+              status: {
+                message: "Cleaning_Context",
+                data: [ProcessedPage.content.slice(0, 500)],
+              },
+            });
+          }
+
           dataset.push(object);
         }
       },
@@ -140,7 +227,6 @@ export const ProcessForLLM = async (links, user, userQuery) => {
 
 //formatting for the llm
 export function FormattForLLM(ScrapedData) {
-  
   if (!ScrapedData || !Array.isArray(ScrapedData) || ScrapedData.length === 0) {
     return { error: "The scraped data array empty or not valid" };
   }
@@ -379,3 +465,16 @@ function extractHighValueChunks(page, query, maxTokens = 3500) {
     content: pageContext.trim(),
   };
 }
+
+const cleanAndSplitQueries = (llmResponse) => {
+  return llmResponse
+    .split(";") // Split by your separator
+    .map((query) => {
+      return query
+        .replace(/[`*]/g, "") // Remove markdown backticks or bolding
+        .replace(/^[0-9.\s-]+/, "") // Remove leading numbers (1. 2. etc)
+        .replace(/;+$/, "") // Remove trailing semicolons
+        .trim(); // Remove surrounding whitespace
+    })
+    .filter((query) => query.length > 3); // Ignore empty/useless strings
+};

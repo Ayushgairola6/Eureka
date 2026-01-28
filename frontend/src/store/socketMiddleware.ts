@@ -155,12 +155,12 @@ export const socketMiddleware =
           socket.emit("NewFileSelected", { file, room_id, username });
         }
         break;
-      // case "socket/isTyping":
-      //   const data = action.payload;
-      //   if (socket && socket.connected) {
-      //     socket.emit("isTyping", data);
-      //   }
-      //   break;
+      case "socket/isTyping":
+        const userdata = action.payload;
+        if (socket && socket.connected) {
+          socket.emit("isTyping", userdata);
+        }
+        break;
 
       case "interface/likeResponse":
         const { data, vote_type, user_id, id } = action.payload;

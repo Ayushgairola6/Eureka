@@ -6,7 +6,7 @@ import {
   MimicSSE,
   UpdateChats,
 } from "../store/InterfaceSlice";
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { AnswerAndData } from "../../utlis/PromptsWithResponse.ts";
 import { setWebStatus } from "../store/websockteSlice";
 import { useEffect, useState } from "react";
@@ -20,7 +20,7 @@ type WelcomeProps = {
 const Prompts = [
   { id: 1, prompt: "Recent findings about cancer treatment." },
   { id: 2, prompt: "How LLM's are affecting the market?" },
-  { id: 3, prompt: "Why getting a job has become so hard?" },
+  // { id: 3, prompt: "Why getting a job has become so hard?" },
 ];
 export const AgentWelcome: React.FC<WelcomeProps> = ({
   text,
@@ -31,6 +31,8 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
 
   const [choice, setChoice] = useState<number | null>(null);
 
+
+  //imitate a response like flow
   useEffect(() => {
     if (!choice) {
       return;
@@ -67,17 +69,26 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
     );
 
     let i = 0;
-
     const interval = setInterval(() => {
       dispatch(
         setWebStatus({
-          message: "processing_links",
-          data: [chosenPrompt[0].Links[i]],
+          MessageId: ai_id,
+          status: {
+            message: chosenPrompt[0].events[i].status.message,
+            data: chosenPrompt[0].events[i].status.data
+          }
         })
       );
+
+      // dispatch(setWebStatus({ MessageId: chosenPrompt[0].id, status: { message: 'new_thread', data: [chosenPrompt[0].Links[i]] } }));
+      // dispatch(
+      //   setWebStatus((others[i]))
+      // )
+
       // console.log(web_search_status);
       i++;
-      if (i === chosenPrompt[0].Links.length) {
+
+      if (i === chosenPrompt[0].events.length) {
         dispatch(
           MimicSSE({
             id: ai_id,
@@ -125,7 +136,7 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -6, opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-sky-500"
+              className="bg-clip-text text-transparent bg-gradient-to-br from-orange-400 via-red-500 to-pink-400"
             >
               {text}
             </motion.span>
@@ -165,7 +176,7 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
                 key={i}
               >
                 {e.prompt}
-                <ArrowRight color="green" />
+                <ArrowUpRight size={15} color="green" />
               </ul>
             );
           })}

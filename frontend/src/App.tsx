@@ -24,6 +24,8 @@ const ConversationDetail = lazy(() => import("./pages/Doc_History.tsx"));
 const ChatRoom = lazy(() => import("./pages/chatRoom.tsx"));
 const EmailVerification = lazy(() => import("./pages/EmailVerification.tsx"));
 const OtherChats = lazy(() => import("./pages/OtherChats.tsx"));
+const Tutorial = lazy(() => import("./pages/Tutorial.tsx"))
+import { LogoRender } from '@/components/LogoRender.tsx'
 import { connectSocket, disconnectSocket } from "./store/websockteSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.tsx";
 import {
@@ -228,12 +230,8 @@ const App = () => {
       {/* main routers */}
       <Suspense
         fallback={
-          <div className="h-screen bg-black flex items-center justify-center     ">
-            <img
-              src="/Dark.png"
-              alt="AntiNode logo"
-              className="  h-30 w-30  m-auto"
-            />
+          <div className='h-screen text-[2rem] space-grotesk bg-black flex items-center justify-center '>
+            <LogoRender />
           </div>
         }
       >
@@ -256,6 +254,7 @@ const App = () => {
             <Route element={<EmailVerificationForm />} path="/ResetPassword" />
             <Route element={<ResetPassword />} path="/reset-password" />
             <Route element={<VerificationLink />} path="/Verification" />
+            <Route element={<Tutorial />} path="/userManual/AntiNode/Know-How" />
             <Route
               element={<TermsAndConditions />}
               path="/terms-and-conditions"

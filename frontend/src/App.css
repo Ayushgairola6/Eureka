@@ -549,3 +549,38 @@ html {
     opacity: 0.5;
   }
 }
+
+/* 2. Apply it to your class */
+.animate-custom-rotate {
+  display: inline-block; /* Required for rotation to work on spans/divs */
+  animation: custom-rotate 13s ease-in-out infinite;
+}
+@keyframes custom-rotate {
+  0% {
+    transform: rotate(10deg);
+  }
+  12.5% {
+    transform: rotate(20deg);
+  }
+  25% {
+    transform: rotate(15deg);
+  }
+  37.5% {
+    transform: rotate(5deg);
+  }
+  50% {
+    transform: rotate(-10deg);
+  }
+  62.5% {
+    transform: rotate(-40deg);
+  }
+  75% {
+    transform: rotate(-20deg);
+  }
+  87.5% {
+    transform: rotate(10deg);
+  }
+  100% {
+    transform: rotate(20deg);
+  }
+}

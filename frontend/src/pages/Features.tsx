@@ -1,226 +1,168 @@
-import { BsArrowUpRight, BsPeople } from "react-icons/bs";
-import {
-  FaArrowLeft,
-  FaArrowRight,
-  FaGitAlt,
-  FaResearchgate,
-} from "react-icons/fa";
-import { FiUploadCloud } from "react-icons/fi";
-import { motion } from "framer-motion";
-import React from "react";
-import { LuBrainCircuit } from "react-icons/lu";
 const AntiNodeFeatures = [
   {
-    id: "feat-5",
-    title: "Neuro-Symbolic Core",
-    subtitle: "Hybrid Intelligence",
-    description:
-      "Experience the fusion of deep learning and formal logic. We combine statistical neural models for intuition with deterministic algorithms to eliminate hallucinations and ensure factual grounding.",
-    icon: <LuBrainCircuit className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
-    gradient: "from-indigo-600 via-cyan-500 to-emerald-400", // A "Fusion" gradient
-    badgeColor: "bg-cyan-500/10",
-    border: "hover:border-cyan-400/50",
-    img: "/neuro-symbolic.png",
-    message: "Explore Architecture",
-  },
-  {
     id: "feat-1",
-    title: "AI Chatrooms",
-    subtitle: "Collective Intelligence",
+    title: "Autonomus deep Web Search",
+    subtitle: "Beyond Surface Results",
     description:
-      "Launch real-time research rooms. Perform web searches and multi-file analysis (RAG) with your team in a unified, synchronized interface.",
-    icon: <BsPeople />,
-    gradient: "from-purple-600 to-indigo-600", // Collaborative purple
-    badgeColor: "bg-purple-500/10",
-    border: "hover:border-purple-500/50",
-    img: "/rooms.png",
-    message: "Create Room",
+      "AI does the work for you by analyzing your statement, breaking it down and initiating parallel web searchs to make sure you always get a vast amount of information not just SEO facts.",
+    icon: <Globe size={16} />,
+    img: "/Process logs2.png",
   },
   {
     id: "feat-2",
-    title: "Synthesis Mode",
-    subtitle: "Deep Reasoning",
+    title: "Real-Time Collaboration",
+    subtitle: "Research Together",
     description:
-      "Go beyond chat. Use deep reasoning with our Neuro-Symoblic architecture to synthesize insights from private docs, community knowledge, and the live web simultaneously.",
-    icon: <FaResearchgate />,
-    gradient: "from-emerald-500 to-teal-600", // "Growth" and deep-tech green
-    badgeColor: "bg-emerald-500/10",
-    border: "hover:border-emerald-500/50",
-    img: "/synthesis.png",
-    message: "Try Synthesis",
+      "Create shared workspaces where teams research/disuss simultaneously. Live updates, shared context, unified insights, prvate yet global documents. Stop sending links back and forth.",
+    icon: <Users size={16} />,
+    img: "/AntiNode_rooms.png",
   },
   {
     id: "feat-3",
-    title: "Persistent Memory",
-    subtitle: "Tiered Context",
+    title: "Multi-Source Synthesis",
+    subtitle: "Connect Everything",
     description:
-      "Your AI grows with you. Free users enjoy sharp short-term context, while Pro members unlock 'Infinite Memory' for massive project histories.",
-    icon: <FaGitAlt />,
-    gradient: "from-rose-500 to-pink-600", // High-value "Premium" feel
-    badgeColor: "bg-pink-500/10",
-    border: "hover:border-pink-500/50",
-    img: "/memory.png",
-    message: "View Tiers",
+      "Cross-reference private documents with web data in one query. Synthesize multiple sources, resolve conflicts, cite everything create reports or analyze mutliple data source at once.",
+    icon: <GitBranch size={16} />,
+    img: "/Synthesis1.png",
   },
   {
     id: "feat-4",
-    title: "Doc-RAG Engine",
-    subtitle: "Knowledge Retrieval",
+    title: "Verified Results",
+    subtitle: "Self-Correcting AI",
     description:
-      "Upload complex PDFs or datasets. AntiNode cross-references your files against community truths to find the specific answer you need instantly.",
-    icon: <FiUploadCloud />,
-    gradient: "from-cyan-500 to-blue-500", // Your "Arctic Neon" vibe
-    badgeColor: "bg-cyan-500/10",
-    border: "hover:border-cyan-500/50",
-    img: "/rag.png",
-    message: "Analyze Docs",
+      "AI verifies its own claims before showing results. Confidence scoring on every statement. Flags uncertainties automatically, tries to catch descrepancies and source validation.",
+    icon: <ShieldCheck size={16} />,
+    img: "/verification.webp",
+  },
+  {
+    id: "feat-5",
+    title: "Private Knowledge",
+    subtitle: "Your Data, Your Control",
+    description:
+      "Upload documents securely to the cloud. Toggle privacy with one click. Your research stays private, AI remembers your context and data never used for training without your permission.",
+    icon: <Database size={16} />,
+    img: "/privacy.webp",
+  },
+  {
+    id: "feat-6",
+    title: "Public contributions",
+    subtitle: "More control over misinformation",
+    description:
+      "Upload documents to share your knowledge with others. You can help in building a seperate space for everyone just like stack-overflow but with AI",
+    icon: <Database size={16} />,
+    img: "/privacy.webp",
   },
 ];
-export const Features = () => {
-  const ContainerRef = React.useRef<HTMLDivElement>(null);
-  return (
-    <>
-      <div className=" bg-gray dark:bg-black text-black dark:text-white relative p-4  overflow-hidden ">
-        {/* <div className="z-[-1] absolute top-0 left-0 h-full w-full bg-gradient-to-br from-blue-600/10 to-pink-600/10 blur-3xl"></div> */}
-        <section className="p-2 text-center mt-4 mb-8">
-          <h1 className="bai-jamjuree-bold text-3xl md:text-4xl">
-            Differentiator
-          </h1>
-          <p className="bai-jamjuree-regular text-xs">What makes use unique?</p>
-        </section>
-        {/* container to hold overflowing cards container */}
-        <div className="relative max-w-7xl mx-auto ">
-          <div
-            className={`absolute -top-11 right-4 flex gap-2 dark:bg-black dark:text-white border bg-gray-100 text-black rounded-md`}
-          >
-            <button
-              onClick={() => {
-                if (ContainerRef.current) {
-                  ContainerRef.current.scrollBy({
-                    left: -336,
-                    behavior: "smooth",
-                  });
-                }
-              }}
-              className={`p-2 rounded-full transition-all duration-300 
-                 text-black dark:text-white
-              `}
-            >
-              <FaArrowLeft />
-            </button>
-            <button
-              onClick={() => {
-                if (ContainerRef.current) {
-                  ContainerRef.current.scrollBy({
-                    left: 336,
-                    behavior: "smooth",
-                  });
-                }
-              }}
-              className={`p-2 rounded-full transition-all duration-300 text-black dark:text-white`}
-            >
-              <FaArrowRight />
-            </button>
-          </div>
-          <div
-            ref={ContainerRef}
-            className="flex overflow-x-auto pb-8 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory"
-          >
-            <div className="flex flex-nowrap gap-6 py-2 px-4">
-              {AntiNodeFeatures.map((data, index) => {
-                return (
-                  <>
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true, margin: "50px" }}
-                      transition={{ type: "tween", duration: 0.3 }}
-                      key={`${data.id}+${index}_${data.title}`}
-                      className={`shadow-2xl cursor-pointer ${data.border} border bg-gradient-to-br from-gray-50 to-gray-100 dark:from-white/10 dark:to-black  rounded-sm w-80 h-auto  p-2 relative group overflow-hidden group transition-all duration-200`}
-                    >
-                      {/* grid svg background */}
-                      <svg
-                        width="100%"
-                        height="100%"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="absolute inset-0 opacity-[0.03] dark:opacity-[0.07] pointer-events-none"
-                      >
-                        <defs>
-                          <pattern
-                            id="circuit"
-                            x="0"
-                            y="0"
-                            width="100"
-                            height="100"
-                            patternUnits="userSpaceOnUse"
-                          >
-                            <path
-                              d="M10 10 h80 v80 h-80 z"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="0.5"
-                            />
-                            <circle cx="10" cy="10" r="2" fill="currentColor" />
-                            <circle cx="90" cy="10" r="2" fill="currentColor" />
-                            <circle cx="90" cy="90" r="2" fill="currentColor" />
-                            <circle cx="10" cy="90" r="2" fill="currentColor" />
-                            <path
-                              d="M50 10 v20 M10 50 h20 M90 50 h-20 M50 90 v-20"
-                              stroke="currentColor"
-                              strokeWidth="0.5"
-                            />
-                          </pattern>
-                        </defs>
-                        <rect width="100%" height="100%" fill="url(#circuit)" />
-                      </svg>
-                      <motion.div
-                        animate={{
-                          rotate: [10, 20, 15, 5, -10, -40, -20, 10, 20],
-                        }}
-                        transition={{
-                          duration: 4,
-                          ease: "linear",
-                          repeat: Infinity,
-                        }}
-                        className={` opacity-30 pointer-events-none absolute z-[-13] -bottom-5 -left-15  
-                        h-1/2 w-full  blur-[150px] bg-gradient-to-tr ${data.gradient}
-                          `}
-                      />
-                      <div
-                        className={`block md:hidden absolute bottom-0 h-20  left-0 rounded-tl-xl rounded-tr-xl blur-[100px] opacity-40 w-full  bg-gradient-to-r ${data.gradient}`}
-                      />
-                      <div className=" px-4 py-2 flex items-center justify-start gap-2 rounded-lg">
-                        <ul
-                          className={`bg-gradient-to-br ${data.gradient} rounded-md p-1`}
-                        >
-                          {data.icon}
-                        </ul>
-                        <h2 className="bai-jamjuree-semibold text-xl">
-                          {data.title}
-                        </h2>
-                      </div>
 
-                      <p className="px-4 py-2 space-grotesk text-sm">
-                        {data.description}
-                      </p>
-                      <section className="p-2 justify-self-end cursor-pointer">
-                        <h6
-                          className={`text-xs space-grotesk text-center w-fit 
-                              ${data.badgeColor}
-                              rounded-xl px-2 py-1 border ${data.border} flex items-center justify-center gap-2 `}
-                        >
-                          {data.subtitle}
-                          <BsArrowUpRight />
-                        </h6>
-                      </section>
-                    </motion.div>
-                  </>
-                );
-              })}
-            </div>
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { BsArrowUpRight } from "react-icons/bs";
+import { Database, GitBranch, Globe, ShieldCheck, Users } from "lucide-react";
+
+export const Features = () => {
+  const [activeTab, setActiveTab] = useState(0);
+
+  return (
+    <section className="bg-white dark:bg-black py-20 border-y border-neutral-100 dark:border-neutral-900">
+      <div className="max-w-6xl mx-auto px-6">
+
+        {/* Compact Header */}
+        <div className="mb-12">
+          <h2 className="text-orange-600 font-mono text-[10px] uppercase tracking-[0.3em] font-bold mb-2">
+            System_Capabilities_v1
+          </h2>
+          <h1 className="bai-jamjuree-bold text-3xl md:text-4xl tracking-tight">
+            Modes & Features
+          </h1>
+        </div>
+
+        {/* The Switcher Container */}
+        <div className="flex flex-col lg:flex-row border border-neutral-200 dark:border-neutral-800 rounded-sm overflow-hidden bg-white dark:bg-[#050505]">
+
+          {/* Left Side: Navigation (The Menu) */}
+          <div className="lg:w-1/3 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-800">
+            {AntiNodeFeatures.map((feat, idx) => (
+              <button
+                key={feat.id}
+                onClick={() => setActiveTab(idx)}
+                className={`w-full flex items-center gap-4 p-6 text-left transition-all relative group
+                  ${activeTab === idx
+                    ? "bg-neutral-50 dark:bg-neutral-900/50"
+                    : "hover:bg-neutral-50/50 dark:hover:bg-white/[0.02]"
+                  }`}
+              >
+                {/* Active Indicator Line */}
+                {activeTab === idx && (
+                  <motion.div
+                    layoutId="activeTabLine"
+                    className="absolute left-0 top-0 bottom-0 w-1 bg-orange-600"
+                  />
+                )}
+
+                <div className={`transition-colors duration-300 ${activeTab === idx ? "text-orange-600" : "text-neutral-400"}`}>
+                  {feat.icon}
+                </div>
+
+                <div>
+                  <h3 className={`text-sm bai-jamjuree-bold transition-colors ${activeTab === idx ? "text-black dark:text-white" : "text-neutral-500"}`}>
+                    {feat.title}
+                  </h3>
+                  <p className="text-[10px] space-grotesk uppercase tracking-widest text-neutral-400 mt-0.5">
+                    {feat.subtitle}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Right Side: Content Display */}
+          <div className="lg:w-2/3 p-8 md:p-12 min-h-[450px] flex flex-col justify-center bg-[#fafafa] dark:bg-[#080808]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-8"
+              >
+                {/* Feature Image - Scaled down for cleanliness */}
+                <div className="relative aspect-video w-full rounded-sm overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-sm bg-white dark:bg-black">
+                  <img
+                    src={AntiNodeFeatures[activeTab].img}
+                    alt="Feature preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* Feature Description */}
+                <div className="max-w-lg">
+                  <p className="space-grotesk text-sm md:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                    {AntiNodeFeatures[activeTab].description}
+                  </p>
+
+                  <div className="mt-6">
+                    <a href="/Interface" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-600 hover:text-orange-500 transition-colors group">
+                      Launch Protocol <BsArrowUpRight className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </a>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+        </div>
+
+        {/* Minimal Footer Info */}
+        <div className="mt-6 flex justify-between items-center px-2">
+          <span className="font-mono text-[9px] text-neutral-400 uppercase tracking-tighter">Verified_Research_Environment // 2024</span>
+          <div className="flex gap-4">
+            <div className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse" />
+            <span className="font-mono text-[9px] text-neutral-400 uppercase tracking-tighter">System_Online</span>
           </div>
         </div>
       </div>
-    </>
+    </section>
   );
 };

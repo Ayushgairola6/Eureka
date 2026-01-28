@@ -66,6 +66,7 @@ interface InterfaceState {
   fetchingSessionHistory: boolean;
   ResponseStatus: any[];
   CurrentTheme: currenttheme;
+  search_depth: string;
 }
 
 const initialState: InterfaceState = {
@@ -73,7 +74,7 @@ const initialState: InterfaceState = {
   answer: "",
   loading: false,
   isVisible: false,
-  category: "",
+  category: "Web Search",
   subCategory: "",
   visibility: "Public",
   showSubcategory: false,
@@ -112,6 +113,7 @@ const initialState: InterfaceState = {
     user: "bg-zinc-950 text-white dark:bg-white dark:text-black rounded-none border-l-[1px] border-zinc-500 pl-4 py-1 my-4 uppercase tracking-widest text-[10px] font-bold",
     ai: "bg-transparent text-zinc-800 dark:text-zinc-200 border-t border-zinc-100 dark:border-zinc-900/50 pt-6 pb-12 leading-[1.8] tracking-tight",
   },
+  search_depth: "surface_web",
 };
 
 // Async Thunks
@@ -132,10 +134,17 @@ export const UploadDocuments = createAsyncThunk<any, FormData>(
       );
       return response.data;
     } catch (err: any) {
-      // console.error("Error fetching dashboard data:", err);
-      return rejectWithValue(
-        err?.response?.data.message || "Failed to process your document"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -157,10 +166,18 @@ export const GetSessionHistory = createAsyncThunk<any, any>(
         }
       );
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error?.response?.data?.message || "Something went wrong"
-      );
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -177,10 +194,17 @@ export const QueryAIQuestions = createAsyncThunk<any, any>(
       });
       return response.data;
     } catch (err) {
-      // console.error("Error fetching dashboard data:", err);
-      return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to fetch dashboard data"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -202,12 +226,18 @@ export const DeleteDocuments = createAsyncThunk<string, any>(
         }
       );
       return response.data;
-    } catch (error: any) {
-      console.error(`Error file deleting document`);
-      return rejectWithValue(
-        error?.response.data.message ||
-          "An error occured while processing your request"
-      );
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -228,10 +258,17 @@ export const QueryPrivateDocuments = createAsyncThunk<any, any>(
       );
       return response.data;
     } catch (err) {
-      console.error("Error fetching dashboard data:", err);
-      return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to fetch dashboard data"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -254,22 +291,32 @@ export const AuthenticityResponseHandler = createAsyncThunk<object, any>(
       // console.log(response.data);
       return response.data;
     } catch (err) {
-      console.error("Error fetching dashboard data:", err);
-      return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to fetch dashboard data"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
 export const WebSearchHandler = createAsyncThunk<any, any>(
   "query/web",
-  async ({ question, MessageId, userMessageId }, { rejectWithValue }) => {
+  async (
+    { question, MessageId, userMessageId, web_search_depth },
+    { rejectWithValue }
+  ) => {
     const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
     try {
       const response = await axios.post(
         `${BaseApiUrl}/api/query/web-search`,
-        { question, MessageId, userMessageId },
+        { question, MessageId, userMessageId, web_search_depth },
         {
           withCredentials: true,
           headers: {
@@ -279,10 +326,17 @@ export const WebSearchHandler = createAsyncThunk<any, any>(
       );
       return response.data;
     } catch (err: any) {
-      console.error("Error fetching response :", err);
-      return rejectWithValue(
-        err.response.data.message || "Failed to generate a response"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -303,8 +357,18 @@ export const GetCachedSessionHistory = createAsyncThunk(
         }
       );
       return response.data;
-    } catch (error: any) {
-      rejectWithValue(error?.response?.data.message || "Something went wrong");
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -325,9 +389,18 @@ export const ProcessSynthesis = createAsyncThunk<any, any>(
         }
       );
       return response.data;
-    } catch (error: any) {
-      console.error(error);
-      return rejectWithValue(error?.response?.data?.message);
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -485,6 +558,9 @@ const interfaceSlice = createSlice({
     updatefetchingSessionHistory: (state, action) => {
       state.fetchingSessionHistory = action.payload;
     },
+    setSearchDepth: (state, action) => {
+      state.search_depth = action.payload;
+    },
     likeResponse: (_state, _action) => {},
     resetState: (_state) => {
       return initialState;
@@ -629,6 +705,7 @@ export const {
   likeResponse,
   UpdateResponseStatus,
   setCurrenTheme,
+  setSearchDepth,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

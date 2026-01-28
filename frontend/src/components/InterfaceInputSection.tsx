@@ -1,4 +1,4 @@
-import type React from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
 // import WebSearch from "./webSearch.tsx";
@@ -6,7 +6,6 @@ import QueryType from "./Query_type.tsx";
 import { v4 as uuid } from "uuid";
 // import axios from "axios";
 import { IoOptions } from "react-icons/io5";
-import { IoDocument } from "react-icons/io5";
 import { BiHourglass, BiSend, BiUpload } from "react-icons/bi";
 import { BsMic, BsPlusLg } from "react-icons/bs";
 import { GoZap } from "react-icons/go";
@@ -27,14 +26,14 @@ import {
   updateFavicon,
   ProcessSynthesis,
 } from "../store/InterfaceSlice.ts";
-// const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { SetQueryCount, setVariant } from "../store/AuthSlice.ts";
 import AccessBar from "@/components/AccessBar.tsx";
 import { useState } from "react";
-import { setCurrentStatus, setWebStatus } from "../store/websockteSlice.ts";
+import { setCurrentStatus } from "../store/websockteSlice.ts";
 import { currentTime } from "../../utlis/Date.ts";
+import { Cloud } from "lucide-react";
 type InputProps = {
   textareaRef: React.Ref<HTMLInputElement>;
   isActive: boolean;
@@ -57,203 +56,16 @@ const InputSection: React.FC<InputProps> = ({
     queryType,
     selectedDoc,
     shhowUserForm,
-    SynthesisDocuments,
+    SynthesisDocuments, search_depth
   } = useAppSelector((state) => state.interface);
-  // const { setCurrentStatus } = useAppSelector((state) => state.socket);
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAppSelector((state) => state.auth);
 
   const [Showfeatures, SetShowFeatures] = useState(false);
 
-  // getting sse token before sending a request
-  // const GetSSEToken = async () => {
-  //   try {
-  //     const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
-  //     const response = await axios.get(`${BaseApiUrl}/api/new-sseToken`, {
-  //       withCredentials: true,
-  //       headers: {
-  //         Authorization: `Bearer ${AuthToken}`,
-  //       },
-  //     });
-  //     if (response.data.token) {
-  //       return response.data.token;
-  //     }
-  //   } catch (err: any) {
-  //     console.log(err);
-  //     toast.error(err.response.data.message || "Something went wrong");
-  //   }
-  // };
-  // private documents querying
-
-  const QueryPrivateDocument = async () => {
-    try {
-      if (!question) {
-        toast.info("Question cannot be empty !");
-        return;
-      }
-      if (!selectedDoc) {
-        toast.info("Please select a document before querying");
-        return;
-      }
-      if (!queryType) {
-        toast.info("Please select a query type");
-        return;
-      }
-      if (queryType === "Summary" && user?.IsPremiumUser === false) {
-        toast.info("Get our premium membership to access this feature.");
-        return;
-      }
-      // get a session only token
-      // const SseToken = await GetSSEToken();
-      // if (!SseToken) {
-      //   toast.error("Something went wrong");
-      //   return;
-      // }
-      const user_id = uuid();
-      const AiId = uuid();
-
-      // Insert user message
-      dispatch(
-        UpdateChats({
-          id: user_id,
-          sent_at: currentTime,
-          sent_by: "You",
-          message: {
-            isComplete: true,
-            content: question,
-          },
-        })
-      );
-
-      // Insert empty AI message
-      dispatch(
-        UpdateChats({
-          id: AiId,
-          sent_at: currentTime,
-          sent_by: "AntiNode",
-          message: {
-            isComplete: false,
-            content: "",
-          },
-        })
-      );
-
-      // const Url = `${BaseApiUrl}/api/privateDocs/ask?question=${encodeURIComponent(
-      //   question
-      // )}&AccessToken=${SseToken}&docId=${encodeURIComponent(
-      //   selectedDoc
-      // )}&query_type=${encodeURIComponent(queryType)}`;
-      // const SSe = HandleSSEConnection(Url, AiId, dispatch);
-      // return SSe;
-      const data = {
-        docId: selectedDoc,
-        question,
-        query_type: queryType,
-        MessageId: AiId,
-        userMessageId: user_id,
-      };
-      if (!data.docId || !data.question || !data.query_type) {
-        toast.error(`Some fields are missing`);
-        return;
-      }
-      dispatch(QueryPrivateDocuments(data))
-        .unwrap()
-        .then((res) => {
-          if (res.message) {
-            dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
-            dispatch(SetQueryCount());
-          }
-        })
-        .catch(() => {
-          dispatch(MimicSSE({ id: AiId, delta: "Server busy" }));
-
-          toast.error("Server busy");
-        })
-        .finally(() => setIsActive(false));
-    } catch (err) {
-      toast.error("Something went wrong");
-    }
-  };
-  //web search handler
-  const SearchWeb = async () => {
-    try {
-      if (!question || question === "") {
-        toast.error("Please type a message first");
-        return;
-      }
-      // const SseToken = await GetSSEToken();
-      // if (!SseToken) {
-      //   toast.error("Please try again !");
-      //   return;
-      // }
-      const user_id = uuid();
-      const AiId = uuid();
-
-      // Insert user message
-      dispatch(
-        UpdateChats({
-          id: user_id,
-          sent_at: currentTime,
-          sent_by: "You",
-          message: {
-            isComplete: true,
-            content: question,
-          },
-        })
-      );
-
-      // Insert empty AI message
-      dispatch(
-        UpdateChats({
-          id: AiId,
-          sent_at: currentTime,
-          sent_by: "AntiNode",
-          message: {
-            isComplete: false,
-            content: "",
-          },
-        })
-      );
-
-      // const Url = `${BaseApiUrl}/api/user/web-search?question=${question}&AccessToken=${SseToken}`;
-      // const SSe = HandleSSEConnection(Url, AiId, dispatch);
-      // return SSe;
-      dispatch(
-        WebSearchHandler({ question, MessageId: AiId, userMessageId: user_id })
-      )
-        .unwrap()
-        .then((res) => {
-          if (res.message === "Results found") {
-            dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
-            dispatch(updateFavicon(res.favicon));
-            dispatch(SetQueryCount());
-          }
-        })
-        .catch((err) => {
-          dispatch(
-            MimicSSE({
-              id: AiId,
-              delta:
-                err ||
-                "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
-            })
-          );
-        })
-        .finally(() => {
-          setIsActive(false);
-          dispatch(setWebStatus([]));
-        });
-      dispatch(setQuestion(""));
-    } catch (err: any) {
-      toast.error(err.response.data.message);
-    }
-  };
-
-  const PerformSynthesis = async () => {
-    if (!question || typeof question !== "string") {
-      return;
-    }
+  // handles user message Insert with placeholder message insert
+  function handleUUidCreationAndMessageInsert() {
     const user_id = uuid();
     const AiId = uuid();
 
@@ -283,6 +95,125 @@ const InputSection: React.FC<InputProps> = ({
       })
     );
 
+    return { AiId, user_id }
+  }
+
+  const QueryPrivateDocument = async () => {
+    try {
+      if (!question) {
+        toast.info("Question cannot be empty !");
+        return;
+      }
+      if (!selectedDoc) {
+        toast.info("Please select a document before querying");
+        return;
+      }
+      if (!queryType) {
+        toast.info("Please select a query type");
+        return;
+      }
+      if (queryType === "Summary" && user?.IsPremiumUser === false) {
+        toast.info("Get our premium membership to access this feature.");
+        return;
+      }
+
+      const { AiId, user_id } = handleUUidCreationAndMessageInsert()
+      const data = {
+        docId: selectedDoc,
+        question,
+        query_type: queryType,
+        MessageId: AiId,
+        userMessageId: user_id,
+      };
+      if (!data.docId || !data.question || !data.query_type) {
+        toast.error(`Some fields are missing`);
+        return;
+      }
+      dispatch(QueryPrivateDocuments(data))
+        .unwrap()
+        .then((res) => {
+          if (res.message) {
+            dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
+            dispatch(SetQueryCount());
+          }
+        })
+        .catch((err) => {
+          dispatch(MimicSSE({ id: AiId, delta: err }));
+
+          toast.error(err);
+        })
+        .finally(() => setIsActive(false));
+    } catch (err) {
+      toast.error("Something went wrong");
+    }
+  };
+  //web search handler
+  const SearchWeb = async () => {
+    try {
+      const search_depths = ['surface_web', 'deep_web']
+      if (!question || question === "") {
+        toast.error("Please type a message first");
+        return;
+      }
+      if (!queryType || queryType !== 'Web Search') {
+        toast.message("Invalid mode")
+        return;
+      }
+      if (!search_depth || search_depth === '' || !search_depths.includes(search_depth)) {
+        toast.message("Invalid search-depth")
+        return
+      }
+
+
+      const { AiId, user_id } = handleUUidCreationAndMessageInsert()
+
+      dispatch(
+        WebSearchHandler({ question, MessageId: AiId, userMessageId: user_id, web_search_depth: search_depth })
+      )
+        .unwrap()
+        .then((res) => {
+          if (res.message === "Results found") {
+            dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
+            dispatch(updateFavicon(res.favicon));
+            dispatch(SetQueryCount());
+          }
+        })
+        .catch((err) => {
+          dispatch(
+            MimicSSE({
+              id: AiId,
+              delta:
+                err
+            })
+          );
+          // dispatch(setWebStatus([]));
+          setIsActive(false);
+
+        })
+        .finally(() => {
+          // dispatch(
+          //   MimicSSE({
+          //     id: AiId,
+          //     delta:
+
+          //       "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
+          //   })
+          // );
+          setIsActive(false);
+          dispatch(setQuestion(""));
+
+        });
+    } catch (err: any) {
+    }
+  };
+
+  const PerformSynthesis = async () => {
+    if (!question || typeof question !== "string") {
+      return;
+    }
+    const { AiId, user_id } = handleUUidCreationAndMessageInsert()
+
+
     // dispatch the main function
     dispatch(
       ProcessSynthesis({
@@ -305,12 +236,12 @@ const InputSection: React.FC<InputProps> = ({
           dispatch(SetQueryCount());
         }
       })
-      .catch(() => {
+      .catch((err) => {
         dispatch(
           MimicSSE({
             id: AiId,
             delta:
-              "It seems like there are many people using our service right now, I would like to apologize for the inconvenience.",
+              err
           })
         );
       })
@@ -353,49 +284,7 @@ const InputSection: React.FC<InputProps> = ({
         return;
       }
 
-      // get a session only token
-      // const SseToken = await GetSSEToken();
-      // if (!SseToken) {
-      //   toast.error("Something went wrong");
-      //   return;
-      // }
-      const user_id = uuid();
-      const AiId = uuid();
-
-      // // Insert user message
-      dispatch(
-        UpdateChats({
-          id: user_id,
-          sent_at: currentTime,
-          sent_by: "You",
-          message: {
-            isComplete: true,
-            content: question,
-          },
-        })
-      );
-
-      // Insert empty AI message
-      dispatch(
-        UpdateChats({
-          id: AiId,
-          sent_at: currentTime,
-          sent_by: "AntiNode",
-          message: {
-            isComplete: false,
-            content: "",
-          },
-        })
-      );
-
-      // const Url = `${BaseApiUrl}/api/ask-pdf?question=${encodeURIComponent(
-      //   question
-      // )}&AccessToken=${SseToken}&subCategory=${encodeURIComponent(
-      //   subCategory
-      // )}&category=${encodeURIComponent(category)}`;
-
-      // const SSe = HandleSSEConnection(Url, AiId, dispatch);
-      // return SSe;
+      const { AiId, user_id } = handleUUidCreationAndMessageInsert()
       const data = {
         question: question,
         category: category,
@@ -416,7 +305,7 @@ const InputSection: React.FC<InputProps> = ({
           dispatch(
             MimicSSE({
               id: AiId,
-              delta: "We are experiencing heavy traffic right now.",
+              delta: err
             })
           );
 
@@ -426,27 +315,27 @@ const InputSection: React.FC<InputProps> = ({
           setIsActive(false);
           dispatch(setLoading(false));
         });
-    } catch (err) {
-      toast.error("Something went wrong");
+    } catch (_err) {
     }
   };
 
   return (
     <>
       {/* input section body */}
+
       <motion.section
         initial={false}
         animate={{
           height: isActive ? "auto" : 64,
         }}
         transition={{
+          duration: 0.3,
           ease: "linear",
-          duration: 0.4,
         }}
-        className={`relative overflow-y-visible w-full px-3 py-2 gap-2 dark:bg-[rgb(27,26,26)] bg-gray-50 border border-black/20 dark:border-white/10 bai-jamjuree-regular text-md rounded-lg z-[3] transition-all duration-150 ease-linear shadow-2xl `}
+        className="relative overflow-visible w-full px-4 py-3 dark:bg-neutral-950 bg-white border border-gray-200 dark:border-neutral-800 bai-jamjuree-regular rounded-xl z-[3] shadow-lg"
       >
-        {/* input section */}
-        <div className="w-full flex items-center justify-between ">
+        {/* Input section */}
+        <div className="w-full flex items-center gap-3">
           <input
             value={question}
             onFocus={() => {
@@ -461,49 +350,31 @@ const InputSection: React.FC<InputProps> = ({
             ref={textareaRef}
             name="input"
             placeholder="What would you like to research today ... ?"
-            className="w-full dark:text-white text-black rounded-lg px-2 py-3 focus:ring-0 ring-0 transition-all duration-200 outline-0 "
+            className="flex-1 dark:text-white text-neutral-900 bg-transparent rounded-lg px-2 py-3 focus:outline-none placeholder:text-gray-600 dark:placeholder:text-gray-400"
           />
-          {/* send button */}
 
-          <motion.button
+          {/* Send button */}
+          <button
             disabled={!question || loading === true}
-            whileTap={{ scale: 1.03 }}
-            whileHover={{ scaleX: 1.05 }}
-            transition={{ duration: 0.3, ease: "circIn" }}
             onClick={handleAsk}
-            className={` top-5 right-4 cursor-pointer ${
-              loading === true
-                ? "bg-cyan-600  animate-pulse "
-                : "bg-black dark:bg-gray-100"
-            }
-                     
-              text-white dark:text-black  p-1  rounded-full space-grotesk   text-sm flex items-center justify-center gap-2  `}
+            className={`shrink-0 p-2 rounded-lg transition-colors duration-150
+              ${loading ? "bg-green-400 " : "bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-gray-200"}
+              text-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {loading === false ? (
-              <>
-                {question === "" ? <BsMic size={18} /> : <BiSend size={18} />}
-              </>
+              question === "" ? <BsMic size={18} /> : <BiSend size={18} />
             ) : (
-              <>
-                <BiHourglass className="animate-spin" size={18} />
-              </>
+              <BiHourglass className="animate-spin" size={18} />
             )}
-          </motion.button>
+          </button>
         </div>
 
-        {/* the other options section */}
-        <div
-          className={`${
-            isActive === true ? "flex" : "hidden"
-          } items-center justify-between `}
-        >
-          <section className="flex items-center justify-center gap-2 my-2">
-            {/* show options icon */}
-
-            <section className="relative group">
-              <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-auto">
-                Domains
-              </ul>
+        {/* Options section */}
+        {isActive && (
+          < div className="flex  items-start sm:items-center justify-between gap-3 pt-3 mt-3 border-t border-gray-200 dark:border-neutral-800">
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Domains button */}
               <button
                 onClick={() => {
                   if (selectedDoc) dispatch(setSelectedDoc(""));
@@ -512,111 +383,92 @@ const InputSection: React.FC<InputProps> = ({
                   dispatch(setVariant("signal-break"));
                   dispatch(setQueryType(""));
                 }}
-                className={` cursor-pointer  ${
-                  shwoOptions === true
-                    ? "bg-green-600  text-white"
-                    : "dark:bg-white bg-black dark:text-black text-white"
-                } rounded-full p-1  h-auto `}
+                className={`p-2 rounded-lg transition-colors duration-150 ${shwoOptions
+                  ? "bg-black dark:bg-white text-white dark:text-black"
+                  : "bg-gray-100 dark:bg-neutral-900 text-neutral-900 dark:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
+                  }`}
+                title="Domains"
               >
                 <IoOptions size={18} />
               </button>
-            </section>
 
-            {/* query type for personal documents */}
-            {selectedDoc && (
-              <ul
-                onClick={() => {
-                  dispatch(setShowType(!showType));
-                  dispatch(setVariant("binary-cut"));
-                }}
-                className={`  cursor-pointer ${
-                  selectedDoc
-                    ? "dark:bg-white bg-black dark:text-black text-white"
-                    : "bg-gray-200"
-                } rounded-full p-1  h-auto relative`}
-              >
-                <GoZap size={18} />
-                <QueryType />
-              </ul>
-            )}
+              {/* Query type */}
+              {selectedDoc && (
+                <button
+                  onClick={() => {
+                    dispatch(setShowType(!showType));
+                    dispatch(setVariant("binary-cut"));
+                  }}
+                  className="p-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-neutral-900 dark:text-white hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors duration-150"
+                  title="Query Type"
+                >
+                  <GoZap size={18} />
+                  <QueryType />
+                </button>
+              )}
 
-            <div className="relative group">
-              <AccessBar
-                Showfeatures={Showfeatures}
-                SetShowFeatures={SetShowFeatures}
-              />
+              {/* Features button */}
+              <div className="relative">
+                <AccessBar
+                  Showfeatures={Showfeatures}
+                  SetShowFeatures={SetShowFeatures}
+                />
+                <button
+                  onClick={() => {
+                    dispatch(setVariant("split-badge-original"));
+                    SetShowFeatures(!Showfeatures);
+                  }}
+                  className="p-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-neutral-900 dark:text-white hover:bg-gray-200 dark:hover:bg-neutal-800 transition-colors duration-150"
+                  title="Features"
+                >
+                  <BsPlusLg size={18} />
+                </button>
+              </div>
+
+              {/* Upload button */}
               <button
                 onClick={() => {
-                  dispatch(setVariant("split-badge-original"));
-
-                  SetShowFeatures(!Showfeatures);
+                  dispatch(setVariant("bracketed-identity"));
+                  dispatch(setShowUserForm(!shhowUserForm));
                 }}
-                className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-1  h-auto  "
+                className="p-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-neutral-900 dark:text-white hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors duration-150"
+                title="Upload"
               >
-                <BsPlusLg size={18} />
+                <BiUpload size={18} />
               </button>
-
-              <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-fit">
-                Features
-              </ul>
             </div>
 
-            <ul
+            {/* Private documents */}
+            <button
               onClick={() => {
-                dispatch(setVariant("bracketed-identity"));
-
-                dispatch(setShowUserForm(!shhowUserForm));
+                dispatch(setShowDocs(!showDocs));
+                dispatch(setShowOptions(false));
               }}
-              className="cursor-pointer dark:bg-white bg-black dark:text-black text-white rounded-full p-1  h-auto relative group"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors duration-150  text-neutral-900 dark:text-white space-grotesk max-w-full sm:max-w-[200px]"
             >
-              <ul className="dark:bg-white dark:text-black bg-black text-white space-grotesk font-semibold text-xs rounded-sm p-1 absolute group-hover:block hidden bottom-10 w-auto">
-                Upload
-              </ul>
-              <BiUpload size={18} />
-            </ul>
-          </section>
-
-          {/* private documents of the user */}
-
-          <div
-            role="button"
-            className="flex-wrap space-grotesk font-normal text-xs  flex items-center gap-1  dark:text-gray-200 text-black justify-end"
-            onClick={() => {
-              dispatch(setShowDocs(!showDocs));
-              dispatch(setShowOptions(false));
-            }}
-          >
-            <span className="flex-1 min-w-0 line-clamp-1 text-center  flex-wrap">
-              {(() => {
-                if (!selectedDoc) return "MyDocs";
-
-                // Find document name from user contributions
-                const foundDoc = user?.Contributions_user_id_fkey?.find(
-                  (contribution: any) =>
-                    contribution.document_id === selectedDoc
-                );
-
-                return foundDoc?.feedback || "MyDocs";
-              })()}
-
-              {/* {selectedDoc ? (foundDoc?.feedback ?? "MyDocs") : "MyDocs"} */}
-            </span>
-
-            <IoDocument className="flex-none ml-1" />
+              <Cloud className="shrink-0" size={14} />
+              <span className="truncate text-[11px] uppercase cursor-pointer">
+                {(() => {
+                  if (!selectedDoc) return "My_Cloud";
+                  const foundDoc = user?.Contributions_user_id_fkey?.find(
+                    (contribution: any) => contribution.document_id === selectedDoc
+                  );
+                  return foundDoc?.feedback || "My_Cloud";
+                })()}
+              </span>
+            </button>
           </div>
-        </div>
-        {/* query type and send button container */}
-        <div className="flex items-center justify-between mt-1">
-          <ul className="  bai-jamjuree-semibold text-sm text-gray-500 dark:text-gray-400 ">
-            {isActive === true && queryType ? (
-              <>Process - {queryType}</>
-            ) : isActive === true && category ? (
-              <>Category - {category}</>
-            ) : null}
-          </ul>
-          {/* query send button at bottom right */}
-        </div>
-      </motion.section>
+        )}
+
+        {/* Status display */}
+        {isActive && (queryType || category) && (
+          <div className="mt-3 pt-2 border-t border-gray-200 dark:border-neutral-800">
+            <span className="inline-block px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-neutral-900 rounded space-grotesk">
+              {queryType ? `Process: ${queryType}` : `Category: ${category}`}
+            </span>
+          </div>
+        )}
+      </motion.section >
     </>
   );
 };

@@ -11,7 +11,8 @@ import { ToolRegistry } from "./tools.js";
 export async function CheckWebForInformation(
   phase2_Action,
   GlobalContextObject,
-  user
+  user,
+  MessageId
 ) {
   const needs_web_results = phase2_Action.filter(
     (li) => li.function_name === "search_web"
@@ -26,12 +27,15 @@ export async function CheckWebForInformation(
 
     if (webResult?.FinalResult?.length > 0) {
       EmitEvent(user.user_id, "query_status", {
-        message: `Searching web`,
-        data: [
-          `Searced web for ${webResult.JSON.stringify(
-            FinalResult.slice(0, 30)
-          )}`,
-        ],
+        MessageId,
+        status: {
+          message: `Searching web`,
+          data: [
+            `Searced web for ${webResult.JSON.stringify(
+              FinalResult.slice(0, 30)
+            )}`,
+          ],
+        },
       });
 
       return {
@@ -47,7 +51,8 @@ export async function CheckWebForInformation(
 export async function SearchUserPrivateDocuments(
   phase2_Action,
   user,
-  GlobalContextObject
+  GlobalContextObject,
+  MessageId
 ) {
   const askPrivateRequests = phase2_Action.filter(
     (li) => li.function_name === "get_all_chunks"
@@ -115,8 +120,11 @@ export async function SearchUserPrivateDocuments(
 
     if (CleanedRequest.length > 0) {
       EmitEvent(user.user_id, "query_status", {
-        message: `Reading docs`,
-        data: [`Reading documents ${JSON.stringify(CleanedRequest)}`],
+        MessageId,
+        status: {
+          message: `Reading docs`,
+          data: [`Reading documents ${JSON.stringify(CleanedRequest)}`],
+        },
       });
 
       // Now we pass the cleaner array to your helper
@@ -138,7 +146,8 @@ export async function SearchUserPrivateDocuments(
 export async function GatherCertainChunks(
   phase2_Action,
   user,
-  GlobalContextObject
+  GlobalContextObject,
+  MessageId
 ) {
   const askPrivateRequests = phase2_Action.filter(
     (li) => li.function_name === "get_selected_chunks"
@@ -206,8 +215,11 @@ export async function GatherCertainChunks(
 
     if (CleanedRequest.length > 0) {
       EmitEvent(user.user_id, "query_status", {
-        message: `Reading docs`,
-        data: [`Reading documents ${JSON.stringify(CleanedRequest)}`],
+        MessageId,
+        status: {
+          message: `Reading docs`,
+          data: [`Reading documents ${JSON.stringify(CleanedRequest)}`],
+        },
       });
 
       // Now we pass the cleaner array to your helper
@@ -239,7 +251,7 @@ export function extractUUID(inputString) {
   return match ? match[0] : null;
 }
 
-export async function storeMemory(phase2_Action, user) {
+export async function storeMemory(phase2_Action, user, MessageId) {
   const needs_memory = phase2_Action.filter(
     (li) => li.function_name === "get_memory"
   );
@@ -249,7 +261,7 @@ export async function storeMemory(phase2_Action, user) {
   }
 }
 //to feed past mesages to the model
-export async function GetUserMemory(phase2_Action, user) {
+export async function GetUserMemory(phase2_Action, user, MessageId) {
   const needs_to_store_memory = phase2_Action.filter(
     (li) => li.function_name === "store_memory"
   );
@@ -262,8 +274,11 @@ export async function GetUserMemory(phase2_Action, user) {
 
     if (storedMemories) {
       EmitEvent(user.user_id, "query_status", {
-        message: `Scanning memories`,
-        data: ["Looking for memories"],
+        MessageId,
+        status: {
+          message: `Scanning memories`,
+          data: ["Looking for memories"],
+        },
       });
     }
   }

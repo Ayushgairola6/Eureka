@@ -4,6 +4,7 @@ import {
   CheckPresenceAndStringValidity,
 } from "../ErroHandler/ErrorHandler.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+import { GetDataFromSerper } from "../OnlineSearchHandler/WebCrawler.js";
 import { supabase } from "./supabaseHandler.js";
 
 //extracts and caches the users session chathistory
@@ -77,7 +78,7 @@ export const HandleUserSessionHistory = async (req, res) => {
 };
 
 //helper function to format the session history
-function FormatSessionHistory(ChatsArray) {
+export function FormatSessionHistory(ChatsArray) {
   if (CheckPresenceAndArrayValidity(ChatsArray) === false) {
     return { error: "The array is empty!" };
   }
@@ -127,4 +128,24 @@ function FormatSessionHistory(ChatsArray) {
   });
 
   return NewArray;
+}
+
+//handle the multi quries deep-web-research
+export async function HandleDeepWebResearch(Queries, user, room_id) {
+  let results = [];
+
+  for (const query of Queries) {
+    // 1. Clean the query (using the sanitizer we built)
+    const sanitizedQuery = query.trim();
+    if (!sanitizedQuery) continue;
+
+    // 2. Fetch from Serper
+    const data = await GetDataFromSerper(sanitizedQuery, user, room_id);
+    results.push(data);
+
+    // 3. Cool-down to prevent rate-limiting and CPU spikes
+    await new Promise((res) => setTimeout(res, 700));
+  }
+
+  return results.flat(); //
 }

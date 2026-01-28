@@ -21,6 +21,7 @@ interface ChatRoomState {
   showSyntheSisPanel: boolean;
   synthesisQuery: string;
   isSynthesizing: boolean;
+  roomWebSearchDepth: string;
 }
 interface RoomData {
   Room_name: string;
@@ -63,6 +64,7 @@ const initialState: ChatRoomState = {
   showSyntheSisPanel: false,
   synthesisQuery: "",
   isSynthesizing: false,
+  roomWebSearchDepth: "surface_web",
 };
 
 export const CreateChatRoom = createAsyncThunk<ApiResponse, RoomData>(
@@ -85,10 +87,17 @@ export const CreateChatRoom = createAsyncThunk<ApiResponse, RoomData>(
         return response.data.message;
       }
     } catch (err: any) {
-      console.error("Error fetching dashboard data:", err);
-      return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to fetch dashboard data"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -110,9 +119,17 @@ export const JoinAChatRoom = createAsyncThunk<ApiResponse, string>(
       );
       return response.data;
     } catch (err: any) {
-      return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to join"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -135,42 +152,52 @@ export const GetDocumentChatHistory = createAsyncThunk(
       // console.log(response.data)
       return response.data;
     } catch (err) {
-      console.error("Error fetching chats data:", err);
-      return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to join"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
 
 export const GetMisallaneousChatHistory = createAsyncThunk<any, any>(
   "get/Misallaneouschats",
-  async (cursor = null, { rejectWithValue }) => {
+  async (cursor, { rejectWithValue }) => {
     // cursor is the created_at timestamp
     try {
       const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
-      const params: any = {};
-      if (cursor) {
-        params.cursor = cursor;
-      }
-
       const response = await axios.get(
-        `${BaseApiUrl}/api/user/doc/misallaneous-history`,
+        `${BaseApiUrl}/api/user/doc/misallaneous-history?cursor=${encodeURIComponent(
+          cursor
+        )}`,
         {
           withCredentials: true,
           headers: {
             Authorization: `Bearer ${AuthToken}`,
           },
-          params: params,
         }
       );
       return response.data;
     } catch (err: any) {
-      console.error("Error fetching chats data:", err);
-      return rejectWithValue(
-        err instanceof Error ? err.message : "Failed to fetch chats"
-      );
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -192,8 +219,18 @@ export const GetSynthesizedResult = createAsyncThunk<any, any>(
         }
       );
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error?.response?.data?.message);
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        // You can access err.message, err.response, etc. safely here
+        return rejectWithValue(err.message || err.response?.data.message);
+      }
+
+      // Handle other potential error types or re-throw if necessary
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+
+      return rejectWithValue("An unknown error has occured");
     }
   }
 );
@@ -221,6 +258,9 @@ const ChatSlice = createSlice({
         console.log("Removing the value", value);
       }
     },
+    setRoomWebSearchDepth: (state, action) => {
+      state.roomWebSearchDepth = action.payload;
+    },
     emptyArray: (state) => {
       state.RoomSynthesisDocs = [];
     },
@@ -229,6 +269,9 @@ const ChatSlice = createSlice({
     },
     setShowSynthesisPanel: (state, action) => {
       state.showSyntheSisPanel = action.payload;
+    },
+    setCursor: (state, action) => {
+      state.cursor = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -262,10 +305,13 @@ const ChatSlice = createSlice({
       //getting misallaneous chat histor
       .addCase(GetMisallaneousChatHistory.fulfilled, (state, action) => {
         state.gettingChats = false;
-        const { data, nextCursor, hasMore } = action.payload;
-        state.Misallaneouschats = [...state.Misallaneouschats, ...data];
-        state.cursor = nextCursor;
-        state.hasMore = hasMore !== false;
+        const { data, nextCursor } = action.payload;
+        if (data?.length > 0) {
+          state.Misallaneouschats = [...state.Misallaneouschats, ...data];
+        }
+        if (nextCursor) {
+          state.cursor = nextCursor;
+        }
       })
       .addCase(GetMisallaneousChatHistory.rejected, (state, _action) => {
         state.gettingChats = false;
@@ -294,5 +340,7 @@ export const {
   emptyArray,
   setSyntheSisQuery,
   setShowSynthesisPanel,
+  setCursor,
+  setRoomWebSearchDepth,
 } = ChatSlice.actions;
 export default ChatSlice.reducer;

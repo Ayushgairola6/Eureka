@@ -1,95 +1,267 @@
-import { FiBookOpen, FiPlay } from "react-icons/fi";
-import { motion } from "framer-motion";
-import { Link } from "react-router";
+
+const featuresList = [
+  {
+    id: "upload",
+    icon: <FileUp />,
+    featureName: "Uploading Documents",
+    description: "AntiNode keeps your documents secure. Click the upload icon in the interface to open the upload form. All fields are required to maximize performance and efficiency in synthesis mode.",
+    howToUse: [
+      "Name your document without extension (e.g., 'tuberculosis-research-2024')",
+      "Fill metadata fields with relevant keywords: 'TUBERCULOSIS TREATMENT', 'NEW MEDICINE DEVELOPMENT', etc.",
+      "Select your file manually or drag and drop",
+      "Choose privacy: Contribute to public knowledge base or keep private",
+    ],
+    tips: "Better metadata = more accurate synthesis results"
+  },
+  {
+    id: "knowledge",
+    icon: <Database />,
+    featureName: "Public Knowledge Base",
+    description: "A community-powered collection of verified documents across various domains. Built on a 'for the people, by the people' philosophy to create an authentic information hub for students, researchers, and truth-seekers.",
+    howToUse: [
+      "Click the filter/settings button in the input section",
+      "Browse available domains (e.g., Programming, Medicine, Science)",
+      "Select a subdomain from the popup list",
+      "AI automatically uses relevant verified documents for your query",
+    ],
+    tips: "Each response shows upvotes/downvotes from the community to flag misinformation"
+  },
+  {
+    id: "research",
+    icon: <Globe />,
+    featureName: "Web Search Mode",
+    description: "Access the web search tab by clicking the + icon in the input section. Choose your search depth based on how comprehensive you need the results.",
+    howToUse: [
+      "Surface Web: Quick results from public sources (blogs, Reddit, news)",
+      "Deep Search: Autonomous AI creates sub-queries and scans specialized sources in parallel",
+      "Track every step in real-time through the interface",
+    ],
+    tips: "Deep search takes longer but finds sources others miss"
+  },
+  {
+    id: "summary",
+    icon: <FileText />,
+    featureName: "Document Summary & Q&A",
+    description: "Summarize your uploaded documents or ask questions about their content. Perfect for quick insights from long research papers or reports.",
+    howToUse: [
+      "Click 'My Docs' in the input interface",
+      "Select a document from your cloud storage",
+      "Click the new icon that appears",
+      "Choose: Summarize or Q&A mode",
+    ],
+    tips: "Large document summarization coming soon"
+  },
+  {
+    id: "rooms",
+    icon: <Users />,
+    featureName: "Collaboration Rooms",
+    description: "Shared workspaces where teams research together in real-time. Perfect for collaborative report writing, deep web research, or prompt optimization with colleagues.",
+    howToUse: [
+      "Join existing room: Use room code (admin may need to approve)",
+      "Create new room: Set member limit, privacy level, description, and name",
+      "Invite team: Share room code with collaborators",
+      "All features available: Research, synthesis, documents—everything works in real-time",
+    ],
+    tips: "Room admin controls privacy and member permissions"
+  },
+  {
+    id: "synthesis",
+    icon: <GitMerge />,
+    featureName: "Multi-Source Synthesis",
+    description: "Our most powerful feature. Cross-reference multiple private documents, compare with web data, and generate unified insights—all in one request. Powered by proprietary self-correcting orchestration.",
+    howToUse: [
+      "Click the + icon in input interface (works in solo or rooms)",
+      "Option 1: Manually select multiple documents from your list",
+      "Option 2: Name documents with extensions in your request (e.g., 'Compare sales-Q3.pdf with market-data.xlsx')",
+      "Send request and watch the transparent process unfold",
+      "Receive synthesized report with all sources cited",
+    ],
+    tips: "Be specific in your request for best results. Example: 'Compare my Q3 sales data with competitor projections from the web and create a strategy report'"
+  },
+];
+
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ChevronRight, FileUp, Database, Globe,
+  FileText, Users, GitMerge, CheckCircle, Terminal, Cpu
+} from "lucide-react";
 
 const Tutorial = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeId, setActiveId] = useState("upload");
+
+  const filteredFeatures = featuresList.filter(
+    (f) =>
+      f.featureName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const activeFeature = featuresList.find(f => f.id === activeId) || featuresList[0];
+
   return (
-    <>
-      <div className="relative w-full py-12 md:py-24 px-4 sm:px-8 flex items-center justify-center flex-col md:flex-row gap-8 md:gap-16 lg:gap-24 overflow-hidden">
-        {/* Enhanced gradient background */}
-        <div className="absolute inset-0 -z-[1] bg-gradient-to-br from-emerald-600/20 via-blue-600/15 to-sky-600/20 dark:from-black dark:to-black blur-3xl" />
+    <div className="min-h-screen bg-white dark:bg-[#050505] text-black dark:text-white pt-24 pb-12">
+      <div className="max-w-7xl mx-auto px-6">
 
-        {/* Animated gradient dots */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-[1]">
-          <div className="absolute top-1/3 left-1/4 w-32 h-32 rounded-full bg-blue-600/10 blur-3xl animate-float"></div>
-          <div className="absolute bottom-1/3 right-1/4 w-40 h-40 rounded-full bg-emerald-600/10 blur-3xl animate-float-delay"></div>
-        </div>
+        {/* 1. Header & System Status */}
+        <header className="mb-12 border-l-2 border-orange-600 pl-6">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-orange-600 font-bold">
+              System_Manual_v1.0
+            </span>
+            <div className="h-[1px] w-12 bg-neutral-200 dark:bg-neutral-800" />
+            <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-tighter">
+              Status: Documentation_Online
+            </span>
+          </div>
+          <h1 className="bai-jamjuree-bold text-4xl md:text-5xl tracking-tight uppercase">
+            Feature <span className="text-orange-600">Protocols</span>
+          </h1>
+        </header>
 
-        {/* Video container with enhanced floating effect */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="relative w-72 sm:w-80 md:w-96 aspect-video rounded-2xl overflow-hidden shadow-2xl group"
-        >
-          {/* Glass morphism border effect */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-emerald-500/20 border-2 border-white/50 dark:border-gray-700/50 backdrop-blur-sm"></div>
+        {/* 2. Main Terminal Interface */}
+        <div className="grid grid-cols-12 border border-neutral-200 dark:border-neutral-800 rounded-sm overflow-hidden bg-white dark:bg-[#080808] shadow-2xl">
 
-          {/* Play button overlay */}
-          <div className="absolute inset-0 bg-black/10 dark:bg-black/30 flex items-center justify-center cursor-pointer transition-all duration-500 group-hover:bg-black/5">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-blue-600 to-emerald-600 flex items-center justify-center transform-gpu transition-all duration-500 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-blue-500/50">
-              <FiPlay className="text-white text-2xl md:text-3xl ml-1 transition-transform duration-300 group-hover:scale-110" />
+          {/* LEFT: Directory Sidebar */}
+          <div className="col-span-12 lg:col-span-4 border-r border-neutral-200 dark:border-neutral-800 flex flex-col h-[600px]">
+            {/* Search Input */}
+            <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-black/40">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-orange-600">$</span>
+                <input
+                  type="text"
+                  placeholder="SEARCH_FILES..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-4 py-2 bg-transparent border-none text-xs font-mono focus:outline-none placeholder:text-neutral-500 uppercase"
+                />
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide">
+              {filteredFeatures.map((feature) => (
+                <button
+                  key={feature.id}
+                  onClick={() => setActiveId(feature.id)}
+                  className={`w-full flex items-center justify-between p-5 text-left transition-all border-b border-neutral-100 dark:border-neutral-900 group relative
+                    ${activeId === feature.id ? "bg-orange-600/5 dark:bg-orange-600/10" : "hover:bg-neutral-50 dark:hover:bg-white/[0.02]"}`}
+                >
+                  {activeId === feature.id && (
+                    <motion.div layoutId="manualActive" className="absolute left-0 top-0 bottom-0 w-1 bg-orange-600" />
+                  )}
+
+                  <div className="flex items-center gap-4">
+                    <div className={`transition-colors ${activeId === feature.id ? "text-orange-600" : "text-neutral-400"}`}>
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <h3 className={`text-xs font-bold uppercase tracking-wider space-grotesk ${activeId === feature.id ? "text-black dark:text-white" : "text-neutral-500"}`}>
+                        {feature.featureName}
+                      </h3>
+                      <p className="font-mono text-[9px] text-neutral-400 mt-1">ID: {feature.id.toUpperCase()}_LOG</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={14} className={`transition-transform ${activeId === feature.id ? "translate-x-1 text-orange-600" : "text-neutral-300 opacity-0 group-hover:opacity-100"}`} />
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Thumbnail image */}
-          <img
-            src="user2.jpg"
-            alt="AntiNode Tutorial Video"
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
-          />
-        </motion.div>
+          {/* RIGHT: Detail View Area */}
+          <div className="col-span-12 lg:col-span-8 h-[600px] overflow-y-auto p-8 md:p-12 relative bg-[#fafafa] dark:bg-[#060606]">
 
-        {/* Enhanced text content */}
-        <motion.div
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-center md:text-left max-w-md lg:max-w-lg"
-        >
-          <div className="mb-4 md:mb-6">
-            {/* Enhanced badge */}
-            <span className="inline-block px-4 py-2 text-xs md:text-sm rounded-full bg-gradient-to-r from-blue-100 to-emerald-100 dark:from-blue-900/40 dark:to-emerald-900/40 text-blue-600 dark:text-blue-300 mb-3 shadow-lg border border-white/50 dark:border-gray-700/50 backdrop-blur-sm">
-              Getting Started
-            </span>
+            {/* Background Tech Detail */}
+            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+              <Cpu size={120} className="text-orange-600" />
+            </div>
 
-            {/* Enhanced title with gradient */}
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bai-jamjuree-bold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 dark:from-blue-400 dark:via-purple-400 dark:to-emerald-400 bg-clip-text text-transparent mb-2">
-              AntiNode Tutorial
-            </h1>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeId}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="relative z-10"
+              >
+                {/* 1. Header Meta */}
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-orange-600 text-white rounded-sm shadow-lg shadow-orange-600/20">
+                    {activeFeature.icon}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl bai-jamjuree-bold tracking-tight uppercase">
+                      {activeFeature.featureName}
+                    </h2>
+                    <span className="font-mono text-[10px] text-orange-600 font-bold uppercase tracking-widest">
+                      Protocol // 0{featuresList.findIndex(f => f.id === activeId) + 1}
+                    </span>
+                  </div>
+                </div>
 
-            {/* Enhanced subtitle */}
-            <h2 className="text-xl md:text-3xl bai-jamjuree-semibold font-semibold text-gray-800 dark:text-gray-200 mt-1 md:mt-2">
-              Beginner's Guide
-            </h2>
+                {/* 2. Description Block */}
+                <div className="mb-10 p-6 bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-sm">
+                  <h4 className="font-mono text-[9px] uppercase tracking-widest text-neutral-400 mb-3 border-b border-neutral-100 dark:border-neutral-900 pb-2">
+                    System_Objective
+                  </h4>
+                  <p className="space-grotesk text-sm md:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                    {activeFeature.description}
+                  </p>
+                </div>
+
+                {/* 3. Execution Sequence */}
+                <div className="mb-10">
+                  <h4 className="font-mono text-[9px] uppercase tracking-widest text-neutral-400 mb-6 flex items-center gap-2">
+                    <Terminal size={10} /> Execution_Steps
+                  </h4>
+                  <div className="grid gap-4">
+                    {activeFeature.howToUse.map((step, idx) => (
+                      <div key={idx} className="flex gap-4 group">
+                        <span className="font-mono text-xs text-orange-600 font-bold opacity-50 group-hover:opacity-100 transition-opacity pt-1">
+                          0{idx + 1}
+                        </span>
+                        <p className="text-sm space-grotesk text-neutral-700 dark:text-neutral-300 bg-neutral-100/50 dark:bg-white/[0.03] p-3 rounded-sm w-full border border-transparent group-hover:border-neutral-200 dark:group-hover:border-neutral-800 transition-all">
+                          {step}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Tips Footer */}
+                {activeFeature.tips && (
+                  <div className="flex items-start gap-4 p-4 bg-orange-600/5 border border-orange-600/20 rounded-sm">
+                    <CheckCircle className="text-orange-600 mt-0.5 shrink-0" size={16} />
+                    <div>
+                      <h5 className="font-mono text-[9px] font-bold uppercase text-orange-600 tracking-tighter">Optimization_Tip</h5>
+                      <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400 mt-1 uppercase tracking-tight">
+                        {activeFeature.tips}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
+        </div>
 
-          {/* Enhanced description */}
-          <p className="text-gray-600 dark:text-gray-300 space-grotesk text-sm md:text-base mb-8 leading-relaxed bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-2xl p-4 border border-white/50 dark:border-gray-700/50">
-            Watch our 5-minute tutorial to master AntiNode's powerful features.
-            Learn how to upload documents, query knowledge, and contribute to
-            the community.
-          </p>
-
-          {/* Enhanced buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-            <button className="px-8 py-3.5 bg-black text-white dark:bg-white dark:text-black rounded-2xl font-medium shadow-lg hover:shadow-blue-500/40 hover:shadow-xl transition-all duration-500 inline-flex items-center gap-3 text-sm sm:text-base group hover:scale-105">
-              <FiPlay className="text-lg transition-transform duration-300 group-hover:scale-110" />
-              Watch Tutorial
-            </button>
-            <Link
-              to="/Api/introduction"
-              className="px-8 py-3.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-2xl font-medium hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-500 inline-flex items-center gap-3 text-sm sm:text-base group hover:scale-105 backdrop-blur-sm"
-            >
-              <FiBookOpen className="text-lg transition-transform duration-300 group-hover:scale-110" />
-              Read Docs
-            </Link>
+        {/* Footer Support Section */}
+        <div className="mt-12 flex flex-col md:flex-row items-center justify-between p-8 border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#0A0A0A] rounded-sm gap-6">
+          <div className="space-y-1 text-center md:text-left">
+            <h3 className="bai-jamjuree-bold text-xl">Technical Support Needed?</h3>
+            <p className="space-grotesk text-xs text-neutral-500 uppercase tracking-wider">Our architects are available for direct consultation.</p>
           </div>
-        </motion.div>
+          <a
+            href="mailto:support@antinodeai.space"
+            className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black font-mono text-xs font-bold uppercase tracking-widest hover:bg-orange-600 dark:hover:bg-orange-600 hover:text-white transition-all rounded-sm shadow-xl"
+          >
+            Open_Ticket
+          </a>
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
-export default Tutorial;
+export default Tutorial

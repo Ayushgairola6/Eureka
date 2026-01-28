@@ -1,0 +1,39 @@
+company_id,company_name,month,units_sold,unit_price_usd,revenue_usd,region
+C001,Neubula Systems,2025-01,120,250,30000,North America
+C001,Neubula Systems,2025-02,135,250,33750,North America
+C001,Neubula Systems,2025-03,150,250,37500,North America
+C001,Neubula Systems,2025-04,142,250,35500,North America
+C001,Neubula Systems,2025-05,160,250,40000,North America
+C001,Neubula Systems,2025-06,170,250,42500,North America
+C001,Neubula Systems,2025-07,165,250,41250,North America
+C001,Neubula Systems,2025-08,180,250,45000,North America
+C001,Neubula Systems,2025-09,190,250,47500,North America
+C001,Neubula Systems,2025-10,200,250,50000,North America
+C001,Neubula Systems,2025-11,210,250,52500,North America
+C001,Neubula Systems,2025-12,230,250,57500,North America
+
+C002,Orion Analytics,2025-01,90,400,36000,Europe
+C002,Orion Analytics,2025-02,95,400,38000,Europe
+C002,Orion Analytics,2025-03,100,400,40000,Europe
+C002,Orion Analytics,2025-04,110,400,44000,Europe
+C002,Orion Analytics,2025-05,105,400,42000,Europe
+C002,Orion Analytics,2025-06,115,400,46000,Europe
+C002,Orion Analytics,2025-07,120,400,48000,Europe
+C002,Orion Analytics,2025-08,118,400,47200,Europe
+C002,Orion Analytics,2025-09,125,400,50000,Europe
+C002,Orion Analytics,2025-10,130,400,52000,Europe
+C002,Orion Analytics,2025-11,135,400,54000,Europe
+C002,Orion Analytics,2025-12,140,400,56000,Europe
+
+C003,Astra Retail Labs,2025-01,300,80,24000,Asia
+C003,Astra Retail Labs,2025-02,320,80,25600,Asia
+C003,Astra Retail Labs,2025-03,350,80,28000,Asia
+C003,Astra Retail Labs,2025-04,360,80,28800,Asia
+C003,Astra Retail Labs,2025-05,380,80,30400,Asia
+C003,Astra Retail Labs,2025-06,400,80,32000,Asia
+C003,Astra Retail Labs,2025-07,390,80,31200,Asia
+C003,Astra Retail Labs,2025-08,420,80,33600,Asia
+C003,Astra Retail Labs,2025-09,450,80,36000,Asia
+C003,Astra Retail Labs,2025-10,470,80,37600,Asia
+C003,Astra Retail Labs,2025-11,500,80,40000,Asia
+C003,Astra Retail Labs,2025-12,550,80,44000,Asia

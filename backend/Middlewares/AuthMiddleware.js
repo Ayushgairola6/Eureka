@@ -60,10 +60,10 @@ export const VerifyToken = async (req, res, next) => {
           }
           refreshToken = data[0].Refresh_Token;
           // store the token in the cache
-          await redisClient.multi().set(
-            RefreshTokenKey,
-            JSON.stringify(data[0].Refresh_Token)
-          ).expire(RefreshTokenKey,1000);
+          await redisClient
+            .multi()
+            .set(RefreshTokenKey, JSON.stringify(data[0].Refresh_Token))
+            .expire(RefreshTokenKey, 1000);
         }
 
         let refreshDecoded;
@@ -103,7 +103,7 @@ export const VerifyToken = async (req, res, next) => {
         res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
           httpOnly: true,
           secure: true,
-          domain:".antinodeai.space",
+          domain: ".antinodeai.space",
           sameSite: "none",
           maxAge: 24 * 60 * 60 * 1000,
         });
@@ -174,7 +174,10 @@ export async function authenticateStream(req, res) {
       refreshToken = data.Refresh_Token;
 
       // Cache it for 10 min
-      await redisClient.multi().set(refreshKey, JSON.stringify(refreshToken)).expire(refreshKey,1000);
+      await redisClient
+        .multi()
+        .set(refreshKey, JSON.stringify(refreshToken))
+        .expire(refreshKey, 1000);
     }
 
     let refreshDecoded;
@@ -193,7 +196,8 @@ export async function authenticateStream(req, res) {
       refreshDecoded.user_id,
       refreshDecoded.email,
       refreshDecoded.username,
-      refreshDecoded.PaymentStatus,refreshDecoded.AllowedTrainingModels
+      refreshDecoded.PaymentStatus,
+      refreshDecoded.AllowedTrainingModels
     );
 
     // Update DB
@@ -206,7 +210,7 @@ export async function authenticateStream(req, res) {
     res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
       httpOnly: true,
       secure: true,
-      domain:".antinodeai.space",
+      domain: ".antinodeai.space",
       sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     });
@@ -287,5 +291,42 @@ export async function HandlePreferenceToggle(req, res) {
     console.error(error);
 
     await notifyMe("Error while toggling the preference", error);
+  }
+}
+
+// a helper function to check the payment status of the user
+export async function CheckUserPlanStatus(user_id) {
+  try {
+    if (!user_id || typeof user_id !== "string") {
+      return { error: "Invalid user_id" };
+    }
+    const key = `user=${user_id}'s cached plan data`;
+    //check cache for user payment status
+    await redisClient.del(key);
+    const exists = await redisClient.exists(key);
+    if (exists) {
+      const userPlanData = await redisClient.get(key);
+
+      return JSON.parse(userPlanData); //send the parsed user data;
+    }
+
+    // check the database for plan status
+    const { data, error } = await supabase
+      .from("Payments")
+      .select("plan_type,plan_status")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (error) {
+      return { error: "User is not a paid member" };
+    }
+
+    return data;
+  } catch (err) {
+    await notifyMe(
+      "AN error has occured in the user plan status checking middleware",
+      err
+    );
+    return { error: err };
   }
 }

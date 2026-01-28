@@ -26,7 +26,7 @@ const RoomCard: React.FC<props> = ({ room, index }) => {
       bg-gray-100 dark:bg-[#0A0A0A] 
       p-5 transition-all duration-300 
        hover:shadow-teal-600/20 shadow-2xl
-      cursor-pointer overflow-hidden flex-none w-fit "
+      cursor-pointer overflow-hidden flex-none  "
       >
         {/* --- Hover Gradient Effect (Subtle Landing Page Vibe) --- */}
         <div className="absolute top-0 right-0 -mr-10 -mt-10 h-32 w-32 rounded-full bg-blue-500/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -37,11 +37,10 @@ const RoomCard: React.FC<props> = ({ room, index }) => {
             {/* Room Type Badge */}
             <span
               className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase space-grotesk border flex items-center gap-1.5
-            ${
-              room?.chat_rooms.room_type?.toLowerCase() === "private"
-                ? "bg-neutral-100 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400"
-                : "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30 text-blue-600 dark:text-blue-400"
-            }`}
+            ${room?.chat_rooms.room_type?.toLowerCase() === "private"
+                  ? "bg-neutral-100 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400"
+                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30 text-blue-600 dark:text-blue-400"
+                }`}
             >
               {room?.chat_rooms.room_type?.toLowerCase() === "private" ? (
                 <FaLock size={10} />

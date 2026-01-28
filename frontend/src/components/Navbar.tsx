@@ -32,7 +32,8 @@ const Navbar = () => {
     { label: "Home", to: "/", tab: "Home" },
     { label: "Try Now", to: "/Interface", tab: "Try" },
     { label: "Rooms", to: "/user/rooms", tab: "Rooms" },
-    { label: "API", to: "/Api/introduction", tab: "API" },
+    { label: "History", to: "/user/misallaneous-chats", tab: "History" },
+    { label: "User Manual", to: "/userManual/AntiNode/Know-How", tab: "User manual" },
     { label: "Feedback", to: "/Feedback", tab: "Feedback" },
     // only show dashboard when logged in
     {
@@ -77,9 +78,8 @@ const Navbar = () => {
               <Link
                 key={link.tab}
                 onClick={() => dispatch(setCurrTab(link.tab))}
-                className={`rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black transition-all duration-300 ${
-                  isActive ? "slider" : "bg-transparent"
-                }`}
+                className={`rounded-lg py-1 px-2 dark:hover:bg-white hover:bg-black hover:text-white dark:hover:text-black transition-all duration-300 ${isActive ? "slider" : "bg-transparent"
+                  }`}
                 to={link.to}
               >
                 {link.label}

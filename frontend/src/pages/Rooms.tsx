@@ -3,20 +3,23 @@ import { useAppSelector } from "../store/hooks";
 import RoomCard from "@/components/Room_card";
 import RoomAnalytics from "@/components/Room_analytics";
 import React from "react";
-import { BsArrowLeft } from "react-icons/bs";
+import { BsArrowLeft, BsChat } from "react-icons/bs";
 import SlidingAnalytics from "@/components/Room_sliding_analytics";
+import CreateRoom from "@/components/createRoom.tsx";
 
 const UserChatRooms = () => {
   const { user, chatrooms } = useAppSelector((state) => state.auth);
   const [view, setView] = React.useState(false);
+  const [showCard, setShowCard] = React.useState(false);
   return (
     <>
-      <div className="dark:bg-black bg-white h-screen w-full flex p-2  items-center justify-between gap-3 relative overflow-hidden">
+      <div className=" dark:bg-black bg-white  w-full flex p-2  items-center justify-between gap-3 relative overflow-hidden">
+        <CreateRoom showcard={showCard} setShowCard={setShowCard} />
         <section className="border  w-full h-full">
           {chatrooms?.length > 0 && (
             <span className="space-grotesk flex items-center justify-between px-2 py-2 ">
-              <h1 className="font-bold md:text-2xl text-xl">
-                All your rooms at one place
+              <h1 className="border-b flex items-center justify-center gap-2 font-bold md:text-2xl text-xl">
+                <BsChat /> My spaces
               </h1>
               <button
                 onClick={() => setView(!view)}
@@ -29,7 +32,7 @@ const UserChatRooms = () => {
 
           {user !== null && chatrooms && chatrooms.length > 0 ? (
             <>
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2  gap-3  ">
+              <div className="p-4 grid grid-cols-1 gap-3 md:grid-cols-3 ">
                 {chatrooms.map((room, index) => {
                   return (
                     <>
@@ -41,13 +44,13 @@ const UserChatRooms = () => {
             </>
           ) : (
             <div className="flex items-center justify-center w-full px-2">
-              <JoinRoomInput />
+              <JoinRoomInput showCard={showCard} setShowCard={setShowCard} />
             </div>
           )}
         </section>
 
-        <RoomAnalytics />
-        <SlidingAnalytics view={view} setView={setView} />
+        <RoomAnalytics showCard={showCard} setShowCard={setShowCard} />
+        <SlidingAnalytics showCard={showCard} setShowCard={setShowCard} view={view} setView={setView} />
       </div>
     </>
   );

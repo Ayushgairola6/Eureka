@@ -167,14 +167,18 @@ export const initializeSocketIo = (httpServer) => {
   // connecting with the websocket connection
   io.on("connection", (socket) => {
     // joining a specific chatRoom
-    console.log("new user connected");
+    console.log("new user connected to the socket");
 
     if (socket.user_id) {
       socket.join(socket.user_id, "this user joined the scoket connection");
     }
+
+    //event to join the user in a room
     socket.on("Joining_a_chat_room", (room_information) => {
       const { username, room_id, room_name, user_id } = room_information;
       // console.log("Joining chat room");
+      console.log(username, "is the joining chat room:", room_id);
+
       if (!room_id || !room_name || !username || !user_id) {
         socket.emit("Room_notification", {
           message: "An error occured while trying to joining the room",
@@ -182,32 +186,10 @@ export const initializeSocketIo = (httpServer) => {
         return;
       }
 
-      // join the user themselves so that they can recieve notifications
-      // join the room
-
       socket.join(room_id);
-      // if the key related to the user has not been yet recorded record it
-      if (
-        !Room_And_their_members.has(`user&${username}&joined&room&${room_id}`)
-      ) {
-        Room_And_their_members.set(
-          `user&${username}&joined&room&${room_id}`,
-          username
-        );
-      }
-      const membername = [];
-      Room_And_their_members.forEach((value, key) => {
-        if (key) {
-          const theFoundRoom_id = key.split("&")[4];
-          //   if the rooom id matches and the username is not aleady in the array
-          if (theFoundRoom_id === room_id && !membername.includes(value)) {
-            membername.push({ user: value });
-          }
-        }
-      });
 
-      io.to(room_id).emit("room-info", membername);
-      io.to(user_id).emit("room-info", membername);
+      // io.to(room_id).emit("room-info", username);
+      // io.to(user_id).emit("room-info", membername);
       io.to(room_id).emit("Room_notification", {
         message: `${username} Joined the room`,
       });
@@ -215,9 +197,9 @@ export const initializeSocketIo = (httpServer) => {
 
     // leaving a chatRoom
     socket.on("leaving_chat_room", (data) => {
-      // console.log("Leaving chat room");
-
       const { room_id, username } = data;
+      console.log(username, "is the Leaving chat room:", room_id);
+
       if (!room_id || !username) {
         socket.emit("Room_notification", {
           message: "Unable to leave the room",
@@ -225,25 +207,10 @@ export const initializeSocketIo = (httpServer) => {
         return;
       }
 
-      //   array of left over room members
-      const memberKey = `user&${username}&joined&room&${room_id}`;
-      if (Room_And_their_members.has(memberKey)) {
-        Room_And_their_members.delete(memberKey);
-      }
-
-      // Now, rebuild the list of members for the specific room
-      const membername = [];
-      Room_And_their_members.forEach((value, key) => {
-        // Find all members that belong to the specified room_id
-        if (key.includes(`&room&${room_id}`)) {
-          membername.push({ user: value });
-        }
-      });
-
       socket.leave(room_id);
 
       // Broadcast to everyone EXCEPT the socket that is leaving
-      io.to(room_id).emit("room-info", membername);
+      // io.to(room_id).emit("room-info", membername);
       io.to(room_id).emit("Room_notification", {
         message: `${username} left the room`,
       });
@@ -316,33 +283,33 @@ export const initializeSocketIo = (httpServer) => {
       try {
         // do not store the sytem messages
         // Store message in database
-        if (users.username !== "SYSTEM") {
-          const storeResult = await StoreMessage(
-            sent_by,
-            message,
-            room_id,
-            message_id,
-            sent_at
-          );
+        // if (users.username !== "SYSTEM") {
+        // const storeResult = await StoreMessage(
+        //   sent_by,
+        //   message,
+        //   room_id,
+        //   message_id,
+        //   sent_at
+        // );
 
-          if (storeResult?.error) {
-            socket.emit("Room_notification", {
-              message: "Something went wrong, please try again later!",
-            });
-            return;
-          }
-        }
+        // if (storeResult?.error) {
+        //   socket.emit("Room_notification", {
+        //     message: "Something went wrong, please try again later!",
+        //   });
+        //   return;
+        // }
+        // }
 
         // Broadcast the message
-        if (users.username !== "SYSTEM") {
-          await UpdateTheRoomChatCache(
-            room_id,
-            message,
-            sent_at || new Date().toISOString,
-            sent_by,
-            users
-          );
-        }
+        // if (users.username !== "SYSTEM") {
+        await UpdateTheRoomChatCache(
+          room_id,
+          message,
+          sent_at || new Date().toISOString,
+          sent_by,
+          users
+        );
+        // }
 
         io.to(room_id).emit("recieved_message", {
           message_id,
@@ -409,7 +376,7 @@ export const initializeSocketIo = (httpServer) => {
         return { error: "Either username or room_id not found" };
       }
       // console.log(`${username} is typing`);
-      io.to(room_id).emit("someone-typing", username);
+      io.to(room_id).emit("someone-typing", `${username} is typing `);
     });
 
     // disconnect the server
@@ -454,7 +421,7 @@ export const UpdateTheRoomChatCache = async (
     // 2. ALWAYS push the message. The list is created if it doesn't exist.
     multi
       .rPush(roomChatCacheKey, stringifiedMessage)
-      .lTrim(ConversationCacheKey, -MAX_HISTORY, -1); //remove and older message after reaching a certain limit
+      .lTrim(roomChatCacheKey, -MAX_HISTORY, -1); //remove and older message after reaching a certain limit
 
     // 3. ALWAYS reset the expiry (to keep the cache alive with activity).
     // This is the correct behavior for chat cache (time should reset on new message).

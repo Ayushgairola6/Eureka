@@ -6,9 +6,11 @@ import {
   SearchQueryResults,
 } from "../OnlineSearchHandler/WebSearchHandler.js";
 import {
+  CHAT_ROOM_WEB_SEARCH_PROMPT,
   CHATROOM_IDENTIFIER_PROMPT,
   CHATROOM_SYNTHESIS_PROMPT,
   IDENTIFIER_PROMPT,
+  IntentIdentifier,
   KNOWLEDGE_DISTRIBUTOR_PROMPT,
 } from "../Prompts/Prompts.js";
 import {
@@ -16,20 +18,35 @@ import {
   ExeCuteContextEngines,
 } from "../Synthesis/Identifier.js";
 import {
+  EmitEvent,
   getIo,
   UpdateTheRoomChatCache,
 } from "../websocketsHandler.js/socketIoInitiater.js";
 import { index } from "./fileControllers.js";
 import {
+  FindIntent,
   genAI,
   GenerateResponse,
   HandleSummarizationOfChats,
+  IdentifyUserRequest,
   SynthesisResponseGenerator,
 } from "./ModelController.js";
 import { supabase } from "./supabaseHandler.js";
 import { v4 as uuidv4 } from "uuid";
 import { ProcessUserQuery } from "./UserCreditLimitController.js";
 import { cp } from "fs";
+import {
+  FormatSessionHistory,
+  HandleDeepWebResearch,
+} from "./FeaturesController.js";
+import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
+import {
+  FilterUrlForExtraction,
+  FormattForLLM,
+  GetDataFromSerper,
+  ProcessForLLM,
+} from "../OnlineSearchHandler/WebCrawler.js";
+import { HandlePreProcessFunctions } from "../Synthesis/helper_functions.js";
 
 // string type validator
 const IsAString = (value) => {
@@ -745,61 +762,112 @@ export const GetDocumentChatHistory = async (req, res) => {
 
 export const GetMisallaneousChatHistory = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
-    // const IsPremiumUser = req.user.PaymentStatus;
+    const user = req.user;
+    const user_id = user.user_id;
+    const cursor = req.query.cursor; // Expecting ISO date string or null
 
+    // Validate User
     if (!user_id) {
-      return res.status(402).send({ message: "Please login to continue" });
+      return res.status(401).send({ message: "Please login to continue" });
     }
 
-    // 1. Get the cursor (timestamp of the last fetched chat) from the request query
-    const cursor = req.query.cursor; // Expecting an ISO date string, e.g., from the client's previous request
-    const limit = 5; // Define your limit
+    // Only use cache for the FIRST page (no cursor).
+    const key = `history:v1:${user_id}:miscellaneous`;
 
-    let { data, error } = await supabase
+    if (!cursor) {
+      const exists = await redisClient.exists(key);
+      if (exists) {
+        const limit = user.PaymentStatus === true ? 10 : 5;
+        // Fetch requested amount from cache
+        const cachedChats = await redisClient.lRange(key, 0, limit - 1);
+
+        if (cachedChats.length > 0) {
+          const parsedChats = [];
+
+          // Safe parsing loop
+          for (const jsonString of cachedChats) {
+            try {
+              parsedChats.push(JSON.parse(jsonString));
+            } catch (e) {
+              parsedChats.length = 0;
+              break;
+            }
+          }
+
+          if (parsedChats.length > 0) {
+            const nextCursor =
+              parsedChats[parsedChats.length - 1]?.created_at || null;
+
+            return res.status(200).send({
+              message: "History found (Cache)",
+              data: parsedChats,
+              nextCursor,
+            });
+          }
+        }
+      }
+    }
+
+    const limit = 5; // Define your limit per page
+
+    let query = supabase
       .from("Conversation_History")
-      .select(" created_at, question, AI_response,metadata")
+      .select("created_at, question, AI_response, metadata")
       .eq("user_id", user_id)
       .is("document_id", null)
-      .order("created_at", { ascending: false }) // Order newest first
+      .order("created_at", { ascending: false }) // Newest first
       .limit(limit);
 
-    // results older than current timestamp
-    if (cursor) {
+    // Apply cursor (Load older messages)
+    if (cursor && cursor !== "null" && cursor !== "undefined") {
       query = query.lt("created_at", cursor);
     }
 
-    // const { data, error } = await query;
+    const { data, error } = await query;
 
     if (error) {
-      await notifyMe(
-        `Error while getting misallaneous chats by user=${req.user.username}: ${error}`
-      );
-      return res
-        .status(404)
-        .send({ message: "Error while loading chat history" });
+      return res.status(500).send({
+        message: "Something went wrong while fetching your chat history",
+      });
     }
 
-    // 3. The new cursor for the next page is the `created_at` of the oldest record in this batch
-    let nextCursor = null;
-    if (data && data.length > 0) {
-      nextCursor = data[data.length - 1].created_at;
+    // Handle Empty State
+    if (!data || data.length === 0) {
+      return res.status(200).send({
+        message: "No more chats",
+        data: [],
+        nextCursor: null,
+      });
     }
 
-    // 4. Send the data and the next cursor to the client
-    return res.send({
-      message: data.length > 0 ? "Chats found" : "No more chats",
+    if (!cursor) {
+      // Serialize
+      const serialized = data.map((msg) => JSON.stringify(msg));
+
+      // This prevents appending duplicates if the user refreshes the page
+      const multi = redisClient.multi();
+      multi.del(key);
+      multi.rPush(key, serialized); // Store Newest First (Matches DB order)
+      multi.expire(key, 60 * 60 * 24); // Expire in 24 hours
+      await multi.exec();
+    }
+
+    // Calculate next cursor safely
+    const nextCursor =
+      data.length === limit ? data[data.length - 1].created_at : null;
+
+    return res.status(200).send({
+      message: "Chats found",
       data: data,
-      nextCursor: nextCursor,
-      hasMore: data.length === limit,
+      nextCursor,
     });
   } catch (err) {
-    console.error(err);
-    await notifyMe(`"Error while getting miscellaneous chats:", ${err}`);
+    // await notifyMe(...) // specific error handling
     return res.status(500).send({ message: "Something went wrong!" });
   }
 };
 
+// Handles one document scope rag operations for the users in the chatroom
 export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
   try {
     const userId = req.user.user_id;
@@ -955,9 +1023,12 @@ export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
     );
     return res.status(200).send({ answer: AnswerToQuestion });
   } catch (error) {
-    return res.satus(500).send({ message: "Something went wrong" });
+    await notifyMe(
+      "room doc rag error in chatroom controller line 1010",
+      error
+    );
 
-    await notifyMe(error);
+    return res.satus(500).send({ message: "Something went wrong" });
   }
 };
 //web search handler for rooms
@@ -970,42 +1041,250 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       return res.status(401).send({ message: "Please login to continue" });
     }
 
-    const { room_id, MessageId, query } = req.body;
+    const { room_id, MessageId, query, web_search_depth } = req.body;
 
-    if (!room_id || !MessageId || !query) {
-      await notifyMe("Something is wrong in the chatRoomWebSearchHandler");
-      return res.status(400).send({ message: "Something went wrong" });
-    }
-    const webResults = await SearchQueryResults(query.trim(), req.user);
-    if (!webResults || webResults.error) {
-      await notifyMe("web search error", webResults.error);
-
-      return res.status(400).send({ message: "Something went wrong" });
-    }
-
-    let Formattedresult = formatForGemini(webResults.response);
-    if (!Formattedresult) {
-      // console.log(Formattedresult);
+    if (
+      !room_id ||
+      typeof room_id !== "string" ||
+      !MessageId ||
+      typeof MessageId !== "string" ||
+      !query ||
+      typeof query !== "string" ||
+      !web_search_depth ||
+      typeof web_search_depth !== "string"
+    ) {
       return res.status(400).send({
         message:
-          "There are many users using our service right now, that is why I am having issues while processing your request right now. I want apologize for the inconvenience. If this issue presists you can contact the support team.",
+          "Some parameters are missng , this is not a problem from your side, please wait while we fix this issue , we appreciate your patience!",
       });
     }
 
-    const ChatHistory = await ExtractChatHistory(room_id, req.user);
-    if (ChatHistory && ChatHistory.length > 0) {
-      ChatHistory.map(
-        (li, i) => (Formattedresult += `index=${i}&content=${li}`)
-      );
-    }
-    // creating  response for the user
-    let AnswerToQuestion = await GenerateResponse(
-      query,
-      Formattedresult,
-      WEB_SEARCH_DISTRIBUTOR_PROMPT,
-      req.user.PaymentStatus
-    );
+    // if user isnot premium user block their request
+    // const checkpaymentStatus = await CheckUserPlanStatus(req.user.user_id);
 
+    // if (!checkpaymentStatus || checkpaymentStatus?.error) {
+    //   EmitEvent(room_id, "recieved_message", {
+    //     message_id: MessageId,
+    //     sent_by: null,
+    //     message: `User ${req.user.username} is not a premium member that is why they cannot peform web search in a chat room`,
+    //     room_id: room_id,
+    //     users: { username: "AntiNode" },
+    //     sent_at: currentTime || new Date().toISOString(),
+    //   });
+    //   return res.status(400).send({
+    //     message: `User ${req.user.username} is not a premium member that is why they cannot peform web search in a chat room`,
+    //   });
+    // }
+
+    // if (
+    //   // checkpaymentStatus.isPaid === false &&
+    //   web_search_depth !== "deep_web"
+    // ) {
+    //   return res.status(400).send({
+    //     message: "You need a premium plan in order to access deep web search.",
+    //   });
+    // }
+    let InDepthQueries = [];
+    // check the quota status of the user
+    // const UpdateState = await ProcessUserQuery(req.user, "web_search");
+
+    // // if user has reached the
+    // if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
+    //   return res.status(400).send({
+    //     message: `User ${req.user.username} has exhausted their monthly quota to participate in the additional feature of the room, ${req.user.username} you can get our premium plan right now and continue the research with your teams right away or wait please wait till it renews.`,
+    //   });
+    // }
+
+    let WebResults;
+    // if the query type is deep_web
+    if (web_search_depth === "deep_web") {
+      EmitEvent(room_id, "query_status", {
+        MessageId,
+        status: {
+          message: `Understanding_Intent`,
+          data: [`I am now Breaking down ${req.user.username}'s intent`],
+        },
+      });
+      // break the query into subquries for deep_research and google dorking stuff
+      const IdentifyUserIntent = await FindIntent(IntentIdentifier, query);
+
+      if (IdentifyUserIntent?.error) {
+        return res.status(400).send({
+          message:
+            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+        });
+      }
+
+      // convert the queries into a series of array of strings
+      const FormattedQueries = FilterIntent(IdentifyUserIntent); //create an array of quries
+
+      if (
+        !Array.isArray(FormattedQueries) ||
+        FormattedQueries?.error ||
+        FormattedQueries?.length === 0
+      ) {
+        return res.status(400).send({
+          message:
+            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+        });
+      }
+      InDepthQueries = [...FormattedQueries];
+      EmitEvent(room_id, "query_status", {
+        MessageId,
+        status: {
+          message: `Crawling_deep_web`,
+          data: [
+            `Crawling deep web for following queries ,${JSON.stringify(
+              FormattedQueries
+            )}`,
+          ],
+        },
+      });
+
+      // send queries to the crawler to scrape
+      const FinalLinksToScrape = await HandleDeepWebResearch(
+        FormattedQueries,
+        req.user,
+        room_id
+      );
+
+      if (FinalLinksToScrape?.length === 0) {
+        return res.status(400).send({
+          message:
+            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+        });
+      }
+
+      // parse the results and extract organic results and convert it into an array of link(string)
+      let LinksToFetch = [];
+      // handle each source links extraction
+      FinalLinksToScrape.forEach((li) => {
+        if (li) {
+          const data = FilterUrlForExtraction(li, req.user, MessageId, room_id);
+          LinksToFetch.push(data);
+        }
+      });
+
+      // as the results array will be nested we flat it
+      const FlatLinks = LinksToFetch.flat();
+
+      if (FlatLinks.length === 0) {
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
+
+      // web send the links to the crawler to scrape and process
+      const CleanedWebData = await ProcessForLLM(
+        FlatLinks,
+        req.user,
+        query,
+        MessageId,
+        room_id
+      );
+
+      if (!CleanedWebData || CleanedWebData.length === 0) {
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
+
+      // we put the results in the webResults array
+      WebResults = FormattForLLM(CleanedWebData);
+    } else {
+      // const response = await GetDataFromSerper(
+      //   query,
+      //   req.user,
+      //   MessageId,
+      //   room_id
+      // );
+
+      // if (!response) {
+      //   return res
+      //     .status(400)
+      //     .send({ message: "An error occured while processing your request" });
+      // }
+      // const response
+
+      // convert the results into array of links
+      // const LinksToFetch = FilterUrlForExtraction(
+      //   response,
+      //   req.user,
+      //   MessageId,
+      //   room_id
+      // );
+      const LinksToFetch = [
+        "https://www.worldwidecancerresearch.org/our-latest-news/news-and-press/our-top-cancer-research-breakthroughs-of-2025/",
+        "https://ccr.cancer.gov/news/new-discoveries",
+        "https://www.ucsf.edu/news/2025/11/431086/undruggable-unstoppable-new-cancer-cure-target-emerges",
+        "https://www.mskcc.org/news/top-cancer-treatment-advances-at-msk-in-2025",
+        "https://www.weforum.org/stories/2025/02/cancer-treatment-and-diagnosis-breakthroughs/",
+        "https://news.gsu.edu/research-magazine/breakthrough-cancer-therapy-moves-to-phase-2-trials",
+        "https://www.mdanderson.org/cancerwise/11-new-research-advances-from-the-past-year.h00-159703068.html",
+        "https://www.mayoclinic.org/medical-professionals/cancer/news",
+        "https://www.uptodate.com/contents/whats-new-in-oncology",
+        "https://www.nature.com/natcancer/",
+      ];
+
+      if (LinksToFetch.length === 0) {
+        console.log("Links to fetch is an empty array");
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
+
+      EmitEvent(room_id, "query_status", {
+        MessageId,
+        status: {
+          message: `Reading_links`,
+          data: LinksToFetch,
+        },
+      });
+
+      // scrape and optimize the context for the llm
+      const CleanedWebData = await ProcessForLLM(
+        LinksToFetch,
+        req.user,
+        query,
+        MessageId,
+        room_id
+      );
+
+      if (CleanedWebData.length === 0) {
+        console.log("Cleaned web data is not found:", cleanedWebData);
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
+
+      // give it to the model
+      WebResults = FormattForLLM(CleanedWebData);
+    }
+    if (
+      !WebResults ||
+      WebResults?.error ||
+      WebResults?.FinalContent?.length === 0
+    ) {
+      console.log("web results failed to generate:", WebResults);
+      return res
+        .status(400)
+        .send({ message: "An error occured while processing your request" });
+    }
+    // console.log("This are the final web results:", WebResults);
+
+    // await CacheCurrentChat(message, req.user);
+    const WebResultPrompt = CHAT_ROOM_WEB_SEARCH_PROMPT;
+
+    let AnswerToQuestion = await GenerateResponse(
+      InDepthQueries.length > 0
+        ? `These are subqueries obtained by understanding the user request created by you earlier use these within your response to make your research to be authentic=${JSON.stringify(
+            InDepthQueries
+          )}&UserQuery=${query}`
+        : query,
+      JSON.stringify(WebResults.FinalContent),
+      WebResultPrompt,
+      req.user
+    );
     if (!AnswerToQuestion || AnswerToQuestion.error) {
       // AnswerToQuestion = FormatForHumanFallback(webResults.response).text;
       return res.status(400).send({
@@ -1047,16 +1326,13 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
     );
     const FormattedFavIcon = {
       MessageId: MessageId,
-      favicon: webResults.favicon || [],
+      favicon: WebResults.favicons || [],
     };
     return res.send({
       answer: AnswerToQuestion,
       favicon: FormattedFavIcon,
     });
-    // console.log(Formattedresult);
-    return;
   } catch (error) {
-    console.error(error);
     await notifyMe("Error in quey web in chatRoomController.js", error);
 
     return res.status(500).send({ message: "Something went wrong" });
@@ -1075,12 +1351,12 @@ export const GetSyntheSizedResults = async (req, res) => {
       // console.log(req.body);
       return res.status(400).send({ message: "Some fields are missing" });
     }
-const UpdateState = await ProcessUserQuery(req.user, "Synthesis");
+    const UpdateState = await ProcessUserQuery(req.user, "Synthesis");
 
     // if user has reached the
     if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
       return res.status(200).send({
-        Answer: UpdateState.message,
+        Answer: `${user.username}'s monthly quota has finished in order for them to continue using advanced feature they can either become a pro member or wait till next month for renewal.`,
         message: "Response found",
         docUsed: [],
       });
@@ -1090,7 +1366,8 @@ const UpdateState = await ProcessUserQuery(req.user, "Synthesis");
       user,
       question,
       documents,
-      room_id
+      room_id,
+      MessageId
     );
 
     if (!ProcessQuery?.SynthesizedResponse) {
@@ -1121,14 +1398,7 @@ const UpdateState = await ProcessUserQuery(req.user, "Synthesis");
         `An error occured of critical level occured when storing chat history in the db at ${currentTime}`
       );
     }
-    const RateLimit = await ProcessQuery(user, "Synthesis");
-    if (RateLimit.status.trim().toLowerCase().includes("not ok")) {
-      return res.status(200).send({
-        Answer: RateLimit.message,
-        message: "Todays quota has finished!",
-        docUsed: [],
-      });
-    }
+
     // update the cache for AntiNode
     await UpdateTheRoomChatCache(
       room_id,
@@ -1141,11 +1411,14 @@ const UpdateState = await ProcessUserQuery(req.user, "Synthesis");
       Answer: ProcessQuery?.SynthesizedResponse,
     });
   } catch (synthesisError) {
-    console.error(synthesisError);
     await notifyMe(
       "An error occured while creating a synthesized result in a chatroom",
       synthesisError
     );
+    return res.status(500).send({
+      message:
+        "Our AI models seems to be overloaded right now we are sorry for the iconvenience.",
+    });
   }
 };
 
@@ -1153,71 +1426,188 @@ export async function IdentifyRequestInputs(
   user,
   question,
   selectedDocuments,
-  room_id
+  room_id,
+  MessageId
 ) {
   try {
-    let FinalString = `${CHATROOM_IDENTIFIER_PROMPT}_This is the users question=${question}`; //command for the model
+    // if they have manually selected any documents let fetch the metadata of those docs
+    let metadata = [];
+    if (selectedDocuments?.length > 0) {
+      await Promise.all(
+        selectedDocuments.map(async (id) => {
+          if (id) {
+            const { data, error } = await supabase
+              .from("Contributions")
+              .select("feedback,metadata")
+              .eq("document_id", id)
+              .eq("user_id", user.user_id)
+              .single();
+            if (error) {
+              return res.status(400).send({
+                message: "There is not such document in the cloud bucket",
+                data: "",
+              });
+            }
+            metadata.push(data);
+          }
+        })
+      );
+      // console.log(metadata);
+      if (!metadata || metadata?.length === 0) {
+        return res.status(400).send({
+          message:
+            "Please select a valid document and specfic about your request.",
+        });
+      }
+    }
 
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: [{ role: "user", parts: [{ text: FinalString }] }],
-      generationConfig: {
-        temperature: 0.4,
-        topP: 0.95,
-        topK: 20,
-        maxOutputTokens: 200, ///maximum 300 characters output
-      },
-    });
+    if (metadata) {
+      EmitEvent(user.user_id, "query_status", {
+        MessageId,
+        status: {
+          message: "Metadata_analysis",
+          data: [
+            `Analyzed the metadata of the for selected-documents ${JSON.stringify(
+              selectedDocuments
+            )}`,
+          ],
+        },
+      });
+    }
+    // prepare a basic first step context for the model
+    const context = `This is the users question=${question}and these are the manually selected user documents ${JSON.stringify(
+      selectedDocuments
+    )}and this is the information of selected documents=${
+      metadata ? metadata : "['No metadata found in the database']"
+    } `; //command for the model
 
-    const responseText = result.text;
-    //     ask_pr
-    // ivate(doc_id="AUTO", query="Analyze and underst
-    // and skeptical points in the research report");
-    // GetDoc_info(doc_id="AUTO")
+    // request for inten identification
+    const responseText = await IdentifyUserRequest(context, IDENTIFIER_PROMPT);
     if (!responseText) {
       await notifyMe(
         `Error while generating a response , the code execution results are these`
+        // JSON.stringify(result.codeExecutionResult)
       );
       return { error: "The server is very busy , please try again !" };
     }
 
-    const io = getIo();
-    if (io) {
-      io.to(user.user_id).emit("SynthesisStatus", "Dissecting Request");
+    EmitEvent(user.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: "Understanding Request",
+        data: ["Calling tools"],
+      },
+    });
+
+    // extract the function as well as the confidence score of the model
+    const ExtractedFunctions = CentralFunctionProcessor(
+      responseText,
+      user,
+      MessageId
+    ); //clearing the function string
+
+    //if there is no confidence score or the functions or error
+    if (
+      !ExtractedFunctions?.confidence ||
+      ExtractedFunctions.PreProcessFunctions.length === 0 ||
+      ExtractedFunctions.error
+    ) {
+      return { error: "An error occured while processing your request" };
     }
-    const ExtractedFunctions = CentralFunctionProcessor(responseText, io); //clearing the function string
+
+    //if there is a message
+    if (ExtractedFunctions?.message) {
+      return { error: ExtractedFunctions?.message };
+    }
+
+    // list the functions that are needed to pre process the requests
+    let PreProcessedData;
+    //if the confidence is low call the functions that are required
+    if (ExtractedFunctions.confidence === "low") {
+      PreProcessedData = await HandlePreProcessFunctions(
+        ExtractedFunctions.PreProcessFunctions,
+        user,
+        selectedDocuments
+      );
+
+      if (!PreProcessedData || PreProcessedData?.error) {
+        return {
+          error:
+            "Looks like something went wrong while processing your request.",
+        };
+      }
+
+      // if both the fields are empty
+      if (
+        PreProcessedData.AlldocumentInformation?.length === 0 &&
+        PreProcessedData.context_by_uuid.length === 0
+      ) {
+        return {
+          error:
+            "Looks like something went wrong while processing your request.",
+        };
+      }
+    }
+
+    //if there is preprocesed data re run the loop
+    const SecondTimeresponseText = await IdentifyUserRequest(
+      context,
+      IDENTIFIER_PROMPT
+    );
+    if (!SecondTimeresponseText) {
+      await notifyMe(
+        `Error while generating a response , the code execution results are these`
+        // JSON.stringify(result.codeExecutionResult)
+      );
+      return { error: "The server is very busy , please try again !" };
+    }
+
+    //rpcess the functions if the request was low confident for the first time
+    const ExtractFUnctionsAgain = CentralFunctionProcessor(
+      SecondTimeresponseText,
+      user,
+      MessageId
+    ); //clearing the function string
+
+    //if there is no confidence score or the functions or error
+    if (
+      !ExtractFUnctionsAgain?.confidence ||
+      ExtractFUnctionsAgain.PreProcessFunctions.length === 0 ||
+      ExtractFUnctionsAgain.error
+    ) {
+      return { error: "An error occured while processing your request" };
+    }
     // console.log(ExtractedFunctions);
+    EmitEvent(user.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: "Creating functions",
+        data: [JSON.stringify(ExtractedFunctions)],
+      },
+    });
 
-    if (ExtractedFunctions.length < 0) {
-      return {
-        SynthesizedResponse:
-          "I was unable to understand your request, if you could be more specific about your requirements, I will be able to process a better response",
-      };
-    }
-
-    if (io) {
-      io.to(user.user_id).emit("SynthesisStatus", "Finding sources");
-    }
-
-    //process the query
-
+    // gather the context from all the required sources
     const smartExecResult = await ExeCuteContextEngines(
-      ExtractedFunctions,
+      ExtractFUnctionsAgain,
       user,
       selectedDocuments,
-      io
+      MessageId
     );
 
-    if (!smartExecResult || smartExecResult.message) {
-      return {
-        SynthesizedResponse: "An error occured while processing your request",
-      };
-    }
-    const PastChats = await ExtractChatHistory(room_id, user);
-    if (PastChats.length > 0) {
-      smartExecResult.pastConversation = [...PastChats];
+    if (!smartExecResult.GlobalContextObject || smartExecResult.error) {
+      await notifyMe(
+        "An error occured in the chatrooom synthesis controller line 1539 ",
+        smartExecResult?.error
+      );
+      return { error: "An error occured while processing your request" };
     }
 
+    const PastChats = await ExtractChatHistory(room_id, user);
+    if (PastChats.length > 0) {
+      smartExecResult.GlobalContextObject.pastConversation = [...PastChats];
+    }
+
+    // generate a response for the room
     const ModelResponse = await SynthesisResponseGenerator(
       JSON.stringify(smartExecResult),
       question,
@@ -1226,11 +1616,10 @@ export async function IdentifyRequestInputs(
     );
 
     if (ModelResponse.error) {
-      return { SynthesizedResponse: ModelResponse.error };
+      return { error: ModelResponse.error };
     }
 
     //incremetn query counter
-    
 
     return { SynthesizedResponse: ModelResponse };
   } catch (SynthesisError) {

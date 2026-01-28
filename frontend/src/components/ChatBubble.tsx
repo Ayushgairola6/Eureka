@@ -3,11 +3,13 @@ import ResponseFeedback from "./ResponseFeedback.tsx";
 import { BiCopy } from "react-icons/bi";
 import { useAppSelector } from "../store/hooks.tsx";
 import { toast } from "sonner";
-import { IoHourglass } from "react-icons/io5";
+import { Loader } from "@/components/Prompt_Requesr_Indicator.tsx";
 import DocUsed from "@/components/DocumentsUsed.tsx";
 import WebSearchStatus from "./web_search_status.tsx";
 import { ChatMessage } from "./Streaming_Component.tsx";
 import { AgentWelcome } from "./InterfaceWelcome_Components.tsx";
+import { ChevronDown } from "lucide-react";
+
 // import {
 //   Bar,
 //   BarChart,
@@ -29,10 +31,11 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   setIsActive,
 }) => {
   const ReceivedResponseId: any = []; //just a tracker array
-  const { Chats, ResponseStatus, CurrentTheme } = useAppSelector(
+  const { Chats, ResponseStatus, question } = useAppSelector(
     (state) => state.interface
   );
-  const { currentStatus, web_search_status } = useAppSelector(
+  const [showCurrent, setShowCurrent] = React.useState({ id: '', status: false })
+  const { web_search_status } = useAppSelector(
     (state) => state.socket
   );
   const [docused, setShowDocUsed] = useState(false);
@@ -83,11 +86,10 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 }
               }}
               key={`chat-${index}-${chat.sent_by}`}
-              className={`w-full md:w-3/5 relative  overflow-x-hidden ${
-                chat === Chats[Chats.length - 1] && Chats.length > 1
-                  ? "mb-160"
-                  : "mb-5"
-              }`}
+              className={`w-full md:w-3/5 relative  overflow-x-hidden ${chat === Chats[Chats.length - 1] && Chats.length > 1
+                ? "mb-160"
+                : "mb-5"
+                }`}
             >
               {/* Chat Bubble Container */}
               <div className="space-y-8 ">
@@ -101,70 +103,78 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                     setShowDocUsed={setShowDocUsed}
                   />
                 )}
-
+                {chat.sent_by === 'AntiNode' && chat.message.content !== '' && web_search_status.some((e) => e.MessageId === chat.id) && <WebSearchStatus chat={chat} lastMessageId={chat.id} />}
                 {chat.sent_by === "AntiNode" &&
-                chat.message.content === "" &&
-                chat.id === Chats[Chats.length - 1].id ? (
-                  web_search_status?.length > 0 ? (
-                    <WebSearchStatus chat={chat} lastMessageId={chat.id} />
-                  ) : (
-                    <ul className="space-grotesk text-lg  my-2 flex items-center justify-start gap-2  w-fit   relative overflow-hidden border rounded-xl border-gray-700 p-[1px]">
-                      <div className=" absolute top-0 left-0   h-full w-full  bg-gradient-to-br from-red-600 via-sky-600 to-yellow-600 z-[-2] ThinkingIndicator " />
-
-                      <p className="flex items-center bg-white dark:bg-black h-[90%] w-full rounded-xl justify-center gap-2 px-2 py-2 space-grotesk text-sm">
-                        <IoHourglass className="animate-spin" />
-                        {currentStatus}
-                      </p>
-                    </ul>
-                  )
-                ) : (
-                  <div
-                    className={`px-3 py-2 rounded-2xl transition-all duration-200 ease-in-out shadow-sm text-md text-wrap space-grotesk ${
-                      chat.sent_by === "You"
-                        ? "max-w-[80%] justify-self-end rounded-br-none " +
-                          CurrentTheme.user + // Slack-ish primary blue
-                          "font-medium self-end items-center justify-center"
-                        : " w-full justify-self-start rounded-bl-none " +
-                          CurrentTheme.ai
-                    }`}
-                  >
-                    {chat.sent_by !== "You" && (
-                      <button
-                        onClick={() => {
-                          if (navigator.clipboard) {
-                            navigator.clipboard.writeText(chat.message.content);
-                            toast.info("Copied to clipboard");
-                            return;
-                          }
-                        }}
-                      >
-                        <BiCopy />
-                      </button>
-                    )}
-                    <ChatMessage
-                      chat={chat}
-                      lastMessageId={Chats[Chats.length - 1].id}
-                    />
-                    {/* Timestamp */}
-                    {chat.sent_at && (
-                      <span
-                        className={`text-xs  block mt-1 ${
-                          chat.sent_by === "You"
-                            ? "justify-self-end dark:text-gray-700 text-gray-300"
-                            : "justify-self-start text-gray-700 dark:text-gray-400"
+                  chat.message.content === ""
+                  ? (
+                    web_search_status?.length > 0 ? (
+                      <WebSearchStatus chat={chat} lastMessageId={chat.id} />
+                    ) : (
+                      <Loader />
+                    )
+                  ) : (<>
+                    <div
+                      className={`relative group flex flex-col gap-2 mb-6 ${chat.sent_by === "You" ? "items-end ml-auto" : "items-start"
                         }`}
+                    >
+                      {/* Header Label: Keeping that Industrial vibe */}
+                      <div className="flex items-center justify-center gap-2 px-1">
+                        <ul>
+                          {chat.sent_by === "You" && <button onClick={() => {
+                            if (showCurrent?.id === chat.id) {
+                              setShowCurrent({ id: '', status: false })
+                            } else {
+                              setShowCurrent({ id: chat?.id.toString(), status: true })
+                            }
+                          }}><ChevronDown size={15} /></button>}
+                        </ul>
+                        <span className="text-[10px] font-mono font-bold dark:text-gray-300 text-gray-700 uppercase tracking-widest">
+                          {chat.sent_by === "You" ? "ORIGIN_USER" : "NODE_RESPONSE"}
+                        </span>
+                        <div className={`h-[1px] w-4 ${chat.sent_by === "You" ? "bg-orange-600" : "bg-blue-600"}`} />
+                      </div>
+                      <div
+                        className={`relative transition-all duration-500 ease-in-out border shadow-sm
+      ${chat.sent_by === "You"
+                            ? "dark:bg-white bg-black dark:text-black text-white border-transparent rounded-2xl rounded-tr-none px-4 py-3 w-full md:w-120"
+                            : "dark:bg-black bg-gray-50 dark:text-neutral-200 text-black border-neutral-200 dark:border-neutral-800 rounded-2xl rounded-tl-none px-5 py-4"
+                          } 
+      ${chat.sent_by === 'You' && showCurrent?.id === chat.id && showCurrent.status
+                            && question.trim().length > 30 ? "h-[500px] w-full overflow-y-auto no-scrollbar"
+                            : "h-[120px] w-full overflow-hidden"} 
+       `}
                       >
-                        {chat.sent_at}
-                      </span>
-                    )}
-                  </div>
-                )}
+                        {chat.sent_by !== "You" && (
+                          <button
+                            onClick={() => {
+                              if (navigator.clipboard) {
+                                navigator.clipboard.writeText(chat.message.content);
+                                toast.info("Copied to clipboard");
+                                return;
+                              }
+                            }}
+                          >
+                            <BiCopy />
+                          </button>
+                        )}
+                        <ChatMessage
+                          chat={chat}
+                          lastMessageId={Chats[Chats.length - 1].id}
+                        />
+                      </div>
+                      {chat.sent_at && (
+                        <section className='flex items-center justify-end gap-2 text-xs space-grotesk  text-gray-600 dark:text-gray-400'>
+                          {chat.sent_at?.split("|").join("-")}
+                        </section>
 
-                {/* Feedback for AI responses - positioned below the bubble */}
+                      )}
+                    </div>
+                  </>
+                  )}
 
-                {/* if the message is last and is not stored in the responsefeedback array and is sent by AntiNode */}
+
                 {chat.sent_by !== "You" &&
-                  ResponseStatus?.find((i) => i.id === chat.id) === false && (
+                  !ResponseStatus.some((i) => i.id === chat.id) && (
                     <div className="mt-2">
                       <ResponseFeedback
                         ReceivedResponseId={ReceivedResponseId}
@@ -175,7 +185,9 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 {Chats.length > 0 && (
                   <div ref={chatcontainer} className="h-0" />
                 )}
+
               </div>
+
             </div>
           );
         })
@@ -185,6 +197,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
           isActive={isActive}
           setIsActive={setIsActive}
         />
+
       )}
     </>
   );

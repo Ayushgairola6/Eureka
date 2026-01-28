@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { motion, AnimatePresence } from "framer-motion";
-import { GetMisallaneousChatHistory } from "../store/chatRoomSlice";
+import { GetMisallaneousChatHistory, setCursor } from "../store/chatRoomSlice";
 import {
   FiArrowLeft,
   FiCopy,
@@ -43,7 +43,7 @@ const OtherChats = () => {
     if (Misallaneouschats.length === 0 && !apiCallRef.current) {
       apiCallRef.current = true;
       dispatch(GetMisallaneousChatHistory(cursor))
-        .unwrap()
+        .unwrap().then((res) => toast.message(res.message))
         .catch((err) => toast.error(err.message));
     }
   }, [dispatch]);
@@ -65,8 +65,8 @@ const OtherChats = () => {
       const searchValue = e.target.value.toLowerCase().trim();
       const filteredResults = searchValue
         ? Misallaneouschats.filter((obj) =>
-            obj.question.toLowerCase().includes(searchValue)
-          )
+          obj.question.toLowerCase().includes(searchValue)
+        )
         : Misallaneouschats;
       SetSearchResult(filteredResults);
     },
@@ -93,8 +93,17 @@ const OtherChats = () => {
     setExpandedCard(expandedCard === cardId ? null : cardId);
   };
 
+  function HandleFetchMoreHistory() {
+    const lastMessageCreatedAt = Misallaneouschats[Misallaneouschats.length - 1]?.created_at;
+    if (!lastMessageCreatedAt) {
+      return
+    }
+    dispatch(setCursor(lastMessageCreatedAt))
+    dispatch(GetMisallaneousChatHistory(cursor)).unwrap().then((res: any) => toast.message(res.message)).catch(err => toast.error(err));
+
+  }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-gray-900 dark:to-slate-900 transition-all duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-neutral-950 dark:to-black transition-all duration-300">
       <Filters
         showFilters={showFilters}
         SetShowFilters={SetShowFilters}
@@ -107,7 +116,7 @@ const OtherChats = () => {
       />
 
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-700/50">
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-gray-950 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <button
@@ -129,14 +138,14 @@ const OtherChats = () => {
                   onChange={handleSearchResults}
                   type="text"
                   placeholder="Search conversations..."
-                  className="w-full bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm"
+                  className="w-full bg-white/50 dark:bg-neutral-900 border border-gray-200 dark:border-gray-700 rounded-sm pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent backdrop-blur-sm"
                 />
               </div>
             </div>
 
             <button
               onClick={() => SetShowFilters(true)}
-              className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg transform hover:scale-105 transition-all duration-200 shadow-md"
+              className="p-3 rounded-xl bg-black dark:bg-white dark:text-black text-white hover:shadow-lg transform hover:scale-105 transition-all duration-200 shadow-md"
             >
               <FiFilter className="w-4 h-4" />
             </button>
@@ -170,18 +179,18 @@ const OtherChats = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  transition={{ duration: 0.3, delay: index * 0.05, ease: "backInOut" }}
                   className="group"
                 >
-                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                  <div className="bg-gray-100 dark:bg-neutral-950 backdrop-blur-lg rounded-sm border-2 shadow-xl b transition-all duration-300 overflow-hidden">
                     {/* Question Header */}
                     <div
                       className="p-4 cursor-pointer"
                       onClick={() => toggleCardExpansion(message.created_at)}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                          <FaUser className="w-3 h-3 text-white" />
+                        <div className="w-8 h-8 bg-black dark:bg-white dark:text-black text-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                          <FaUser className="w-3 h-3 " />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-2">
@@ -198,7 +207,7 @@ const OtherChats = () => {
                               )}
                             </span>
                           </div>
-                          <p className="text-gray-800 dark:text-gray-100 text-sm leading-relaxed line-clamp-2">
+                          <p className="text-gray-800 dark:text-gray-100 text-sm leading-relaxed line-clamp-2 bai-jamjuree-semibold">
                             {message.question}
                           </p>
                         </div>
@@ -217,8 +226,8 @@ const OtherChats = () => {
                         >
                           <div className="p-4 ">
                             <div className="flex items-start gap-3 mb-3">
-                              <div className="w-8 h-8 bg-black  rounded-full flex items-center justify-center flex-shrink-0">
-                                <FaRobot className="w-3 h-3 text-white" />
+                              <div className="w-8 h-8 bg-black dark:bg-white dark:text-black text-white rounded-full flex items-center justify-center flex-shrink-0">
+                                <FaRobot className="w-3 h-3 " />
                               </div>
                               <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                                 AntiNode
@@ -226,7 +235,7 @@ const OtherChats = () => {
                             </div>
 
                             <div className="pl-11">
-                              <div className="prose prose-sm max-w-none dark:prose-invert">
+                              <div className="  max-w-none dark:prose-invert space-grotesk">
                                 {/* <div className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed"> */}
                                 <Streamdown>{message.AI_response}</Streamdown>
                                 {/* </div> */}
@@ -314,15 +323,12 @@ const OtherChats = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                dispatch(GetMisallaneousChatHistory(cursor));
-              }}
+              onClick={() => HandleFetchMoreHistory()}
               disabled={gettingChats}
-              className={`px-6 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
-                gettingChats
-                  ? "bg-green-500 text-white"
-                  : "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl"
-              } flex items-center gap-2`}
+              className={`px-6 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${gettingChats
+                ? "bg-indigo-500 text-white"
+                : "bg-black text-white dark:bg-white dark:text-black shadow-lg hover:shadow-xl"
+                } flex items-center gap-2`}
             >
               {gettingChats ? (
                 <>

@@ -141,178 +141,109 @@ apiInstance.setApiKey(
 );
 const commonStyles = `
   body { 
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
     line-height: 1.6; 
-    color: #e2e8f0; 
+    color: #374151; 
     margin: 0; 
     padding: 0; 
-    background-color: #09090b; 
+    background-color: #f9fafb; 
   }
   .container { 
-    max-width: 600px; 
+    max-width: 580px; 
     margin: 40px auto; 
-    background: #18181b; 
-    border: 1px solid #27272a;
-    border-radius: 16px; 
+    background: #ffffff; 
+    border: 1px solid #e5e7eb;
+    border-radius: 8px; 
     overflow: hidden; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
   }
   .header { 
-    background: #18181b; 
-    border-bottom: 1px solid #27272a;
-    padding: 32px 20px; 
-    text-align: center; 
+    background: #ffffff; 
+    padding: 32px 28px 24px; 
+    border-bottom: 1px solid #e5e7eb;
   }
-  .brand-text {
-    background: linear-gradient(to right, #22d3ee, #818cf8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
+  .logo {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ea580c;
     margin: 0;
+    letter-spacing: -0.3px;
   }
   .content { 
-    padding: 40px 32px; 
+    padding: 32px 28px; 
   }
   h2 {
-    color: #f8fafc;
-    font-size: 20px;
+    color: #111827;
+    font-size: 18px;
     font-weight: 600;
-    margin-top: 0;
+    margin: 0 0 16px 0;
+    line-height: 1.4;
   }
   p {
-    color: #94a3b8;
+    color: #4b5563;
     font-size: 15px;
-    margin-bottom: 24px;
+    margin: 0 0 16px 0;
+    line-height: 1.6;
   }
   .button { 
     display: inline-block; 
-    padding: 14px 32px; 
-    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); 
-    color: white; 
+    padding: 12px 28px; 
+    background: #ea580c; 
+    color: #ffffff; 
     text-decoration: none; 
-    border-radius: 8px; 
+    border-radius: 6px; 
     font-weight: 600; 
     font-size: 14px;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+    margin: 8px 0;
   }
-  .highlight-box {
-    background: rgba(39, 39, 42, 0.5);
-    border: 1px solid #3f3f46;
-    border-radius: 8px;
-    padding: 20px;
-    margin: 24px 0;
+  .info-box {
+    background: #f9fafb;
+    border-left: 3px solid #ea580c;
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin: 20px 0;
+  }
+  .details-table {
+    width: 100%;
+    font-size: 14px;
+    margin: 12px 0;
+  }
+  .details-table td {
+    padding: 8px 0;
+    color: #6b7280;
+  }
+  .details-table td:last-child {
+    text-align: right;
+    color: #374151;
   }
   .footer { 
-    background: #09090b; 
-    border-top: 1px solid #27272a;
-    padding: 32px; 
-    text-align: center; 
-    color: #52525b; 
-    font-size: 12px; 
+    background: #f9fafb; 
+    border-top: 1px solid #e5e7eb;
+    padding: 24px 28px; 
+    color: #6b7280; 
+    font-size: 13px; 
+  }
+  .footer p {
+    margin: 0 0 8px 0;
+    color: #6b7280;
+    font-size: 13px;
   }
   .link {
-    color: #22d3ee;
+    color: #ea580c;
     text-decoration: none;
+  }
+  .muted {
+    color: #6b7280;
+    font-size: 13px;
+  }
+  strong {
+    color: #111827;
+    font-weight: 600;
   }
 `;
 
-// export const welcomeEmail = (user) => ({
-//   subject: "🎉 Welcome to AntiNode !",
-//   html: `
-// <!DOCTYPE html>
-// <html>
-// <head>
-//     <meta charset="UTF-8">
-//     <style>
-//         body {
-//             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-//             line-height: 1.6;
-//             color: #333;
-//             margin: 0;
-//             padding: 0;
-//             background-color: #f4f4f4;
-//         }
-//         .container {
-//             max-width: 600px;
-//             margin: 0 auto;
-//             background: white;
-//             border-radius: 10px;
-//             overflow: hidden;
-//             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-//         }
-//         .header {
-//             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-//             color: white;
-//             padding: 30px 20px;
-//             text-align: center;
-//         }
-//         .content {
-//             padding: 30px;
-//         }
-//         .button {
-//             display: inline-block;
-//             padding: 12px 30px;
-//             background: #667eea;
-//             color: white;
-//             text-decoration: none;
-//             border-radius: 5px;
-//             margin: 20px 0;
-//         }
-//         .footer {
-//             background: #f8f9fa;
-//             padding: 20px;
-//             text-align: center;
-//             color: #666;
-//             font-size: 12px;
-//         }
-//     </style>
-// </head>
-// <body>
-//     <div class="container">
-//         <div class="header">
-//             <h1>Welcome to Our Platform!</h1>
-//             <p>We're thrilled to have you join us</p>
-//         </div>
-
-//         <div class="content">
-//             <h2>Hello ${user.username},</h2>
-//             <p>Thank you for creating an account with us! Your journey to amazing experiences starts now.</p>
-
-//             <p>Here's what you can do next:</p>
-//             <ul>
-//                 <li>Complete your profile</li>
-//                 <li>Explore our features</li>
-//                 <li>Connect with other users</li>
-//                 <li>Start creating amazing content</li>
-//             </ul>
-
-//             <div style="text-align: center;">
-//                 <a href="${process.env.CLIENT_URL}/User/dashboard" class="button">
-//                     Get Started
-//                 </a>
-//             </div>
-
-//             <p>If you have any questions, feel free to reply to this email or visit our help center.</p>
-
-//             <p>Welcome aboard!<br>
-//             <strong>Team AntiNode</strong></p>
-//         </div>
-
-//         <div class="footer">
-//             <p>© 2024 AntiNode. All rights reserved.</p>
-//             <p>You're receiving this email because you recently created an account with us.</p>
-//         </div>
-//     </div>
-// </body>
-// </html>
-//     `,
-// });
+// 1. WELCOME EMAIL
 export const welcomeEmail = (user) => ({
-  subject: "🚀 Welcome to the Future with AntiNode",
+  subject: "Welcome to AntiNode",
   html: `
 <!DOCTYPE html>
 <html>
@@ -323,48 +254,52 @@ export const welcomeEmail = (user) => ({
 <body>
     <div class="container">
         <div class="header">
-            <h1 class="brand-text">AntiNode</h1>
+            <h1 class="logo">AntiNode</h1>
         </div>
         
         <div class="content">
-            <h2>Hello ${user.username},</h2>
-            <p>Welcome to the next generation of intelligence. You've just unlocked a powerful suite of tools designed to amplify your potential.</p>
+            <h2>Hey ${user.username || "there"},</h2>
             
-            <p>We've set up your workspace. Here is what awaits you:</p>
+            <p>Thanks for signing up. Your account is ready to go.</p>
             
-            <div class="highlight-box">
-                <ul style="list-style: none; padding: 0; margin: 0; color: #e2e8f0;">
-                    <li style="margin-bottom: 12px;">✨ <strong>Smart Synthesis:</strong> Turn data into insights instantly.</li>
-                    <li style="margin-bottom: 12px;">📊 <strong>Dynamic Visuals:</strong> See your data come to life.</li>
-                    <li>🤝 <strong>Collaborative AI:</strong> A partner that thinks with you and your team.</li>
-                </ul>
+            <p>You now have access to:</p>
+            
+            <div class="info-box">
+                <p style="margin: 0 0 10px 0; color: #d1d5db;"><strong>Smart Synthesis</strong> – Turn your data into insights</p>
+                <p style="margin: 0 0 10px 0; color: #d1d5db;"><strong>Dynamic Visuals</strong> – Charts and graphs that actually help</p>
+                <p style="margin: 0; color: #d1d5db;"><strong>Collaborative AI</strong> – Work alongside AI that gets it</p>
             </div>
 
-            <div style="text-align: center; margin-top: 32px; margin-bottom: 32px;">
+            <div style="text-align: center; margin: 28px 0;">
                 <a href="${
                   process.env.CLIENT_URL
                 }/User/dashboard" class="button">
-                    Launch Dashboard
+                    Open Dashboard
                 </a>
             </div>
 
-            <p style="font-size: 13px;">Ready to build something extraordinary?</p>
+            <p class="muted">Questions or running into issues? Just reply to this email or reach out at <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${process.env.SUPPORT_EMAIL}</a></p>
             
-            <p><strong>The AntiNode Team</strong></p>
+            <p style="margin-top: 24px;">– The AntiNode Team</p>
         </div>
         
         <div class="footer">
-            <p>© ${new Date().getFullYear()} AntiNode Inc. All rights reserved.</p>
-            <p>Transforming ideas into reality.</p>
+            <p>© ${new Date().getFullYear()} AntiNode Inc.</p>
+            <p style="margin: 0;">We're here if you need us: <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${process.env.SUPPORT_EMAIL}</a></p>
         </div>
     </div>
 </body>
 </html>
     `,
 });
-// 2. LOGIN NOTIFICATION (Security Alert)
+
+// 2. LOGIN NOTIFICATION
 export const loginNotificationEmail = (user, loginData) => ({
-  subject: "🛡️ New Login Detected",
+  subject: "New login to your AntiNode account",
   html: `
 <!DOCTYPE html>
 <html>
@@ -374,46 +309,46 @@ export const loginNotificationEmail = (user, loginData) => ({
 </head>
 <body>
     <div class="container">
-        <div class="header" style="border-bottom: 1px solid #ef4444;">
-             <h1 class="brand-text" style="background: none; -webkit-text-fill-color: #ef4444; color: #ef4444;">Security Alert</h1>
+        <div class="header">
+            <h1 class="logo">AntiNode</h1>
         </div>
         
         <div class="content">
-            <h2>New sign-in to your account</h2>
-            <p>We detected a new login to <strong>AntiNode</strong>. If this was you, you can safely ignore this email.</p>
+            <h2>We noticed a new login</h2>
+            
+            <p>Someone just signed into your AntiNode account. If this was you, you're all set – nothing else to do.</p>
 
-            <div class="highlight-box" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.05);">
-                <table style="width: 100%; font-size: 14px; color: #e2e8f0;">
+            <div class="info-box">
+                <table class="details-table">
                     <tr>
-                        <td style="padding: 8px 0; color: #94a3b8;">Time</td>
-                        <td style="padding: 8px 0; text-align: right;">${new Date().toLocaleString()}</td>
+                        <td>Time</td>
+                        <td>${new Date().toLocaleString()}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 8px 0; color: #94a3b8;">IP Address</td>
-                        <td style="padding: 8px 0; text-align: right;">${
-                          loginData.ip || "Unknown"
-                        }</td>
+                        <td>IP Address</td>
+                        <td>${loginData.ip || "Unknown"}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 8px 0; color: #94a3b8;">Device</td>
-                        <td style="padding: 8px 0; text-align: right;">${
-                          loginData.platform || "Unknown OS"
-                        } - ${loginData.browser || "Unknown Browser"}</td>
+                        <td>Device</td>
+                        <td>${loginData.platform || "Unknown"} • ${
+    loginData.browser || "Unknown"
+  }</td>
                     </tr>
                 </table>
             </div>
 
-            <p>If you did not authorize this login, please secure your account immediately.</p>
+            <p><strong>Wasn't you?</strong> Secure your account right away. Change your password and let us know at <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${process.env.SUPPORT_EMAIL}</a></p>
             
-             <div style="text-align: center; margin-top: 24px;">
-                <a href="mailto:support@AntiNode.com" style="color: #ef4444; font-weight: 600; text-decoration: none; font-size: 14px;">
-                    Lock Account & Contact Support &rarr;
-                </a>
-            </div>
+            <p class="muted" style="margin-top: 24px;">This is an automated security notification. We send these to keep your account safe.</p>
         </div>
         
         <div class="footer">
-            <p>Automated security notification from AntiNode.</p>
+            <p>© ${new Date().getFullYear()} AntiNode Inc.</p>
+            <p style="margin: 0;">Need help? <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${process.env.SUPPORT_EMAIL}</a></p>
         </div>
     </div>
 </body>
@@ -423,7 +358,7 @@ export const loginNotificationEmail = (user, loginData) => ({
 
 // 3. PASSWORD RESET REQUEST
 export const passwordResetEmail = (user, resetToken) => ({
-  subject: "🔑 Reset Your AntiNode Credentials",
+  subject: "Reset your AntiNode password",
   html: `
 <!DOCTYPE html>
 <html>
@@ -434,15 +369,15 @@ export const passwordResetEmail = (user, resetToken) => ({
 <body>
     <div class="container">
         <div class="header">
-             <h1 class="brand-text">AntiNode</h1>
+            <h1 class="logo">AntiNode</h1>
         </div>
         
         <div class="content">
-            <h2>Password Reset Request</h2>
+            <h2>Password reset requested</h2>
             
-            <p>We received a request to update your security credentials. To set a new password, click the button below. This link is valid for <strong>1 hour</strong>.</p>
+            <p>We got a request to reset your password. Click below to choose a new one:</p>
 
-            <div style="text-align: center; margin: 32px 0;">
+            <div style="text-align: center; margin: 28px 0;">
                 <a href="${
                   process.env.CLIENT_URL
                 }/reset-password?token=${resetToken}" class="button">
@@ -450,16 +385,26 @@ export const passwordResetEmail = (user, resetToken) => ({
                 </a>
             </div>
 
-            <p style="font-size: 13px; color: #64748b;">Or paste this link into your browser:</p>
-            <div class="highlight-box" style="padding: 12px; font-family: monospace; font-size: 12px; word-break: break-all; color: #22d3ee; background: #000;">
-                ${process.env.CLIENT_URL}/reset-password?token=${resetToken}
+            <p class="muted">This link expires in 1 hour. If it doesn't work, copy and paste this into your browser:</p>
+            
+            <div class="info-box">
+                <p style="margin: 0; font-size: 12px; word-break: break-all; color: #9ca3af; font-family: monospace;">
+                    ${process.env.CLIENT_URL}/reset-password?token=${resetToken}
+                </p>
             </div>
 
-            <p style="font-size: 13px;">If you didn't request this, you can safely ignore this email. Your current password will remain active.</p>
+            <p><strong>Didn't request this?</strong> You can ignore this email. Your password won't change.</p>
+
+            <p class="muted" style="margin-top: 24px;">Having trouble? We're here: <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${process.env.SUPPORT_EMAIL}</a></p>
         </div>
         
         <div class="footer">
             <p>© ${new Date().getFullYear()} AntiNode Inc.</p>
+            <p style="margin: 0;">Questions? <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${process.env.SUPPORT_EMAIL}</a></p>
         </div>
     </div>
 </body>
@@ -469,7 +414,7 @@ export const passwordResetEmail = (user, resetToken) => ({
 
 // 4. PASSWORD RESET SUCCESS
 export const passwordResetConfirmationEmail = (user) => ({
-  subject: "✅ Credentials Updated Successfully",
+  subject: "Your password has been changed",
   html: `
 <!DOCTYPE html>
 <html>
@@ -480,28 +425,34 @@ export const passwordResetConfirmationEmail = (user) => ({
 <body>
     <div class="container">
         <div class="header">
-             <h1 class="brand-text" style="background: none; -webkit-text-fill-color: #22c55e; color: #22c55e;">Success</h1>
+            <h1 class="logo">AntiNode</h1>
         </div>
         
         <div class="content">
-            <h2>Account Secured</h2>
-            <p>Your password has been successfully reset on <strong>${new Date().toLocaleString()}</strong>.</p>
+            <h2>Password updated</h2>
             
-            <div class="highlight-box" style="text-align: center;">
-                <p style="margin: 0; color: #e2e8f0;">You can now log in with your new credentials.</p>
-            </div>
+            <p>Your AntiNode password was successfully changed on ${new Date().toLocaleString()}.</p>
             
-            <div style="text-align: center; margin-top: 32px;">
+            <p>You can log in now with your new password.</p>
+            
+            <div style="text-align: center; margin: 28px 0;">
                 <a href="${process.env.CLIENT_URL}/login" class="button">
                     Go to Login
                 </a>
             </div>
             
-            <p style="margin-top: 32px;">If you did not make this change, please <a href="mailto:support@AntiNode.com" class="link">contact support</a> immediately.</p>
+            <p><strong>This wasn't you?</strong> Contact us immediately at <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${
+    process.env.SUPPORT_EMAIL
+  }</a> and we'll help secure your account.</p>
         </div>
         
         <div class="footer">
-            <p>Security update from AntiNode.</p>
+            <p>© ${new Date().getFullYear()} AntiNode Inc.</p>
+            <p style="margin: 0;">Need assistance? <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${process.env.SUPPORT_EMAIL}</a></p>
         </div>
     </div>
 </body>
@@ -511,7 +462,7 @@ export const passwordResetConfirmationEmail = (user) => ({
 
 // 5. EMAIL VERIFICATION
 export const emailVerificationEmail = (user, verificationToken) => ({
-  subject: "⚡ Verify Your AntiNode Identity",
+  subject: "Verify your email address",
   html: `
 <!DOCTYPE html>
 <html>
@@ -522,36 +473,46 @@ export const emailVerificationEmail = (user, verificationToken) => ({
 <body>
     <div class="container">
         <div class="header">
-             <h1 class="brand-text">AntiNode</h1>
+            <h1 class="logo">AntiNode</h1>
         </div>
         
         <div class="content">
-            <h2>Verify your email address</h2>
-            <p>You are almost there. We just need to verify that <strong>${
+            <h2>One quick step to finish setup</h2>
+            
+            <p>We need to verify that <strong>${
               user.email || "this email"
-            }</strong> belongs to you to activate your full AntiNode experience.</p>
+            }</strong> belongs to you. Click below to confirm:</p>
 
-            <div style="text-align: center; margin: 32px 0;">
+            <div style="text-align: center; margin: 28px 0;">
                 <a href="${
                   process.env.CLIENT_URL
                 }/user/verify-email?token=${verificationToken}" class="button">
-                    Verify Account
+                    Verify Email Address
                 </a>
             </div>
 
-            <p style="font-size: 13px; color: #64748b;">Or paste this secure link into your browser:</p>
-            <div class="highlight-box" style="padding: 12px; font-family: monospace; font-size: 12px; word-break: break-all; color: #22d3ee; background: #000;">
-                ${
-                  process.env.CLIENT_URL
-                }/user/verify-email?token=${verificationToken}
+            <p class="muted">Link not working? Copy and paste this into your browser:</p>
+            
+            <div class="info-box">
+                <p style="margin: 0; font-size: 12px; word-break: break-all; color: #9ca3af; font-family: monospace;">
+                    ${
+                      process.env.CLIENT_URL
+                    }/user/verify-email?token=${verificationToken}
+                </p>
             </div>
 
-            <p style="font-size: 12px; color: #52525b; margin-top: 24px;">This verification link will expire in 24 hours.</p>
+            <p class="muted">This verification link expires in 24 hours.</p>
+
+            <p class="muted" style="margin-top: 24px;">Running into issues? Reach out at <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${process.env.SUPPORT_EMAIL}</a></p>
         </div>
         
         <div class="footer">
-            <p>Welcome to the future of data.</p>
             <p>© ${new Date().getFullYear()} AntiNode Inc.</p>
+            <p style="margin: 0;">We're here to help: <a href="mailto:${
+              process.env.SUPPORT_EMAIL
+            }" class="link">${process.env.SUPPORT_EMAIL}</a></p>
         </div>
     </div>
 </body>
@@ -567,7 +528,7 @@ export class EmailServices {
 
       sendSmtpEmail.sender = {
         name: "AntiNode",
-        email: "ayushgairola2002@gmail.com",
+        email: process.env.SUPPORT_EMAIL,
       };
       sendSmtpEmail.to = [{ email: to }];
       sendSmtpEmail.subject = subject;

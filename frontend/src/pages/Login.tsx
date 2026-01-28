@@ -75,13 +75,10 @@ const Login = () => {
         );
       }
     } catch (error: any) {
-      setIsPending("failed");
 
-      toast.error(error?.response?.data?.message);
+      toast.error(error.message || error?.response?.data?.message);
 
-      setTimeout(() => {
-        setIsPending("idle");
-      }, 3000);
+      setIsPending("idle");
     }
   };
 
@@ -161,11 +158,10 @@ const Login = () => {
               onClick={HandleUserLogin}
               whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px blue" }}
               transition={{ duration: 0.2 }}
-              className={`${
-                isPending === "idle"
-                  ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "bg-green-500"
-              } py-2 px-3 rounded-lg bai-jamjuree-regular  w-full  flex items-center justify-center gap-2`}
+              className={`${isPending === "idle"
+                ? "bg-black text-white dark:bg-white dark:text-black"
+                : "bg-green-500"
+                } py-2 px-3 rounded-lg bai-jamjuree-regular  w-full  flex items-center justify-center gap-2`}
             >
               {isPending === "idle" ? (
                 <>

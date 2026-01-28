@@ -1,29 +1,28 @@
 import { supabase } from "./supabaseHandler.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+
 export const RecieveReviews = async (req, res) => {
   try {
     const { review, where, Occupation, Rating } = req.body;
     const userid = req.user.user_id;
     if (!userid) {
-      return res.status(400).json({ message: "User Id not found !" });
+      return res.status(400).json({ message: "Please login to continue." });
     }
     if (
       !review ||
       typeof review !== "string" ||
       !where ||
-      typeof where !== "string"
-    ) {
-      return res.status(400).json({ message: "Invalid data" });
-    }
-    if (
+      typeof where !== "string" ||
       !Occupation ||
       !Rating ||
-      typeof Rating !== "string" ||
-      typeof Occupation !== "string"
+      typeof Occupation !== "string" ||
+      typeof Rating !== "string"
     ) {
-      return res.status(400).json({ message: "Invalid data" });
+      return res
+        .status(400)
+        .json({ message: "Some fields are missing or are invalid" });
     }
-    // console.log(review,where)
+
     const { error } = await supabase.from("reviews").insert({
       user_id: userid,
       review_body: review,
@@ -33,20 +32,17 @@ export const RecieveReviews = async (req, res) => {
     });
 
     if (error) {
-      await notifyMe("Error while storing a user feedback", {
-        user: req.user,
-        review_body: review,
-        field_of_help: where,
-        Occupation,
-        Rating,
-      });
+      console.error(error);
+
+      await notifyMe("Error while storing a user feedback", error);
       return res
         .status(400)
         .json({ message: "Error while Recording your feedback" });
     }
 
-    return res.json({ message: "Thanks for you valuable time." });
+    return res.json({ message: "We have recieved your feedback." });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
@@ -83,3 +79,37 @@ export function deduplicateDocuments(docIds) {
   const cleanedDocIds = Array.from(uniqueDocs); //convert set to array
   return cleanedDocIds;
 }
+
+// handles newsletter acceptance
+export const HandleNewsLetterAcceptance = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user)
+      return res.status(402).send({ message: "Please login to continue." });
+
+    const wantsNewUpdates = req.body;
+
+    if (wantsNewUpdates === false)
+      return res
+        .status(200)
+        .send({ message: "Response recorded successfully." });
+
+    const { error } = await supabase
+      .from("users")
+      .update("Wants_newsLetter", true)
+      .eq("id", user.user_id);
+
+    if (error) {
+      console.error(error);
+      return res.status(400).send({
+        message: "You are already subscribed to our newsletter.",
+      });
+    }
+    return res.status(200).send({
+      message:
+        "You will now recieve newsletters and updates earlier than others.",
+    });
+  } catch (error) {
+    return res.status(500).send({ message: "Something went wrong!" });
+  }
+};

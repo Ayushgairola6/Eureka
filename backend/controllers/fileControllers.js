@@ -50,6 +50,7 @@ import {
   GetDataFromSerper,
   ProcessForLLM,
 } from "../OnlineSearchHandler/WebCrawler.js";
+import { HandleDeepWebResearch } from "./FeaturesController.js";
 // import {
 //   generateEmbedding,
 //   generateEmbeddingsWithGoogle,
@@ -165,18 +166,18 @@ export const FileUploadHandle = async (req, res) => {
     //check user contributioncount
     //currently for only free users
     // later for other tiers as well
-    if (req.user.PaymentStatus === false) {
-      const checkUpperBound = await CheckUserContributionCount(req.user);
+    // if (req.user.PaymentStatus === false) {
+    //   const checkUpperBound = await CheckUserContributionCount(req.user);
 
-      if (
-        checkUpperBound &&
-        checkUpperBound.message.trim().toLowerCase().includes("limit reached")
-      ) {
-        return res.status(400).send({
-          message: `You've reached your limit of 2 private documents for the free tier. Upgrade your plan to upload more and unlock additional features.`,
-        });
-      }
-    }
+    //   if (
+    //     checkUpperBound &&
+    //     checkUpperBound.message.trim().toLowerCase().includes("limit reached")
+    //   ) {
+    //     return res.status(400).send({
+    //       message: `You've reached your limit of 2 private documents for the free tier. Upgrade your plan to upload more and unlock additional features.`,
+    //     });
+    //   }
+    // }
 
     // random id for the doc
     let chunkNumber;
@@ -947,70 +948,197 @@ export const PostTypeWebSearch = async (req, res) => {
     if (!user_id)
       return res.status(401).send({ message: "Please login to continue" });
 
-    const IsPremiumUser = req.user.PaymentStatus;
-    if (IsPremiumUser === null || IsPremiumUser === undefined) {
-      return res.status(403).send({
-        message:
-          "Please logout and logIn again to be able to experience new features",
-      });
-    }
-    const { question, MessageId, userMessageId } = req.body;
-    if (!question) return res.status(404).send({ message: "Invalid question" });
+    const PaymentStatus = await CheckUserPlanStatus(user_id);
 
-    // check the current credit limit record for the user
+    const { question, MessageId, userMessageId, web_search_depth } = req.body;
+    if (
+      !question ||
+      typeof question !== "string" ||
+      !MessageId ||
+      typeof MessageId !== "string" ||
+      !userMessageId ||
+      typeof userMessageId !== "string" ||
+      !web_search_depth ||
+      typeof web_search_depth !== "string"
+    )
+      return res.status(404).send({
+        message:
+          "Some parameters are missing,this is a server side issue please wait till we resolve this problem.",
+      });
+
+    let InDepthQueries = [];
+    // check the quota status of the user
     const UpdateState = await ProcessUserQuery(req.user, "web_search");
 
     // if user has reached the
     if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
-      return res.status(200).send({
+      return res.status(400).send({
         Answer:
           "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research",
-        message: "Response found",
+        message:
+          "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research",
         favicons: { MessageId, icon: [] },
       });
     }
+
+    let WebResults;
+    // iof the user is not on premium and is asking for deep_search we simply reject their request
+    if (
+      PaymentStatus?.plan_status === false &&
+      web_search_depth === "deep_web"
+    ) {
+      return res.status(400).send({
+        message:
+          "This feature is only available for pro members , you want to surf the deep web get our premium subscriptio to enjoy research with deep web results.",
+      });
+    }
+
+    //if the user is paid and is asking for deep_search we process further
+    if (
+      (PaymentStatus?.plan_status === false) === true &&
+      web_search_depth === "deep_web"
+    ) {
+      EmitEvent(user_id, "query_status", {
+        MessageId,
+        status: {
+          message: `Understanding_Intent`,
+          data: [`I am now Breaking down ${req.user.username}'s intent`],
+        },
+      });
+      // break the query into subquries for deep_research and google dorking stuff
+      const IdentifyUserIntent = await FindIntent(IntentIdentifier, question);
+
+      if (IdentifyUserIntent?.error) {
+        return res.status(400).send({
+          message:
+            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+        });
+      }
+
+      // convert the queries into a series of array of strings
+      const FormattedQueries = FilterIntent(IdentifyUserIntent); //create an array of quries
+
+      if (
+        !Array.isArray(FormattedQueries) ||
+        FormattedQueries?.error ||
+        FormattedQueries?.length === 0
+      ) {
+        return res.status(400).send({
+          message:
+            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+        });
+      }
+      InDepthQueries = [...FormattedQueries];
+      EmitEvent(user_id, "query_status", {
+        MessageId,
+        status: {
+          message: `Crawling_deep_web`,
+          data: [
+            `Crawling deep web for following queries ,${JSON.stringify(
+              FormattedQueries
+            )}`,
+          ],
+        },
+      });
+
+      // send queries to the crawler to scrape
+      const FinalLinksToScrape = await HandleDeepWebResearch(
+        FormattedQueries,
+        req.user
+      );
+
+      if (FinalLinksToScrape?.length === 0) {
+        return res.status(400).send({
+          message:
+            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+        });
+      }
+
+      // parse the results and extract organic results and convert it into an array of link(string)
+      let LinksToFetch = [];
+      // handle each source links extraction
+      FinalLinksToScrape.forEach((li) => {
+        if (li) {
+          const data = FilterUrlForExtraction(li, req.user);
+          LinksToFetch.push(data);
+        }
+      });
+
+      // as the results array will be nested we flat it
+      const FlatLinks = LinksToFetch.flat();
+
+      if (FlatLinks.length === 0) {
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
+
+      // web send the links to the crawler to scrape and process
+      const CleanedWebData = await ProcessForLLM(FlatLinks, req.user, question);
+
+      if (!CleanedWebData || CleanedWebData.length === 0) {
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
+
+      // we put the results in the webResults array
+      WebResults = FormattForLLM(CleanedWebData);
+    }
+    // if user is on surface web so we keep it simple
+    else {
+      // send the query direct to serper.dev
+      const response = await GetDataFromSerper(question, req.user);
+
+      if (!response) {
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
+
+      // convert the results into array of links
+      const LinksToFetch = FilterUrlForExtraction(response, req.user);
+
+      if (LinksToFetch.length === 0) {
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
+
+      // scrape and optimize the context for the llm
+      const CleanedWebData = await ProcessForLLM(
+        LinksToFetch,
+        req.user,
+        question
+      );
+
+      if (CleanedWebData.length === 0) {
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
+      // give it to the model
+      WebResults = FormattForLLM(CleanedWebData);
+    }
+
+    // get necessary links from serper
+
+    if (
+      !WebResults ||
+      WebResults?.error ||
+      WebResults?.FinalContent?.length === 0
+    ) {
+      return res
+        .status(400)
+        .send({ message: "An error occured while processing your request" });
+    }
+    // extract chat history for a bit of memory from past
     let history = [];
     const pastConversation = await GetChatsForContext(req.user);
     if (!pastConversation || pastConversation.length === 0) {
       history.push(`Failed to get session chat history`);
     } else {
       history = [...pastConversation];
-    }
-
-    // get necessary links from serper
-    const response = await GetDataFromSerper(question, req.user);
-
-    if (!response) {
-      return res
-        .status(400)
-        .send({ message: "An error occured while processing your request" });
-    }
-
-    const LinksToFetch = FilterUrlForExtraction(response, req.user);
-
-    if (LinksToFetch.length === 0) {
-      return res
-        .status(400)
-        .send({ message: "An error occured while processing your request" });
-    }
-
-    const CleanedWebData = await ProcessForLLM(
-      LinksToFetch,
-      req.user,
-      question
-    );
-
-    if (CleanedWebData.length === 0) {
-      return res
-        .status(400)
-        .send({ message: "An error occured while processing your request" });
-    }
-    const WebResults = FormattForLLM(CleanedWebData);
-
-    if (WebResults?.error || WebResults.FinalContent.length === 0) {
-      return res
-        .status(400)
-        .send({ message: "An error occured while processing your request" });
     }
 
     const message = {
@@ -1024,7 +1152,11 @@ export const PostTypeWebSearch = async (req, res) => {
     const WebResultPrompt = WEB_SEARCH_DISTRIBUTOR_PROMPT;
 
     let Answer = await GenerateResponse(
-      question,
+      InDepthQueries.length > 0
+        ? `These are subqueries obtained by understanding the user request created by you earlier use these within your response to make your research to be authentic=${JSON.stringify(
+            InDepthQueries
+          )}&UserQuery=${question}`
+        : question,
       JSON.stringify(WebResults.FinalContent),
       WebResultPrompt,
       req.user
@@ -1054,36 +1186,13 @@ export const PostTypeWebSearch = async (req, res) => {
     }
 
     // find the update the chats
-    const misallaneousChatsKey = `user=${req.user.username}'s_misallaneousChats`;
-    // update the chats cache in redis
-    const OldChats = await redisClient.get(misallaneousChatsKey);
-    if (OldChats) {
-      const newChats = JSON.parse(OldChats);
-      newChats.push({
-        created_at: new Date().toISOString(),
-        question: question,
-        AI_response: Answer,
-      });
-
-      //update the value of the key
-      await redisClient.set(misallaneousChatsKey, JSON.stringify(newChats), {
-        expiration: {
-          type: "Ex",
-          value: 600,
-        },
-      });
-    }
-
     const FormattedFavicon = {
       MessageId,
       icon: WebResults.favicons,
-      url: [], //favicon array from the web search
+      url: WebResults.urls, //favicon array from the web search
     };
 
-    // //  now that we have generated all the response and data for the user
-    // // we need to check if the user is within the credit limit or does even has a record in db and cache
-    // //if true we update the value in both else we create a new record
-
+    // send the final response to the user
     return res.send({
       Answer: Answer,
       message: "Results found",
@@ -1092,11 +1201,14 @@ export const PostTypeWebSearch = async (req, res) => {
     });
   } catch (err) {
     await notifyMe(
-      "An error occured in the postTypewebsearch controller function",
+      "An error occured in the postTypewebsearch controller function filecontroller.js line 1204",
       err
     );
 
-    return res.status(500).send({ message: "Something went wrong" });
+    return res.status(500).send({
+      message:
+        "This is a server side error please wait while we are fixing this problem, thanks for your patience.",
+    });
   }
 };
 

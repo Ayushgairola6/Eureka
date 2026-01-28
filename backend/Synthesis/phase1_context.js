@@ -9,7 +9,12 @@ import { extractUUID } from "./phase2_action.js";
 import { ToolRegistry } from "./tools.js";
 
 //extract the document information if the user has asked for it
-export async function GetDocumentInfo(phase1_Context, selectedDocuments, user) {
+export async function GetDocumentInfo(
+  phase1_Context,
+  selectedDocuments,
+  user,
+  MessageId
+) {
   const needs_doc_info = phase1_Context.filter(
     (li) => li.function_name === "GetDoc_info"
   );
@@ -18,7 +23,7 @@ export async function GetDocumentInfo(phase1_Context, selectedDocuments, user) {
   const docToolConfig = ToolRegistry["GetDoc_info"];
 
   //if there is need to look for idocment information
-  if (needs_doc_info.length > 0 || selectedDocuments.length > 0) {
+  if (needs_doc_info?.length > 0 || selectedDocuments?.length > 0) {
     const uniqueDocsMap = new Map(); //map to store only unique values
 
     for (const item of needs_doc_info) {
@@ -52,14 +57,17 @@ export async function GetDocumentInfo(phase1_Context, selectedDocuments, user) {
 
     // --- 5. Update Global Context ---
     if (docdata.length > 0) {
-      EmitEvent(user.user_id, "quer_status", {
-        message: "Gathered DocumentInformation",
-        data: [`Gathering document information ${JSON.stringify(docdata)}`],
+      EmitEvent(user.user_id, "query_status", {
+        MessageId,
+        status: {
+          message: "Gathered DocumentInformation",
+          data: [`Gathering document information ${JSON.stringify(docdata)}`],
+        },
       });
 
       return docdata; //an array of information
     } else {
-      return []; //empty array to avoid infinite stuck loop or error
+      return {}; //empty array to avoid infinite stuck loop or error
     }
   }
 }
@@ -67,7 +75,8 @@ export async function GetDocumentInfo(phase1_Context, selectedDocuments, user) {
 export async function GetDocumentInfoFromName(
   phase1_Context,
   user,
-  documentsToNeglect // Default to empty array
+  documentsToNeglect,
+  MessageId // Default to empty array
 ) {
   // 1. Identify "searchByName" requests
   const nameRequests = phase1_Context.filter(
@@ -80,15 +89,22 @@ export async function GetDocumentInfoFromName(
   }
 
   // OR handles the filtering internally.
-  const rawResults = await RetrieveInformatioByName(nameRequests, user);
+  const rawResults = await RetrieveInformatioByName(
+    nameRequests,
+    user,
+    MessageId
+  );
 
   // 4. Critical Step: Deduplication
 
   //store only valid non duplicate documents
   if (rawResults && rawResults.length > 0) {
     EmitEvent(user.user_id, "query_status", {
-      message: "found-documents-by-name",
-      date: [`Found ${rawResults.length} documents by name`],
+      MessageId,
+      status: {
+        message: "found-documents-by-name",
+        date: [`Found ${rawResults.length} documents by name`],
+      },
     });
 
     const FinalArray = [];
@@ -111,7 +127,8 @@ export async function GetDocumentInfoFromName(
 export async function GetKnowledgebaseInfo(
   phase1_Context,
   GlobalContextObject,
-  user
+  user,
+  MessageId
 ) {
   const needs_to_search_knowledgebase = phase1_Context.filter(
     (li) => li.function_name === "search_knowledge"
@@ -127,13 +144,16 @@ export async function GetKnowledgebaseInfo(
 
     if (PublicKnowledge && PublicKnowledge.length > 0) {
       EmitEvent(user.user_id, "query_status", {
-        message: `Reading public knowledgebase`,
-        data: [
-          `Reading public knowledgebase:${PublicKnowledge[0]?.text?.slice(
-            0,
-            50
-          )}`,
-        ],
+        MessageId,
+        status: {
+          message: `Reading public knowledgebase`,
+          data: [
+            `Reading public knowledgebase:${PublicKnowledge[0]?.text?.slice(
+              0,
+              50
+            )}`,
+          ],
+        },
       });
 
       return PublicKnowledge; //array of object shape information

@@ -1,294 +1,297 @@
-import { FaArrowLeft } from "react-icons/fa";
-import { motion } from "framer-motion";
+import { X, Users, Tag, UserPlus, Home, FileText, Loader2, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
 import { CreateChatRoom } from "../store/chatRoomSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
 import { toast } from "sonner";
-import { IoIosHourglass } from "react-icons/io";
-import { LuCircleFadingPlus } from "react-icons/lu";
-import { FaPeopleGroup, FaHouseFlag } from "react-icons/fa6";
-import { MdOutlineBadge, MdOutlineDescription } from "react-icons/md";
-import { IoPersonAddOutline } from "react-icons/io5";
-import { IoIosArrowDown } from "react-icons/io";
-//defining the prop types
+
 type RoomProps = {
   showcard: boolean;
   setShowCard: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+const participantOptions = [
+  { count: 2, label: "1-on-1 session" },
+  { count: 4, label: "Small group" },
+  { count: 8, label: "Study group" },
+  { count: 16, label: "Research team" },
+  { count: 50, label: "Large team" },
+  { count: 100, label: "Organization" },
+];
+
 const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const [participantCount, setParticipantCount] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const [room_type, setRoomType] = useState("public");
-  const isPending = useAppSelector(
-    (state) => state.chats.RoomCreationIspending
-  );
+  const [participantCount, setParticipantCount] = useState(2);
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [roomType, setRoomType] = useState("public");
+  const isPending = useAppSelector((state) => state.chats.RoomCreationIspending);
+
   const RoomNameRef = useRef<HTMLInputElement>(null);
-  const RoomTypeRef = useRef<HTMLInputElement>(null);
   const RoomDescriptions = useRef<HTMLTextAreaElement>(null);
 
-  function HandleCreateRoom() {
+  const handleCreateRoom = () => {
     if (
       !RoomNameRef?.current?.value ||
       !participantCount ||
-      !RoomTypeRef?.current?.value ||
       !RoomDescriptions?.current?.value
     ) {
-      toast.error("All fields are mandatory!");
+      toast.error("All fields are required");
       return;
     }
+
     if (!user?.IsPremiumUser) {
-      if (room_type === "private") {
-        toast.info("Only premium members can create Private chatRooms");
+      if (roomType === "private") {
+        toast.error("Only premium users can create private rooms");
         return;
       }
       if (participantCount > 2) {
-        toast.info(
-          "Only premium users can create rooms with more than 2 members."
-        );
+        toast.error("Upgrade to premium for rooms with 3+ members");
         return;
       }
     }
-    // 2. Create properly typed data object
-    const Data = {
+
+    const data = {
       Room_name: RoomNameRef.current.value,
       participant_count: Number(participantCount),
-      Room_type: room_type,
+      Room_type: roomType,
       Description: RoomDescriptions.current.value,
     };
 
-    // 3. Properly handle the async dispatch
-    dispatch(CreateChatRoom(Data))
+    dispatch(CreateChatRoom(data))
       .unwrap()
-      .then((response) => {
-        if (response) {
-          toast.success("Rom has been created");
-        }
+      .then(() => {
+        toast.success("Room created successfully");
+        setShowCard(false);
+        // Reset form
+        if (RoomNameRef.current) RoomNameRef.current.value = "";
+        if (RoomDescriptions.current) RoomDescriptions.current.value = "";
+        setParticipantCount(2);
+        setRoomType("public");
       })
       .catch((error) => {
         toast.error(error || "Failed to create room");
       });
-  }
+  };
 
   return (
-    <>
-      <div
-        className={`max-h-screen fixed top-0 left-0 inset-0 z-[2] bg-black/40 backdrop-blur-sm  transition-all duration-300 ${
-          showcard
-            ? "opacity-100 translate-x-0 "
-            : "opacity-0 -translate-x-full  pointer-events-none"
-        } flex items-center justify-center p-4`}
-      >
-        <div className=" max-w-md w-full relative">
-          {/* Close Button */}
-          <motion.button
+    <AnimatePresence>
+      {showcard && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={() => setShowCard(false)}
-            className={`absolute top-5 right-5 z-10 p-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors ease-in-out duration-200 ${
-              showcard ? "rotate-0" : "-rotate-180"
-            }`}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+          />
+
+          {/* Bottom Sheet */}
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center px-4 pb-4 sm:px-0"
           >
-            <FaArrowLeft className="text-sky-500" size={15} />
-          </motion.button>
-
-          {/* Card Container */}
-          <div className="bg-gray-100 shadow-sm shadow-gray-600 dark:shadow-gray-300 dark:bg-[#141414] rounded-xl  overflow-hidden p-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 bai-jamjuree-semibold flex items-center justify-start gap-2">
-              <FaPeopleGroup /> Create new discussion room
-            </h2>
-
-            <div className="space-y-4">
-              {/* Room Name */}
-              <div className="space-y-1">
-                <label
-                  className=" bai-jamjuree-semibold text-sm flex items-center justify-start gap-2 text-gray-900 dark:text-gray-200"
-                  htmlFor="roomName"
-                >
-                  <MdOutlineBadge /> Room Name
-                </label>
-                <input
-                  ref={RoomNameRef}
-                  id="roomName"
-                  type="text"
-                  placeholder="e.g. Dragon's Den"
-                  className="w-full space-grotesk text-sm px-4 py-2 border border-gray-400 rounded-lg"
-                />
+            <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+              {/* Drag Handle */}
+              <div className="flex items-center justify-center pt-3 pb-2">
+                <div className="w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
               </div>
 
-              {/* Max Participants */}
-              <div className="space-y-1">
-                <label
-                  className=" bai-jamjuree-semibold text-sm flex items-center justify-start gap-2 text-gray-900 dark:text-gray-200"
-                  htmlFor="maxParticipants"
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-zinc-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white">
+                      Create Room
+                    </h2>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Set up a collaborative workspace
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCard(false)}
+                  className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  <IoPersonAddOutline /> Max Participants
-                </label>
-                {/* options div */}
-                <section className="flex items-center justify-between gap-4 space-grotesk text-sm my-2 relative ">
-                  <div className="flex items-center justify-start gap-4 px-2   rounded-md py-2">
-                    <ul>Number of paticipants</ul>
-                    <label
-                      className="text-green-600 bg-green-600/10 rounded-full p-3 h-5 w-5 flex items-center justify-center font-semibold text-xs border border-green-600"
-                      htmlFor="count"
+                  <X className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
+                </button>
+              </div>
+
+              {/* Form Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+                {/* Room Name */}
+                <div className="space-y-2">
+                  <label
+                    htmlFor="roomName"
+                    className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  >
+                    <Tag className="w-4 h-4" />
+                    Room Name
+                  </label>
+                  <input
+                    ref={RoomNameRef}
+                    id="roomName"
+                    type="text"
+                    placeholder="e.g., Research Team Alpha"
+                    className="w-full px-3 py-2.5 bg-white dark:bg-black border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm focus:outline-none focus:border-zinc-500 dark:focus:border-zinc-500 transition-colors"
+                    disabled={isPending}
+                  />
+                </div>
+
+                {/* Max Participants */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    <UserPlus className="w-4 h-4" />
+                    Max Participants
+                  </label>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowParticipants(!showParticipants)}
+                      disabled={isPending}
+                      className="w-full px-3 py-2.5 bg-white dark:bg-black border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-left flex items-center justify-between hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors disabled:opacity-50"
                     >
-                      {participantCount}
-                    </label>
-                  </div>
-                  <button
-                    onClick={() => setIsActive(!isActive)}
-                    className="bg-black/10 dark:bg-white/5 rounded-full p-1 cursor-pointer"
-                  >
-                    <IoIosArrowDown
-                      className={`transition-transform duration-300 ${
-                        isActive ? "rotate-90" : "rotate-0"
-                      }`}
-                    />
-                  </button>
-
-                  {/* the animated dropdown menu */}
-                  <div
-                    className={`bg-white dark:bg-black absolute top-10 left-0 w-full overflow-hidden rounded-lg shadow-lg dark:shadow-white/10 
-        transition-[max-height] duration-500 ease-in-out  ${
-          isActive ? "max-h-96" : "max-h-0"
-        }`}
-                  >
-                    <ul className="grid grid-cols-1">
-                      {[
-                        {
-                          count: 2,
-                          icon: "Casual curiosity session with friend",
-                        },
-                        { count: 4, icon: "Small study/friends group" },
-                        {
-                          count: 8,
-                          icon: "Large study groups, event planning sessions",
-                        },
-                        {
-                          count: 16,
-                          icon: "Small/Medium discussion or research teams",
-                        },
-                        { count: 50, icon: "Large discussion/research teams " },
-                        {
-                          count: 100,
-                          icon: "Reasearchers, Tutors, Collborative teams etc. ",
-                        },
-                      ].map((val, index) => (
-                        <section
-                          onClick={() => {
-                            setParticipantCount(val?.count);
-                            setIsActive(false); // Close dropdown after selection
-                          }}
-                          className="flex items-center justify-between gap-3 px-2 hover:px-4 py-1  w-full hover:bg-sky-500/20 transition-all ease-in duration-200 cursor-pointer border-b"
-                          key={`${val.count}+${index}`}
+                      <span className="text-zinc-900 dark:text-white">
+                        {participantOptions.find(opt => opt.count === participantCount)?.label ||
+                          `${participantCount} participants`}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                          {participantCount}
+                        </span>
+                        <motion.div
+                          animate={{ rotate: showParticipants ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
                         >
-                          <span>{val.icon}</span>
-                          <ul className="  dark:bg-white bg-black rounded-full text-white text-xs p-3 flex items-center justify-center h-5 w-5 text-center dark:text-black">
-                            {val.count}
-                          </ul>
-                        </section>
-                      ))}
-                    </ul>
-                  </div>
-                </section>
-              </div>
+                          <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </motion.div>
+                      </span>
+                    </button>
 
-              {/* Room Type */}
-              <div className="space-y-1">
-                <label className=" bai-jamjuree-semibold text-sm flex items-center justify-start gap-2 text-gray-900 dark:text-gray-200">
-                  <FaHouseFlag /> Room Type
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label
-                    className={`inline-flex items-center p-3 border  rounded-lg cursor-pointer  ${
-                      room_type === "public"
-                        ? "bg-sky-500/10 border border-sky-500 shadow-sm shadow-sky-500 text-sky-500"
-                        : ""
-                    }`}
-                  >
-                    <input
-                      ref={RoomTypeRef}
+                    {/* Dropdown */}
+                    <AnimatePresence>
+                      {showParticipants && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full mt-2 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl z-10 overflow-hidden"
+                        >
+                          {participantOptions.map((option) => (
+                            <button
+                              key={option.count}
+                              type="button"
+                              onClick={() => {
+                                setParticipantCount(option.count);
+                                setShowParticipants(false);
+                              }}
+                              className="w-full px-3 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+                            >
+                              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                                {option.label}
+                              </span>
+                              <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                {option.count}
+                              </span>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                {/* Room Type */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    <Home className="w-4 h-4" />
+                    Room Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
                       onClick={() => setRoomType("public")}
-                      type="radio"
-                      name="roomType"
-                      value="public"
-                      className="h-4 w-4 text-indigo-600"
-                      defaultChecked
-                    />
-                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300 ">
+                      disabled={isPending}
+                      className={`px-4 py-3 rounded-lg text-sm font-medium transition-all border-2 ${roomType === "public"
+                        ? "bg-zinc-900 dark:bg-white text-white dark:text-black border-zinc-900 dark:border-white"
+                        : "bg-white dark:bg-black text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
+                        }`}
+                    >
                       Public
-                    </span>
-                  </label>
-                  <label
-                    className={`inline-flex items-center p-3 border  rounded-lg cursor-pointer  ${
-                      room_type === "private"
-                        ? "bg-green-500/10 border border-green-500 shadow-sm shadow-green-500 text-green-500"
-                        : ""
-                    }`}
-                  >
-                    <input
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setRoomType("private")}
-                      ref={RoomTypeRef}
-                      type="radio"
-                      name="roomType"
-                      value="private"
-                      className="h-4 w-4 text-indigo-600"
-                    />
-                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300 ">
+                      disabled={isPending}
+                      className={`px-4 py-3 rounded-lg text-sm font-medium transition-all border-2 ${roomType === "private"
+                        ? "bg-zinc-900 dark:bg-white text-white dark:text-black border-zinc-900 dark:border-white"
+                        : "bg-white dark:bg-black text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
+                        }`}
+                    >
                       Private
-                    </span>
+                      {!user?.IsPremiumUser && (
+                        <span className="ml-1 text-[10px] opacity-60">Premium</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <label
+                    htmlFor="description"
+                    className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Description
                   </label>
+                  <textarea
+                    ref={RoomDescriptions}
+                    id="description"
+                    rows={3}
+                    placeholder="What's this room about?"
+                    className="w-full px-3 py-2.5 bg-white dark:bg-black border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm focus:outline-none focus:border-zinc-500 dark:focus:border-zinc-500 transition-colors resize-none"
+                    disabled={isPending}
+                  />
                 </div>
               </div>
 
-              {/* Room Description */}
-              <div className="space-y-1">
-                <label
-                  className=" bai-jamjuree-semibold text-sm flex items-center justify-start gap-2 text-gray-900 dark:text-gray-200"
-                  htmlFor="description"
+              {/* Footer - Fixed at bottom */}
+              <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black">
+                <button
+                  onClick={handleCreateRoom}
+                  disabled={isPending}
+                  className="w-full px-4 py-3 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-lg font-medium text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                 >
-                  <MdOutlineDescription /> Description
-                </label>
-                <textarea
-                  ref={RoomDescriptions}
-                  id="description"
-                  rows={3}
-                  placeholder="What's this room about?"
-                  className="w-full space-grotesk text-sm px-4 py-2 border border-gray-400 rounded-lg"
-                />
+                  {isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating room...
+                    </>
+                  ) : (
+                    <>
+                      Create Room
+                      <Plus className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
               </div>
-
-              {/* Create Button */}
-              <motion.button
-                disabled={isPending === true}
-                onClick={HandleCreateRoom}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`w-full mt-6 ${
-                  isPending === true
-                    ? "bg-green-500 text-white"
-                    : "dark:bg-white dark:text-black bg-black text-white"
-                }   font-medium py-2 px-4 rounded-lg transition-colors duration-200 bai-jamjuree-semibold flex items-center justify-center gap-2`}
-              >
-                {isPending === false ? (
-                  <>
-                    Create Room
-                    <LuCircleFadingPlus />
-                  </>
-                ) : (
-                  <>
-                    Setting things up for you
-                    <IoIosHourglass className="animate-spin" />
-                  </>
-                )}
-              </motion.button>
             </div>
-          </div>
-        </div>
-      </div>
-    </>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
 

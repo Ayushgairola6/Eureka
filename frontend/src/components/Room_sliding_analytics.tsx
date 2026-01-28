@@ -8,11 +8,14 @@ import {
 import { BsArrowLeft, BsLightningChargeFill } from "react-icons/bs";
 import { useAppSelector } from "../store/hooks";
 import { motion } from "framer-motion";
+import { IoCreate } from "react-icons/io5";
 type MainProps = {
   view: boolean;
   setView: React.Dispatch<React.SetStateAction<boolean>>;
+  showCard: boolean;
+  setShowCard: React.Dispatch<React.SetStateAction<boolean>>;
 };
-const SlidingAnalytics: React.FC<MainProps> = ({ view, setView }) => {
+const SlidingAnalytics: React.FC<MainProps> = ({ view, setView, showCard, setShowCard }) => {
   const { user, chatrooms } = useAppSelector((state) => state?.auth);
   // --- 1. MEMOIZED CALCULATIONS (Client Side Logic) ---
   const stats = useMemo(() => {
@@ -45,12 +48,12 @@ const SlidingAnalytics: React.FC<MainProps> = ({ view, setView }) => {
         x: view === true ? 0 : 400,
       }}
       transition={{ ease: "anticipate", duration: 1 }}
-      className={`absolute top-0 right-0 grid grid-cols-1 gap-4 h-full p-3 dark:bg-black bg-gray-200 z-[20]
+      className={`absolute top-0 right-0 flex items-center justify-start flex-col gap-2 h-full p-3 dark:bg-black bg-gray-200 overflow-auto 
       `}
     >
       <button
         onClick={() => setView(!view)}
-        className="absolute top-1 z-[3] right-5 rounded-full h-6 w-6 flex items-center justify-center dark:bg-white lg:hidden bg-black text-white dark:text-black z-[20]"
+        className="absolute top-1 z-[2] right-5 rounded-full h-6 w-6 flex items-center justify-center dark:bg-white lg:hidden bg-black text-white dark:text-black "
       >
         <BsArrowLeft />
       </button>
@@ -87,6 +90,7 @@ const SlidingAnalytics: React.FC<MainProps> = ({ view, setView }) => {
           0
         )}% of your network`}
       />
+      <button onClick={() => setShowCard(!showCard)} className="flex items-center justify-center gap-2  bg-neutral-900 text-white dark:bg-gray-100 dark:text-black rounded-md px-3 py-1 mt-10 mx-auto space-grotesk font-medium shadow-xl">Create new room <IoCreate /></button>
     </motion.div>
   );
 };
@@ -98,11 +102,11 @@ type StatProps = {
 };
 // --- REUSABLE SUB-COMPONENT ---
 const StatCard: React.FC<StatProps> = ({ label, value, icon, subtext }) => (
-  <div className="relative overflow-hidden p-4 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#0A0A0A] group hover:border-blue-500/30 transition-colors">
+  <div className="relative overflow-hidden p-4 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#0A0A0A] group hover:border-blue-500/30 transition-colors h-30 w-full">
     {/* Background Glow */}
     <div className="absolute top-0 right-0 -mt-4 -mr-4 w-16 h-16 bg-gradient-to-br from-transparent to-neutral-100 dark:to-white/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-colors" />
 
-    <div className="flex items-start justify-between mb-2 relative z-10">
+    <div className="flex items-start justify-between mb-2 relative ">
       <span className="space-grotesk text-xs font-bold uppercase tracking-wider text-neutral-400">
         {label}
       </span>
@@ -111,7 +115,7 @@ const StatCard: React.FC<StatProps> = ({ label, value, icon, subtext }) => (
       </div>
     </div>
 
-    <div className="relative z-10">
+    <div className="relative ">
       <h3 className="bai-jamjuree-bold text-3xl text-black dark:text-white">
         {value}
       </h3>

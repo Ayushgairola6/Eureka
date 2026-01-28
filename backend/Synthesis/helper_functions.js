@@ -1,5 +1,7 @@
 import { supabase } from "../controllers/supabaseHandler.js";
+import { GetDocumentInfo, GetDocumentInfoFromName } from "./phase1_context.js";
 import { extractUUID } from "./phase2_action.js";
+import { ToolRegistry } from "./tools.js";
 
 //gets the basic information related the document from the database or cache if available
 export async function ProcessDocumentInfoGathering(ReferenceArray, user) {
@@ -267,4 +269,59 @@ export async function RetrieveInformatioByName(ReferenceArray, user) {
     );
   }
   return Document_Information;
+}
+
+// handles the pre process functions requirements
+export async function HandlePreProcessFunctions(
+  functionsArray,
+  user,
+  alreadyFetchedIds
+) {
+  if (!functionsArray || !Array.isArray(functionsArray)) {
+    return { error: "The funcion list array is empty" };
+  }
+  const Context = { AlldocumentInformation: [], context_by_uuid: [] };
+  const phase1_Context = [];
+
+  functionsArray.forEach((func) => {
+    const config = ToolRegistry[func.function_name];
+    if (!config) return; // Skip unknown functions
+    if (config.importance === 1) {
+      phase1_Context.push({ ...func, config });
+    }
+  });
+  // console.log("phase1 context array:", phase1_Context);
+  //get document_by_name caller cause we do not allow actions in this processor
+
+  // get doc_data_by name condition
+  const doc_data_fromName = await GetDocumentInfoFromName(
+    phase1_Context, // to scane the executable function from the toolregistry
+    user, //handle the extraction by matching user id
+    alreadyFetchedIds || [] //ids of any manually selected documents
+  );
+
+  // if some data is retrieved fill it in the array of context
+  if (doc_data_fromName.length > 0) {
+    // console.log(" data based on name", doc_data_fromName);
+    Context.AlldocumentInformation = [
+      ...(Context.AlldocumentInformation || []),
+      ...(doc_data_fromName || []),
+    ];
+  }
+
+  //if the models asked for document_by id
+
+  const doc_data = await GetDocumentInfo(
+    phase1_Context,
+    alreadyFetchedIds,
+    user
+  );
+
+  if (doc_data && doc_data?.length > 0) {
+    // console.log(" data based on id", doc_data);
+
+    Context.context_by_uuid = [...doc_data];
+  }
+
+  return Context;
 }

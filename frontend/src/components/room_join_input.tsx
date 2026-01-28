@@ -1,14 +1,17 @@
-import { BsArrowUpRight } from "react-icons/bs";
+import { BsArrowUpRight, BsPeople } from "react-icons/bs";
 import { FaRegComments, FaUserSecret } from "react-icons/fa";
 import { IoMdHourglass } from "react-icons/io";
 import { JoinAChatRoom } from "../store/chatRoomSlice";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import React from "react";
 import { toast } from "sonner";
-import { Link } from "react-router";
-import { IoAdd } from "react-icons/io5";
 import { motion } from "framer-motion";
-const JoinRoomInput = () => {
+type props = {
+  showCard: boolean,
+  setShowCard: React.Dispatch<React.SetStateAction<boolean>>
+}
+
+const JoinRoomInput: React.FC<props> = ({ showCard, setShowCard }) => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { isJoiningRoom } = useAppSelector((state) => state.chats);
@@ -54,15 +57,15 @@ const JoinRoomInput = () => {
         </div>
 
         {/* 3. THE ACTION CLUSTER */}
-        <div className="w-full max-w-md flex flex-col gap-6">
+        <div className="w-full max-w-md flex flex-col gap-6 shadow-xl">
           {/* --- JOIN SECTION (Your Component, slightly tweaked width) --- */}
-          <section className="border rounded-xl w-full p-2 px-3 space-y-3 shadow-sm ring-1 ring-black/5 dark:ring-white/10 ">
+          <section className="shadow-xl border rounded-xl w-full p-2 px-3 space-y-3  ring-1 ring-black/5 dark:ring-white/10 ">
             <h1 className="bai-jamjuree-semibold text-sm text-neutral-700 dark:text-neutral-400 flex items-center justify-start gap-2 px-1 pt-1 ">
               <FaUserSecret />
               Join with a room code
             </h1>
 
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 ">
               <input
                 ref={InputRef}
                 className="rounded-lg px-3 py-2 text-base space-grotesk w-full bg-neutral-100 dark:bg-black text-black dark:text-white border-none outline-none ring-0 focus:ring-0 transition-all placeholder:dark:text-white-300"
@@ -71,27 +74,22 @@ const JoinRoomInput = () => {
               />
               <motion.button
                 whileTap={{ scale: 1.06 }}
-                animate={{
-                  backgroundPosition: [10, 20, 30, 40],
-                  backgroundColor: ["white", "skyblue"],
-                }}
-                transition={{ ease: "linear", duration: 0.2, repeat: Infinity }}
+
                 disabled={isJoiningRoom === true}
                 onClick={handleJoinRoom}
-                className={`shrink-0 rounded-md px-2 py-1.5 text-sm space-grotesk font-semibold transition-all duration-200 flex items-center justify-center gap-2 w-18
-              ${
-                isJoiningRoom === true
-                  ? "bg-green-500/10 border border-green-500/50 text-green-500 cursor-not-allowed"
-                  : "bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
-              }`}
+                className={`px-2 py-1 rounded-sm text-sm bai-jamjuree-bold flex items-center justify-center gap-3
+              ${isJoiningRoom === true
+                    ? "bg-green-600 text-black cursor-not-allowed"
+                    : "bg-amber-400 text-black cursor-pointer"
+                  }`}
               >
                 {isJoiningRoom ? (
                   <>
-                    <IoMdHourglass className="animate-spin" />
+                    Pending...<IoMdHourglass className="animate-spin" />
                   </>
                 ) : (
                   <>
-                    Join <IoAdd size={18} />
+                    Join <BsPeople size={18} />
                   </>
                 )}
               </motion.button>
@@ -108,8 +106,8 @@ const JoinRoomInput = () => {
           </div>
 
           {/* --- CREATE ROOM LINK --- */}
-          <Link
-            to="/create-room" // Update with your route
+          <button
+            onClick={() => setShowCard(!showCard)} // Update with your route
             className="group w-full flex items-center justify-between p-4 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-800 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all duration-300"
           >
             <div className="flex flex-col items-start">
@@ -124,7 +122,7 @@ const JoinRoomInput = () => {
             <div className="h-8 w-8 rounded-full bg-neutral-100 dark:bg-neutral-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900 flex items-center justify-center transition-colors">
               <BsArrowUpRight className="text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
             </div>
-          </Link>
+          </button>
         </div>
       </div>
     </>
