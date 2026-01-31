@@ -84,131 +84,119 @@ const Login = () => {
 
   return (
     <>
-      <div className="relative h-screen flex items-center justify-center  z-[2]  dark:bg-black overflow-hidden">
-        <div className="relative bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-md gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-2xl cursor-grab border dark:border-white/10 border-black/10">
-          <h1 className="text-center bai-jamjuree-bold  md:text-3xl text-2xl ">
-            Welcome back!
-          </h1>
-          <span className="text-xs md:text-sm text-gray-700 dark:text-gray-400 bai-jamjuree-regular text-center">
-            Continue from where you left off
-          </span>
+      <div className="relative h-screen flex items-center justify-center z-[2] bg-neutral-50 dark:bg-[#050505] overflow-hidden">
+        {/* --- Background System Grid (Subtle) --- */}
+        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.07] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
-          <span className="flex flex-col gap-2">
-            <label
-              className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2"
-              htmlFor="email"
-            >
-              <MdEmail /> Email Address
-            </label>
-            <input
-              ref={Email}
-              className="border-none outline-none focus:ring-0  px-2 py-1 rounded-lg space-grotesk"
-              type="email"
-              placeholder="Your email address"
-            />
-          </span>
-          <span className="flex flex-col gap-2">
-            <label
-              className="bai-jamjuree-semibold text-sm  gap-2 flex items-center justify-between"
-              htmlFor="password"
-            >
-              <ul className="flex gap-2 items-center justify-center ">
-                <MdPassword /> Password
-              </ul>
+        <div className="relative flex flex-col w-[95%] md:w-[420px] transition-all duration-500">
 
-              <Link
-                to="/ResetPassword"
-                className="bai-jamjuree-semibold text-xs text-end text-gray-700 dark:text-gray-300 dark:hover:text-sky-600 hover:text-sky-600 transition-colors duration-300"
-              >
-                Forgot password?
+          {/* --- Top Metadata Strip --- */}
+          <div className="flex items-center justify-between px-4 py-2 bg-neutral-900 dark:bg-neutral-800 rounded-t-xl border-x border-t border-neutral-800">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
+              <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-[0.2em]">Auth_Protocol_v2.0</span>
+            </div>
+            <span className="font-mono text-[9px] text-neutral-500 uppercase">Ver: 1.0.1-beta</span>
+          </div>
+
+          {/* --- Main Identity Card --- */}
+          <div className="bg-white dark:bg-[#0A0A0A] p-8 rounded-b-xl border border-neutral-200 dark:border-neutral-800 shadow-2xl">
+
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="bai-jamjuree-bold text-3xl text-neutral-900 dark:text-white tracking-tighter">
+                ACCESS_IDENTITY
+              </h1>
+              <p className="text-xs space-grotesk text-neutral-500 dark:text-neutral-400 mt-1 uppercase tracking-widest">
+                Establish secure connection to AntiNode
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Email Field */}
+              <div className="group flex flex-col gap-2">
+                <label className="font-mono text-[10px] font-black text-neutral-400 uppercase tracking-tighter flex items-center gap-2 group-focus-within:text-orange-600 transition-colors">
+                  <MdEmail size={12} /> User_Identifier
+                </label>
+                <input
+                  ref={Email}
+                  className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-neutral-800 px-4 py-3 rounded-lg space-grotesk text-sm outline-none focus:border-orange-600/50 transition-all placeholder:opacity-30"
+                  type="email"
+                  placeholder="name@domain.com"
+                />
+              </div>
+
+              {/* Password Field */}
+              <div className="group flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-mono text-[10px] font-black text-neutral-400 uppercase tracking-tighter flex items-center gap-2 group-focus-within:text-orange-600 transition-colors">
+                    <MdPassword size={12} /> Access_Key
+                  </label>
+                  <Link to="/ResetPassword" title="Recovery" className="text-[10px] font-mono text-neutral-400 hover:text-orange-600 transition-colors uppercase">
+                    Forgot?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <input
+                    ref={Password}
+                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-neutral-800 px-4 py-3 rounded-lg space-grotesk text-sm outline-none focus:border-orange-600/50 transition-all"
+                    type={type}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    onClick={() => setType((prev) => (prev === "text" ? "password" : "text"))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-orange-600 transition-colors"
+                  >
+                    {type === "password" ? <LuEyeClosed size={16} /> : <LuEye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 flex flex-col gap-3">
+                <motion.button
+                  disabled={isPending !== "idle"}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={HandleUserLogin}
+                  className={`w-full py-4 rounded-lg bai-jamjuree-bold text-sm uppercase tracking-widest transition-all
+              ${isPending === "idle"
+                      ? "bg-neutral-900 dark:bg-white text-white dark:text-black hover:bg-orange-600 dark:hover:bg-orange-600 dark:hover:text-white"
+                      : "bg-orange-600/20 text-orange-600 cursor-wait"} 
+              flex items-center justify-center gap-2`}
+                >
+                  {isPending === "idle" ? (
+                    <>Initiate Login <CiLogin className="stroke-2" /></>
+                  ) : (
+                    <>Authenticating... <IoIosHourglass className="animate-spin" /></>
+                  )}
+                </motion.button>
+
+                <div className="relative flex items-center justify-center my-2">
+                  <div className="w-full h-[1px] bg-neutral-100 dark:bg-neutral-800" />
+                  <span className="absolute bg-white dark:bg-[#0A0A0A] px-4 font-mono text-[9px] text-neutral-500 tracking-[0.3em]">SECURE_SSO</span>
+                </div>
+
+                <motion.button
+                  onClick={handleGoogleAuth}
+                  whileHover={{ y: -2 }}
+                  className="w-full py-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-transparent font-mono text-[11px] uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all"
+                >
+                  <img className="h-4 w-4 " src="/googleLogo.png" alt="" />
+                  Continue via Google
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Footer Links */}
+            <div className="mt-10 pt-6 border-t border-neutral-100 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <Link to="/Register" className="flex items-center gap-2 text-[10px] font-mono font-bold text-neutral-500 hover:text-orange-600 transition-all uppercase">
+                <LuUserPlus size={14} /> New_Operator?
               </Link>
-            </label>
-
-            <section className="relative ">
-              <input
-                ref={Password}
-                spellCheck
-                className="w-full border-none outline-none focus:ring-0 px-2 py-1 rounded-lg space-grotesk"
-                type={type}
-                placeholder="Choose a strong password"
-              />
-              <button
-                onClick={() =>
-                  setType((prev) => (prev === "text" ? "password" : "text"))
-                }
-                className="absolute right-2 top-2 cursor-pointer"
-              >
-                {type === "password" ? (
-                  <LuEyeClosed size={20} />
-                ) : (
-                  <LuEye size={20} />
-                )}
-              </button>
-            </section>
-          </span>
-
-          <span className="flex items-center justfify-center py-4 flex-col gap-2 ">
-            {/*normal button */}
-            <motion.button
-              disabled={isPending !== "idle"}
-              whileHover={{
-                boxShadow: "2px 2px 2px black",
-                transform: "translateY(-3px)",
-              }}
-              onClick={HandleUserLogin}
-              whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px blue" }}
-              transition={{ duration: 0.2 }}
-              className={`${isPending === "idle"
-                ? "bg-black text-white dark:bg-white dark:text-black"
-                : "bg-green-500"
-                } py-2 px-3 rounded-lg bai-jamjuree-regular  w-full  flex items-center justify-center gap-2`}
-            >
-              {isPending === "idle" ? (
-                <>
-                  Login <CiLogin />
-                </>
-              ) : (
-                <>
-                  Please wait <IoIosHourglass className="animate-spin" />
-                </>
-              )}
-            </motion.button>
-
-            <span className="text-xs space-grotesk">OR</span>
-            {/* google button */}
-            <motion.button
-              onClick={handleGoogleAuth}
-              whileHover={{
-                boxShadow: "2px 2px 2px black",
-                transform: "translateY(-3px)",
-              }}
-              whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px black" }}
-              transition={{ duration: 0.2 }}
-              className="bg-indigo-400 py-2 px-3 rounded-lg bai-jamjuree-regular text-black w-full flex items-center justify-center gap-2  "
-            >
-              Continue with Google
-              <img className="h-6 w-6" src="/googleLogo.png" alt="" />
-            </motion.button>
-          </span>
-          {/* links to other pages */}
-          <div className="space-grotesk flex items-center justify-between mt-6 pt-4 border-t border-white/10">
-            {/* Register - Outlined Glass Chip */}
-            <Link
-              to="/Register"
-              className="group flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 dark:text-gray-300 text-xs font-space-grotesk hover:bg-white/10 dark:hover:text-white hover:border-white/30 transition-all duration-300"
-            >
-              <LuUserPlus className="w-3.5 h-3.5 text-blue-400 dark:group-hover:text-white transition-colors" />
-              <span>Create Account</span>
-            </Link>
-
-            {/* Verify - Subtle Text Link on the right */}
-            <Link
-              to="/Verification"
-              className="group flex items-center gap-1 text-xs dark:text-gray-500 font-medium dark:hover:text-gray-300 transition-colors"
-            >
-              <span>Verification link expired?</span>
-              <PiArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </Link>
+              <Link to="/Verification" className="text-[10px] font-mono text-neutral-400 hover:text-neutral-200 transition-all flex items-center gap-1">
+                Expired link? <PiArrowUpRight />
+              </Link>
+            </div>
           </div>
         </div>
       </div>

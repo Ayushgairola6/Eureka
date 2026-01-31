@@ -111,8 +111,8 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
   return (
     <>
       <div
-        className={`fixed border h-full max-h-screen w-full md:w-1/2 lg:w-2/5 xl:w-1/3 top-10 left-0 z-[5] space-grotesk 
-              bg-gray-50 dark:bg-gray-950 shadow-2xl
+        className={`fixed border h-full max-h-screen w-full md:w-1/2 lg:w-2/5 xl:w-1/3 top-14 left-0 z-[3] space-grotesk 
+              bg-gray-50 dark:bg-neutral-950 shadow-2xl
               transition-all duration-500 ease-in-out 
               ${showDocs
             ? "translate-x-0"
@@ -120,9 +120,9 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
           }`}
       >
         {/* Header Section */}
-        <div className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 p-4 space-y-3">
+        <div className="sticky top-0 z-10 bg-gray-50 dark:bg-neutral-950 border-b border-gray-200 dark:border-neutral-800 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+            <h2 className="text-xl font-bold text-neutral-800 dark:text-white">
               My Documents
             </h2>
             <div className="flex items-center gap-2">

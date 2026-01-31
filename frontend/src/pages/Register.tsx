@@ -130,193 +130,175 @@ const Register = () => {
 
   return (
     <>
-      <div className="h-screen flex items-center justify-center relative z-[2] dark:bg-black dark:text-white overflow-hidden">
-        {/* gradient accent background */}
+      <div className="relative min-h-screen flex items-center justify-center z-[2] bg-neutral-50 dark:bg-[#050505] overflow-hidden py-10">
+        {/* --- Background Industrial Accent --- */}
+        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.08] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
-        <div className="bg-white dark:bg-black grid grid-cols-1  py-6 px-4 rounded-lg gap-4 w-[90%] md:w-1/3 lg:w-1/3 shadow-2xl border dark:border-white/10 border-black/10 cursor-grab relative">
-          <h1 className="text-center space-grotesk font-bold  text-2xl">
-            Join AntiNode{" "}
-          </h1>
-          <span className="text-xs text-gray-700 dark:text-gray-400 space-grotesk text-center">
-            Start contributing today and become a part of our community .
-          </span>
-          <span className="flex flex-col gap-2">
-            <label
-              className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2"
-              htmlFor="username"
-            >
-              {" "}
-              <FaUser />
-              Username{" "}
-            </label>
-            {Username.current?.value && issue === true && (
-              <ul className="text-xs text-red-500 space-grotesk">
-                *must include underscore
-              </ul>
-            )}
-            <input
-              onChange={(e) => {
-                const value = e.target.value.replace(/\s/g, "");
-                if (!value) {
-                  setIssue(false);
-                }
-                if (!value.includes("_")) {
-                  setIssue(true);
-                } else {
-                  setIssue(false);
-                }
-                e.target.value = value; // Remove spaces
-              }}
-              onKeyDown={(e) => {
-                if (e.key === " ") {
-                  e.preventDefault(); // Block spacebar
-                }
-              }}
-              ref={Username}
-              className=" px-2 py-1 rounded-lg space-grotesk border-none outline-none focus:ring-0 "
-              type="text"
-              placeholder="John_Doe"
-            />
-          </span>
-          <span className="flex flex-col gap-2">
-            <label
-              className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2"
-              htmlFor="email"
-            >
-              <MdEmail />
-              Email Address{" "}
-            </label>
-            <input
-              ref={Email}
-              className="border-none outline-none focus:ring-0 px-2 py-1 rounded-lg space-grotesk"
-              type="email"
-              placeholder="JohnDoe12@yahoo.com"
-            />
-          </span>
-          <span className="flex flex-col gap-2">
-            <label
-              className="bai-jamjuree-semibold text-sm flex items-center justify-start gap-2"
-              htmlFor="username"
-            >
-              <MdPassword /> Password{" "}
-            </label>
-            {Password.current?.value && Strength < 7 && (
-              <ul className="text-xs space-grotesk text-red-500">
-                * must include uppercase letters, symbols and numbers
-              </ul>
-            )}
-            <section className="relative ">
-              <input
-                ref={Password}
-                spellCheck
-                onChange={(e) => ReflectPasswordStrength(e)}
-                className="w-full border-none outline-none focus:ring-0  px-2 py-1 rounded-lg space-grotesk"
-                type={type}
-                placeholder="A strong password"
-              />
-              <button
-                onClick={() =>
-                  setType((prev) => (prev === "text" ? "password" : "text"))
-                }
-                className="absolute right-2 top-2 cursor-pointer"
-              >
-                {type === "password" ? (
-                  <LuEyeClosed size={20} />
-                ) : (
-                  <LuEye size={20} />
+        <div className="relative flex flex-col w-[95%] md:w-[450px] transition-all">
+
+          {/* --- Header Authentication Strip --- */}
+          <div className="flex items-center justify-between px-4 py-2 bg-neutral-900 dark:bg-neutral-800 rounded-t-xl border-x border-t border-neutral-800">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-widest">Protocol: NEW_USER_REG</span>
+            </div>
+            <span className="font-mono text-[9px] text-neutral-500 uppercase italic">Ver: 1.0.1-beta</span>
+          </div>
+
+          {/* --- Main Registration Form --- */}
+          <div className="bg-white dark:bg-[#0A0A0A] p-8 rounded-b-xl border border-neutral-200 dark:border-neutral-800 shadow-2xl">
+
+            <div className="mb-8">
+              <h1 className="space-grotesk font-bold text-3xl text-neutral-900 dark:text-white tracking-tight">
+                Join AntiNode
+              </h1>
+              <p className="text-sm bai-jamjuree-regular text-neutral-500 dark:text-neutral-400 mt-2">
+                Create your decentralized identity to start contributing.
+              </p>
+            </div>
+
+            <div className="space-y-5">
+
+              {/* Username Field */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold space-grotesk text-neutral-700 dark:text-neutral-300 flex items-center gap-2">
+                  <FaUser className="text-neutral-400" size={12} /> Username
+                </label>
+                <input
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\s/g, "");
+                    setIssue(!value.includes("_") && value !== "");
+                    e.target.value = value;
+                  }}
+                  ref={Username}
+                  className={`w-full bg-neutral-50 dark:bg-white/5 border px-4 py-2.5 rounded-lg space-grotesk text-sm transition-all outline-none 
+              ${issue ? 'border-red-500/50' : 'border-neutral-200 dark:border-neutral-800 focus:border-orange-600/50'}`}
+                  type="text"
+                  placeholder="e.g. John_Doe"
+                />
+                {issue && (
+                  <span className="font-mono text-[10px] text-red-500 uppercase tracking-tighter animate-pulse">
+                    [!] System Requirement: Must include underscore (_)
+                  </span>
                 )}
-              </button>
-            </section>
+              </div>
 
-            {Password.current?.value && (
-              <div className="w-full bg-gray-200 rounded-full h-1">
-                <div
-                  className={`h-1 rounded-full transition-all duration-500 ${
-                    Strength === 0
-                      ? "bg-red-600 w-1/6"
-                      : Strength === 1
-                      ? "bg-red-500 w-2/6"
-                      : Strength === 2
-                      ? "bg-orange-500 w-3/6"
-                      : Strength === 3
-                      ? "bg-yellow-500 w-4/6"
-                      : Strength === 4
-                      ? "bg-yellow-400 w-5/6"
-                      : Strength === 5
-                      ? "bg-green-400 w-6/6"
-                      : Strength === 6
-                      ? "bg-green-500 w-11/12"
-                      : "bg-green-600 w-full"
-                  }`}
+              {/* Email Field */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold space-grotesk text-neutral-700 dark:text-neutral-300 flex items-center gap-2">
+                  <MdEmail className="text-neutral-400" size={14} /> Email Address
+                </label>
+                <input
+                  ref={Email}
+                  className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-neutral-800 px-4 py-2.5 rounded-lg space-grotesk text-sm outline-none focus:border-orange-600/50 transition-all"
+                  type="email"
+                  placeholder="contact@domain.com"
                 />
               </div>
-            )}
-            <section className=" flex items-center justify-between w-full bai-jamjuree-regular text-xs gap-2 p-2">
-              <input
-                spellCheck
-                onClick={() =>
-                  setHasAccepted((prev) => (prev === true ? false : true))
-                }
-                type="checkbox"
-              />
-              <span>
-                By clicking this you agree to our
-                <Link className="text-sky-600" to="/terms-and-conditions">
-                  {" "}
-                  terms-and-conditions
-                </Link>
-              </span>
-            </section>
-          </span>
-          <span className="flex items-center justfify-center py-4 flex-col gap-2">
-            <motion.button
-              disabled={isPending !== "idle"}
-              whileHover={{
-                boxShadow: "2px 2px 2px black",
-                transform: "translateY(-3px)",
-              }}
-              onClick={HandleRegister}
-              whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px blue" }}
-              transition={{ duration: 0.2 }}
-              className="bg-black dark:bg-white dark:text-black py-2 px-3 rounded-lg space-grotesk text-white w-full CustPoint flex items-center justify-center gap-2"
-            >
-              {isPending === "idle" ? (
-                <>
-                  Create Account <FaUserPlus />
-                </>
-              ) : (
-                <>
-                  Setting up your Account{" "}
-                  <IoIosHourglass className="animate-spin" />
-                </>
-              )}{" "}
-            </motion.button>
-            {/* google button */}
-            <span className="text-xs space-grotesk">OR</span>
-            <motion.button
-              whileHover={{
-                boxShadow: "2px 2px 2px black",
-                transform: "translateY(-3px)",
-              }}
-              onClick={handleGoogleAuth}
-              whileTap={{ scale: 0.9, boxShadow: "2px 2px 2px black" }}
-              transition={{ duration: 0.2 }}
-              className="bg-indigo-400 py-2 px-3 rounded-lg space-grotesk text-black w-full flex items-center justify-center gap-2 CustPoint "
-            >
-              Continue with Google
-              <img src="/googleLogo.png" alt="Google" width="20" height="20" />
-            </motion.button>
-          </span>
-          {/* Footer Section - Absolute Bottom */}
-          <div className=" px-8 flex items-center justify-between border-t border-white/10 pt-4 mx-2">
-            {/* Login Button - Glass Pill Style */}
-            <Link
-              to="/Login"
-              className="group flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 dark:text-gray-300 text-xs font-space-grotesk hover:bg-white/10 dark:hover:text-white hover:border-white/30 transition-all duration-300"
-            >
-              <LuLogIn className="w-3.5 h-3.5 text-green-400 gdark:roup-hover:text-green-300 transition-colors" />
-              <span>Login</span>
-            </Link>
+
+              {/* Password Field */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold space-grotesk text-neutral-700 dark:text-neutral-300 flex items-center gap-2">
+                  <MdPassword className="text-neutral-400" size={14} /> Secure Password
+                </label>
+                {Strength < 7 && <p className='text-[10px] text-red-600 space-grotesk'>
+                  * Password must be minimum 8 characters long and should included one UPPERCASE, one SYMBOL and one NUMBER at least.
+                </p>}
+                <div className="relative">
+                  <input
+                    ref={Password}
+                    onChange={(e) => ReflectPasswordStrength(e)}
+                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-neutral-800 px-4 py-2.5 rounded-lg space-grotesk text-sm outline-none focus:border-orange-600/50 transition-all"
+                    type={type}
+                    placeholder="Min. 8 characters"
+                  />
+                  <button
+                    onClick={() => setType(t => t === "text" ? "password" : "text")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200"
+                  >
+                    {type === "password" ? <LuEyeClosed size={18} /> : <LuEye size={18} />}
+                  </button>
+                </div>
+
+                {/* Enhanced Strength Bar */}
+                <div className="mt-1 space-y-2">
+                  <div className="flex justify-between items-center px-1">
+                    <span className="font-mono text-[8px] uppercase text-neutral-500 tracking-widest">Strength_Index</span>
+                    <span className={`font-mono text-[8px] uppercase ${Strength > 5 ? 'text-green-500' : 'text-neutral-500'}`}>
+                      {Strength > 5 ? 'PASSED' : 'ANALYZING...'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-neutral-100 dark:bg-white/5 rounded-full h-[3px] overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${(Strength + 1) * 14.2}%`,
+                        backgroundColor: Strength < 3 ? "#ef4444" : Strength < 6 ? "#f59e0b" : "#22c55e"
+                      }}
+                      className="h-full transition-all duration-500"
+                    />
+                  </div>
+                  {Strength < 7 && Password.current?.value && (
+                    <span className="text-[10px] bai-jamjuree-regular text-neutral-500 italic">
+                      Include uppercase, numbers, and symbols for better security.
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Terms Checkbox */}
+              <div className="flex items-start gap-3 p-3 bg-neutral-50 dark:bg-white/[0.02] rounded-lg border border-neutral-100 dark:border-neutral-800/50">
+                <input
+                  onClick={() => setHasAccepted(!HasAccepted)}
+                  type="checkbox"
+                  className="mt-1 accent-orange-600 rounded cursor-pointer"
+                />
+                <p className="text-[11px] bai-jamjuree-regular text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                  I acknowledge and accept the <Link className="text-orange-600 font-bold hover:underline" to="/terms">Terms of Service</Link> and the operational protocols of the AntiNode community.
+                </p>
+              </div>
+
+              {/* Action Button */}
+              <div className="pt-4 flex flex-col gap-3">
+                <motion.button
+                  disabled={isPending !== "idle"}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={HandleRegister}
+                  className={`w-full py-4 rounded-lg space-grotesk font-bold text-xs uppercase tracking-[0.2em] transition-all
+              ${isPending === "idle"
+                      ? "bg-neutral-900 dark:bg-white text-white dark:text-black hover:bg-orange-600 dark:hover:bg-orange-600 dark:hover:text-white"
+                      : "bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-wait"} 
+              flex items-center justify-center gap-2`}
+                >
+                  {isPending === "idle" ? (
+                    <>Register Identity <FaUserPlus /></>
+                  ) : (
+                    <>Syncing Database... <IoIosHourglass className="animate-spin" /></>
+                  )}
+                </motion.button>
+
+                <div className="relative flex items-center justify-center py-2">
+                  <div className="w-full h-[1px] bg-neutral-100 dark:bg-neutral-800" />
+                  <span className="absolute bg-white dark:bg-[#0A0A0A] px-4 font-mono text-[9px] text-neutral-500 tracking-[0.3em]">OAUTH_BYPASS</span>
+                </div>
+
+                <motion.button
+                  onClick={handleGoogleAuth}
+                  className="w-full py-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-transparent font-mono text-[11px] uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all text-neutral-600 dark:text-neutral-400"
+                >
+                  <img className="h-4 w-4 " src="/googleLogo.png" alt="Google" />
+                  Join via Google
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Footer Switcher */}
+            <div className="mt-8 pt-6 border-t border-neutral-100 dark:border-neutral-800 text-center">
+              <Link to="/Login" className="inline-flex items-center gap-2 text-[10px] font-mono font-bold text-neutral-500 hover:text-orange-600 transition-all uppercase tracking-widest">
+                <LuLogIn size={14} /> Already a Node Operator? Login
+              </Link>
+            </div>
           </div>
         </div>
       </div>

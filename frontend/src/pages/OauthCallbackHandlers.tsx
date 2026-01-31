@@ -21,11 +21,6 @@ const OAuthCallbackHandler = () => {
       const authSuccess = searchParams.get("auth");
       const serverMessage = searchParams.get("message");
 
-      console.log("OAuth callback params:", {
-        error,
-        authSuccess,
-        serverMessage,
-      });
 
       if (error) {
         console.error("OAuth failed:", error);

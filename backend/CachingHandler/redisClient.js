@@ -90,14 +90,14 @@ export const UpdateTheNotificationCache = async (
 
     const ParsedNotifications = JSON.parse(Oldnotifications);
     ParsedNotifications.push(newNotification);
-    multi.redisClient.hSet(
-      key,
+    multi.hSet(
+      UserAccountDataKey,
       "notification",
       JSON.stringify(ParsedNotifications)
     );
 
     multi.hSet(
-      key,
+      UserAccountDataKey,
       "notificationcount",
       JSON.stringify(ParsedNotifications?.length)
     );
@@ -139,46 +139,4 @@ export const CacheCurrentChat = async (message, user) => {
   }
   // console.log("this message was just cached right now", message);
   return { message: "Record updated or created new record" };
-};
-// fetch chat history from cache
-export const FetchChatHistory = async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).send({ message: "Please login to continue" });
-    }
-    const user = req.user;
-    const ConversationCacheKey = `user_id=${
-      user.user_id
-    }_time=${new Date().toDateString()}`;
-    // await redisClient.del(ConversationCacheKey);
-    // console.log("This function has been called");
-    const exists = await redisClient.exists(ConversationCacheKey);
-    // console.log(exists);
-    if (exists) {
-      const limit = user.PaymentStatus === true ? 30 : 10; //the limit of cached messages the users can fetch based on payment status
-
-      const Chats = await redisClient.lRange(ConversationCacheKey, 0, limit); //last 10 chat messages retrive them
-      const parsedChats = Chats.map((jsonString) => {
-        try {
-          // Parse each individual string element
-          return JSON.parse(jsonString);
-        } catch (error) {
-          return re.status(400).send({ error: "Parse Error", data: [] });
-        }
-      });
-      // console.log(parsedChats);
-      return res
-        .status(200)
-        .send({ message: "History found", data: parsedChats });
-    }
-
-    return res.status(200).send({ message: "History not found", data: [] });
-  } catch (error) {
-    // console.error(error);
-    await notifyMe(
-      "An error occured while retriveing chat history from cache",
-      error
-    );
-    return res.status(500).send({ message: "Something went wrong!" });
-  }
 };

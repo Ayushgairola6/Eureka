@@ -60,7 +60,7 @@ export const HandleGoogleCallback = async (req, res) => {
         error
       );
       return res.redirect(
-        `${process.env.CLIENT_URL}/client/OAuthCallback?error=google_denied`
+        `${process.env.CLIENT_URL}/client/OAuthCallback?error=google_auth_failed`
       );
     }
     if (!code || !state) {
@@ -72,7 +72,7 @@ export const HandleGoogleCallback = async (req, res) => {
     // verifying the anti csrf state
     if (!pendingStates.has(state)) {
       return res.redirect(
-        `${process.env.CLIENT_URL}/client/OAuthCallback?error=security_violation`
+        `${process.env.CLIENT_URL}/client/OAuthCallback?error=security_timeout`
       );
     }
     pendingStates.delete(state); //remove from map
@@ -81,7 +81,7 @@ export const HandleGoogleCallback = async (req, res) => {
 
     if (tokenResponse?.error) {
       return res.redirect(
-        `${process.env.CLIENT_URL}/client/OAuthCallback?error=Something went wrong`
+        `${process.env.CLIENT_URL}/client/OAuthCallback?error=token_exchange_failed`
       );
     }
 
@@ -100,28 +100,34 @@ export const HandleGoogleCallback = async (req, res) => {
     });
 
     if (user?.error) {
-      const errorrMessage = encodeURIComponent(user.error)
+      const errorrMessage = encodeURIComponent(user.error);
       return res.redirect(
-        `${process.env.CLIENT_URL}/client/OAuthCallback?error=${errorrMessage}`
+        `${
+          process.env.CLIENT_URL
+        }/client/OAuthCallback?error=${encodeURIComponent(user.error)}`
       );
     }
     // 6. Generate application tokens (using your existing functions)
-    const paymentStatus = user.IsPremiumUser ||false;
-    const AllowedTrainingModels = user.AllowedTrainingModels||"TRUE"
+
+    const AllowedTrainingModels = user.AllowedTrainingModels || "YES";
     const refreshToken = GenerateRefreshTokens(
       user.id,
       user.email,
       user.username,
-      paymentStatus,AllowedTrainingModels
+      AllowedTrainingModels
     );
     // generate new sesstion token
-    const authToken = GenerateAccessTokens(user.id,
+    const authToken = GenerateAccessTokens(
+      user.id,
       user.email,
       user.username,
-      paymentStatus,AllowedTrainingModels);
+      AllowedTrainingModels
+    );
 
-    if (!refreshToken || !authToken) {
-      throw new Error("Token generation failed");
+    if (!authToken || !refreshToken) {
+      return res.redirect(
+        `${process.env.CLIENT_URL}/client/OAuthCallback?error=system_token_error`
+      );
     }
 
     // 7. Store tokens in database (your existing function)
@@ -138,26 +144,40 @@ export const HandleGoogleCallback = async (req, res) => {
       );
     }
 
+    const { error: dbError } = await supabase
+      .from("Payments")
+      .upsert(
+        { user_id: user.id, plan_type: "free", plan_status: "active" },
+        { onConflict: "user_id" }
+      );
+    if (dbError) {
+      await notifyMe(
+        "The googleAuthController failed while inserting the payment status into the database",
+        error
+      );
+    }
     // 8. Set authentication cookie
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("AntiNode_eta_six_version1_AuthToken", authToken, {
       httpOnly: true,
-  secure: true, // Required for sameSite: "none"
-  sameSite: "none", // Allows the cookie to survive the jump from api. to www.
-  domain: ".antinodeai.space", // The leading dot is the "Subdomain Unlock"
-  maxAge: 24 * 60 * 60 * 1000,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      ...(isProduction && { domain: ".antinodeai.space" }),
+      maxAge: 24 * 60 * 60 * 1000,
     });
-
     // 9. Send notification
     await notifyMe(`User ${user.username} logged in via Google OAuth`);
 
     // 10. Redirect to frontend with success
     return res.redirect(
-      `${process.env.CLIENT_URL}/Interface?SessionId=${authToken}`
+      `${process.env.CLIENT_URL}/client/OAuthCallback?auth=success&message=Identity_Verified`
     );
-
-    
   } catch (error) {
     await notifyMe("Something went wrong in the google auth controller", error);
+    return res.redirect(
+      `${process.env.CLIENT_URL}/client/OAuthCallback?error=internal_server_error`
+    );
   }
 };
 
@@ -215,7 +235,7 @@ async function findOrCreateUser(googleUser) {
   if (selectError && !existingUser) {
     // FIX: Correct logic for checking error code
     // PGRST116 is the code for "Row not found" (which is expected for new users)
-    if (selectError.code !== 'PGRST116') {
+    if (selectError.code !== "PGRST116") {
       await notifyMe("Critical DB Error during user selection", selectError);
       return { error: "Database error during login check." };
     }
@@ -237,18 +257,21 @@ async function findOrCreateUser(googleUser) {
   }
 
   // --- 3. Scenario: Existing User Logic ---
-  
+
   // Case A: User exists but no Google ID (Password user)
   if (!existingUser.Google_Id) {
     // Optional: Auto-link account here if you want to support it
     return {
-      error: "This account already exists. Please login with your password first to link the account.",
+      error:
+        "This account already exists. Please login with your password first to link the account.",
     };
   }
 
   // Case B: Google ID Mismatch
   if (existingUser.Google_Id !== googleId) {
-    await notifyMe(`GoogleId mismatch for ${email}. DB:${existingUser.Google_Id}, New:${googleId}`);
+    await notifyMe(
+      `GoogleId mismatch for ${email}. DB:${existingUser.Google_Id}, New:${googleId}`
+    );
     // FIX: Added missing closing brace below
   }
 
@@ -278,8 +301,8 @@ async function createNewUser(name, email, googleId) {
       Google_Id: googleId,
       isVerified: true,
       password: null,
-      IsPremiumUser:false,
-      AllowedTrainingModels:true
+      IsPremiumUser: false,
+      AllowedTrainingModels: true,
     })
     .select("*")
     .single();

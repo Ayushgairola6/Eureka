@@ -203,8 +203,8 @@ export async function HandleMemoryStorage(user, ReferenceArray) {}
 export async function RetrieveMemories(user, ReferenceArray) {}
 
 //fetch last few messages for reminder whwer we left off
-export async function FetchPastMessagesFromDbAndCacheThem(user) {
-  const limit = user.PaymentStatus === false ? 5 : 10;
+export async function FetchPastMessagesFromDbAndCacheThem(user, plan_type) {
+  const limit = plan_type === "free" ? 5 : 10;
   const { data, error } = await supabase
     .from("Conversation_History")
     .select("created_at,question,AI_response")

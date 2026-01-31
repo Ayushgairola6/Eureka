@@ -15,6 +15,9 @@ import {
   Activity,
   CheckCircle2,
   ArrowRight,
+  SubscriptIcon,
+  LucideMonitor,
+  LucideCalculator
 } from "lucide-react";
 import { useAppSelector } from "../store/hooks";
 
@@ -23,7 +26,7 @@ type WebSearchStatusProps = {
   lastMessageId?: string | number;
 };
 
-// --- Helper: Domain Favicon & Name (Full Visibility) ---
+// --- Helper: Domain Favicon & Name (AntiNode Style) ---
 const LinkChip = ({ url }: { url: string }) => {
   if (typeof url !== 'string') return null;
 
@@ -34,28 +37,30 @@ const LinkChip = ({ url }: { url: string }) => {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-md hover:border-zinc-400 dark:hover:border-zinc-500 transition-all shadow-sm group"
+        className="inline-flex items-center gap-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-2.5 py-1 rounded-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all group max-w-full"
       >
-        <img
-          className="h-4 w-4 rounded-sm opacity-80 group-hover:opacity-100 transition-opacity"
-          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
-          alt=""
-        />
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200 space-grotesk break-all">
+        <div className="w-4 h-4 bg-white rounded-sm overflow-hidden flex items-center justify-center border border-zinc-100 dark:border-zinc-800">
+          <img
+            className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity"
+            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+            alt=""
+          />
+        </div>
+        <span className="text-xs font-mono text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 truncate">
           {domain}
         </span>
       </a>
     );
   } catch (e) {
     return (
-      <span className="inline-flex items-center px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-600 dark:text-zinc-400 break-all">
+      <span className="inline-flex items-center px-2 py-1 rounded-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-500 break-all">
         {url}
       </span>
     );
   }
 };
 
-// --- Configuration Map (The Logic Engine) ---
+// --- Configuration Map (Styled for AntiNode) ---
 const STATUS_HANDLERS: Record<string, any> = {
   "reading_links": {
     icon: BrainCircuit,
@@ -64,10 +69,15 @@ const STATUS_HANDLERS: Record<string, any> = {
     render: (data: any) => {
       const links = Array.isArray(data) ? data : [data];
       return (
-        <div className="flex flex-wrap gap-2 mt-2 w-full">
-          {links.map((link, idx) => (
-            <LinkChip key={idx} url={typeof link === 'string' ? link : link?.url} />
-          ))}
+        <div className="flex flex-col gap-2 mt-2 w-full">
+          <span className="text-xs font-bold text-purple-500 uppercase tracking-widest space-grotesk">
+            Ingesting {links.length} Link{links.length !== 1 ? 's' : ''}
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {links.map((link, idx) => (
+              <LinkChip key={idx} url={typeof link === 'string' ? link : link?.url} />
+            ))}
+          </div>
         </div>
       );
     },
@@ -78,6 +88,7 @@ const STATUS_HANDLERS: Record<string, any> = {
     color: "text-fuchsia-600 dark:text-fuchsia-400",
     render: (data: any) => (
       <div className="mt-1 p-3 bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/50 rounded-md">
+        <span className="text-xs font-bold text-fuchsia-500 uppercase tracking-wide block mb-1 space-grotesk">Core Objective</span>
         <p className="text-sm text-zinc-700 dark:text-zinc-300 bai-jamjuree-regular leading-relaxed">
           {Array.isArray(data) ? data[0] : data}
         </p>
@@ -90,8 +101,10 @@ const STATUS_HANDLERS: Record<string, any> = {
     color: "text-indigo-600 dark:text-indigo-400",
     render: (data: any) => (
       <div className="mt-2 flex flex-col gap-2">
-        <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider space-grotesk">Targeting Node:</span>
-        <LinkChip url={Array.isArray(data) ? data[0] : data} />
+        <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider space-grotesk">Targeting Node</span>
+        <div className="pl-3 border-l-2 border-indigo-200 dark:border-indigo-800">
+          <LinkChip url={Array.isArray(data) ? data[0] : data} />
+        </div>
       </div>
     ),
   },
@@ -186,10 +199,13 @@ const STATUS_HANDLERS: Record<string, any> = {
     color: "text-indigo-600 dark:text-indigo-400",
     render: (data: any) => (
       <div className="mt-2 w-full">
-        <div className="relative w-full h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+        <div className="relative w-full h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-2">
           <div className="absolute inset-0 bg-indigo-500 animate-[shimmer_2s_infinite] bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-[length:20px_20px]" />
         </div>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 bai-jamjuree-regular">{data}</p>
+        <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 bai-jamjuree-regular">{data}</p>
+        </div>
       </div>
     ),
   },
@@ -203,9 +219,12 @@ const STATUS_HANDLERS: Record<string, any> = {
       return (
         <div className="mt-2 flex items-start gap-3 bg-sky-50 dark:bg-sky-900/10 p-3 rounded-md border border-sky-100 dark:border-sky-900/20">
           <Search className="w-4 h-4 text-sky-500 mt-1 shrink-0" />
-          <span className="text-base font-medium text-sky-900 dark:text-sky-200 bai-jamjuree-regular leading-snug">
-            "{query}"
-          </span>
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider space-grotesk">Query</span>
+            <span className="text-base font-medium text-sky-900 dark:text-sky-200 bai-jamjuree-regular leading-snug">
+              "{query}"
+            </span>
+          </div>
         </div>
       );
     },
@@ -216,6 +235,7 @@ const STATUS_HANDLERS: Record<string, any> = {
     color: "text-emerald-600 dark:text-emerald-500",
     render: (data: any) => (
       <div className="mt-2 pl-4 border-l-2 border-emerald-200 dark:border-emerald-800">
+        <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest space-grotesk block mb-1">Analyzing</span>
         <p className="text-sm text-zinc-600 dark:text-zinc-400 bai-jamjuree-regular leading-relaxed">{data}</p>
       </div>
     ),
@@ -229,7 +249,7 @@ const STATUS_HANDLERS: Record<string, any> = {
         <div className="flex space-x-1">
           {[0, 150, 300].map(d => <div key={d} className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
         </div>
-        <span className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">{data}</span>
+        <span className="text-sm text-zinc-700 dark:text-zinc-300 font-medium font-mono">{data}</span>
       </div>
     ),
   },
@@ -238,9 +258,9 @@ const STATUS_HANDLERS: Record<string, any> = {
     title: "Document Retrieval",
     color: "text-teal-600 dark:text-teal-400",
     render: (data: any) => (
-      <div className="mt-2 flex items-center gap-2">
-        <span className="text-xs font-bold text-teal-600 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 px-2 py-1 rounded border border-teal-200 dark:border-teal-800 space-grotesk">INTERNAL DOCS</span>
-        <span className="text-sm text-zinc-700 dark:text-zinc-300">{data}</span>
+      <div className="mt-2 flex items-center gap-2 bg-teal-50 dark:bg-teal-950/20 p-2 rounded border border-teal-100 dark:border-teal-900/30">
+        <span className="text-xs font-bold text-teal-600 dark:text-teal-300 bg-teal-100 dark:bg-teal-900/40 px-2 py-1 rounded border border-teal-200 dark:border-teal-800 space-grotesk">INTERNAL DOCS</span>
+        <span className="text-sm text-zinc-700 dark:text-zinc-300 font-mono truncate">{data}</span>
       </div>
     ),
   },
@@ -249,8 +269,9 @@ const STATUS_HANDLERS: Record<string, any> = {
     title: "Knowledge Base Query",
     color: "text-blue-600 dark:text-blue-500",
     render: (data: any) => (
-      <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 bai-jamjuree-regular bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded">
-        Querying base... <span className="font-semibold text-zinc-800 dark:text-zinc-200">{data}</span>
+      <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 bai-jamjuree-regular bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border-l-4 border-blue-400">
+        <span className="text-xs font-bold text-blue-500 uppercase tracking-wide block">System Query</span>
+        <span className="font-semibold text-zinc-800 dark:text-zinc-200">{data}</span>
       </div>
     ),
   },
@@ -258,26 +279,101 @@ const STATUS_HANDLERS: Record<string, any> = {
     icon: CheckCircle2,
     title: "Context Synthesis Complete",
     color: "text-green-600 dark:text-green-500",
-    render: () => <span className="mt-1 block text-sm text-green-600 dark:text-green-400 font-medium">Ready to generate response.</span>
+    render: () => (
+      <div className="mt-1 flex items-center gap-2">
+        <div className="h-2 w-2 rounded-full bg-green-500" />
+        <span className="text-sm text-green-700 dark:text-green-400 font-medium space-grotesk">Ready to generate response.</span>
+      </div>
+    )
   },
   "Metadata_analysis": {
     icon: Activity,
     title: "Metadata Analysis",
     color: "text-pink-600 dark:text-pink-500",
-    render: (data: any) => <span className="mt-1 block text-sm text-zinc-500">Processing tags: {data}</span>
+    render: (data: any) => (
+      <div className="mt-2 flex items-center gap-2">
+        <Activity size={14} className="text-pink-500" />
+        <span className="text-sm text-zinc-600 dark:text-zinc-400 font-mono">Processing tags: <span className="text-pink-600 dark:text-pink-400 font-bold">{data}</span></span>
+      </div>
+    )
   },
   "Cleaning_Context": {
     icon: Loader2,
     title: "Refining Data Context",
     color: "text-blue-500",
-    render: (data: any) => <span className="mt-1 block text-sm text-zinc-500 italic">{data}</span>
+    render: (data: any) => (
+      <div className="mt-2 pl-3 border-l border-dashed border-blue-300 dark:border-blue-700">
+        <span className="text-xs text-zinc-400 uppercase tracking-wider">Sanitization</span>
+        <span className="mt-1 block text-sm text-zinc-600 dark:text-zinc-300 italic font-mono">{data}</span>
+      </div>
+    )
   },
   "new_thread": {
     icon: BrainCircuit,
     title: "Thread Initialization",
     color: "text-cyan-500",
-    render: (data: any) => <span className="mt-1 block text-sm text-zinc-500">Spawning new thread ID: {data}</span>
+    render: (data: any) => (
+      <div className="mt-2 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-200 dark:border-zinc-700">
+        <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 space-grotesk">THREAD ID</span>
+        <span className="text-xs font-mono text-zinc-500">{data}</span>
+      </div>
+    )
   },
+  "Found_Chunk_Count": {
+    icon: LucideCalculator,
+    title: "Vector Quantization",
+    color: "text-cyan-600 dark:text-cyan-400",
+    render: (data: any) => (
+      <div className="mt-2 flex items-center gap-3">
+        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30">
+          <span className="text-xs font-bold text-cyan-700 dark:text-cyan-300 font-mono">N</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-xs text-zinc-400 uppercase tracking-wider font-semibold space-grotesk">Vectors Identified</span>
+          <span className="text-sm text-zinc-700 dark:text-zinc-300 font-mono">
+            {data} <span className="text-zinc-400 text-xs">chunks</span>
+          </span>
+        </div>
+      </div>
+    )
+  },
+  "Searching_Records": {
+    icon: BrainCircuit,
+    title: "Index Lookup",
+    color: "text-violet-600 dark:text-violet-400",
+    render: (data: any) => (
+      <div className="mt-2 flex flex-col gap-1 pl-3 border-l-2 border-violet-200 dark:border-violet-800">
+        <span className="text-xs font-bold text-violet-500 uppercase tracking-widest space-grotesk">Querying DB</span>
+        <span className="text-sm text-zinc-600 dark:text-zinc-400 font-mono break-all">{data}</span>
+      </div>
+    )
+  },
+  "Checking_Quota": {
+    icon: LucideMonitor,
+    title: "Usage & Limits",
+    color: "text-amber-600 dark:text-amber-500",
+    render: (data: any) => (
+      <div className="mt-2 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-100 dark:border-amber-900/30">
+        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+        <span className="text-sm font-medium text-amber-900 dark:text-amber-200 space-grotesk">
+          Validating Request: {data}
+        </span>
+      </div>
+    )
+  },
+  "Checking_Plan": {
+    icon: SubscriptIcon,
+    title: "Entitlement Verification",
+    color: "text-teal-600 dark:text-teal-400",
+    render: (data: any) => (
+      <div className="mt-2 flex items-center justify-between w-full">
+        <span className="text-sm text-zinc-600 dark:text-zinc-400 bai-jamjuree-regular">Plan Status:</span>
+        <span className="text-xs font-bold px-2 py-1 bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 rounded uppercase tracking-wide">
+          {data}
+        </span>
+      </div>
+    )
+  }
 };
 
 const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }) => {
@@ -289,35 +385,33 @@ const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }
   if (!isActive) return null;
 
   const isProcessActive = showProcess?.status === false && showProcess.message_id !== (chat?.id || chat?.message_id);
-  // if (!isActive || !web_search_status || web_search_status.length === 0) return null;
 
   const currentMessageStatus = web_search_status.find(
     e => String(e.MessageId) === String(chat.id || chat.message_id)
   );
 
   return (
-    <div className={`my-6 w-full border rounded-xl overflow-hidden transition-all duration-300 
+    <div className={`my-6 w-full rounded-md overflow-hidden transition-all duration-300 border
       ${isProcessActive
-        ? "border-zinc-200 dark:border-zinc-800 opacity-70 bg-zinc-50 dark:bg-black"
-        : "border-zinc-300 dark:border-zinc-700 shadow-lg bg-white dark:bg-zinc-950"
+        ? "border-zinc-200 dark:border-zinc-800 opacity-70 bg-zinc-50/50 dark:bg-black"
+        : "border-zinc-300 dark:border-zinc-700 shadow-sm bg-white dark:bg-zinc-950"
       }`}>
 
-      {/* --- Transparency Header --- */}
+      {/* --- Transparency Header (Technical) --- */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between px-4 py-3 cursor-pointer bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800"
+        className="flex items-center justify-between px-4 py-3 cursor-pointer bg-zinc-50 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
       >
         <div className="flex items-center gap-3">
-          <div className="relative flex h-3 w-3">
-            {/* Blinking indicator for active process */}
+          <div className="relative flex h-2.5 w-2.5">
             {!isProcessActive && (
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             )}
-            <span className={`relative inline-flex rounded-full h-3 w-3 ${!isProcessActive ? "bg-emerald-500" : "bg-zinc-400"}`}></span>
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${!isProcessActive ? "bg-emerald-500" : "bg-zinc-400"}`}></span>
           </div>
 
-          <span className="text-sm font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-widest space-grotesk">
-            Process Logs <span className="text-zinc-400 font-normal ml-2 normal-case">({web_search_status.length} ops)</span>
+          <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-widest space-grotesk">
+            SYSTEM_LOGS <span className="text-zinc-400 font-mono font-normal ml-2">:: OP_COUNT({web_search_status.length})</span>
           </span>
         </div>
         <button className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
@@ -326,7 +420,7 @@ const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }
       </div>
 
       {/* --- Full Transparency Log --- */}
-      <div className={`transition-all duration-500 ease-in-out ${isOpen ? "h-auto opacity-100" : "max-h-0 opacity-0"}`}>
+      <div className={`transition-all duration-500 ease-in-out bg-white dark:bg-zinc-950 ${isOpen ? "h-auto opacity-100" : "max-h-0 opacity-0"}`}>
         <div className="flex flex-col gap-0 px-6 py-6">
           {currentMessageStatus && currentMessageStatus?.status.length > 0 &&
             currentMessageStatus.status.map((status, index) => {
@@ -340,30 +434,30 @@ const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }
                 icon: Activity,
                 title: status?.message,
                 color: "text-zinc-500",
-                render: (d: any) => <span className="text-sm text-zinc-500">{String(d)}</span>
+                render: (d: any) => <span className="text-sm text-zinc-500 font-mono">{String(d)}</span>
               };
 
               const Icon = config.icon;
 
               return (
                 <div key={index} className="flex gap-4 relative pb-8 last:pb-0 group">
-                  {/* Timeline Connector */}
+                  {/* Timeline Connector (Technical Line) */}
                   {!isLast && (
-                    <div className="absolute left-[15px] top-8 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-800 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700 transition-colors" />
+                    <div className="absolute left-[15px] top-8 bottom-0 w-px bg-zinc-200 dark:bg-zinc-800 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700 transition-colors" />
                   )}
 
                   {/* Icon Node */}
-                  <div className={`relative  shrink-0 h-8 w-8 rounded-lg flex items-center justify-center bg-white dark:bg-zinc-900 border transition-all duration-300
+                  <div className={`relative shrink-0 h-8 w-8 rounded-md flex items-center justify-center border transition-all duration-300
                     ${isLast
-                      ? "border-zinc-400 dark:border-zinc-500 ring-4 ring-zinc-100 dark:ring-zinc-800 shadow-md scale-110"
-                      : "border-zinc-200 dark:border-zinc-800 grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100"
+                      ? "bg-white dark:bg-zinc-900 border-zinc-400 dark:border-zinc-500 shadow-md ring-2 ring-zinc-100 dark:ring-zinc-800"
+                      : "bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100"
                     }`}>
-                    <Icon size={16} className={config.color} />
+                    <Icon size={14} className={config.color} />
                   </div>
 
                   {/* Step Content */}
-                  <div className={`flex flex-col min-w-0 w-full pt-1 ${!isLast ? "opacity-80" : "opacity-100"}`}>
-                    <span className="text-base font-bold text-zinc-800 dark:text-zinc-100 leading-none mb-1 bai-jamjuree-bold">
+                  <div className={`flex flex-col min-w-0 w-full pt-1 ${!isLast ? "opacity-70 group-hover:opacity-100 transition-opacity" : "opacity-100"}`}>
+                    <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 leading-none mb-1 space-grotesk tracking-wide">
                       {config.title}
                     </span>
                     <div className="w-full">

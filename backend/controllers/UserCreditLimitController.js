@@ -6,7 +6,7 @@ import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 dotenv.config();
 //handles limit check and update all at once
 export async function GlobalRequestRateLimit(req, res, next) {
-  const LIMIT = process.env.AGENT_REQUESTS_PER_MINUTE; //requests allowed for agent per minute
+  const LIMIT = parseInt(process.env.AGENT_REQUESTS_PER_MINUTE) || 10;
   const WINDOW_SECONDS = 60; // 1 minute
 
   //unique integer for every minute
@@ -38,31 +38,44 @@ export async function GlobalRequestRateLimit(req, res, next) {
 //main handler for user question request as middleware
 export const ProcessUserQuery = async (user, queryType) => {
   const user_id = user.user_id;
-  const Monthly_Quota = parseInt(process.env.USER_QUOTA_LIMIT || 20); // Always parse env vars
 
-  // check if the user is a paid member
-  const PaymentStatus = await CheckUserPlanStatus(user_id);
-  if (PaymentStatus?.isPaid === true) {
-    return { status: "ok", message: "Premium user - no limits" };
+  const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+    user_id
+  );
+  if (!status || error) {
+    console.log(status, error, "error ans staus from checkUserPlan");
+    return {
+      status: false,
+      message: "Something went wrong with the plan status check",
+    };
   }
 
+  // check if the user is a paid member
+
+  if (
+    plan_status === "active" &&
+    (plan_type !== "free" || plan_type !== "sprint pass")
+  ) {
+    return { status: true, message: "Premium user - no limits" };
+  }
+
+  const Monthly_Quota = parseInt(process.env.USER_FREE_QUOTA_LIMIT || 20);
+
   try {
-    // FIX 1: Passed the required arguments (user_id, queryType)
     const CurrentCount = await CheckQuotaInCacheAndDB(user_id, queryType);
 
-    // Check if the NEW count exceeds limit
     if (CurrentCount > Monthly_Quota) {
+      console.log(CurrentCount, Monthly_Quota, "current and monthly quota");
       return {
-        status: "not ok",
+        status: false,
         message: "You have exhausted your monthly quota",
       };
     }
 
-    return { status: "ok" }; // Explicit success return
+    return { status: true };
   } catch (error) {
     await notifyMe("Rate Limit Error", error);
-    // Fail Open: If system breaks, let user through (better UX)
-    return { status: "ok", message: "System bypass" };
+    return { status: true, message: "System bypass" };
   }
 };
 
@@ -74,7 +87,7 @@ async function updateDbQuota(user_id, monthKey, count) {
       "Month-Year": monthKey,
       question_asked_count: count,
     },
-    { onConflict: 'user_id, "Month-Year"' }
+    { onConflict: ["user_id", "Month-Year"] }
   );
 
   if (error) console.error("Failed to sync quota to DB:", error);
@@ -126,7 +139,10 @@ export async function CheckQuotaInCacheAndDB(user_id, query_type) {
 
       // D. "Warm up" the cache
       // We set the value to the new count.
-      await redisClient.set(redisKey, newCount, "EX", CACHE_TTL);
+      await redisClient
+        .multi()
+        .set(redisKey, newCount)
+        .expire(redisKey, CACHE_TTL);
 
       // E. Ensure DB row exists/updates
       // We await this one to ensure the row is created if it's a brand new month
@@ -142,38 +158,52 @@ export async function CheckQuotaInCacheAndDB(user_id, query_type) {
   }
 }
 ///check the user conribution information
-export const CheckUserContributionCount = async (user) => {
+export const CheckUserContributionCount = async (
+  user,
+  plan_type,
+  plan_status
+) => {
   const UserAccountDataKey = `user_id=${user.user_id}'s_dashboardData`;
+  let contributionCount = 0;
 
-  const exists = await redisClient.exists(UserAccountDataKey);
-
-  //if users cache exists
-  if (exists) {
-    //as we only fetch the privatedocuments of the user
-    const data = await redisClient.hGet(UserAccountDataKey, "Contributions");
-    //find the documents that are private
-
-    if (JSON.parse(data) >= 2) {
-      return { message: "limit reached" };
-    }
-  }
-
-  //check database if no cache exiss
-  const { data, error } = await supabase
-    .from("Contributions")
-    .select("document_id", { count: "exact" })
-    .eq("user_id", user.user_id)
-    .eq("Document_visibility", "Private");
-
-  if (error) {
-    console.error("error while checking the user doccount", error);
-    await notifyMe(
-      "An error occured in user contribution count checker fuction",
-      error
+  try {
+    const cacheData = await redisClient.hGet(
+      UserAccountDataKey,
+      "Contributions"
     );
+
+    if (cacheData) {
+      const parsed = JSON.parse(cacheData);
+      contributionCount = Array.isArray(parsed) ? parsed.length : 0;
+    } else {
+      // Fallback to DB
+      const { data, error, count } = await supabase
+        .from("Contributions")
+        .select("document_id", { count: "exact", head: true }) // head: true is faster if you only need count
+        .eq("user_id", user.user_id)
+        .eq("Document_visibility", "Private");
+
+      if (error) throw error;
+      contributionCount = count || 0;
+    }
+
+    // Centralized Limit Logic
+    const limits = {
+      free: 2,
+      "sprint pass": 5,
+      unlimited: Infinity, // Future proofing
+    };
+
+    const userLimit = limits[plan_type] || 0;
+
+    if (plan_type === "free" && contributionCount >= userLimit) {
+      console.log();
+      return { message: "Limit reached", count: contributionCount };
+    }
+
+    return { message: "within limit", count: contributionCount };
+  } catch (error) {
+    await notifyMe("Error in CheckUserContributionCount", error);
+    return { error: "Failed to verify limits" };
   }
-  if (data && data?.length >= 2) {
-    return { message: "Limit reached" };
-  }
-  return { message: "within bounds" };
 };

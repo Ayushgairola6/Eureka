@@ -40,20 +40,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
     {
       path: "/Interface",
       icon: IoChatboxEllipsesOutline,
-      label: "Try Now",
+      label: "Interface",
       show: true,
     },
     {
       path: "/user/misallaneous-chats",
       icon: BsChatSquare,
       label: "History",
-      show: true,
+      show: isLoggedIn === true && user?.email !== "",
     },
     {
       path: "/user/rooms",
       icon: BsPeople,
-      label: "Rooms",
-      show: true,
+      label: "Workspace",
+      show: isLoggedIn === true && user?.email !== "",
     },
     {
       path: "/Register",
@@ -71,13 +71,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
       path: "/user/dashboard",
       icon: MdDashboard,
       label: "Dashboard",
-      show: isLoggedIn || user?.email !== "",
+      show: isLoggedIn === true || user?.email !== "",
     },
     {
       path: "/Feedback",
       icon: MdFeedback,
       label: "Feedback",
-      show: true,
+      show: !isLoggedIn && user?.email === "",
     },
     {
       path: "/userManual/AntiNode/Know-How",
@@ -110,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
           x: isVisble ? 0 : -500,
         }}
         transition={{ duration: 0.3, ease: "easeInOut", type: "spring", damping: 20 }}
-        className="md:hidden fixed h-full w-[300px] top-0 bg-white dark:bg-neutral-950 dark:text-white text-black z-[20] shadow-2xl flex flex-col border-r border-gray-200 dark:border-gray-800"
+        className="md:hidden fixed h-full w-[300px] top-0 bg-white dark:bg-neutral-950 dark:text-white text-black z-[20] shadow-2xl flex flex-col border-r border-gray-200 dark:border-neutral-800"
       >
         {/* Header */}
         <div className="relative p-4 border-b border-gray-200 dark:border-gray-800">
@@ -150,13 +150,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             </div>
           </div>
 
-          {/* Theme Picker */}
-          {/* <div className="mt-4 flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <span className="text-xs space-grotesk text-gray-600 dark:text-gray-400">
-              Theme
-            </span>
-            <CustomDropdown />
-          </div> */}
         </div>
 
         {/* Navigation Links */}
@@ -173,7 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
                       group relative flex items-center gap-4 px-4 py-3 rounded-xl
                       text-sm space-grotesk font-medium transition-all duration-200
                       ${isActive(link.path)
-                        ? "bg-neutral-900 text-white dark:bg-gray-100 dark:text-black shadow-lg shadow-blue-500/30"
+                        ? "bg-neutral-900 text-white dark:bg-gray-100 dark:text-black shadow-lg shadow-orange-500/30"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700"
                       }
                     `}
@@ -216,7 +209,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+        <div className="p-4 border-t border-gray-200 dark:border-neutral-800">
           <div className="text-xs text-center text-gray-500 dark:text-gray-400 space-grotesk">
             <p>© 2026 AntiNode</p>
           </div>

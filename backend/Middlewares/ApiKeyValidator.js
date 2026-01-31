@@ -49,9 +49,10 @@ export const ValidateApiKey = async (req, res, next) => {
       return res.status(404).json({ message: "Invalid API_KEY" });
     }
 
-    await redisClient.set(UserCachedAPIredisKey, JSON.stringify(data), {
-      expiration: { type: "EX", value: 120 },
-    });
+    await redisClient
+      .multi()
+      .set(UserCachedAPIredisKey, JSON.stringify(data))
+      .expire(UserCachedAPIredisKey, 1500);
 
     req.user = data;
     next();

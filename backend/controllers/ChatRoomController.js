@@ -39,7 +39,6 @@ import {
   FormatSessionHistory,
   HandleDeepWebResearch,
 } from "./FeaturesController.js";
-import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 import {
   FilterUrlForExtraction,
   FormattForLLM,
@@ -47,6 +46,8 @@ import {
   ProcessForLLM,
 } from "../OnlineSearchHandler/WebCrawler.js";
 import { HandlePreProcessFunctions } from "../Synthesis/helper_functions.js";
+import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
+import { PaymentsApi } from "@getbrevo/brevo";
 
 // string type validator
 const IsAString = (value) => {
@@ -124,13 +125,6 @@ export const CreateChatRooms = async (req, res) => {
   try {
     const user_id = req.user.user_id;
     const user_name = req.user.username;
-    const IsPremiumUser = req.user.PaymentStatus;
-    if (IsPremiumUser === undefined) {
-      return res.status(400).send({
-        message:
-          "Please log out and Log In again to be able to access new features",
-      });
-    }
     if (
       !user_id ||
       !user_name ||
@@ -139,7 +133,20 @@ export const CreateChatRooms = async (req, res) => {
     ) {
       return res.status(400).send({ message: "Please Login to continue" });
     }
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user_id
+    );
 
+    if (!status || error) {
+      return res.status(400).send({ message: "Something went wrong" });
+    }
+
+    if (plan_type === "free") {
+      return res.status(402).send({
+        message:
+          "This feature is only available on premium plan, you can buy our pro plans and create private or public workspace with your team or client as required.",
+      });
+    }
     const { Room_name, participant_count, Room_type, Description } = req.body;
 
     if (
@@ -156,33 +163,31 @@ export const CreateChatRooms = async (req, res) => {
     }
 
     //checking the user payment status and based on that allowing chat Rooms with only 2 members worth limit
-    if (IsPremiumUser === false) {
-      // if the user is not a paid member
-      const { data, error } = await supabase
-        .from("chat_rooms")
-        .select("created_by")
-        .eq("user_id", user_id)
-        .single();
+    // if the user is not a paid member
+    const { data, error: dbError } = await supabase
+      .from("chat_rooms")
+      .select("created_by")
+      .eq("user_id", user_id)
+      .single();
 
-      if (error) {
-        return res.status(400).send({ message: "Something went wrong." });
-      }
-      // if the user already has a room
-      if (data.created_by) {
-        return res.status(403).send({
-          message: "On the free tier you can not create more than 1 more room.",
-        });
-      } else if (Room_type === "Private") {
-        return res.status(400).send({
-          message:
-            "We currently only allow premium users to create private rooms.",
-        });
-      } else if (participant_count > 2) {
-        return res.status(400).send({
-          message:
-            "On free tier you can only create a room with 2 participants worth limit.",
-        });
-      }
+    if (dbError) {
+      return res.status(400).send({ message: "Something went wrong." });
+    }
+    // if the user already has a room
+    if (data.created_by) {
+      return res.status(403).send({
+        message: "On the free tier you can not create more than 1 more room.",
+      });
+    } else if (Room_type === "Private") {
+      return res.status(400).send({
+        message:
+          "We currently only allow premium users to create private rooms.",
+      });
+    } else if (participant_count > 2) {
+      return res.status(400).send({
+        message:
+          "On free tier you can only create a room with 2 participants worth limit.",
+      });
     }
 
     // creating a unique room id
@@ -197,7 +202,7 @@ export const CreateChatRooms = async (req, res) => {
         .send({ message: "Error while assigning your room a code" });
     }
     // Inserting the data in the database
-    const { error } = await supabase.from("chat_rooms").insert({
+    const db = await supabase.from("chat_rooms").insert({
       room_id: Room_id,
       room_name: Room_name,
       room_type: Room_type,
@@ -207,7 +212,7 @@ export const CreateChatRooms = async (req, res) => {
       created_by: user_id,
     });
 
-    if (error) {
+    if (db.error) {
       await notifyMe("Something went wrong while creating a chatRoom", error);
 
       return res
@@ -490,10 +495,13 @@ export const checkRoomMemberLimit = async (room_id) => {
       if (roomError) return { error: "Error fetching room details" };
 
       pariticipantCount = room.participant_count;
-      await redisClient.set(
-        RoomParticipantLimitCacheKey,
-        JSON.stringify(room.participant_count)
-      );
+      await redisClient
+        .multi()
+        .set(
+          RoomParticipantLimitCacheKey,
+          JSON.stringify(room.participant_count)
+        )
+        .expire(RoomParticipantLimitCacheKey, 500);
     }
 
     // Get current member count
@@ -519,8 +527,8 @@ export const checkRoomMemberLimit = async (room_id) => {
 
 export const GetRoomChatHistory = async (req, res) => {
   try {
-    const user_id = req.user;
-    const IsPremiumUser = req.user.PaymentStatus;
+    const user_id = req.user.user_ids;
+
     if (!user_id)
       return res.status(400).send({ message: "Please login to continue" });
     const room_id = req.params.room_id;
@@ -528,19 +536,26 @@ export const GetRoomChatHistory = async (req, res) => {
 
     const RoomChatKey = `room_id=${room_id}'s_chat-history`;
     // await redisClient.del(RoomChatKey);
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user_id
+    );
+
+    if (!status || error) {
+      return res.status(400).send({ message: "Something went wrong" });
+    }
     //if cache exists
     const exists = await redisClient.exists(RoomChatKey);
-    let limit = req.user.PaymentStatus === true ? 15 : 10;
+    let limit = plan_type !== "free" ? 15 : 10;
     if (exists) {
       const ChatHistory = await redisClient.lRange(RoomChatKey, -5, -1); //always recent messages
       const parsedChats = ChatHistory.map((jsonString) => {
         try {
           // Parse each individual string element
           return JSON.parse(jsonString);
-        } catch (error) {
-          console.error("Error parsing JSON message:", jsonString, error);
+        } catch (err) {
+          console.error("Error parsing JSON message:", jsonString, err);
           // Return a placeholder or handle the error as needed
-          return re.status(400).send({ error: "Parse Error", data: [] });
+          return res.status(400).send({ error: "Parse Error", data: [] });
         }
       });
 
@@ -549,7 +564,7 @@ export const GetRoomChatHistory = async (req, res) => {
     }
 
     //retrieve the chats from the db and cache it then send it;
-    const { data, error } = await supabase
+    const { data, error: dbError } = await supabase
       .from("room-chat-history")
       .select(
         `
@@ -571,7 +586,7 @@ export const GetRoomChatHistory = async (req, res) => {
       return res.status(200).send({ chats: [], message: "No messages found" });
     }
 
-    if (error) {
+    if (dbError) {
       return res.status(400).send({ message: "Unable to read older messages" });
     }
 
@@ -621,7 +636,14 @@ export const FetchMoreMessages = async (req, res) => {
       return res.status(400).send({ message: "Invalid arguments" });
     }
 
-    if (user.PaymentStatus === false) {
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user.user_id
+    );
+
+    if (!status || error) {
+      return res.status(400).send({ message: "Something went wrong" });
+    }
+    if (plan_type === "free") {
       return res.status(200).send({
         message:
           "Currently only premium members are allowed to fetch previous chats",
@@ -665,7 +687,7 @@ export const FetchMoreMessages = async (req, res) => {
 
     // // return;
     // //then go to the database
-    const { data, error } = await supabase
+    const { data, error: dberror } = await supabase
       .from("room-chat-history")
       .select(
         `
@@ -683,7 +705,7 @@ export const FetchMoreMessages = async (req, res) => {
       // .lt("message_id", MessageId)
       .limit(1);
 
-    if ((data && data?.length === 0) || error) {
+    if ((data && data?.length === 0) || dberror) {
       return res.status(404).send({ message: "No older messages found" });
     }
 
@@ -702,7 +724,6 @@ export const FetchMoreMessages = async (req, res) => {
       .status(200)
       .send({ message: "Found older messages", history: sortedChats });
   } catch (error) {
-    console.error(error);
     await notifyMe("An erro while fetching more messages");
     return res.status(500).send({ message: "Internal server error" });
   }
@@ -712,13 +733,18 @@ export const FetchMoreMessages = async (req, res) => {
 export const GetDocumentChatHistory = async (req, res) => {
   try {
     const user_id = req.user.user_id;
-    const IsPremiumUser = req.user.PaymentStatus;
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user_id
+    );
 
+    if (!plan_status || error) {
+      return res.status(400).send({ message: "Something went wrong" });
+    }
     if (!user_id)
       return res.status(400).send({ message: "Please login to continue" });
 
-    if (IsPremiumUser === false) {
-      return res.staus(403).send({
+    if (plan_type === "free") {
+      return res.status(403).send({
         message: "You need an active subscription to access this feature.",
       });
     }
@@ -731,29 +757,25 @@ export const GetDocumentChatHistory = async (req, res) => {
     if (CachedDocChats) {
       return res.status(200).send(JSON.parse(CachedDocChats));
     }
-    const { data, error } = await supabase
+    const { data, error: dbError } = await supabase
       .from("Conversation_History")
       .select("created_at,question,AI_response")
       .eq("document_id", document_id)
       .eq("user_id", user_id);
 
-    if (error) {
-      console.error(error);
+    if (dbError) {
       return res.status(404).send({ message: "No such room found" });
     }
 
     if (data.length !== 0) {
-      await redisClient.set(DocumentChatCacheKey, JSON.stringify(data), {
-        expiration: {
-          type: "EX",
-          value: 1500,
-        },
-      });
+      await redisClient
+        .multi()
+        .set(DocumentChatCacheKey, JSON.stringify(data))
+        .expire(DocumentChatCacheKey, 1500);
     }
 
     return res.send(data);
   } catch (error) {
-    console.log(error);
     return res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -766,6 +788,13 @@ export const GetMisallaneousChatHistory = async (req, res) => {
     const user_id = user.user_id;
     const cursor = req.query.cursor; // Expecting ISO date string or null
 
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user_id
+    );
+
+    if (!status || error) {
+      return res.status(400).send({ message: "Something went wrong" });
+    }
     // Validate User
     if (!user_id) {
       return res.status(401).send({ message: "Please login to continue" });
@@ -777,7 +806,8 @@ export const GetMisallaneousChatHistory = async (req, res) => {
     if (!cursor) {
       const exists = await redisClient.exists(key);
       if (exists) {
-        const limit = user.PaymentStatus === true ? 10 : 5;
+        const limit =
+          plan_type === "free" ? 5 : plan_type === "sprint pass" ? 10 : 30;
         // Fetch requested amount from cache
         const cachedChats = await redisClient.lRange(key, 0, limit - 1);
 
@@ -823,9 +853,9 @@ export const GetMisallaneousChatHistory = async (req, res) => {
       query = query.lt("created_at", cursor);
     }
 
-    const { data, error } = await query;
+    const { data, error: dbError } = await query;
 
-    if (error) {
+    if (dbError) {
       return res.status(500).send({
         message: "Something went wrong while fetching your chat history",
       });
@@ -871,9 +901,16 @@ export const GetMisallaneousChatHistory = async (req, res) => {
 export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const IsPremiumUser = req.user.PaymentStatus;
+
     const io = getIo();
 
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      userId
+    );
+
+    if (!status || error) {
+      return res.status(400).send({ message: "Something went wrong" });
+    }
     if (!userId)
       return res.status(401).send({ message: "Please login to continue" });
 
@@ -892,7 +929,7 @@ export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
     }
 
     // if user is not a paid member
-    if (IsPremiumUser === false) {
+    if (plan_type === "free") {
       if (io) {
         io.to(room_id).emit("recieved_message", {
           message_id: MessageId,
@@ -913,7 +950,8 @@ export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
     // check for matching results from db
     const DbResults = await index.searchRecords({
       query: {
-        topK: req.user.PaymentStatus === true ? 200 : 100,
+        topK:
+          plan_type === "free" ? 50 : plan_type === "sprint pass" ? 100 : 500,
         inputs: { text: question },
         filter: {
           documentId: { $eq: document_id },
@@ -940,7 +978,9 @@ export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
     const AnswerToQuestion = await GenerateResponse(
       question,
       FoundInformation,
-      process.env.SYSTEM_PROMPT
+      process.env.SYSTEM_PROMPT,
+      req.user,
+      plan_type
     );
 
     if (!AnswerToQuestion || AnswerToQuestion.error) {
@@ -949,45 +989,6 @@ export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
           "Error while generating a response the server is very busy right now !",
       });
     }
-    //     const AnswerToQuestion = `# Testing Broadcast System
-
-    // This is a **test message** to check the broadcast functionality across the chat room.
-
-    // ## Features to Test:
-    // - ✅ **Real-time delivery** to all users
-    // - ✅ **Markdown rendering** in messages
-    // - ✅ **Message formatting** and styling
-    // - ✅ **Different sender types** (User, System, AntiNode)
-
-    // ### Code Block Test:
-    // \`\`\`javascript
-    // const message = {
-    //   id: "test_123",
-    //   content: "Hello from broadcast!",
-    //   timestamp: new Date().toISOString(),
-    //   sender: "SYSTEM"
-    // };
-    // \`\`\`
-
-    // ### List Test:
-    // - Item 1 with *italic*
-    // - Item 2 with **bold**
-    // - Item 3 with ~~strikethrough~~
-
-    // ### Table Test:
-    // | Feature | Status | Notes |
-    // |---------|--------|-------|
-    // | Real-time | ✅ Working | Socket.io |
-    // | Markdown | ✅ Rendered | Streamdown |
-    // | Styling | ✅ Applied | Tailwind |
-
-    // > This is a blockquote testing the broadcast system across all connected clients in the room.
-
-    // **Message ID:** ${Date.now()}
-    // **Room:** ${Math.random().toString(36).substr(2, 9)}
-    // `;
-
-    // broadcast the message to the room so that the message is synchrnus
 
     if (io) {
       io.to(room_id).emit("recieved_message", {
@@ -1001,14 +1002,14 @@ export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
     }
 
     // sote the messagein the db
-    const { error } = await supabase.from("room-chat-history").insert({
+    const { error: dbError } = await supabase.from("room-chat-history").insert({
       sent_by: null,
       message: AnswerToQuestion,
       room_id: room_id,
       message_id: MessageId,
       sent_at: currentTime || new Date().toISOString(),
     });
-    if (error) {
+    if (dbError) {
       await notifyMe(
         `An error occured of critical level occured when storing chat history in the db at ${currentTime}`
       );
@@ -1060,40 +1061,39 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
     }
 
     // if user isnot premium user block their request
-    // const checkpaymentStatus = await CheckUserPlanStatus(req.user.user_id);
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      req.user.user_id
+    );
 
-    // if (!checkpaymentStatus || checkpaymentStatus?.error) {
-    //   EmitEvent(room_id, "recieved_message", {
-    //     message_id: MessageId,
-    //     sent_by: null,
-    //     message: `User ${req.user.username} is not a premium member that is why they cannot peform web search in a chat room`,
-    //     room_id: room_id,
-    //     users: { username: "AntiNode" },
-    //     sent_at: currentTime || new Date().toISOString(),
-    //   });
-    //   return res.status(400).send({
-    //     message: `User ${req.user.username} is not a premium member that is why they cannot peform web search in a chat room`,
-    //   });
-    // }
+    if (!status || error) {
+      EmitEvent(room_id, "recieved_message", {
+        message_id: MessageId,
+        sent_by: null,
+        message: `User ${req.user.username} is not a premium member that is why they cannot peform web search in a chat room`,
+        room_id: room_id,
+        users: { username: "AntiNode" },
+        sent_at: currentTime || new Date().toISOString(),
+      });
+      return res.status(400).send({
+        message: `User ${req.user.username} is not a premium member that is why they cannot peform web search in a chat room`,
+      });
+    }
 
-    // if (
-    //   // checkpaymentStatus.isPaid === false &&
-    //   web_search_depth !== "deep_web"
-    // ) {
-    //   return res.status(400).send({
-    //     message: "You need a premium plan in order to access deep web search.",
-    //   });
-    // }
+    if (plan_type === "free" && web_search_depth !== "deep_web") {
+      return res.status(400).send({
+        message: "You need a premium plan in order to access deep web search.",
+      });
+    }
     let InDepthQueries = [];
     // check the quota status of the user
-    // const UpdateState = await ProcessUserQuery(req.user, "web_search");
+    const UpdateState = await ProcessUserQuery(req.user, "web_search");
 
-    // // if user has reached the
-    // if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
-    //   return res.status(400).send({
-    //     message: `User ${req.user.username} has exhausted their monthly quota to participate in the additional feature of the room, ${req.user.username} you can get our premium plan right now and continue the research with your teams right away or wait please wait till it renews.`,
-    //   });
-    // }
+    // if user has reached the
+    if (UpdateState?.status === false) {
+      return res.status(400).send({
+        message: `User ${req.user.username} has exhausted their monthly quota to participate in the additional feature of the room, ${req.user.username} you can get our premium plan right now and continue the research with your teams right away or wait please wait till it renews.`,
+      });
+    }
 
     let WebResults;
     // if the query type is deep_web
@@ -1192,39 +1192,39 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       // we put the results in the webResults array
       WebResults = FormattForLLM(CleanedWebData);
     } else {
-      // const response = await GetDataFromSerper(
-      //   query,
-      //   req.user,
-      //   MessageId,
-      //   room_id
-      // );
+      const response = await GetDataFromSerper(
+        query,
+        req.user,
+        MessageId,
+        room_id
+      );
 
-      // if (!response) {
-      //   return res
-      //     .status(400)
-      //     .send({ message: "An error occured while processing your request" });
-      // }
+      if (!response) {
+        return res
+          .status(400)
+          .send({ message: "An error occured while processing your request" });
+      }
       // const response
 
       // convert the results into array of links
-      // const LinksToFetch = FilterUrlForExtraction(
-      //   response,
-      //   req.user,
-      //   MessageId,
-      //   room_id
-      // );
-      const LinksToFetch = [
-        "https://www.worldwidecancerresearch.org/our-latest-news/news-and-press/our-top-cancer-research-breakthroughs-of-2025/",
-        "https://ccr.cancer.gov/news/new-discoveries",
-        "https://www.ucsf.edu/news/2025/11/431086/undruggable-unstoppable-new-cancer-cure-target-emerges",
-        "https://www.mskcc.org/news/top-cancer-treatment-advances-at-msk-in-2025",
-        "https://www.weforum.org/stories/2025/02/cancer-treatment-and-diagnosis-breakthroughs/",
-        "https://news.gsu.edu/research-magazine/breakthrough-cancer-therapy-moves-to-phase-2-trials",
-        "https://www.mdanderson.org/cancerwise/11-new-research-advances-from-the-past-year.h00-159703068.html",
-        "https://www.mayoclinic.org/medical-professionals/cancer/news",
-        "https://www.uptodate.com/contents/whats-new-in-oncology",
-        "https://www.nature.com/natcancer/",
-      ];
+      const LinksToFetch = FilterUrlForExtraction(
+        response,
+        req.user,
+        MessageId,
+        room_id
+      );
+      // const LinksToFetch = [
+      //   "https://www.worldwidecancerresearch.org/our-latest-news/news-and-press/our-top-cancer-research-breakthroughs-of-2025/",
+      //   "https://ccr.cancer.gov/news/new-discoveries",
+      //   "https://www.ucsf.edu/news/2025/11/431086/undruggable-unstoppable-new-cancer-cure-target-emerges",
+      //   "https://www.mskcc.org/news/top-cancer-treatment-advances-at-msk-in-2025",
+      //   "https://www.weforum.org/stories/2025/02/cancer-treatment-and-diagnosis-breakthroughs/",
+      //   "https://news.gsu.edu/research-magazine/breakthrough-cancer-therapy-moves-to-phase-2-trials",
+      //   "https://www.mdanderson.org/cancerwise/11-new-research-advances-from-the-past-year.h00-159703068.html",
+      //   "https://www.mayoclinic.org/medical-professionals/cancer/news",
+      //   "https://www.uptodate.com/contents/whats-new-in-oncology",
+      //   "https://www.nature.com/natcancer/",
+      // ];
 
       if (LinksToFetch.length === 0) {
         console.log("Links to fetch is an empty array");
@@ -1283,7 +1283,8 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
         : query,
       JSON.stringify(WebResults.FinalContent),
       WebResultPrompt,
-      req.user
+      req.user,
+      plan_type
     );
     if (!AnswerToQuestion || AnswerToQuestion.error) {
       // AnswerToQuestion = FormatForHumanFallback(webResults.response).text;
@@ -1304,14 +1305,14 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       });
     }
     // store the message in the db
-    const { error } = await supabase.from("room-chat-history").insert({
+    const { error: dbError } = await supabase.from("room-chat-history").insert({
       sent_by: null,
       message: AnswerToQuestion,
       room_id: room_id,
       message_id: MessageId,
       sent_at: currentTime || new Date().toISOString(),
     });
-    if (error) {
+    if (dbError) {
       await notifyMe(
         `An error occured of critical level occured when storing chat history in the db at ${currentTime}`
       );
@@ -1354,7 +1355,7 @@ export const GetSyntheSizedResults = async (req, res) => {
     const UpdateState = await ProcessUserQuery(req.user, "Synthesis");
 
     // if user has reached the
-    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
+    if (UpdateState?.status === false) {
       return res.status(200).send({
         Answer: `${user.username}'s monthly quota has finished in order for them to continue using advanced feature they can either become a pro member or wait till next month for renewal.`,
         message: "Response found",

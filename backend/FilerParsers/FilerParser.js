@@ -174,7 +174,7 @@ export function formatSSEChunk(chunk) {
 // creating a batch to process the chunks of context from public docs
 export const HandleSourceCreation = async (
   response,
-  PaymentStatus,
+  plan_type,
   MessageId
 ) => {
   const Reference = {
@@ -182,7 +182,7 @@ export const HandleSourceCreation = async (
     docs: [],
   };
   const IdsToFetch = [];
-  const batchSize = PaymentStatus === true ? 20 : 10; //this determine how many documents to process at once
+  const batchSize = plan_type === 'free' ? 10 : 20; //this determine how many documents to process at once
 
   const seen = new Set(); // a set to track the uniqueness of document
 

@@ -5,10 +5,10 @@ import {
   FaGlobeAmericas,
   FaLock,
 } from "react-icons/fa";
-import { BsArrowLeft, BsLightningChargeFill } from "react-icons/bs";
+import { BsArrowRight, BsLightningChargeFill } from "react-icons/bs";
 import { useAppSelector } from "../store/hooks";
 import { motion } from "framer-motion";
-import { IoCreate } from "react-icons/io5";
+import { IoMdCreate } from "react-icons/io";
 type MainProps = {
   view: boolean;
   setView: React.Dispatch<React.SetStateAction<boolean>>;
@@ -48,15 +48,20 @@ const SlidingAnalytics: React.FC<MainProps> = ({ view, setView, showCard, setSho
         x: view === true ? 0 : 400,
       }}
       transition={{ ease: "anticipate", duration: 1 }}
-      className={`absolute top-0 right-0 flex items-center justify-start flex-col gap-2 h-full p-3 dark:bg-black bg-gray-200 overflow-auto 
+      className={`fixed top-18 right-0 flex items-center justify-start flex-col gap-2 h-full p-3 dark:bg-black bg-gray-200 overflow-auto w-80
       `}
     >
-      <button
-        onClick={() => setView(!view)}
-        className="absolute top-1 z-[2] right-5 rounded-full h-6 w-6 flex items-center justify-center dark:bg-white lg:hidden bg-black text-white dark:text-black "
-      >
-        <BsArrowLeft />
-      </button>
+      <section className='w-full flex items-center justify-between px-2 border-b pb-2'>
+
+        <button
+          onClick={() => setView(!view)}
+          className="  rounded-full h-5 w-5 flex items-center justify-center dark:bg-white lg:hidden font-bold bg-black text-white dark:text-black "
+        >
+          <BsArrowRight />
+        </button>
+        <h2 className='space-grotesk font-medium text-sm uppercase '>See what's happening</h2>
+      </section>
+
       {/* CARD 1: TOTAL WORKSPACES */}
       <StatCard
         label="Active Workspaces"
@@ -90,7 +95,7 @@ const SlidingAnalytics: React.FC<MainProps> = ({ view, setView, showCard, setSho
           0
         )}% of your network`}
       />
-      <button onClick={() => setShowCard(!showCard)} className="flex items-center justify-center gap-2  bg-neutral-900 text-white dark:bg-gray-100 dark:text-black rounded-md px-3 py-1 mt-10 mx-auto space-grotesk font-medium shadow-xl">Create new room <IoCreate /></button>
+      <button onClick={() => setShowCard(!showCard)} className="flex items-center justify-center gap-2  bg-neutral-900 text-white dark:bg-gray-100 dark:text-black rounded-md px-3 py-1 mt-10 mx-auto space-grotesk  shadow-xl">Build new workspace <IoMdCreate /></button>
     </motion.div>
   );
 };

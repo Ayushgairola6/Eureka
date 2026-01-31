@@ -48,7 +48,7 @@ const JoinRoomInput: React.FC<props> = ({ showCard, setShowCard }) => {
         {/* 2. Text Context */}
         <div className="text-center space-y-2 mb-10">
           <h2 className="bai-jamjuree-semibold text-2xl md:text-3xl text-black dark:text-white">
-            No active rooms found
+            No active workspace found
           </h2>
           <p className="space-grotesk text-sm text-neutral-500 dark:text-neutral-400 max-w-md">
             You aren't part of any discussions yet. Enter a code to join an
@@ -62,7 +62,7 @@ const JoinRoomInput: React.FC<props> = ({ showCard, setShowCard }) => {
           <section className="shadow-xl border rounded-xl w-full p-2 px-3 space-y-3  ring-1 ring-black/5 dark:ring-white/10 ">
             <h1 className="bai-jamjuree-semibold text-sm text-neutral-700 dark:text-neutral-400 flex items-center justify-start gap-2 px-1 pt-1 ">
               <FaUserSecret />
-              Join with a room code
+              Join with a workspace code
             </h1>
 
             <div className="flex items-center justify-between gap-2 ">
@@ -112,7 +112,7 @@ const JoinRoomInput: React.FC<props> = ({ showCard, setShowCard }) => {
           >
             <div className="flex flex-col items-start">
               <span className="bai-jamjuree-semibold text-black dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                Create a new room
+                Create a new workspace
               </span>
               <span className="text-xs text-neutral-500 space-grotesk">
                 Become a host and invite others

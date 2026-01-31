@@ -134,18 +134,22 @@ export const GetUserDashboardData = createAsyncThunk<AuthState, void>(
       );
 
       return response.data;
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+    } catch (err: any) {
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );
@@ -170,18 +174,22 @@ export const AcceptOrRejectRequest = createAsyncThunk<any, ActionPayload>(
       );
       // console.log(response.data);
       return response.data;
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+    } catch (err: any) {
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );
@@ -203,17 +211,21 @@ export const DeleteNotification = createAsyncThunk(
       );
       return response.data;
     } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );
@@ -235,17 +247,21 @@ export const UpdatePreference = createAsyncThunk<any, string>(
       );
       return response.data;
     } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );
@@ -274,17 +290,21 @@ export const LogoutUser = createAsyncThunk(
         return response.data;
       }
     } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );
@@ -306,18 +326,22 @@ export const SetCookies = createAsyncThunk(
         }
       );
       return response.data;
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+    } catch (err: any) {
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );

@@ -66,7 +66,7 @@ export const ToolRegistry = {
     description:
       "Fetches the important stuff related to the query asked by the user and the category they chose",
     importance: 1,
-    execute: async (category, subCategory, question, user) => {
+    execute: async (category, subCategory, question, user, plan_type) => {
       if (
         !category ||
         typeof category !== "string" ||
@@ -81,7 +81,7 @@ export const ToolRegistry = {
       //getting the text chunks from the db
       const response = await index.searchRecords({
         query: {
-          topK: user.PaymentStatus === true ? 5 : 2,
+          topK: plan_type !== "free" ? 5 : 2,
           inputs: { text: question },
           filter: {
             category: { $eq: category },
@@ -219,23 +219,6 @@ RETURN new_m
         return { message: "Invalid arguments" };
       }
 
-      //getting the text chunks from the db
-      // const response = await index.searchRecords({
-      //   query: {
-      //     topK: user.PaymentStatus === true ? 20 : 10,
-      //     inputs: { text: question },
-      //     filter: {
-      //       documentId: { $eq: docId },
-      //       visibility: { $eq: "Private" },
-      //       contributor: { $eq: user.user_id },
-      //     },
-      //   },
-      //   fields: ["text"], //only return the text
-      // });
-
-      // if (response.result.hits.length < 0) {
-      //   return `No info in knowledge-base regard this query`;
-      // }
       const { data, error } = await supabase
         .from("Contributions")
         .select("  chunk_count ")
@@ -264,7 +247,7 @@ RETURN new_m
     description:
       "Find the data of a document whose document id is available to us",
     importance: 2,
-    execute: async (docId, question, user) => {
+    execute: async (docId, question, user, plan_type) => {
       if (
         !question ||
         typeof question !== "string" ||
@@ -277,7 +260,7 @@ RETURN new_m
       // getting the text chunks from the db
       const response = await index.searchRecords({
         query: {
-          topK: user.PaymentStatus === true ? 20 : 10,
+          topK: plan_type !== "free" ? 20 : 10,
           inputs: { text: question },
           filter: {
             documentId: { $eq: docId },

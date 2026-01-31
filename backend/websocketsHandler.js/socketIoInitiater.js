@@ -87,16 +87,10 @@ export const initializeSocketIo = (httpServer) => {
             refreshToken = data[0].Refresh_Token;
 
             // 6. Update Redis Cache (Matching API Logic)
-            await redisClient.set(
-              RefreshTokenKey,
-              JSON.stringify(refreshToken),
-              {
-                expiration: {
-                  type: "EX",
-                  value: 1800,
-                },
-              }
-            );
+            await redisClient
+              .multi()
+              .set(RefreshTokenKey, JSON.stringify(refreshToken))
+              .expire(RefreshTokenKey, 1800);
           }
 
           // 7. Verify the Refresh Token
@@ -122,7 +116,7 @@ export const initializeSocketIo = (httpServer) => {
             refreshDecoded.user_id,
             refreshDecoded.email,
             refreshDecoded.username,
-            refreshDecoded.PaymentStatus
+            refreshDecoded.AllowedTrainingModels
           );
 
           // 9. Update Access Token in DB

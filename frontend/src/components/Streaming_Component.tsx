@@ -19,7 +19,7 @@ export const ChatMessage = ({ chat, lastMessageId }: any) => {
 
 
       <Streamdown
-        className=" "
+        className="bai-jamjuree-regular"
       >
         {contentToRender}
       </Streamdown>

@@ -11,7 +11,6 @@ import { setOpen } from "../store/chatRoomSlice.ts";
 import NotificationPanel from "@/components/notificationBar.tsx";
 import Settings from "@/components/settings.tsx";
 import { GoMoon } from "react-icons/go";
-import { CustomDropdown } from "./Theme_Picker.tsx";
 import { LogoRender } from "./LogoRender.tsx";
 const Navbar = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -30,11 +29,8 @@ const Navbar = () => {
 
   const navLinks = [
     { label: "Home", to: "/", tab: "Home" },
-    { label: "Try Now", to: "/Interface", tab: "Try" },
-    { label: "Rooms", to: "/user/rooms", tab: "Rooms" },
-    { label: "History", to: "/user/misallaneous-chats", tab: "History" },
+    { label: "Interface", to: "/Interface", tab: "Try" },
     { label: "User Manual", to: "/userManual/AntiNode/Know-How", tab: "User manual" },
-    { label: "Feedback", to: "/Feedback", tab: "Feedback" },
     // only show dashboard when logged in
     {
       label: "DashBoard",
@@ -42,6 +38,10 @@ const Navbar = () => {
       tab: "DashBoard",
       requiresAuth: true,
     },
+    { label: "Workspace", to: "/user/rooms", tab: "Workspace" },
+    { label: "History", to: "/user/misallaneous-chats", tab: "History" },
+    { label: "Feedback", to: "/Feedback", tab: "Feedback" },
+
   ];
 
   return (
@@ -49,22 +49,12 @@ const Navbar = () => {
       <nav
         className={`sticky top-0 left-0 bg-white text-black dark:bg-black dark:text-white border  py-1 px-6 flex items-center justify-between z-[3] oveflow-visible `}
       >
-        {/* top scroll indicator
-        <motion.div
-          style={{ scaleX: scrollYProgress }}
-          className="bg-orange-500 w-full fixed py-0.5 origin-left top-0 left-0 z-[9]"
-        ></motion.div> */}
 
-        {/* navlinks */}
         <Link
           to="/"
           className="  text-md  w-fit flex items-center justify-center bai-jamjuree-bold rounded-md  cursor-pointer  p-1"
         >
-          {/* <img
-            className="h-4 w-4  rounded-xs   "
-            src={isDarkMode === true ? "/Dark.png" : "/Light.png"}
-            alt="logo"
-          /> */}
+
           <LogoRender />
         </Link>
 
@@ -90,9 +80,9 @@ const Navbar = () => {
 
         <div className="flex items-center justify-center gap-2 bai-jamjuree-regular text-sm overflow-visible ">
           {/* settings icon */}
-          <ul className="hidden md:block border rounded-sm">
+          {/* <ul className="hidden md:block border rounded-sm">
             <CustomDropdown />
-          </ul>
+          </ul> */}
 
           <Settings
             showSettings={showSettings}

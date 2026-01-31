@@ -459,26 +459,8 @@ const ChatRoom = () => {
       container.scrollTop = newContentHeight;
     }
   };
-  //
-  // const [timer, setTimer] = useState<any>(null);
-  //   emitting the isTyping event to the room so that others can see someone is typing
-  // const HandleTypingIndicator = useCallback(() => {
-  //   // Clear any existing timer to prevent sending multiple events
-  //   if (timer) {
-  //     clearTimeout(timer);
-  //   }
 
-  //   // Set a new timer
-  //   const newTimer = setTimeout(() => {
-  //     // Dispatch the typing event
-  //     dispatch(
-  //       isTyping({ room_id: currentRoom?.room_id, username: User?.username })
-  //     );
-  //   }, 2000);
 
-  //   // Store the timer ID in state so it can be cleared on the next call
-  //   setTimer(newTimer);
-  // }, [dispatch, User, timer]); // Add timer to the dependency array
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-black text-gray-900 dark:text-gray-100">
@@ -524,7 +506,7 @@ const ChatRoom = () => {
           >
             <div className="p-4">
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-semibold">Room Information</h3>
+                <h3 className="font-semibold">Workspace Information</h3>
                 <button
                   onClick={() => setShowRoomInfo(false)}
                   className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1"
@@ -535,7 +517,7 @@ const ChatRoom = () => {
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Room Name:</span>
+                  <span className="text-sm font-medium">Workspace Name:</span>
                   <span className="text-sm">
                     {currentRoom?.chat_rooms.room_name}
                   </span>
@@ -802,7 +784,7 @@ const ChatRoom = () => {
             {gettinChats === true && data.length === 0 ? (
               <div className="flex h-full">
                 <h1 className="bai-jamjuree-regular  text-green-400 m-auto flex items-center justify-center gap-2">
-                  Fething room history....
+                  Fething workspace history....
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}

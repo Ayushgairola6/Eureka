@@ -11,20 +11,11 @@ import { v4 as uuidv4 } from "uuid";
 import { supabase } from "./supabaseHandler.js";
 import {
   CheckFileTypeAndParseIt,
-  chunkMarkdown,
-  formatSSEChunk,
   HandleSourceCreation,
   processContextStringCreation,
-  splitMarkdown,
 } from "../FilerParsers/FilerParser.js";
 dotenv.config();
 
-import {
-  formatForGemini,
-  FormatForHumanFallback,
-  SearchQueriesResults,
-  SearchQueryResults,
-} from "../OnlineSearchHandler/WebSearchHandler.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import {
   CacheCurrentChat,
@@ -32,7 +23,7 @@ import {
   UpdateTheNotificationCache,
   UpdateUserFileListCacheInfo,
 } from "../CachingHandler/redisClient.js";
-import { EmitEvent, getIo } from "../websocketsHandler.js/socketIoInitiater.js";
+import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
 import {
   CheckUserContributionCount,
   ProcessUserQuery,
@@ -51,11 +42,7 @@ import {
   ProcessForLLM,
 } from "../OnlineSearchHandler/WebCrawler.js";
 import { HandleDeepWebResearch } from "./FeaturesController.js";
-// import {
-//   generateEmbedding,
-//   generateEmbeddingsWithGoogle,
-// } from "../embeddings/Embeddings.js";
-// import { UpsertDocs } from "../UpsertHandler.js/upsert.js";
+import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 export const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
@@ -131,6 +118,17 @@ export const FileUploadHandle = async (req, res) => {
     ) {
       return res.status(400).json({ message: "Invalid data type !" });
     }
+
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      req.user.user_id
+    );
+
+    if (status === "not ok" || error) {
+      return res
+        .status(400)
+        .send({ message: "Something went wrong on the server side" });
+    }
+
     const documentId = uuidv4();
 
     EmitEvent(userid, "UploadStatus", "Parsing Document");
@@ -157,34 +155,46 @@ export const FileUploadHandle = async (req, res) => {
     EmitEvent(userid, "UploadStatus", "Creating Chunks");
 
     // limit of texts for free  users
-    // if (req.user.PaymentStatus === false && textChunks.length > 25) {
-    //   return res.status(400).send({
-    //     message: "Purchase our premium to be able to upload large documents.",
-    //   });
-    // }
+    if (
+      plan_status === "active" &&
+      plan_type === "free" &&
+      textChunks.length > 25
+    ) {
+      return res.status(400).send({
+        message: "Purchase our premium to be able to upload large documents.",
+      });
+    }
 
-    //check user contributioncount
-    //currently for only free users
-    // later for other tiers as well
-    // if (req.user.PaymentStatus === false) {
-    //   const checkUpperBound = await CheckUserContributionCount(req.user);
+    // check private doc counts for free and sprint pass users
+    if (
+      plan_status === "active" &&
+      (plan_type === "free" || plan_type === "sprint pass")
+    ) {
+      const checkUpperBound = await CheckUserContributionCount(
+        req.user,
+        plan_type,
+        plan_status
+      );
 
-    //   if (
-    //     checkUpperBound &&
-    //     checkUpperBound.message.trim().toLowerCase().includes("limit reached")
-    //   ) {
-    //     return res.status(400).send({
-    //       message: `You've reached your limit of 2 private documents for the free tier. Upgrade your plan to upload more and unlock additional features.`,
-    //     });
-    //   }
-    // }
+      if (checkUpperBound && checkUpperBound.message === "Limit reached") {
+        return res.status(400).send({
+          message: `You've reached your limit of 2 private documents for the free tier. Upgrade your plan to upload more and unlock additional features.`,
+        });
+      }
+    }
 
     // random id for the doc
     let chunkNumber;
     // array to store a unique record array for upsert operation
     const recordsToUpsert = [];
-    // the size of one batch that we process
-    const batchSize = req.user.PaymentStatus === true ? 50 : 10;
+
+    //upload batch size to avoid overwhelming database
+    const batchSize =
+      plan_type === "free"
+        ? parseInt(process.env.CLOUD_UPLOAD_BATCH_SIZE_FREE)
+        : plan_type === "sprint"
+        ? parseInt(process.env.CLOUD_UPLOAD_BATCH_SIZE_SPRINT_PASS)
+        : parseInt(process.env.CLOUD_UPLOAD_BATCH_SIZE_OTHERS);
     // loop to start pushing chunks into the db
     for (let i = 0; i < textChunks.length; i++) {
       // Generate a unique ID for each chunk
@@ -487,12 +497,21 @@ export const GetPublicRecords = async (req, res) => {
         .status(400)
         .json({ message: "Some fields are missing or the query is Invalid !" });
     }
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user_id
+    );
+
+    if (status === "not ok" || error) {
+      return res
+        .status(400)
+        .send({ message: "Something went wrong on the server side" });
+    }
 
     // update the daily quota of the user
     const UpdateState = await ProcessUserQuery(req.user, "Public");
 
     // if user has reached the
-    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
+    if (UpdateState?.status === false) {
       return res.status(200).send({
         answer: UpdateState.message,
         message: "Todays quota has finished!",
@@ -506,7 +525,8 @@ export const GetPublicRecords = async (req, res) => {
     //    console.log(fetchResult)
     const response = await index.searchRecords({
       query: {
-        topK: req.user.PaymentStatus === true ? 300 : 100,
+        topK:
+          plan_type === "free" ? 50 : plan_type === "sprint pass" ? 100 : 500,
         inputs: { text: question },
         filter: {
           category: { $eq: category },
@@ -552,7 +572,7 @@ export const GetPublicRecords = async (req, res) => {
       }
       DocumentsUserForReference = await HandleSourceCreation(
         response,
-        req.user.PaymentStatus,
+        plan_type,
         MessageId
       );
 
@@ -576,13 +596,10 @@ export const GetPublicRecords = async (req, res) => {
       question,
       finalinfo,
       KNOWLEDGE_DISTRIBUTOR_PROMPT,
-      req.user
+      req.user,
+      plan_type
     );
 
-    // const AnswerToUsersQuestion = "THis is a hardcoded answer";
-
-    // const AnswerToUsersQuestion =
-    //   "this is a mock answer just to test the information";
     if (AnswerToUsersQuestion.error) {
       return res
         .status(200)
@@ -634,12 +651,10 @@ export const GetPublicRecords = async (req, res) => {
         // console.log("new misallaneous chats", newChats[newChats.length - 1]);
 
         //update the value of the key
-        await redisClient.set(misallaneousChatsKey, JSON.stringify(newChats), {
-          expiration: {
-            type: "Ex",
-            value: 600,
-          },
-        });
+        await redisClient
+          .multi()
+          .set(misallaneousChatsKey, JSON.stringify(newChats))
+          .expire(misallaneousChatsKey, 500);
       }
     } catch (cachingerror) {
       await notifyMe(
@@ -738,9 +753,19 @@ export const GetPrivateUserDocs = async (req, res) => {
 export const GetPrivateDocResultss = async (req, res) => {
   try {
     const user = req.user;
-    const { IsPremiumUser } = req.user;
-    if (!user) {
+    if (!user || !user?.user_id) {
       return res.status(401).send({ message: "Please login to continue" });
+    }
+
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user.user_id
+    );
+    //if the user is not paid or the paid staus is not even available
+    if (error || status === false) {
+      return res.status(400).send({
+        message:
+          "There is something wrong with your account please contact our support at support@antinodeai.space to invoke a problem ticket.",
+      });
     }
 
     const { docId, question, query_type, userMessageId, MessageId } = req.body;
@@ -763,12 +788,39 @@ export const GetPrivateDocResultss = async (req, res) => {
       );
       return res.status(400).send({ message: "Something went wrong" });
     }
+    EmitEvent(user.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: `Checking_Plan`,
+        data: [
+          `I found out that ${user.username} is on ${plan_type} plan currently`,
+        ],
+      },
+    });
+    // if the user plan is of free or sprint pass type
+    if (
+      plan_status === "active" &&
+      (plan_type === "free" || plan_type === "sprint pass") &&
+      query_type === "Summary"
+    ) {
+      return res.status(402).send({
+        message:
+          "You need an active plan in order to be able to access this feature",
+      });
+    }
+
     //  setting the specific headers for stream type
     // check the current credit limit record for the user
     const UpdateState = await ProcessUserQuery(req.user, "ask_private");
-
+    EmitEvent(user.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: `Checking_Quota`,
+        data: [`I am now checking the users quota`],
+      },
+    });
     // if user has reached the
-    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
+    if (UpdateState?.status === false) {
       return res.status(200).send({
         Answer:
           "You have exhausted your monthly quota, please wait till next month or get our premium membership and enjoy unlimited researching",
@@ -777,7 +829,6 @@ export const GetPrivateDocResultss = async (req, res) => {
       });
     }
 
-    const FoundData = [];
     let response;
 
     const SYSTEM_PROMPT =
@@ -787,11 +838,19 @@ export const GetPrivateDocResultss = async (req, res) => {
         ? SUMMARIZATION_ANALYST_PROMPT
         : WEB_SEARCH_DISTRIBUTOR_PROMPT;
 
+    EmitEvent(user.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: `Understanding_Intent`,
+        data: [`${user.username} wants me to ${query_type} the prompt `],
+      },
+    });
     // if the query is of qna type
     if (query_type === "QNA") {
       response = await index.searchRecords({
         query: {
-          topK: req.user.PaymentStatus === false ? 100 : 200, //quota based system
+          topK:
+            plan_type === "free" ? 50 : plan_type === "sprint pass" ? 100 : 500, //quota based system
           inputs: { text: question },
           filter: {
             documentId: { $eq: docId },
@@ -801,6 +860,13 @@ export const GetPrivateDocResultss = async (req, res) => {
         fields: ["text"],
       });
 
+      EmitEvent(user.user_id, "query_status", {
+        MessageId,
+        status: {
+          message: `Searching_Records`,
+          data: [`I am now search records for the user request`],
+        },
+      });
       // if no matching chunks found in the db
       if (response.result.hits.length === 0) {
         return res.status(200).send({
@@ -813,11 +879,6 @@ export const GetPrivateDocResultss = async (req, res) => {
 
     // if the query is summary type
     else if (query_type === "Summary") {
-      if (IsPremiumUser === false) {
-        return res.status(403).send({
-          message: "You need an active subscription to use this feature.",
-        });
-      }
       const { data, error } = await supabase
         .from("Contributions")
         .select(" chunk_count")
@@ -829,6 +890,15 @@ export const GetPrivateDocResultss = async (req, res) => {
           .send({ message: "Error while generating a response" });
       }
 
+      EmitEvent(user.user_id, "query_status", {
+        MessageId,
+        status: {
+          message: `Found_Chunk_Count`,
+          data: [
+            `Found ${data[0].chunk_count} number of chunks in the records and now I am reading them`,
+          ],
+        },
+      });
       //   console.log(data)
       response = await getAllDocumentTextsForSummary(
         docId,
@@ -850,6 +920,17 @@ export const GetPrivateDocResultss = async (req, res) => {
         .map((rest, index) => {
           // create a string of results
           if (rest._score && rest.fields.text) {
+            EmitEvent(user.user_id, "query_status", {
+              MessageId,
+              status: {
+                message: `Contextual Extraction`,
+                data: [
+                  `<>score=${
+                    rest._score
+                  }<> Context===>${rest?.fields?.text.slice(0, 200)}`,
+                ],
+              },
+            });
             return `ArrayBasedrank=${index + 1}&relevancy_score=${
               rest._score
             }&actual_content${rest.fields.text}`;
@@ -864,6 +945,13 @@ export const GetPrivateDocResultss = async (req, res) => {
     } else {
       response.forEach((str) => {
         FormattedContextString += str;
+        EmitEvent(user.user_id, "query_status", {
+          MessageId,
+          status: {
+            message: `Contextual Extraction`,
+            data: [str?.slice(0, 200)],
+          },
+        });
       });
     }
     // user message object
@@ -882,7 +970,8 @@ export const GetPrivateDocResultss = async (req, res) => {
         ? FormattedContextString
         : "No relevant results were found in the database",
       SYSTEM_PROMPT,
-      user
+      user,
+      plan_type
     );
 
     if (AnswerToUsersQuestion?.error) {
@@ -925,12 +1014,10 @@ export const GetPrivateDocResultss = async (req, res) => {
         AI_response: AnswerToUsersQuestion,
       });
       // update the cache
-      await redisClient.set(DocumentChatCacheKey, JSON.stringify(newChats), {
-        expiration: {
-          type: "EX",
-          value: 1500,
-        },
-      });
+      await redisClient
+        .multi()
+        .set(DocumentChatCacheKey, JSON.stringify(newChats))
+        .expire(DocumentChatCacheKey, 1000);
     }
     return res.status(200).send({
       message: "Response found",
@@ -948,8 +1035,6 @@ export const PostTypeWebSearch = async (req, res) => {
     if (!user_id)
       return res.status(401).send({ message: "Please login to continue" });
 
-    const PaymentStatus = await CheckUserPlanStatus(user_id);
-
     const { question, MessageId, userMessageId, web_search_depth } = req.body;
     if (
       !question ||
@@ -966,12 +1051,35 @@ export const PostTypeWebSearch = async (req, res) => {
           "Some parameters are missing,this is a server side issue please wait till we resolve this problem.",
       });
 
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user_id
+    );
+
+    //if the user is not paid or the paid staus is not even available
+    if (!status || error) {
+      return res.status(400).send({
+        message:
+          "There is something wrong with your account please contact our support at support@antinodeai.space to invoke a problem ticket.",
+      });
+    }
+
+    // if the user is on free plan and is asking for deep_web_search
+    if (
+      plan_type === "free" &&
+      plan_status === "active" &&
+      web_search_depth === "deep_web"
+    ) {
+      return res.status(400).send({
+        message:
+          "This feature is only available for pro members , you want to surf the deep web get our premium subscriptio to enjoy research with deep web results.",
+      });
+    }
     let InDepthQueries = [];
     // check the quota status of the user
     const UpdateState = await ProcessUserQuery(req.user, "web_search");
 
     // if user has reached the
-    if (UpdateState.status.trim().toLowerCase().includes("not ok")) {
+    if (UpdateState?.status === false) {
       return res.status(400).send({
         Answer:
           "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research",
@@ -983,21 +1091,9 @@ export const PostTypeWebSearch = async (req, res) => {
 
     let WebResults;
     // iof the user is not on premium and is asking for deep_search we simply reject their request
-    if (
-      PaymentStatus?.plan_status === false &&
-      web_search_depth === "deep_web"
-    ) {
-      return res.status(400).send({
-        message:
-          "This feature is only available for pro members , you want to surf the deep web get our premium subscriptio to enjoy research with deep web results.",
-      });
-    }
 
     //if the user is paid and is asking for deep_search we process further
-    if (
-      (PaymentStatus?.plan_status === false) === true &&
-      web_search_depth === "deep_web"
-    ) {
+    if (plan_status === "active" && web_search_depth === "deep_web") {
       EmitEvent(user_id, "query_status", {
         MessageId,
         status: {
@@ -1159,7 +1255,8 @@ export const PostTypeWebSearch = async (req, res) => {
         : question,
       JSON.stringify(WebResults.FinalContent),
       WebResultPrompt,
-      req.user
+      req.user,
+      plan_type
     );
     if (Answer.error) {
       return res.status(400).send({ message: "Server busy" });
@@ -1216,7 +1313,6 @@ export const PostTypeWebSearch = async (req, res) => {
 export async function getAllDocumentTextsForSummary(docId, totalChunks) {
   // console.log(docId, username, title, totalChunks)
   if (!docId || !totalChunks) {
-    console.warn(`No chunks to fetch for document: ${docId}`);
     return [];
   }
 

@@ -13,13 +13,13 @@ const UserChatRooms = () => {
   const [showCard, setShowCard] = React.useState(false);
   return (
     <>
-      <div className=" dark:bg-black bg-white  w-full flex p-2  items-center justify-between gap-3 relative overflow-hidden">
+      <div className=" dark:bg-black bg-white  w-full flex p-2  items-normal justify-between gap-3 relative overflow-hidden min-h-screen">
         <CreateRoom showcard={showCard} setShowCard={setShowCard} />
         <section className="border  w-full h-full">
           {chatrooms?.length > 0 && (
             <span className="space-grotesk flex items-center justify-between px-2 py-2 ">
               <h1 className="border-b flex items-center justify-center gap-2 font-bold md:text-2xl text-xl">
-                <BsChat /> My spaces
+                <BsChat /> My Workspace
               </h1>
               <button
                 onClick={() => setView(!view)}

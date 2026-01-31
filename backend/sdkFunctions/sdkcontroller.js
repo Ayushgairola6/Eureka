@@ -161,7 +161,8 @@ export const QuerySpecificDocument = async (req, res) => {
     const AnswerToUsersQuestion = await GenerateResponse(
       question,
       FoundData.length !== 0 ? FoundData : response,
-      SYSTEM_PROMPT
+      SYSTEM_PROMPT,
+      user
     );
     // console.log(AnswerToUsersQuestion, "anser to qustion");
     if (AnswerToUsersQuestion?.error) {

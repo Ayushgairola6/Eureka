@@ -116,13 +116,9 @@ const App = () => {
     const VerifyLoginState: () => Promise<any> = async () => {
       try {
         setUseStatus("pending");
-        const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
         const response = await axios.get(`${BaseApiUrl}/api/verify/userstate`, {
-          // signal: controller.signal,
           withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${AuthToken}`,
-          },
+
         });
         if (response.data.message === "verified") {
           dispatch(setIsLogin(true));

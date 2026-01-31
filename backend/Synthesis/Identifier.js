@@ -58,7 +58,7 @@ export async function IdentifyRequestInputs(req, res) {
   }
 
   const rateLimitStatus = await ProcessUserQuery(user, "Synthesis");
-  if (rateLimitStatus?.status.trim().toLowerCase().includes("not ok")) {
+  if (rateLimitStatus?.status === false) {
     return res.status(400).send({
       message:
         "You have exhausted your monthly quota, please wait till next month or get our premium pass and enjoy all features without limits",

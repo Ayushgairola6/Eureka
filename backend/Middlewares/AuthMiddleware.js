@@ -38,8 +38,15 @@ export const VerifyToken = async (req, res, next) => {
       // If access token expired, try refresh flow
       if (err.name === "TokenExpiredError") {
         // console.log("Access token expired")
-        const DecodedData = jwt.decode(AccessToken);
+        let DecodedData;
+        try {
+          DecodedData = jwt.decode(AccessToken);
+          if (!DecodedData) throw new Error("Null decode");
+        } catch (e) {
+          return res.status(403).json({ message: "Token malformed" });
+        }
         const RefreshTokenKey = `user=${DecodedData.username}'s_userId=${DecodedData.user_id}`;
+        await redisClient.del(RefreshTokenKey);
 
         // checking refresh token in the cache
         const HasCacheRefreshToken = await redisClient.get(RefreshTokenKey);
@@ -89,7 +96,6 @@ export const VerifyToken = async (req, res, next) => {
           refreshDecoded.user_id,
           refreshDecoded.email,
           refreshDecoded.username,
-          refreshDecoded.PaymentStatus,
           refreshDecoded.AllowedTrainingModels
         );
 
@@ -115,7 +121,7 @@ export const VerifyToken = async (req, res, next) => {
       return res.status(403).json({ message: "Invalid or malformed token." });
     }
   } catch (error) {
-    // console.error(error);
+    console.error(error);
     await notifyMe("An error occured in the authMiddleware", error);
     return res.status(500).json({ error: "Internal server error" });
   }
@@ -196,7 +202,6 @@ export async function authenticateStream(req, res) {
       refreshDecoded.user_id,
       refreshDecoded.email,
       refreshDecoded.username,
-      refreshDecoded.PaymentStatus,
       refreshDecoded.AllowedTrainingModels
     );
 
@@ -298,35 +303,65 @@ export async function HandlePreferenceToggle(req, res) {
 export async function CheckUserPlanStatus(user_id) {
   try {
     if (!user_id || typeof user_id !== "string") {
-      return { error: "Invalid user_id" };
+      return {
+        status: false,
+        error: "Invalid user_id",
+        plan_type: null,
+        plan_status: null,
+      };
     }
     const key = `user=${user_id}'s cached plan data`;
     //check cache for user payment status
-    await redisClient.del(key);
     const exists = await redisClient.exists(key);
     if (exists) {
       const userPlanData = await redisClient.get(key);
 
-      return JSON.parse(userPlanData); //send the parsed user data;
+      const ParsedData = JSON.parse(userPlanData);
+      return {
+        status: true,
+        error: null,
+        plan_status: ParsedData.plan_status,
+        plan_type: ParsedData.plan_type,
+      };
     }
 
     // check the database for plan status
     const { data, error } = await supabase
       .from("Payments")
       .select("plan_type,plan_status")
-      .eq("user_id", user_id)
-      .maybeSingle();
-
+      .eq("user_id", user_id);
     if (error) {
-      return { error: "User is not a paid member" };
+      await notifyMe(
+        "AN error has occured in the user plan status checking middleware usercreditlimitcontoller line 329.",
+        error
+      );
+      return {
+        status: false,
+        error: error,
+        plan_type: null,
+        plan_status: null,
+      };
     }
 
-    return data;
+    if (data && data.plan_status && data.plan_type) {
+      await redisClient.multi().set(key, JSON.stringify(data)).exec();
+    }
+    return {
+      status: true,
+      error: null,
+      plan_type: data.plan_type,
+      plan_status: data.plan_status,
+    };
   } catch (err) {
     await notifyMe(
       "AN error has occured in the user plan status checking middleware",
       err
     );
-    return { error: err };
+    return {
+      status: false,
+      error: err,
+      plan_type: null,
+      plan_status: null,
+    };
   }
 }

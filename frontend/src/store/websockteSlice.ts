@@ -129,17 +129,21 @@ export const GetChatRoomHistory = createAsyncThunk(
       // console.log(response.data)
       return response.data.chats;
     } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );
@@ -163,17 +167,21 @@ export const AskAI = createAsyncThunk<any, any>(
       );
       return response.data;
     } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );
@@ -203,17 +211,21 @@ export const SearchWeb = createAsyncThunk<any, any>(
         favicon: response.data.favicon || [],
       };
     } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );
@@ -236,17 +248,21 @@ export const FetchMoreChatsInTheRoom = createAsyncThunk<any, object>(
       );
       return response.data;
     } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        // You can access err.message, err.response, etc. safely here
-        return rejectWithValue(err.message || err.response?.data.message);
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
       }
 
-      // Handle other potential error types or re-throw if necessary
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
       }
 
-      return rejectWithValue("An unknown error has occured");
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
     }
   }
 );

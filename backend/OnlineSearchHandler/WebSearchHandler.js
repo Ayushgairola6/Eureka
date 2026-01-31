@@ -17,7 +17,6 @@ export const SearchQueryResults = async (query, user) => {
       return { error: "Invalid query type" };
     }
 
-    const Paid = user.PaymentStatus;
     const response = await tvly.search(query, {
       searchDepth: !Paid ? "advanced" : "basic",
       maxTokens: !Paid ? 20 : 5,
@@ -43,22 +42,22 @@ export const SearchQueryResults = async (query, user) => {
     return { error };
   }
 };
-export const SearchQueriesResults = async (queries, user) => {
+export const SearchQueriesResults = async (queries, user, plan_type) => {
   try {
     if (!Array.isArray(queries) || queries.length === 0) {
       return { error: "Invalid queries array" };
     }
 
-    const isPaid = !!(user && user.PaymentStatus);
+    const isPaidNotPaid = plan_type === "free";
 
     const searchOptions = {
-      searchDepth: isPaid ? "basic" : "advanced",
-      maxTokens: isPaid ? 5 : 20,
-      includeAnswer: isPaid ? "basic" : "advanced",
-      includeFavicon: true,
-      chunksPerSource: isPaid ? 1 : 5,
-      maxResults: isPaid ? 5 : 14,
-      include_images: isPaid ? false : true,
+      searchDepth: !isPaidNotPaid ? "basic" : "advanced",
+      maxTokens: !isPaidNotPaid ? 5 : 20,
+      includeAnswer: !isPaidNotPaid ? "basic" : "advanced",
+      includeFavicon: !true,
+      chunksPerSource: !isPaidNotPaid ? 1 : 5,
+      maxResults: !isPaidNotPaid ? 5 : 14,
+      include_images: !isPaidNotPaid ? false : true,
     };
 
     const promises = queries.map((q) =>
@@ -73,7 +72,9 @@ export const SearchQueriesResults = async (queries, user) => {
     settled.forEach((result, idx) => {
       const queryText = String(queries[idx] || "");
       if (!result || result.error) {
-        sections.push(`--- Query: ${queryText} ---\nERROR: Unable to fetch results.\n`);
+        sections.push(
+          `--- Query: ${queryText} ---\nERROR: Unable to fetch results.\n`
+        );
         return;
       }
 
@@ -106,7 +107,9 @@ export const SearchQueriesResults = async (queries, user) => {
           const title = r.title || "No Title";
           const url = r.url || "No URL";
           const snippet = r.content ? String(r.content).slice(0, 300) : "";
-          part += `${i + 1}. ${title}\n   Link: ${url}\n   Excerpt: ${snippet}\n`;
+          part += `${
+            i + 1
+          }. ${title}\n   Link: ${url}\n   Excerpt: ${snippet}\n`;
         });
       } else {
         part += `No detailed sources found.\n`;
@@ -117,7 +120,10 @@ export const SearchQueriesResults = async (queries, user) => {
 
     const combined = sections.join("\n");
 
-    return { response: combined || "NO_WEB_RESULTS: No relevant search results found.", favicons };
+    return {
+      response: combined || "NO_WEB_RESULTS: No relevant search results found.",
+      favicons,
+    };
   } catch (err) {
     return { error: err };
   }
@@ -201,7 +207,8 @@ export const WebSearchHandle = async (req, res) => {
     const Answer = await GenerateResponse(
       question,
       Formattedresult,
-      WebResultPrompt
+      WebResultPrompt,
+      user
     );
     if (!Answer || Answer.error) {
       res.write("event:Could not find vaid information online\n");

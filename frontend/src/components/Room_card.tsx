@@ -1,7 +1,8 @@
+import { Calendar } from "lucide-react";
 import type React from "react";
 import { BiCopy } from "react-icons/bi";
-import { BsArrowUpRight, BsCalendarEvent } from "react-icons/bs";
-import { FaGlobeAmericas, FaHashtag, FaLock, FaUsers } from "react-icons/fa";
+import { BsArrowUpRight } from "react-icons/bs";
+import { FaGlobeAmericas, FaLock, FaUsers } from "react-icons/fa";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
@@ -21,104 +22,86 @@ const RoomCard: React.FC<props> = ({ room, index }) => {
     <>
       <div
         key={`${room.room_id}_ind_${index}`}
-        className="group relative flex flex-col justify-between h-fit
-      rounded-2xl border border-neutral-200 dark:border-white/10 
-      bg-gray-100 dark:bg-[#0A0A0A] 
-      p-5 transition-all duration-300 
-       hover:shadow-teal-600/20 shadow-2xl
-      cursor-pointer overflow-hidden flex-none  "
+        className="group relative flex flex-col justify-between h-[320px] w-full md:w-80
+    rounded-xl border border-neutral-200 dark:border-neutral-800/50 
+    bg-white dark:bg-[#050505] 
+    transition-all duration-500 ease-out
+    hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(234,88,12,0.05)]
+    cursor-pointer overflow-hidden flex-none"
       >
-        {/* --- Hover Gradient Effect (Subtle Landing Page Vibe) --- */}
-        <div className="absolute top-0 right-0 -mr-10 -mt-10 h-32 w-32 rounded-full bg-blue-500/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        {/* --- Background System Grid --- */}
+        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] group-hover:scale-110 transition-transform duration-700" />
 
-        {/* --- TOP SECTION: Header & Badge --- */}
-        <div className="space-y-4 relative ">
-          <div className="flex items-start justify-between gap-3">
-            {/* Room Type Badge */}
-            <span
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase space-grotesk border flex items-center gap-1.5
-            ${room?.chat_rooms.room_type?.toLowerCase() === "private"
-                  ? "bg-neutral-100 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400"
-                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30 text-blue-600 dark:text-blue-400"
-                }`}
+        {/* --- Top Metadata Strip --- */}
+        <div className="relative z-10 p-5 pb-0">
+          <div className="flex items-center justify-between mb-4">
+            {/* Type Badge as a "System Tag" */}
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[9px] font-mono font-bold uppercase tracking-tighter
+        ${room?.chat_rooms.room_type?.toLowerCase() === "private"
+                ? "bg-neutral-100 dark:bg-white/5 border-neutral-200 dark:border-white/10 text-neutral-500"
+                : "bg-orange-600/10 border-orange-600/20 text-orange-600"
+              }`}
             >
-              {room?.chat_rooms.room_type?.toLowerCase() === "private" ? (
-                <FaLock size={10} />
-              ) : (
-                <FaGlobeAmericas size={10} />
-              )}
+              {room?.chat_rooms.room_type?.toLowerCase() === "private" ? <FaLock size={8} /> : <FaGlobeAmericas size={8} />}
               {room.chat_rooms.room_type}
-            </span>
-
-            {/* Creation Date */}
-            <div className="flex items-center gap-1.5 text-xs text-neutral-400 space-grotesk">
-              <BsCalendarEvent />
-              <span>
-                {room.chat_rooms.created_at &&
-                  new Date(room?.chat_rooms?.created_at).toLocaleDateString(
-                    "en-US",
-                    {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    }
-                  )}
-              </span>
             </div>
+
+            {/* Date in Mono */}
+            <span className="bai-jamjuree-regular text-[9px] text-neutral-400 uppercase tracking-widest flex items-center justify-center gap-2">
+              <Calendar size={12} />{room.chat_rooms.created_at && new Date(room.chat_rooms.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </span>
           </div>
 
-          {/* Room Name & Description */}
-          <div>
-            <h1 className="bai-jamjuree-bold text-xl text-black dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
-              {room.chat_rooms.room_name}
-            </h1>
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400 space-grotesk line-clamp-2 min-h-[2.5rem]">
-              {room.chat_rooms.Room_Description || "No description provided."}
-            </p>
+          {/* Title & Description */}
+          <h3 className="bai-jamjuree-bold text-lg text-neutral-900 dark:text-neutral-100 leading-tight group-hover:text-orange-600 transition-colors duration-300">
+            {room.chat_rooms.room_name}
+          </h3>
+          <p className="mt-2 md:text-sm text-xs text-neutral-500 dark:text-neutral-400 space-grotesk line-clamp-3 leading-relaxed">
+            {room.chat_rooms.Room_Description || "System node initialized with no protocol description."}
+          </p>
+        </div>
+
+        {/* --- Middle: Specs Section --- */}
+        <div className="px-5 mt-auto relative z-10">
+          <div className="flex items-center justify-between py-3 border-t border-dashed border-neutral-200 dark:border-neutral-800">
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-mono text-neutral-400">Cap_Limit</span>
+              <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold dark:text-neutral-200">
+                <FaUsers size={12} className="text-neutral-500" />
+                {room.chat_rooms.participant_count}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] uppercase font-mono text-neutral-400">Join_Hex</span>
+              <button
+                onClick={(e) => handleCopyId(e, room.chat_rooms.Room_Joining_code)}
+                className="flex items-center gap-2 group/code hover:text-orange-500 transition-colors"
+              >
+                <span className="font-mono text-[11px] text-neutral-700 dark:text-neutral-400 group-hover/code:text-orange-500 transition-colors">
+                  #{room.chat_rooms.Room_Joining_code}
+                </span>
+                <BiCopy size={12} className="opacity-0 group-hover/code:opacity-100 transition-all transform translate-x-[-4px] group-hover/code:translate-x-0" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* --- BOTTOM SECTION: Meta Data --- */}
-        <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-white/5 flex items-end justify-between relative ">
-          {/* Left: Participant Count */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wider text-neutral-400 space-grotesk">
-              Participants Limit
-            </span>
-            <div className="flex items-center gap-2 text-sm font-medium text-black dark:text-white space-grotesk">
-              <FaUsers className="text-neutral-400" />
-              {room.chat_rooms.participant_count}
-            </div>
-          </div>
-
-          {/* Right: Room ID (Clickable) */}
-          <div className="flex flex-col gap-1 items-end">
-            <span className="text-[10px] uppercase tracking-wider text-neutral-400 space-grotesk">
-              Joining Code
-            </span>
-            <button
-              onClick={(e) =>
-                handleCopyId(e, room.chat_rooms.Room_Joining_code)
-              }
-              className="group/code flex items-center gap-2 px-2 py-1 rounded bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
-            >
-              <FaHashtag className="text-neutral-400 text-xs" />
-              <span className="font-mono text-xs text-black dark:text-neutral-300">
-                {room.chat_rooms.Room_Joining_code}
-              </span>
-              <BiCopy className="text-neutral-400 opacity-0 group-hover/code:opacity-100 transition-opacity text-xs" />
-            </button>
-          </div>
-        </div>
+        {/* --- Bottom: Action Link --- */}
         <Link
-          className="  mt-6 text-xs md:text-sm text-white dark:text-black "
           to={`/chatroom/${room?.room_id}`}
+          className="relative z-10 w-full group/btn"
         >
-          <ul className=" flex items-center justify-center gap-2 bg-black dark:bg-white px-2 py-1 rounded-sm space-grotesk font-semibold ">
-            <button>Enter</button>
-            <BsArrowUpRight />
-          </ul>
+          <div className="flex items-center justify-between bg-neutral-950 dark:bg-neutral-900 hover:bg-orange-600 dark:hover:bg-orange-600 px-5 py-3 transition-all duration-300 text-white">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] space-grotesk">
+              Enter workspace
+            </span>
+            <BsArrowUpRight className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+          </div>
         </Link>
+
+        {/* --- Decorative Corner Accent --- */}
+        <div className="absolute top-0 left-0 w-1 h-0 bg-orange-600 group-hover:h-full transition-all duration-500" />
       </div>
     </>
   );

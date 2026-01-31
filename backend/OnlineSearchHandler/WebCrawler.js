@@ -12,7 +12,13 @@ dotenv.config();
 const turndown = new TurndownService();
 
 // serper query
-export async function GetDataFromSerper(query, user, MessageId, room_id) {
+export async function GetDataFromSerper(
+  query,
+  user,
+  MessageId,
+  room_id,
+  plan_type
+) {
   if (!query?.trim() || !cleanAndSplitQueries(query)) {
     return { error: "Query parameter is required and cannot be empty" };
   }
@@ -40,7 +46,7 @@ export async function GetDataFromSerper(query, user, MessageId, room_id) {
   try {
     const response = await axios.post(
       "https://google.serper.dev/search",
-      { q: cleanedQuery, num: user.PaymentStatus === true ? 10 : 5 },
+      { q: cleanedQuery, num: plan_type !== "free" ? 10 : 5 },
       {
         headers: {
           "X-API-KEY": process.env.SERPER_WEB_API,
@@ -61,9 +67,8 @@ export async function GetDataFromSerper(query, user, MessageId, room_id) {
 }
 
 /// serper api backup
-export const GetDataFromSerpApi = async (query, user) => {
+export const GetDataFromSerpApi = async (query, user, plan_type) => {
   try {
-    const PaymentStatus = user.IsPremiumUser;
     const SERPAPI_KEY = process.env.SERP_API;
     const response = await getJson({
       engine: "google_light",
@@ -71,7 +76,7 @@ export const GetDataFromSerpApi = async (query, user) => {
       q: query,
       google_domain: "google.com",
       hl: "en",
-      num: PaymentStatus === false ? 1 : 5,
+      num: plan_type === "free" ? 1 : 5,
     });
 
     return response.data;

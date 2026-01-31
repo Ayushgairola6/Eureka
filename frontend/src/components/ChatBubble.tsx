@@ -31,7 +31,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   setIsActive,
 }) => {
   const ReceivedResponseId: any = []; //just a tracker array
-  const { Chats, ResponseStatus, question } = useAppSelector(
+  const { Chats, ResponseStatus } = useAppSelector(
     (state) => state.interface
   );
   const [showCurrent, setShowCurrent] = React.useState({ id: '', status: false })
@@ -139,10 +139,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                             ? "dark:bg-white bg-black dark:text-black text-white border-transparent rounded-2xl rounded-tr-none px-4 py-3 w-full md:w-120"
                             : "dark:bg-black bg-gray-50 dark:text-neutral-200 text-black border-neutral-200 dark:border-neutral-800 rounded-2xl rounded-tl-none px-5 py-4"
                           } 
-      ${chat.sent_by === 'You' && showCurrent?.id === chat.id && showCurrent.status
-                            && question.trim().length > 30 ? "h-[500px] w-full overflow-y-auto no-scrollbar"
-                            : "h-[120px] w-full overflow-hidden"} 
-       `}
+             ${chat.sent_by === 'You' && showCurrent.id !== chat.id && showCurrent.status === false ? "h-[200px] overflow-hidden" : chat.sent_by === 'You' && showCurrent.id === chat.id && showCurrent.status === true ? 'h-auto' : "h-auto"} 
+       transition-all duration-300`}
                       >
                         {chat.sent_by !== "You" && (
                           <button

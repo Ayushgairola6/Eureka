@@ -9,42 +9,31 @@ import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
 import { EmailServices } from "../EmailHandlers/EmailTemplates.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
-import dayjs from "dayjs";
-
 export const GenerateRefreshTokens = (
   id,
   email,
   username,
-  PaymentStatus,
   AllowedTrainingModels
 ) => {
   try {
-    if (
-      !id ||
-      typeof id !== "string" ||
-      !email ||
-      typeof email !== "string" ||
-      !username ||
-      typeof username !== "string"
-    ) {
-      return { status: 400, error: "Error - Some arguments are missing !" };
+    if (!id || !email || !username) {
+      throw new Error("Missing payload for Refresh Token");
     }
-    const RefreshToken = jwt.sign(
+
+    return jwt.sign(
       {
         user_id: id,
-        email: email,
-        username: username,
+        email,
+        username,
         isVerified: true,
-        PaymentStatus: PaymentStatus ||false,
-        AllowedTrainingModels: AllowedTrainingModels||"TRUE",
+        AllowedTrainingModels: AllowedTrainingModels || "YES",
       },
       process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: "20d" }
+      { expiresIn: "7d" }
     );
-
-    return RefreshToken;
   } catch (err) {
-    console.error(err);
+    console.error("Refresh Token Generation Error:", err);
+    return null;
   }
 };
 
@@ -67,36 +56,27 @@ export const GenerateAccessTokens = (
   id,
   email,
   username,
-  PaymentStatus,
   AllowedTrainingModels
 ) => {
   try {
-    if (
-      !id ||
-      typeof id !== "string" ||
-      !email ||
-      typeof email !== "string" ||
-      !username ||
-      typeof username !== "string"
-    ) {
-      return { status: 400, error: "Error - Some arguments are missing !" };
+    if (!id || !email || !username) {
+      throw new Error("Missing payload for Access Token");
     }
-    const Secret = process.env.JWT_SECRET;
-    const AccessToken = jwt.sign(
+
+    return jwt.sign(
       {
         user_id: id,
-        email: email,
-        username: username,
+        email,
+        username,
         isVerified: true,
-        PaymentStatus: PaymentStatus||false,
-        AllowedTrainingModels: AllowedTrainingModels||"TRUE",
+        AllowedTrainingModels: AllowedTrainingModels || "YES",
       },
-      Secret,
-      { expiresIn: "20min" }
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
     );
-    return AccessToken;
   } catch (err) {
-    return { err };
+    console.error("Access Token Generation Error:", err);
+    return null; // Return null so the controller knows it failed
   }
 };
 // socket instance
@@ -144,7 +124,8 @@ export const HandleUserRegistration = async (req, res) => {
     const NewUserAccount = await supabase.from("users").insert({
       username: username.trim(),
       email: email.toLowerCase(),
-      password: HashedPassword,IsPremiumUser:false,AllowedTrainingModels:"TRUE"
+      password: HashedPassword,
+      AllowedTrainingModels: "TRUE",
     });
 
     if (NewUserAccount.error) {
@@ -200,7 +181,7 @@ export const HandleUserLogin = async (req, res) => {
     const { data: user, error: userError } = await supabase
       .from("users")
       .select(
-        "email, id, username, password, isVerified,IsPremiumUser,AllowedTrainingModels, Tokens(Refresh_Token)"
+        "email, id, username, password, isVerified,AllowedTrainingModels, Tokens(Refresh_Token)"
       )
       .eq("email", normalizedEmail)
       .single();
@@ -227,36 +208,18 @@ export const HandleUserLogin = async (req, res) => {
     }
 
     // genrate new tokens for the user
-    let ValidAuthToken;
-    // the default RefreshToken
-    let RefreshToken;
-    // check for the validity of older refreshToken
-    const isStillValid = await CheckPastToken(user);
-    // if the token is validated and a new authToken has been generated
-    if (!isStillValid?.error && isStillValid?.AuthToken) {
-      ValidAuthToken = isStillValid.AuthToken;
-      RefreshToken = user?.Tokens[0]?.Refresh_Token;
-      if(!RefreshToken){
-        RefreshToken = GenerateRefreshTokens(user.id,user.email,user.username,user.IsPremiumUser,user.AllowedTrainingModels)
-      }
-    } else {
-      // else generate a new session Token and refreshToken
-      ValidAuthToken = GenerateAccessTokens(
-        user.id,
-        user.email,
-        user.username,
-        user.IsPremiumUser,
-        user.AllowedTrainingModels
-      );
-      RefreshToken = GenerateRefreshTokens(
-        user.id,
-        user.email,
-        user.username,
-        user.IsPremiumUser,
-        user.AllowedTrainingModels
-      );
-    }
-    // Generate new tokens if no valid refresh token exists
+    const ValidAuthToken = GenerateAccessTokens(
+      user.id,
+      user.email,
+      user.username,
+      user.AllowedTrainingModels
+    );
+    const RefreshToken = GenerateRefreshTokens(
+      user.id,
+      user.email,
+      user.username,
+      user.AllowedTrainingModels
+    );
 
     // Store new tokens in database
     const store = await StoreTokens(
@@ -278,21 +241,34 @@ export const HandleUserLogin = async (req, res) => {
     // Cache the new refresh token
     await cacheRefreshToken(user, RefreshToken);
 
+    const { error } = await supabase
+      .from("Payments")
+      .upsert(
+        { user_id: user.id, plan_type: "free", plan_status: "active" },
+        { onConflict: "user_id" }
+      );
+    if (error) {
+      await notifyMe(
+        "The authController failed while inserting the payment status into the database",
+        error
+      );
+      return res.status(400).send({ message: "Something went wrong" });
+    }
     // Set cookie
-    res.cookie("AntiNode_eta_six_version1_AuthToken", ValidAuthToken, {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    res.cookie("AntiNode_eta_six_version1_AuthToken", authToken, {
       httpOnly: true,
-      secure: true,
-      domain:".antinodeai.space",//allow cookies with this domain
-      sameSite: "none",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      ...(isProduction && { domain: ".antinodeai.space" }),
       maxAge: 24 * 60 * 60 * 1000,
     });
-
     // Send login notification
-     sendLoginNotification(req, user);
+    sendLoginNotification(req, user);
 
     return res.status(200).json({
       message: "Login successful",
-      AuthToken: ValidAuthToken,
     });
   } catch (error) {
     // console.error("Login controller error:", error);
@@ -309,10 +285,10 @@ export const updateCookies = async (req, res) => {
     }
     res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
       httpOnly: true,
-  secure: true, // Required for sameSite: "none"
-  sameSite: "none", // Allows the cookie to survive the jump from api. to www.
-  domain: ".antinodeai.space", // The leading dot is the "Subdomain Unlock"
-  maxAge: 24 * 60 * 60 * 1000,
+      secure: true, // Required for sameSite: "none"
+      sameSite: "none", // Allows the cookie to survive the jump from api. to www.
+      domain: ".antinodeai.space", // The leading dot is the "Subdomain Unlock"
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     return res.send({ message: "cookies updated" });
@@ -341,7 +317,7 @@ const CheckPastToken = async (user) => {
         user.id,
         user.email,
         user.username,
-        user.IsPremiumUser,user.AllowedTrainingModels
+        user.AllowedTrainingModels
       );
 
       if (!authToken) {
@@ -380,9 +356,10 @@ const CheckPastToken = async (user) => {
 const cacheRefreshToken = async (user, refreshToken) => {
   const refreshTokenKey = `user=${user.username}_userId=${user.id}`;
   try {
-    await redisClient.set(refreshTokenKey, JSON.stringify(refreshToken), {
-      expiration: { type: "EX", value: 800 },
-    });
+    await redisClient
+      .multi()
+      .set(refreshTokenKey, JSON.stringify(refreshToken))
+      .expire(refreshTokenKey, 1000);
   } catch (error) {
     return { error };
   }
@@ -496,14 +473,22 @@ export const VerifyEmail = async (req, res) => {
     }
 
     // logg the user in for the first time automatically;
-    const AuthToken = GenerateAccessTokens(data.id, data.email, data.username,data.IsPremiumUser,data.AllowedTrainingModels);
+    const AuthToken = GenerateAccessTokens(
+      data.id,
+      data.email,
+      data.username,
+      data.AllowedTrainingModels
+    );
 
     if (!AuthToken) {
       return res.status(400).send({ message: "An error occurred" });
     }
 
     const RefreshToken = GenerateRefreshTokens(
-      data.id, data.email, data.username,data.IsPremiumUser,data.AllowedTrainingModels
+      data.id,
+      data.email,
+      data.username,
+      data.AllowedTrainingModels
     );
     if (!RefreshToken) {
       return res.status(400).send({ message: "An error occurred" });
@@ -529,7 +514,7 @@ export const VerifyEmail = async (req, res) => {
     res.cookie("AntiNode_eta_six_version1_AuthToken", AuthToken, {
       httpOnly: true,
       secure: true,
-      domain:".antinodeai.space",
+      domain: ".antinodeai.space",
       sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     });
@@ -738,16 +723,24 @@ export const StoreTokens = async (
     }
 
     //upsert the tokens and check for user_id being unique
-    const {error} = await supabase.from("Tokens").upsert({user_id:user_id,Refresh_Token:RefreshToken,Access_Token:AuthToken},{onConflict:'user_id'})
+    const { error } = await supabase.from("Tokens").upsert(
+      {
+        user_id: user_id,
+        Refresh_Token: RefreshToken,
+        Access_Token: AuthToken,
+      },
+      { onConflict: "user_id" }
+    );
 
-    if(error){
-      return {error:error}
+    if (error) {
+      return { error: error };
     }
     // Add both tokens to the cache - FIXED THIS LINE
     const RefreshTokenKey = `user=${username}'s_userId=${user_id}`;
-    await redisClient.multi().set(
-      RefreshTokenKey,
-      JSON.stringify(RefreshToken)).expire(RefreshTokenKey,800);
+    await redisClient
+      .multi()
+      .set(RefreshTokenKey, JSON.stringify(RefreshToken))
+      .expire(RefreshTokenKey, 800);
 
     return { message: "Token stored successfully" };
   } catch (err) {
@@ -763,7 +756,7 @@ export const GetUserData = async (user_id) => {
     const { data, error } = await supabase
       .from("users")
       .select(
-        `username, created_at, email, id,isVerified,IsPremiumUser,AllowedTrainingModels`
+        `username, created_at, email, id,isVerified,AllowedTrainingModels`
       )
       .eq("id", user_id)
       .single();
@@ -850,22 +843,6 @@ export const GetUserChatRooms = async (user_id) => {
     return { error };
   }
 };
-// export const CountNotifications = async (user_id) => {
-//   try {
-//     const { count, error } = await supabase
-//       .from("notifications")
-//       .select("user_id", { count: "exact", head: true })
-//       .eq("user_id", user_id);
-//     if (error) {
-//       console.error("Supabase error (CountNotifications):", error);
-//       return { error: error };
-//     }
-//     return { notificationcount: count || 0 };
-//   } catch (error) {
-//     console.error(error);
-//     return { error };
-//   }
-// };
 
 export const GetNotificationsInformations = async (user_id) => {
   try {

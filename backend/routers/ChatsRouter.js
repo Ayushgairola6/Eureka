@@ -1,4 +1,4 @@
-import { FetchChatHistory } from "../CachingHandler/redisClient.js";
+import { FetchChatHistory } from "../controllers/FeaturesController.js";
 import {
   CreateChatRooms,
   GetRoomChatHistory,

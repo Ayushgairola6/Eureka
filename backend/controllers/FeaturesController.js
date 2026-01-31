@@ -4,6 +4,7 @@ import {
   CheckPresenceAndStringValidity,
 } from "../ErroHandler/ErrorHandler.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 import { GetDataFromSerper } from "../OnlineSearchHandler/WebCrawler.js";
 import { supabase } from "./supabaseHandler.js";
 
@@ -149,3 +150,55 @@ export async function HandleDeepWebResearch(Queries, user, room_id) {
 
   return results.flat(); //
 }
+
+// fetch chat history from cache
+export const FetchChatHistory = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).send({ message: "Please login to continue" });
+    }
+    const user = req.user;
+    const ConversationCacheKey = `user_id=${
+      user.user_id
+    }_time=${new Date().toDateString()}`;
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user.user_id
+    );
+    if (!status || error) {
+      return res.status(400).send({
+        error: "An error occured while processing your request",
+      });
+    }
+    // await redisClient.del(ConversationCacheKey);
+    // console.log("This function has been called");
+    const exists = await redisClient.exists(ConversationCacheKey);
+    // console.log(exists);
+    if (exists) {
+      const limit =
+        plan_type === "free" ? 5 : plan_type === "sprint pass" ? 10 : 30;
+
+      const Chats = await redisClient.lRange(ConversationCacheKey, 0, limit);
+      const parsedChats = Chats.map((jsonString) => {
+        try {
+          // Parse each individual string element
+          return JSON.parse(jsonString);
+        } catch (error) {
+          return res.status(400).send({ error: "Parse Error", data: [] });
+        }
+      });
+
+      return res
+        .status(200)
+        .send({ message: "History found", data: parsedChats });
+    }
+
+    return res.status(200).send({ message: "History not found", data: [] });
+  } catch (error) {
+    // console.error(error);
+    await notifyMe(
+      "An error occured while retriveing chat history from cache",
+      error
+    );
+    return res.status(500).send({ message: "Something went wrong!" });
+  }
+};

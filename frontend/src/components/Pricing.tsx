@@ -44,7 +44,7 @@ const Pricing = () => {
         "Advanced multi source synthesis mode", // Your core differentiator
         "10 Antinode rooms",
         "Long-Term Persistent Memory",
-        "Unlimited Queries & Web Search upto",
+        "Unlimited Queries & Web Search ",
         "50 Private Documents upto 50mb size",
         "24/7 customer support",
         "Transparency layer always visible"
@@ -72,7 +72,7 @@ const Pricing = () => {
     },
     {
       id: 3,
-      planName: "Teams and Individuals",
+      planName: "Planners",
       price: "120$",
       label: "Large scale",
       description:

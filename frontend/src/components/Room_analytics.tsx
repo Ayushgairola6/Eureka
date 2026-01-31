@@ -41,7 +41,7 @@ const RoomAnalytics: React.FC<props> = ({ showCard, setShowCard }) => {
 
   return (
     <div
-      className={` grid grid-cols-1 gap-4 h-full p-3 dark:bg-white/5 bg-gray-200 md:block  hidden w-70
+      className={` md:grid grid-cols-1 gap-4 h-full p-3 dark:bg-neutral-900 bg-gray-100 w-100   border
       `}
     >
       {/* CARD 1: TOTAL WORKSPACES */}
