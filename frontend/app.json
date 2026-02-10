@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "d421713d-d526-4e0d-b701-7b4bfb7fbd83"
+      }
+    },
+    "android": {
+      "package": "com.ayush_gairola.frontend"
+    }
+  }
+}

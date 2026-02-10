@@ -1,0 +1,21 @@
+Perfect selection! ✅ Those are all excellent choices for text extraction and chunking:
+
+Your list:
+
+TXT (easiest)
+
+CSV (structured text)
+
+PDF (need pdf-parse)
+
+JSON (structured)
+
+XML (structured)
+
+MD (markdown)
+
+DOCX (need mammoth)
+
+PPTX (need office-text-extractor)
+
+Great for RAG - all extract text cleanly and chunk well! 🚀

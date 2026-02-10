@@ -1,0 +1,21 @@
+{
+  "name": "AntiNode",
+  "short_name": "AntiNode",
+  "description": "Your AI research assistant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "Dark.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "Dark.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
