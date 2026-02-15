@@ -132,7 +132,7 @@ export const CreateChatRooms = async (req, res) => {
       user_id
     );
 
-    if (!status || error || !plan_type) {
+    if (status === false || error || !plan_type) {
       return res.status(400).send({ message: "Something went wrong" });
     }
 
@@ -555,7 +555,7 @@ export const GetRoomChatHistory = async (req, res) => {
       user_id
     );
 
-    if (!status || error) {
+    if (status === false || error || !plan_type) {
       return res.status(400).send({ message: "Something went wrong" });
     }
     //if cache exists
@@ -806,7 +806,7 @@ export const GetMisallaneousChatHistory = async (req, res) => {
       user_id
     );
 
-    if (!status || error) {
+    if (status === false || error || !plan_type) {
       return res.status(400).send({ message: "Something went wrong" });
     }
     // Validate User
@@ -922,7 +922,7 @@ export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
       userId
     );
 
-    if (status === false || error) {
+    if (status === false || error || !plan_type) {
       return res.status(400).send({ message: "Something went wrong" });
     }
     if (!userId)
@@ -1076,7 +1076,7 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       req.user.user_id
     );
 
-    if (!status || error) {
+    if (status === false || error || !plan_type) {
       EmitEvent(room_id, "recieved_message", {
         message_id: MessageId,
         sent_by: null,
@@ -1433,7 +1433,7 @@ export async function IdentifyRequestInputs(
       user?.user_id
     );
 
-    if (status === false || error) {
+    if (status === false || error || !plan_type) {
       return { error: "An error occured", error: error, data: null };
     }
     // if they have manually selected any documents let fetch the metadata of those docs

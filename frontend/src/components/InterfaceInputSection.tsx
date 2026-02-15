@@ -364,7 +364,7 @@ const InputSection: React.FC<InputProps> = ({
         {isActive && (
           < div className="flex  items-start sm:items-center justify-between gap-3 pt-3 mt-3 border-t border-gray-200 dark:border-neutral-800">
             {/* Action buttons */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center justify-center gap-2 flex-wrap">
               {/* Domains button */}
               <button
                 onClick={() => {
@@ -435,7 +435,7 @@ const InputSection: React.FC<InputProps> = ({
                 dispatch(setShowDocs(!showDocs));
                 dispatch(setShowOptions(false));
               }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors duration-150  text-neutral-900 dark:text-white space-grotesk max-w-full sm:max-w-[200px]"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors duration-150  text-neutral-900 dark:text-white space-grotesk w-[150px] md:w-full max-w-[200px]"
             >
               <Cloud className="shrink-0" size={14} />
               <span className="truncate text-[11px] uppercase cursor-pointer">

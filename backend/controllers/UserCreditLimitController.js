@@ -42,7 +42,7 @@ export const ProcessUserQuery = async (user, queryType) => {
   const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
     user_id
   );
-  if (!status || error) {
+  if (status === false || error || !plan_type) {
     console.log(status, error, "error ans staus from checkUserPlan");
     return {
       status: false,

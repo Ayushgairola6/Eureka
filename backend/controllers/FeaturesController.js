@@ -164,7 +164,7 @@ export const FetchChatHistory = async (req, res) => {
     const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
       user.user_id
     );
-    if (!status || error) {
+    if (status === false || error || !plan_type) {
       return res.status(400).send({
         error: "An error occured while processing your request",
       });

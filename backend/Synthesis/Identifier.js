@@ -72,7 +72,7 @@ export async function IdentifyRequestInputs(req, res) {
     user.user_id
   );
 
-  if (status === false || error) {
+  if (status === false || error || !plan_type) {
     return res.status(400).send({
       message: "Something went wrong while checking your plan status",
     });

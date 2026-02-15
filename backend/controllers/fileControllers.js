@@ -123,7 +123,7 @@ export const FileUploadHandle = async (req, res) => {
       req.user.user_id
     );
 
-    if (status === "not ok" || error) {
+    if (status === false || error || !plan_type) {
       return res
         .status(400)
         .send({ message: "Something went wrong on the server side" });
@@ -501,7 +501,7 @@ export const GetPublicRecords = async (req, res) => {
       user_id
     );
 
-    if (status === "not ok" || error) {
+    if (status === false || error || !plan_type) {
       return res
         .status(400)
         .send({ message: "Something went wrong on the server side" });
@@ -761,7 +761,7 @@ export const GetPrivateDocResultss = async (req, res) => {
       user.user_id
     );
     //if the user is not paid or the paid staus is not even available
-    if (error || status === false) {
+    if (error || status === false || !plan_type) {
       return res.status(400).send({
         message:
           "There is something wrong with your account please contact our support at support@antinodeai.space to invoke a problem ticket.",
@@ -1056,7 +1056,7 @@ export const PostTypeWebSearch = async (req, res) => {
     );
 
     //if the user is not paid or the paid staus is not even available
-    if (!status || error) {
+    if (status === false || error || !plan_type) {
       return res.status(400).send({
         message:
           "There is something wrong with your account please contact our support at support@antinodeai.space to invoke a problem ticket.",
