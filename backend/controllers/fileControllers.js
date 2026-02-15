@@ -762,6 +762,13 @@ export const GetPrivateDocResultss = async (req, res) => {
     );
     //if the user is not paid or the paid staus is not even available
     if (error || status === false || !plan_type) {
+      console.log(
+        status,
+        error,
+        plan_type,
+        plan_status,
+        "these are the plan data of this account"
+      );
       return res.status(400).send({
         message:
           "There is something wrong with your account please contact our support at support@antinodeai.space to invoke a problem ticket.",

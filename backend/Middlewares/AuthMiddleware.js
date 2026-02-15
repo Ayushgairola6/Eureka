@@ -174,7 +174,7 @@ export async function authenticateStream(req, res) {
       await redisClient
         .multi()
         .set(refreshKey, JSON.stringify(refreshToken))
-        .expire(refreshKey, 1000);
+        .expire(refreshKey, 10000);
     }
 
     let refreshDecoded;
@@ -301,6 +301,7 @@ export async function CheckUserPlanStatus(user_id) {
         plan_status: null,
       };
     }
+    const cacheTTL = 86400; //a day
     const key = `user=${user_id}'s cached plan data`;
     //check cache for user payment status
     const exists = await redisClient.exists(key);
@@ -322,7 +323,7 @@ export async function CheckUserPlanStatus(user_id) {
       .select("plan_type,plan_status")
       .eq("user_id", user_id);
     if (error) {
-      await notifyMe(
+      notifyMe(
         "AN error has occured in the user plan status checking middleware usercreditlimitcontoller line 329.",
         error
       );
@@ -333,15 +334,18 @@ export async function CheckUserPlanStatus(user_id) {
         plan_status: null,
       };
     }
-
-    if (data && data.plan_status && data.plan_type) {
-      await redisClient.multi().set(key, JSON.stringify(data)).exec();
+    if (data && data.length > 0 && data[0].plan_status && data[0].plan_type) {
+      await redisClient
+        .multi()
+        .set(key, JSON.stringify(data[0]))
+        .expire(key, cacheTTL)
+        .exec();
     }
     return {
       status: true,
       error: null,
-      plan_type: data.plan_type,
-      plan_status: data.plan_status,
+      plan_type: data[0].plan_type,
+      plan_status: data[0].plan_status,
     };
   } catch (err) {
     await notifyMe(

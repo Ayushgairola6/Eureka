@@ -76,23 +76,31 @@ export const GenerateResponse = async (
     if (
       !question ||
       !FormattedString ||
+      typeof FormattedString !== "string" ||
       !SYSTEM_PROMPT ||
       !plan_type ||
       typeof plan_type !== "string"
     ) {
-      return { error: "Some parameters are missing" };
+      return { error: "Some parameters are missing or invalid" };
     }
 
     const result = await genAI.models.generateContent({
+      // 2026 models: Flash Lite for speed, Pro for reasoning
       model: plan_type === "free" ? "gemini-2.5-flash-lite" : "gemini-2.5-pro",
+
       contents: [
-        { role: "model", parts: [{ text: "Sytem_prompt:" + SYSTEM_PROMPT }] },
         {
           role: "user",
-          parts: [{ text: `userquery=${question}&Context${FormattedString}` }],
+          parts: [
+            { text: `userquery=${question}\nContext: ${FormattedString}` },
+          ],
         },
-        ,
       ],
+
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        temperature: 0.7,
+      },
     });
 
     const responseText = result.text;
