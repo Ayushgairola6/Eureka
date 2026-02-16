@@ -43,7 +43,7 @@ import {
 } from "../OnlineSearchHandler/WebCrawler.js";
 import { HandlePreProcessFunctions } from "../Synthesis/helper_functions.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
-import { crypto } from "crypto";
+import * as crypto from "node:crpto";
 // string type validator
 const IsAString = (value) => {
   try {
@@ -101,16 +101,7 @@ const formattedTime = `${hour > 12 ? hour - 12 : hour}:${minute
 const currentTime = `${formattedTime}|${dayOfMonth} ${month} ${year}|${dayOfWeek}`;
 // Generate Random RoomCode
 function generate6DigitCode() {
-  // Create a typed array to hold 3 bytes (24 bits)
-  const byteArray = new Uint8Array(3);
-
-  // Fill with cryptographically secure random values
-  crypto.getRandomValues(byteArray);
-
-  // Convert bytes to number (0-16777215)
-  const num =
-    ((byteArray[0] << 16) | (byteArray[1] << 8) | byteArray[2]) % 1000000; // Ensure number is 0-999999
-
+  const num = crypto.randomInt(0, 1000000);
   // Pad with leading zeros to ensure 6 digits
   return num.toString().padStart(6, "0");
 }
