@@ -43,7 +43,7 @@ import {
 } from "../OnlineSearchHandler/WebCrawler.js";
 import { HandlePreProcessFunctions } from "../Synthesis/helper_functions.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
-// import { crypto } from "node:crypto";
+import { crypto } from "crypto";
 // string type validator
 const IsAString = (value) => {
   try {
@@ -1156,7 +1156,9 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       const FinalLinksToScrape = await HandleDeepWebResearch(
         FormattedQueries,
         req.user,
-        room_id
+        room_id,
+        MessageId,
+        plan_type
       );
 
       if (FinalLinksToScrape?.length === 0) {

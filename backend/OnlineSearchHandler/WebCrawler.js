@@ -9,7 +9,7 @@ import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { getJson } from "serpapi";
 dotenv.config();
 
-const turndown = new TurndownService();
+const turndown = new TurndownService({ headingStyle: "atx" });
 
 // serper query
 export async function GetDataFromSerper(
@@ -22,7 +22,8 @@ export async function GetDataFromSerper(
   if (!query?.trim() || !cleanAndSplitQueries(query)) {
     return { error: "Query parameter is required and cannot be empty" };
   }
-  const cleanedQuery = cleanAndSplitQueries(query);
+  // as the function returns an array of queries join them
+  const cleanedQuery = cleanAndSplitQueries(query)?.join("; ");
   // if the query is from a room_send the event to the whole room
   if (room_id) {
     EmitEvent(room_id, "query_status", {
@@ -58,7 +59,7 @@ export async function GetDataFromSerper(
 
     return response.data;
   } catch (error) {
-    await notifyMe("An error has been sent by serper", error);
+    notifyMe("An error has been sent by serper", error);
     return {
       error: "Error while processing web search",
       details: error?.response?.data?.message || error.message,
@@ -129,11 +130,8 @@ export const ProcessForLLM = async (
   room_id
 ) => {
   const dataset = [];
-  const turndown = new TurndownService({ headingStyle: "atx" });
   turndown.remove(["img", "iframe", "script", "style", "noscript"]);
-  // const validLinks = links.filter(
-  //   (link) => link.startsWith("http://") || link.startsWith("https://")
-  // );
+
   const validLinks = filterResearchLinks(links);
 
   const config = new Configuration({

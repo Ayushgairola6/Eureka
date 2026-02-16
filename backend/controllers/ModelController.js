@@ -315,16 +315,19 @@ export const FindIntent = async (required_prompt, query) => {
     }
 
     const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      // 2026 models: Flash Lite for speed, Pro for reasoning
+      model: plan_type === "free" ? "gemini-2.5-flash-lite" : "gemini-2.5-pro",
+
       contents: [
-        { role: "model", parts: [{ text: required_prompt }] },
-        { role: "user", parts: [{ text: query }] },
+        {
+          role: "user",
+          parts: [{ text: query }],
+        },
       ],
-      generationConfig: {
-        temperature: 0.4,
-        topP: 0.95,
-        topK: 20,
-        maxOutputTokens: 300,
+
+      config: {
+        systemInstruction: required_prompt,
+        temperature: 0.7,
       },
     });
 

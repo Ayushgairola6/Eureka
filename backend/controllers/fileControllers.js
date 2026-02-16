@@ -435,8 +435,6 @@ export async function splitTextIntoChunks(documentText) {
     "\n\n",
     "\n\n--- PAGE BREAK ---\n\n", // Great idea to keep this marker!
     "\n",
-    " ",
-    "",
   ];
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
@@ -1058,6 +1056,7 @@ export const PostTypeWebSearch = async (req, res) => {
           "Some parameters are missing,this is a server side issue please wait till we resolve this problem.",
       });
 
+    // check user plan status
     const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
       user_id
     );
@@ -1078,10 +1077,11 @@ export const PostTypeWebSearch = async (req, res) => {
     ) {
       return res.status(400).send({
         message:
-          "This feature is only available for pro members , you want to surf the deep web get our premium subscriptio to enjoy research with deep web results.",
+          "This feature is only available for pro members ,if you want to surf the deep web get our premium subscriptio to enjoy research with deep web results.",
       });
     }
     let InDepthQueries = [];
+
     // check the quota status of the user
     const UpdateState = await ProcessUserQuery(req.user, "web_search");
 
@@ -1121,6 +1121,10 @@ export const PostTypeWebSearch = async (req, res) => {
       // convert the queries into a series of array of strings
       const FormattedQueries = FilterIntent(IdentifyUserIntent); //create an array of quries
 
+      console.log(
+        "These are the intents identified by the model of the user prompt\n",
+        FormattedQueries
+      );
       if (
         !Array.isArray(FormattedQueries) ||
         FormattedQueries?.error ||
@@ -1147,7 +1151,10 @@ export const PostTypeWebSearch = async (req, res) => {
       // send queries to the crawler to scrape
       const FinalLinksToScrape = await HandleDeepWebResearch(
         FormattedQueries,
-        req.user
+        req.user,
+        null,
+        MessageId,
+        plan_type
       );
 
       if (FinalLinksToScrape?.length === 0) {

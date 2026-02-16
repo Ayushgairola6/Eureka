@@ -35,20 +35,37 @@ export const HandleUserSessionHistory = async (req, res) => {
     }
 
     // get data from db
-    let query = supabase
-      .from("Conversation_History")
-      .select("created_at,id,user_id,question,AI_response")
-      .eq("user_id", user.user_id)
-      .limit(5)
-      .order("created_at", { ascending: false });
-
-    if (lastMessageTime !== "0") {
-      query += query.lt("created_at", lastMessageTime);
+    let query;
+    // if theer isnot lastmessagetime or there is but it is 0 fetch only 5
+    if (!lastMessageTime || lastMessageTime === "0") {
+      query = supabase
+        .from("Conversation_History")
+        .select("created_at,id,user_id,question,AI_response")
+        .eq("user_id", user.user_id)
+        .limit(5)
+        .order("created_at", { ascending: false });
+    } else if (lastMessageTime !== "0") {
+      // if theer is an actual last messageId get older messages
+      query = supabase
+        .from("Conversation_History")
+        .select("created_at,id,user_id,question,AI_response")
+        .eq("user_id", user.user_id)
+        .limit(5)
+        .order("created_at", { ascending: false })
+        .lt("created_at", lastMessageTime);
     }
 
+    if (!query) {
+      notifyMe(
+        "The query construction failed in handleUsersessionhistory in featurecontroller line 56"
+      );
+      return res.status(403).send({
+        message:
+          "There was an error in our database we are trying to fix it and apologize for the inconvenience.",
+      });
+    }
     const { data, error } = await query;
     if (error) {
-      console.error(error);
       return res
         .status(400)
         .send({ message: "An error occured while fetching session history" });
@@ -61,8 +78,6 @@ export const HandleUserSessionHistory = async (req, res) => {
     if (FormattedResults.length === 0) {
       return res.status(400).send({ message: "Something went wrong" });
     }
-
-    // // // 3. Serialize for Redis
 
     const serialized = chronological.map((msg) => JSON.stringify(msg));
     await redisClient.multi().rPush(key, serialized).expire(key, 5000); //expire after a while
@@ -132,7 +147,13 @@ export function FormatSessionHistory(ChatsArray) {
 }
 
 //handle the multi quries deep-web-research
-export async function HandleDeepWebResearch(Queries, user, room_id) {
+export async function HandleDeepWebResearch(
+  Queries,
+  user,
+  room_id,
+  MessageId,
+  plan_type
+) {
   let results = [];
 
   for (const query of Queries) {
@@ -141,7 +162,13 @@ export async function HandleDeepWebResearch(Queries, user, room_id) {
     if (!sanitizedQuery) continue;
 
     // 2. Fetch from Serper
-    const data = await GetDataFromSerper(sanitizedQuery, user, room_id);
+    const data = await GetDataFromSerper(
+      sanitizedQuery,
+      user,
+      MessageId,
+      room_id,
+      plan_type
+    );
     results.push(data);
 
     // 3. Cool-down to prevent rate-limiting and CPU spikes
@@ -169,27 +196,33 @@ export const FetchChatHistory = async (req, res) => {
         error: "An error occured while processing your request",
       });
     }
-    // await redisClient.del(ConversationCacheKey);
-    // console.log("This function has been called");
+
     const exists = await redisClient.exists(ConversationCacheKey);
-    // console.log(exists);
     if (exists) {
       const limit =
         plan_type === "free" ? 5 : plan_type === "sprint pass" ? 10 : 30;
 
       const Chats = await redisClient.lRange(ConversationCacheKey, 0, limit);
-      const parsedChats = Chats.map((jsonString) => {
+      const FinalChatArray = [];
+      Chats.forEach((jsonString) => {
         try {
-          // Parse each individual string element
-          return JSON.parse(jsonString);
+          if (jsonString) {
+            FinalChatArray.push(JSON.parse(jsonString));
+          }
         } catch (error) {
-          return res.status(400).send({ error: "Parse Error", data: [] });
+          console.error("Error in parsing the results");
         }
       });
 
+      if (FinalChatArray.length) {
+        return res.status(404).json({
+          message: "An error occured while checking the cache for you history",
+        });
+      }
+
       return res
         .status(200)
-        .send({ message: "History found", data: parsedChats });
+        .send({ message: "History found", data: FinalChatArray });
     }
 
     return res.status(200).send({ message: "History not found", data: [] });
