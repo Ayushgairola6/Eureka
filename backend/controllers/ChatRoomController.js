@@ -43,7 +43,7 @@ import {
 } from "../OnlineSearchHandler/WebCrawler.js";
 import { HandlePreProcessFunctions } from "../Synthesis/helper_functions.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
-import * as crypto from "node:crpto";
+import * as crypto from "node:crypto";
 // string type validator
 const IsAString = (value) => {
   try {
