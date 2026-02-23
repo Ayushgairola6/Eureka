@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { BiError, BiLoaderAlt, BiLogOut } from "react-icons/bi";
 import {
   LogoutUser,
+  StoreInIndexDb,
   togglePreference,
   UpdatePreference,
 } from "../store/AuthSlice.ts";
@@ -332,7 +333,35 @@ const UserDashboard = () => {
           <section className=" md:hidden block my-6 w-full">
             <button
               disabled={isLoggingOut}
-              onClick={() => dispatch(LogoutUser())}
+              onClick={() => dispatch(LogoutUser()).unwrap().then((res) => {
+                if (res.message === 'Session revoked') {
+                  const request = StoreInIndexDb();
+
+                  request.onerror = () => {
+                    return;
+                  };
+
+                  request.onsuccess = (event: any) => {
+                    let db = event.target.result;
+
+                    //if an object store exists
+                    if (!db.objectStoreNames.contains("userinfo")) {
+                      // No store means brand new DB, safely exit or handle state reset
+                      return;
+                    }
+
+                    let transaction = db.transaction(["userinfo"], "readwrite");
+                    let objectStore = transaction.objectStore("userinfo");
+
+                    if (objectStore) {
+                      objectStore.delete("currentUser")
+                      window?.location.reload();
+                    }
+                  }
+                } else {
+                  toast.message(res?.message);
+                }
+              }).catch((err: any) => toast.error(err))}
               className={`
     relative flex items-center justify-center justify-self-end gap-4 px-3 py-1 rounded-md
     text-white font-semibold transition-all duration-300 

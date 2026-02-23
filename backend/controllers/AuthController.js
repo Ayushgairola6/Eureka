@@ -376,7 +376,7 @@ const sendLoginNotification = async (req, user) => {
     );
 
     // Uncomment if you want to send email notifications
-    await EmailServices.sendLoginNotification(user, {
+    EmailServices.sendLoginNotification(user, {
       ip: clientIp,
       userAgent: req.headers["user-agent"],
       browser: req.headers["sec-ch-ua"],
@@ -390,24 +390,30 @@ const sendLoginNotification = async (req, user) => {
 // user logout handler
 export const HandleUserLogout = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
-
-    if (!user_id || !req.user.username) {
-      return res.status(401).send({ message: "Please log in to continue" });
-    }
+    res.clearCookie("AntiNode_eta_six_version1_AuthToken", {
+      httpOnly: true,
+      secure: true,
+      domain: ".antinodeai.space",
+      sameSite: "none",
+      path: "/",
+    });
 
     const { error } = await supabase
       .from("Tokens")
-      .delete("*")
+      .delete()
       .eq("user_id", user_id);
     if (error) {
-      return res
-        .status(400)
-        .send({ message: "Unable to log out of your account" });
+      // reset the cookie for acces again until token deleted
+      res.cookie("AntiNode_eta_six_version1_AuthToken", AuthToken, {
+        httpOnly: true,
+        secure: true,
+        domain: ".antinodeai.space",
+        sameSite: "none",
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+      notifyMe("Unable to delte tokens of someone in the db\n", error);
     }
-    const RefreshTokenKey = `user=${req.user.username}'s_userId=${user_id}`;
     await redisClient.del(RefreshTokenKey);
-    res.clearCookie("AntiNode_eta_six_version1_AuthToken");
     return res.status(200).send({ message: "Session revoked" });
   } catch (error) {
     return res.status(500).send({ message: "Unable to logout " });

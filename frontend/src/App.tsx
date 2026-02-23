@@ -30,6 +30,7 @@ import { connectSocket, disconnectSocket } from "./store/websockteSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.tsx";
 import {
   GetUserDashboardData,
+  LogoutUser,
   setIsLogin,
   setTheme,
   setUseStatus,
@@ -89,7 +90,7 @@ const App = () => {
           dispatch(UpdateFromLocalCache(getRequest.result));
           dispatch(setIsLogin(true)); // If not handled in the action creator
         } else {
-          console.log("No user cache found. State remains logged out.");
+
           dispatch(setIsLogin(false)); // Optional: Explicitly reset/verify
         }
       };
@@ -123,20 +124,17 @@ const App = () => {
         if (response.data.message === "verified") {
           dispatch(setIsLogin(true));
           setUseStatus("idle");
+
           toast.message("Session verified");
         } else {
           toast.message(response.data.message);
         }
         FetchCountRef.current = 1; //indicates that we have fetched the userstate once
-      } catch (error) {
-        // console.log(error);
+      } catch (error: any) {
         setUseStatus("failed");
-        toast.info("No internet connection");
+        dispatch(LogoutUser())
+        toast.error(error?.response?.data.message);
 
-        const time = setTimeout(() => {
-          setUseStatus("idle");
-        }, 3000);
-        return () => clearTimeout(time);
       }
     };
     VerifyLoginState();
@@ -144,26 +142,45 @@ const App = () => {
 
   // now if the user is loggedIn
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (isLoggedIn === true) {
-        try {
-          dispatch(GetUserDashboardData())
-            .unwrap()
-            .then((res: any) => {
-              if (res) {
-                toast.message(res?.message)
-                StoreLocalCache(res.user);
-              }
-            });
-          dispatch(connectSocket());
-        } catch (error: any) {
-          toast.error(error)
-          setUseStatus("idle");
+    if (isLoggedIn === true) {
+      dispatch(GetUserDashboardData())
+        .unwrap()
+        .then((res: any) => {
+          if (res) {
+            toast.message(res?.message)
+            StoreLocalCache(res.user);
+            setUseStatus("idle");
+            dispatch(connectSocket());
+
+          }
+        }).catch((err: any) => {
+          toast.error(err)
+        })
+    } else if (isLoggedIn === false) {
+
+      const request = StoreInIndexDb();
+
+      request.onerror = () => {
+        return;
+      };
+
+      request.onsuccess = (event: any) => {
+        let db = event.target.result;
+
+        //if an object store exists
+        if (!db.objectStoreNames.contains("userinfo")) {
+          // No store means brand new DB, safely exit or handle state reset
+          return;
+        }
+
+        let transaction = db.transaction(["userinfo"], "readwrite");
+        let objectStore = transaction.objectStore("userinfo");
+
+        if (objectStore) {
+          objectStore.delete("currentUser")
         }
       }
-    };
-
-    fetchUserData();
+    }
   }, [isLoggedIn]);
 
   // re append the user chosen theme

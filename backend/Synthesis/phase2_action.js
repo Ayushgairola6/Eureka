@@ -290,20 +290,13 @@ export async function GetChatsForContext(user, plan_type) {
   const limit = plan_type !== "free" ? 10 : 5;
   if (pastConversation) {
     const Chats = await redisClient.lRange(cachekey, 0, limit); //last 10 chat messages retrive them
-    const parsedChats = Chats.filter((jsonString) => {
+    const parsedChats = Chats.map((jsonString) => {
       try {
-        // Parse each individual string element
-        // const messagesweneed = JSON.parse(jsonString)?.sent_by === "AntiNode";
-        return JSON.parse(parsedChats);
-      } catch (error) {
-        // Return a placeholder or handle the error as needed
-        return {
-          message:
-            "Error while parsing past chats from list in synstheisizer query",
-        };
+        return JSON.parse(jsonString);
+      } catch {
+        return null;
       }
-    }); //last 10 chat messages retrive them
-    return parsedChats;
+    }).filter(Boolean);
   } else {
     const OldChats = await FetchPastMessagesFromDbAndCacheThem(user);
     if (OldChats.message) {

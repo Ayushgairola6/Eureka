@@ -28,25 +28,24 @@ type WebSearchStatusProps = {
 
 // --- Helper: Domain Favicon & Name (AntiNode Style) ---
 const LinkChip = ({ url }: { url: string }) => {
-  if (typeof url !== 'string') return null;
 
+  const domain = url?.split(":")[1]?.trim();
   try {
-    const domain = new URL(url).hostname;
     return (
       <a
-        href={url}
+        href={domain}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-2.5 py-1 rounded-sm hover:border-neutral-400 dark:hover:border-neutral-600 transition-all group max-w-full"
       >
-        <div className="w-4 h-4 bg-white rounded-sm overflow-hidden flex items-center justify-center border border-neutral-100 dark:border-neutral-800">
+        <div className="w-6 h-6  rounded-xs overflow-hidden flex items-center justify-center border border-neutral-100 dark:border-neutral-800">
           <img
-            className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity"
+            className="h-full w-full  group-hover:opacity-100 transition-opacity"
             src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
             alt=""
           />
         </div>
-        <span className="text-xs font-mono text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-neutral-200 truncate">
+        <span className="text-xs space-grotesk text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-neutral-200 truncate">
           {domain}
         </span>
       </a>
@@ -71,12 +70,10 @@ const STATUS_HANDLERS: Record<string, any> = {
       return (
         <div className="flex flex-col gap-2 mt-2 w-full">
           <span className="text-xs font-bold text-purple-500 uppercase tracking-widest space-grotesk">
-            Ingesting {links.length} Link{links.length !== 1 ? 's' : ''}
+            INGESTING SOURCE
           </span>
           <div className="flex flex-wrap gap-2">
-            {links.map((link, idx) => (
-              <LinkChip key={idx} url={typeof link === 'string' ? link : link?.url} />
-            ))}
+            <LinkChip url={typeof links[0] === 'string' ? links[0] : "One invalid source"} />
           </div>
         </div>
       );

@@ -3,6 +3,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import {
   FilterIntent,
   FindIntent,
+  GenerateEmbeddings,
   GenerateResponse,
 } from "./ModelController.js";
 import { Pinecone } from "@pinecone-database/pinecone";
@@ -432,9 +433,12 @@ export const DeleteFileHandle = async (req, res) => {
 // functin to split text content into chunks
 export async function splitTextIntoChunks(documentText) {
   const customSeparators = [
+    "\n\n--- PAGE BREAK ---\n\n",
     "\n\n",
-    "\n\n--- PAGE BREAK ---\n\n", // Great idea to keep this marker!
     "\n",
+    ". ",
+    "? ",
+    " ",
   ];
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
@@ -1100,7 +1104,12 @@ export const PostTypeWebSearch = async (req, res) => {
     // iof the user is not on premium and is asking for deep_search we simply reject their request
 
     //if the user is paid and is asking for deep_search we process further
-    if (plan_status === "active" && web_search_depth === "deep_web") {
+    if (
+      plan_status &&
+      plan_status === "active" &&
+      web_search_depth &&
+      web_search_depth === "deep_web"
+    ) {
       EmitEvent(user_id, "query_status", {
         MessageId,
         status: {
@@ -1182,9 +1191,24 @@ export const PostTypeWebSearch = async (req, res) => {
           .status(400)
           .send({ message: "An error occured while processing your request" });
       }
+      // generate embeddings for the user prompt
+      const UserPromptEmbeddings = await GenerateEmbeddings(question);
 
+      if (UserPromptEmbeddings.error) {
+        return res.status(400).send({
+          message:
+            "There was an error while generating embeddings for your prompt please try again.",
+        });
+      }
       // web send the links to the crawler to scrape and process
-      const CleanedWebData = await ProcessForLLM(FlatLinks, req.user, question);
+      const CleanedWebData = await ProcessForLLM(
+        FlatLinks,
+        req.user,
+        question,
+        MessageId,
+        null,
+        UserPromptEmbeddings
+      );
 
       if (!CleanedWebData || CleanedWebData.length === 0) {
         return res
@@ -1214,15 +1238,39 @@ export const PostTypeWebSearch = async (req, res) => {
           .status(400)
           .send({ message: "An error occured while processing your request" });
       }
+      // const LinksToFetch = [
+      //   `https://www.linkedin.com/pulse/from-code-customers-4-go-to-market-strategy-examples-solo-chamaki-hhzic`,
+      //   `https://marketingcrafted.com/playbooks/saas-marketing-strategy`,
+      //   `https://solomarketing.tools/blog/5-marketing-tactics-solo-founders`,
+      //   `https://bitbytetechnology.com/blog/saas-marketing-strategy-for-founders/`,
+      //   `https://unbounce.com/general-marketing/saas-marketing-strategies/`,
+      // ];
 
+      // for paid users use embeddings method
+      // const UserPromptEmbeddings = await GenerateEmbeddings(
+      //   question,
+      //   "RETRIEVAL_QUERY"
+      // );
+
+      // if (UserPromptEmbeddings.error) {
+      //   return res.status(400).send({
+      //     message:
+      //       "There was an error while generating embeddings for your prompt please try again.",
+      //   });
+      // }
       // scrape and optimize the context for the llm
       const CleanedWebData = await ProcessForLLM(
         LinksToFetch,
         req.user,
-        question
+        question,
+        MessageId,
+        null
+        // UserPromptEmbeddings
       );
 
       if (CleanedWebData.length === 0) {
+        console.error("Error in llm processing handler");
+        notifyMe("Error in llm processing handler");
         return res
           .status(400)
           .send({ message: "An error occured while processing your request" });
@@ -1238,6 +1286,8 @@ export const PostTypeWebSearch = async (req, res) => {
       WebResults?.error ||
       WebResults?.FinalContent?.length === 0
     ) {
+      console.error("no web results found", WebResults?.error);
+      notifyMe("No web results found", WebResults?.error);
       return res
         .status(400)
         .send({ message: "An error occured while processing your request" });
@@ -1253,7 +1303,7 @@ export const PostTypeWebSearch = async (req, res) => {
 
     const message = {
       id: userMessageId, //users message Id
-      sent_by: "You", //sent by the user
+      sent_by: "You",
       message: { isComplete: true, content: question },
       sent_at: currentTime,
     };

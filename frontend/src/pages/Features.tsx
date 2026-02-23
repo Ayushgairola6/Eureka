@@ -4,7 +4,7 @@ const AntiNodeFeatures = [
     title: "Autonomus deep Web Search",
     subtitle: "Beyond Surface Results",
     description:
-      "AI does the work for you by analyzing your statement, breaking it down and initiating parallel web searchs to make sure you always get a vast amount of information not just SEO facts.",
+      "AI does the work for you by analyzing your statement, breaking it down and initiating parallel web searchs to make sure you always get a vast and quality  information not just SEO facts.",
     icon: <Globe size={16} />,
     img: "/Process logs2.png",
   },

@@ -110,104 +110,20 @@ export const ToolRegistry = {
     description:
       "Stores the memory of user in key value and relation format in graph databases for memory creation",
     importance: 2,
-    execute: async (key, relation, value, user) => {
-      if (
-        !key ||
-        typeof key !== "string" ||
-        !value ||
-        typeof value !== "string" ||
-        !user
-      ) {
+    execute: async (memory, user) => {
+      if (!memory || !user) {
         return { message: "Invalid arguments" };
       }
-
-      let { records, summary } = await NeoGraphdriver.executeQuery(
-        `
-  MERGE (u:User {user_id: $user_id})
-SET u.name = $username
-
-2. Archive the OLD status: Match the current active relationship
-// Use relationship property 'key' to find the same subject regardless of the relation type
-OPTIONAL MATCH (u)-[r]->(old_m:Memory)
-WHERE type(r) = $relationType AND r.key = $key AND r.status = 'CURRENT'
-SET r.status = 'HISTORY', 
-    r.end_date = timestamp()
-
-// 3. Create the NEW Memory Node
-CREATE (new_m:Memory {
-    key: $key, 
-    value: $value, 
-    created_at: timestamp()
-})
-
-// 4. Create a new relationship with the dynamic type
-// NOTE: $relationType must be safely inserted into the query string by your server code.
-CREATE (u)-[:$relationType {key: $key, status: 'CURRENT', start_date: timestamp()}]->(new_m)
-
-RETURN new_m
-
-  
-  `,
-        { user_id: user.user_id, name: user.username },
-        { database: process.env.NEO4J_DATABASE }
-      );
-      // console.log(
-      //   `Created ${summary.counters.updates().nodesCreated} nodes ` +
-      //     `in ${summary.resultAvailableAfter} ms.`
-      // );
-      return "Created a new memory";
     },
   },
   get_memory: {
     description:
-      "Finds any matchin memory from the graph to generate specific answers",
+      "Finds any matchin memory from the db to generate specific answers",
     importance: 2,
-    execute: async (user, relation, value) => {
-      if (
-        !key ||
-        typeof key !== "string" ||
-        !value ||
-        typeof value !== "string" ||
-        !user
-      ) {
+    execute: async (memory, user) => {
+      if (!memory || !user) {
         return { message: "Invalid arguments" };
       }
-
-      let { records, summary } = await NeoGraphdriver.executeQuery(
-        `
-  MERGE (u:User {user_id: $user_id})
-SET u.name = $username
-
-2. Archive the OLD status: Match the current active relationship
-// Use relationship property 'key' to find the same subject regardless of the relation type
-OPTIONAL MATCH (u)-[r]->(old_m:Memory)
-WHERE type(r) = $relationType AND r.key = $key AND r.status = 'CURRENT'
-SET r.status = 'HISTORY', 
-    r.end_date = timestamp()
-
-// 3. Create the NEW Memory Node
-CREATE (new_m:Memory {
-    key: $key, 
-    value: $value, 
-    created_at: timestamp()
-})
-
-// 4. Create a new relationship with the dynamic type
-// NOTE: $relationType must be safely inserted into the query string by your server code.
-CREATE (u)-[:$relationType {key: $key, status: 'CURRENT', start_date: timestamp()}]->(new_m)
-
-RETURN new_m
-
-  
-  `,
-        { user_id: user.user_id, name: user.username },
-        { database: process.env.NEO4J_DATABASE }
-      );
-      console.log(
-        `Created ${summary.counters.updates().nodesCreated} nodes ` +
-          `in ${summary.resultAvailableAfter} ms.`
-      );
-      return records;
     },
   },
   get_all_chunks: {
@@ -297,38 +213,38 @@ RETURN new_m
       }
 
       // fetch relevant links from the seper
-      // const response = await GetDataFromSerper(question, user);
+      const response = await GetDataFromSerper(question, user);
 
-      // if (!response) {
-      //   return {
-      //     FormattedResults: "Some error occured in the web seach handler.",
-      //     favicons: [],
-      //   };
-      // }
+      if (!response) {
+        return {
+          FormattedResults: "Some error occured in the web seach handler.",
+          favicons: [],
+        };
+      }
 
       // format the response into array of links
-      // const LinksToFetch = FilterUrlForExtraction(response, req.user);
+      const LinksToFetch = FilterUrlForExtraction(response, req.user);
 
-      // if (LinksToFetch.length === 0) {
-      //   return {
-      //     FormattedResults: "Some error occured in the web seach handler.",
-      //     favicons: [],
-      //   };
-      // }
-      const LinksToFetch = [
-        `https://encharge.io/best-saas-marketing-automation-tools/`,
-        `https://www.reddit.com/r/SaaS/comments/1iyk7r1/best_marketing_automation_tool_for_saas/`,
-        `https://zapier.com/blog/best-marketing-automation-software/`,
-        `https://www.bayleafdigital.com/boost-roi-by-improving-social-media-for-saas/`,
-        `https://www.madx.digital/learn/10-strategies-for-dominating-saas-social-media-marketing`,
-        `https://www.labsmedia.com/saas/strategy/social-media/`,
-      ];
+      if (LinksToFetch.length === 0) {
+        return {
+          FormattedResults: "Some error occured in the web seach handler.",
+          favicons: [],
+        };
+      }
+      // const LinksToFetch = [
+      //   `https://encharge.io/best-saas-marketing-automation-tools/`,
+      //   `https://www.reddit.com/r/SaaS/comments/1iyk7r1/best_marketing_automation_tool_for_saas/`,
+      //   `https://zapier.com/blog/best-marketing-automation-software/`,
+      //   `https://www.bayleafdigital.com/boost-roi-by-improving-social-media-for-saas/`,
+      //   `https://www.madx.digital/learn/10-strategies-for-dominating-saas-social-media-marketing`,
+      //   `https://www.labsmedia.com/saas/strategy/social-media/`,
+      // ];
 
       // extract only necessary chunks for context
       const CleanedWebData = await ProcessForLLM(LinksToFetch, user, question);
 
       if (CleanedWebData.length === 0) {
-        console.log(CleanedWebData, "The cleanedWebData ");
+        // console.log(CleanedWebData, "The cleanedWebData ");
         return {
           FormattedResults: "Some error occured in the web seach handler.",
           favicons: [],
@@ -339,7 +255,7 @@ RETURN new_m
       const WebResults = FormattForLLM(CleanedWebData);
 
       if (WebResults?.error || WebResults.FinalContent.length === 0) {
-        console.log(WebResults, "The WebResults ");
+        // console.log(WebResults, "The WebResults ");
 
         return {
           FormattedResults: "Some error occured in the web seach handler.",
@@ -359,6 +275,37 @@ RETURN new_m
     importance: 2,
     execute: async (query, room_id) => {
       if (!query || typeof query !== "string") {
+        return { message: "Invalid arguments" };
+      }
+      const chatIndex = await pc.index("room_chat_history");
+
+      //find the most matching messages
+      const history = await chatIndex.searchRecords({
+        query: {
+          inputs: { text: query, room_id: room_id },
+          topK: 4,
+        },
+        fields: ["summary", "created_at"],
+      });
+
+      let summaryString = "";
+      if (history.result.hits.length > 0) {
+        history.result.hits.forEach((sum) => {
+          summaryString += `score=${sum._score}&summary=${sum.fields.summary}&create_at=${sum.fields.created_at}`;
+        });
+
+        return summaryString;
+      }
+
+      return "Unable to find requested history in the records";
+      // getting the text chunks from the db
+    },
+  },
+  get_session_chat: {
+    description: "To retrive solo session chat history for quick recall",
+    importance: 2,
+    execute: async (room_id) => {
+      if (!room_id) {
         return { message: "Invalid arguments" };
       }
       const chatIndex = await pc.index("room_chat_history");

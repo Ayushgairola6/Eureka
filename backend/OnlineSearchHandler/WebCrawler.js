@@ -7,11 +7,16 @@ import axios from "axios";
 import dotenv from "dotenv";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { getJson } from "serpapi";
+import { GenerateEmbeddings } from "../controllers/ModelController.js";
+import { cosineSimilarity } from "./utils/math.js"; // You'll need a simple math helper
+import { splitTextIntoChunks } from "../controllers/fileControllers.js";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+
 dotenv.config();
 
 const turndown = new TurndownService({ headingStyle: "atx" });
 
-// serper query
+// serper query processor
 export async function GetDataFromSerper(
   query,
   user,
@@ -67,7 +72,7 @@ export async function GetDataFromSerper(
   }
 }
 
-/// serper api backup
+/// serper api backup for future
 export const GetDataFromSerpApi = async (query, user, plan_type) => {
   try {
     const SERPAPI_KEY = process.env.SERP_API;
@@ -127,105 +132,114 @@ export const ProcessForLLM = async (
   user,
   userQuery,
   MessageId,
-  room_id
+  room_id,
+  UserPromptEmbeddings
 ) => {
-  const dataset = [];
-  turndown.remove(["img", "iframe", "script", "style", "noscript"]);
+  try {
+    const dataset = [];
+    turndown.remove(["img", "iframe", "script", "style", "noscript"]);
 
-  const validLinks = filterResearchLinks(links);
+    const validLinks = filterResearchLinks(links);
 
-  const config = new Configuration({
-    persistStorage: false,
-    storageClient: new MemoryStorage({ persistStorage: false }),
-  });
+    const config = new Configuration({
+      persistStorage: false,
+      storageClient: new MemoryStorage({ persistStorage: false }),
+    });
 
-  log.setLevel(log.LEVELS.OFF);
-  const crawler = new CheerioCrawler(
-    {
-      // config,
-      // proxyConfig,
-      minConcurrency: 10,
-      maxConcurrency: 20,
-      maxRequestRetries: 2, // Don't keep trying if it fails once
-      requestHandlerTimeoutSecs: 20, // Keep it snappy
-      useSessionPool: false,
-      failedRequestHandler: ({ request }) => {},
-      async requestHandler({ request, body, $ }) {
-        if (room_id) {
-          EmitEvent(room_id, "query_status", {
-            MessageId,
-            status: {
-              message: "reading_links",
-              data: [`Reading: ${new URL(request.url).hostname}`],
-            },
-          });
-        } else {
-          EmitEvent(user.user_id, "query_status", {
-            MessageId,
-            status: {
-              message: "reading_links",
-              data: [`Reading: ${new URL(request.url).hostname}`],
-            },
-          });
-        }
-
-        // 1. Quick Check: If Cheerio ($) sees the page is empty or tiny, skip immediately
-        if (body.length < 500) return;
-
-        const { document } = parseHTML(body);
-
-        const reader = new Readability(document);
-        const article = reader.parse();
-
-        if (article && article.content) {
-          const markdown = turndown.turndown(article.content);
-
-          if (markdown.length < 200) return;
-          const wordCount = article.textContent.split(/\s+/).length;
-
-          const ProcessedPage = extractHighValueChunks(
-            { url: request.url, title: article.title, content: markdown },
-            userQuery
-          );
-          const object = {
-            title: article.title,
-            url: request.url,
-            favicon: `https://www.google.com/s2/favicons?domain=${
-              new URL(request.url).hostname
-            }&sz=64`,
-            markdown: ProcessedPage.content,
-            score: ProcessedPage.score,
-            estimatedTokens: Math.ceil(markdown.length / 4),
-          };
-          // await notifyMe(JSON.stringify(object));
-
+    log.setLevel(log.LEVELS.OFF);
+    const crawler = new CheerioCrawler(
+      {
+        minConcurrency: 10,
+        maxConcurrency: 20,
+        maxRequestRetries: 0,
+        requestHandlerTimeoutSecs: 20,
+        useSessionPool: false,
+        failedRequestHandler: ({ request }) => {},
+        async requestHandler({ request, body, $ }) {
           if (room_id) {
             EmitEvent(room_id, "query_status", {
               MessageId,
               status: {
-                message: "Cleaning_Context",
-                data: [ProcessedPage.content.slice(0, 500)],
+                message: "reading_links",
+                data: [`Reading: ${new URL(request.url).hostname}`],
               },
             });
           } else {
             EmitEvent(user.user_id, "query_status", {
               MessageId,
               status: {
-                message: "Cleaning_Context",
-                data: [ProcessedPage.content.slice(0, 500)],
+                message: "reading_links",
+                data: [`Reading: ${new URL(request.url).hostname}`],
               },
             });
           }
 
-          dataset.push(object);
-        }
-      },
-    },
-    config
-  );
+          // 1. Quick Check: If Cheerio ($) sees the page is empty or tiny, skip immediately
+          if (body.length < 500) return;
 
-  await crawler.run(validLinks);
-  return dataset;
+          const { document } = parseHTML(body);
+
+          const reader = new Readability(document);
+          const article = reader.parse();
+
+          if (article && article.content) {
+            const markdown = turndown.turndown(article.content);
+
+            if (markdown.length < 200) return;
+            const wordCount = article.textContent.split(/\s+/).length;
+            const cleanedMarkdown = markdown
+              .replace(/\[.*?\]\(.*?\)/g, "")
+              .replace(/#{1,6}\s/g, "")
+              .replace(/\n{3,}/g, "\n\n")
+              .trim();
+            const ProcessedPage = extractHighValueChunks(
+              article,
+              userQuery,
+              5000
+            );
+            const object = {
+              title: article.title,
+              url: request.url,
+              favicon: `https://www.google.com/s2/favicons?domain=${
+                new URL(request.url).hostname
+              }&sz=64`,
+              markdown: ProcessedPage.content,
+              score: ProcessedPage.score,
+              estimatedTokens: Math.ceil(markdown.length / 4),
+            };
+            // await notifyMe(JSON.stringify(object));
+
+            if (room_id) {
+              EmitEvent(room_id, "query_status", {
+                MessageId,
+                status: {
+                  message: "Cleaning_Context",
+                  data: [ProcessedPage.content.slice(0, 500)],
+                },
+              });
+            } else {
+              EmitEvent(user.user_id, "query_status", {
+                MessageId,
+                status: {
+                  message: "Cleaning_Context",
+                  data: [ProcessedPage.content.slice(0, 500)],
+                },
+              });
+            }
+
+            dataset.push(object);
+          }
+        },
+      },
+      config
+    );
+
+    await crawler.run(validLinks);
+    return dataset;
+  } catch (err) {
+    console.error("An error in the process llm handler\n", err);
+    notifyMe("An error in the process llm handler\n", err);
+  }
 };
 
 //formatting for the llm
@@ -353,27 +367,6 @@ const filterResearchLinks = (links) => {
   });
 };
 
-//find relevant information from the chunks
-// function extractHighValueChunks(text, query, maxTokens = 3000) {
-//   const words = query.toLowerCase().split(" ");
-//   const chunks = text.split("\n\n"); // Break by paragraphs
-
-//   const scoredChunks = chunks.map((chunk) => {
-//     let score = 0;
-//     words.forEach((word) => {
-//       if (chunk.toLowerCase().includes(word)) score += 1;
-//     });
-//     return { chunk, score };
-//   });
-
-//   // Sort by relevance and take the top ones until we hit the token limit
-//   const bestChunks = scoredChunks
-//     .sort((a, b) => b.score - a.score)
-//     .filter((item) => item.score > 0)
-//     .slice(0, 5); // Take top 5 relevant paragraphs
-
-//   return bestChunks.map((c) => c.chunk).join("\n\n");
-// }
 function extractHighValueChunks(page, query, maxTokens = 3500) {
   const queryWords = query
     .toLowerCase()
@@ -421,6 +414,9 @@ function extractHighValueChunks(page, query, maxTokens = 3500) {
   // ---------- page scoring ----------
 
   const pageScore = scorePage(page.content);
+
+  // Skip low quality pages before even chunking
+  if (pageScore < 0) return null;
   let tokenBudget = maxTokens;
 
   // ---------- chunk extraction ----------
@@ -480,4 +476,95 @@ const cleanAndSplitQueries = (llmResponse) => {
         .trim(); // Remove surrounding whitespace
     })
     .filter((query) => query.length > 3); // Ignore empty/useless strings
+};
+
+// extracts relevant information from scraped search results for better context matching
+
+const HandleContextFiltering = async (UserPromptEmbeddings, CurrentContext) => {
+  try {
+    const { content, title, url } = CurrentContext;
+
+    if (!content || !title || !url) {
+      return { error: "Missing required fields", content: null };
+    }
+
+    const webContentSplitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 4000,
+      chunkOverlap: 100,
+      separators: ["\n\n", "\n", ". ", " "],
+    });
+
+    const chunks = await webContentSplitter.splitText(content); //create chunks large ones
+    // const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)); //a slight delay for controller rate limits
+    if (chunks.length === 0) {
+      return { content: null, score: 0 };
+    }
+
+    const batchSize = 30;
+    const results = [];
+    const allEmbeddings = await GenerateEmbeddingsRecursive(
+      chunks,
+      "RETRIEVAL_DOCUMENT",
+      0,
+      results,
+      batchSize
+    );
+
+    // Score inline, no recursion needed here
+    const scoredChunks = chunks
+      .map((chunk, i) => ({
+        chunk,
+        score: allEmbeddings[i]
+          ? cosineSimilarity(
+              UserPromptEmbeddings?.[0]?.values,
+              allEmbeddings?.[i].values
+            )
+          : 0,
+      }))
+      .filter((c) => c.score > 0.65)
+      .sort((a, b) => b.score - a.score);
+
+    const finalMarkdown = scoredChunks
+      .map((s) => `[Source: ${title}](${url})\n${s.chunk}`)
+      .join("\n\n---\n\n");
+    return { content: finalMarkdown, score: scoredChunks[0]?.score || 0 };
+  } catch (err) {
+    console.error("Context filtering error:", err);
+    notifyMe("Context filtering error", err);
+    return { content: null, score: 0 };
+  }
+};
+
+//a tick based embedding function that asks for new embeddings only when previous one finishes recursively
+const GenerateEmbeddingsRecursive = async (
+  chunks,
+  taskType,
+  currentIndex,
+  results,
+  BATCH_SIZE
+) => {
+  // Base case - all chunks processed
+  if (currentIndex >= chunks.length) return results;
+
+  const batch = chunks.slice(currentIndex, currentIndex + BATCH_SIZE);
+
+  const batchEmbeddings = await GenerateEmbeddings(batch, taskType);
+
+  if (batchEmbeddings && !batchEmbeddings.error) {
+    results.push(...batchEmbeddings);
+  } else {
+    // Push nulls to maintain index alignment with chunks
+    results.push(...new Array(batch.length).fill(null));
+  }
+
+  // Delay between batches then trigger next tick
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  return GenerateEmbeddingsRecursive(
+    chunks,
+    taskType,
+    currentIndex + BATCH_SIZE,
+    results,
+    BATCH_SIZE
+  );
 };

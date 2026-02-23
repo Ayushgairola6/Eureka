@@ -40,7 +40,6 @@ export const VerifyToken = async (req, res, next) => {
           return res.status(403).json({ message: "Token malformed" });
         }
         const RefreshTokenKey = `user=${DecodedData.username}'s_userId=${DecodedData.user_id}`;
-        await redisClient.del(RefreshTokenKey);
 
         const HasCacheRefreshToken = await redisClient.get(RefreshTokenKey);
         let refreshToken;

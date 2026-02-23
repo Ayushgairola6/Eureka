@@ -16,7 +16,7 @@ const aboutAntiNode = [
     title: "Transparent Verification",
     subtitle: "See The Sources & Logs",
     description:
-      "Every claim is sourced. Every reasoning step is visible. Cross-reference everything yourself. No black boxes, no hidden hallucinations.",
+      "Every claim is sourced. Every reasoning step is visible. Cross-reference everything yourself. No black boxes, no hidden hallucinations and red-flag false sources.",
     icon: <ShieldCheck />,
     img: "/Process logs2.png",
     badge: "Our Solution",
@@ -66,8 +66,8 @@ const Why = () => {
         <h2 className="text-[10px] font-mono tracking-[0.5em] uppercase text-orange-500 mb-4 font-bold">
           [ Protocol_Architecture_v1.0 ]
         </h2>
-        <h1 className="text-4xl md:text-6xl bai-jamjuree-bold tracking-tighter">
-          Beyond Search. <br /> <span className="text-neutral-400">Pure Intelligence.</span>
+        <h1 className="text-4xl md:text-6xl space-grotesk font-bold tracking-tighter">
+          Beyond Search. <br /> <span className="text-neutral-400">Autonomous Intelligence.</span>
         </h1>
       </header>
 

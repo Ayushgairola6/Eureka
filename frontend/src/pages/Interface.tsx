@@ -292,7 +292,7 @@ function Interface() {
                 textareaRef={textareaRef}
               />
               <div className='space-grotesk text-[10px] text-gray-700 dark:text-gray-500 text-center '>
-                Antinode can make mistakes!
+                Always verify critical information from primary sources
               </div>
             </div>
           </div>

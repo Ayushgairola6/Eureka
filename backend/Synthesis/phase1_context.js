@@ -89,11 +89,7 @@ export async function GetDocumentInfoFromName(
   }
 
   // OR handles the filtering internally.
-  const rawResults = await RetrieveInformatioByName(
-    nameRequests,
-    user,
-    MessageId
-  );
+  const rawResults = await RetrieveInformatioByName(nameRequests, user);
 
   // 4. Critical Step: Deduplication
 
@@ -163,7 +159,7 @@ export async function GetKnowledgebaseInfo(
 }
 
 //if the model wants to check something in the summary history for informatin
-export async function Check_ChatRoomSummary() {
+export async function Check_ChatRoomSummary(phase2_Action) {
   //if the request is for a room chatHistory retrieval
   const checkchatSummmary = phase2_Action.filter(
     (li) => li.func_name === "Search_InRoomChat"

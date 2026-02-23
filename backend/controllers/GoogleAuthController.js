@@ -8,9 +8,9 @@ import {
 } from "./AuthController.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { supabase } from "./supabaseHandler.js";
+import { EmailServices } from "../EmailHandlers/EmailTemplates.js";
 dotenv.config();
-// const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-// const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+
 const GOOGLE_REDIRECT_URI = `${process.env.SERVER_URL}/api/auth/google/callback`;
 
 const pendingStates = new Map();
@@ -156,7 +156,6 @@ export const HandleGoogleCallback = async (req, res) => {
         error
       );
     }
-    // 8. Set authentication cookie
     const isProduction = process.env.NODE_ENV === "production";
 
     res.cookie("AntiNode_eta_six_version1_AuthToken", authToken, {
@@ -166,15 +165,21 @@ export const HandleGoogleCallback = async (req, res) => {
       ...(isProduction && { domain: ".antinodeai.space" }),
       maxAge: 24 * 60 * 60 * 1000,
     });
-    // 9. Send notification
-    await notifyMe(`User ${user.username} logged in via Google OAuth`);
 
-    // 10. Redirect to frontend with success
+    notifyMe(`User ${user.username} logged in via Google OAuth`);
+
+    EmailServices.sendLoginNotification(user, {
+      ip: clientIp,
+      userAgent: req.headers["user-agent"],
+      browser: req.headers["sec-ch-ua"],
+      platform: req.headers["sec-ch-ua"],
+      timestamp: new Date(),
+    });
     return res.redirect(
       `${process.env.CLIENT_URL}/client/OAuthCallback?auth=success&message=Identity_Verified`
     );
   } catch (error) {
-    await notifyMe("Something went wrong in the google auth controller", error);
+    notifyMe("Something went wrong in the google auth controller", error);
     return res.redirect(
       `${process.env.CLIENT_URL}/client/OAuthCallback?error=internal_server_error`
     );

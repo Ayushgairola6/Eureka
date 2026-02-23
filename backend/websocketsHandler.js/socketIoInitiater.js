@@ -15,8 +15,13 @@ const Room_And_their_members = new Map();
 let io;
 export const initializeSocketIo = (httpServer) => {
   io = new Server(httpServer, {
+    // transports: ["webtransport", "websocket", "polling"],
     cors: {
-      origin: ["http://localhost:5173", "https://AntiNode-six-eta.vercel.app"], // Your frontend URL
+      origin: [
+        "http://localhost:5173",
+        "https://AntiNode-six-eta.vercel.app",
+        "https://antinodeai.space",
+      ], // Your frontend URL
       credentials: true,
       allowedHeaders: [
         "Content-Type",
@@ -152,7 +157,9 @@ export const initializeSocketIo = (httpServer) => {
   io.on("connection", (socket) => {
     // joining a specific chatRoom
     console.log("new user connected to the socket");
-
+    socket.conn.on("upgrade", (transport) => {
+      console.log(`transport upgraded to ${transport.name}`);
+    });
     if (socket.user_id) {
       socket.join(socket.user_id);
     }

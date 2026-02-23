@@ -127,7 +127,6 @@ export const GetUserDashboardData = createAsyncThunk<AuthState, void>(
           withCredentials: true,
         }
       );
-      console.log(response.data, "the user account details");
       return response.data;
     } catch (err: any) {
       if (err.response && err.response.data) {
@@ -167,7 +166,6 @@ export const AcceptOrRejectRequest = createAsyncThunk<any, ActionPayload>(
           },
         }
       );
-      // console.log(response.data);
       return response.data;
     } catch (err: any) {
       if (err.response && err.response.data) {
@@ -265,25 +263,14 @@ export const LogoutUser = createAsyncThunk(
   "user/logout",
   async (_, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem(
-        "AntiNode_eta_six_version1_AuthToken"
-      );
       const response = await axios.post(
         `${BaseApiUrl}/api/user/session-logout`,
         {},
         {
           withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${AuthToken}`,
-          },
         }
       );
-      if (response.data.message === "Session revoked") {
-        localStorage.removeItem("AntiNode_eta_six_version1_AuthToken");
-        document.cookie =
-          "AntiNode_eta_six_version1_AuthToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        return response.data;
-      }
+      return response.data;
     } catch (err: any) {
       if (err.response && err.response.data) {
         const serverMessage =
@@ -362,7 +349,6 @@ function getDbConnection() {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         // We use an "out-of-line" key approach, meaning we supply the key later.
         db.createObjectStore(STORE_NAME);
-        console.log(`Object store '${STORE_NAME}' created.`);
       }
     };
 
@@ -414,7 +400,6 @@ const authSlice = createSlice({
   reducers: {
     UpdateFromLocalCache: (state, action) => {
       // Only update existing user fields when a user object exists in state
-      // console.log(action.payload)
 
       if (action.payload && state.user) {
         state.user.username = action.payload.username;

@@ -118,7 +118,6 @@ export const socketMiddleware =
         socket = io(ServerUrl, {
           reconnection: true,
           reconnectionAttempts: 5,
-          transports: ["websocket", "polling"],
           reconnectionDelay: 2000,
           auth: {
             token: AuthToken,

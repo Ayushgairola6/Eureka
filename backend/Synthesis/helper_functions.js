@@ -72,8 +72,12 @@ export async function ProcessKnowledgeBaseContextGathering(
           }
           if (results) {
             Response.push({
-              category: current.result.metadata.category,
-              subcategory: current.result.metadata.subCategory,
+              category: current
+                ? current?.result?.metadata?.category
+                : "unknown",
+              subcategory: current
+                ? current?.result?.metadata?.subCategory
+                : "unknown",
               text: results,
             });
           }
@@ -172,10 +176,10 @@ export async function CheckPrivateDocs(ReferenceArray, user, DocumentArray) {
         ); //user file description as query
         FinalResult.push({ document_id: document_id, context: result });
       } else {
-        const documentQuery = DocumentArray.find(
-          (func) => func.doc_id !== document_id
-        );
-
+        // const documentQuery = DocumentArray.find(
+        //   (func) => func.doc_id !== document_id
+        // );
+        const documentQuery = DocumentArray[0];
         const result = await req.config.execute(
           document_id,
           documentQuery?.result.about,
@@ -217,19 +221,13 @@ export async function ExtractChatsSummary(
   room_id,
   user_question
 ) {
-  await Promise.all(
+  const results = await Promise.all(
     ReferenceArray.map(async (req) => {
-      const query = req.arguments.query;
-      if (query) {
-        const result = await req.config.execute(
-          query ? query : user_question,
-          room_id
-        ); //u
-      }
-
-      return result;
+      const query = req.arguments.query || user_question;
+      return await req.config.execute(query, room_id);
     })
   );
+  return results.filter(Boolean);
 }
 
 export async function RetrieveInformatioByName(ReferenceArray, user) {

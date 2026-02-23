@@ -85,7 +85,6 @@ export const GenerateResponse = async (
     }
 
     const result = await genAI.models.generateContent({
-      // 2026 models: Flash Lite for speed, Pro for reasoning
       model: plan_type === "free" ? "gemini-2.5-flash-lite" : "gemini-2.5-pro",
 
       contents: [
@@ -100,6 +99,7 @@ export const GenerateResponse = async (
       config: {
         systemInstruction: SYSTEM_PROMPT,
         temperature: 0.7,
+        maxOutputTokens: 8000,
       },
     });
 
@@ -141,29 +141,30 @@ export const IdentifyUserRequest = async (context, prompt) => {
     return { error: error };
   }
 };
-export const GenerateEmbeddings = async (file_content) => {
+
+// handles the embedding generation for semantic similarity for better web_search results context
+export const GenerateEmbeddings = async (input, task_type) => {
   try {
-    if (!file_content || typeof file_content !== "string") {
-      return { error: "Invalid content type" };
+    if (!input) {
+      return { error: "Invalid input: must be a string or array type" };
     }
 
-    const response = await ai.models.embedContent({
-      model: "text-embedding-004",
-      contents: file_content,
+    const result = await genAI.models.embedContent({
+      model: "gemini-embedding-001",
+      contents: input, // changed from content to contents
       config: {
-        taskType: "SEMANTIC_SIMILARITY",
+        taskType: task_type, // important - see below
+        outputDimensionality: 3072,
       },
     });
 
-    // console.log(response.embeddings);
-    if (!response.embeddings) {
-      return { error: "Error while generating embeddings for chunks" };
+    if (!result?.embeddings) {
+      return { error: "Embedding failed to generate for this query" };
     }
-
-    return response.embeddings;
+    return result.embeddings;
   } catch (error) {
-    // console.error(error);
-    return { error: "Error while Generated embeddings", error };
+    console.error("Embedding generation error:", error);
+    return { error: error.message || "Error while generating embeddings" };
   }
 };
 
