@@ -18,7 +18,7 @@ import {
   getIo,
   UpdateTheRoomChatCache,
 } from "../websocketsHandler.js/socketIoInitiater.js";
-import { index } from "./fileControllers.js";
+import { fetchSearchResults, index } from "./fileControllers.js";
 import {
   FindIntent,
   GenerateResponse,
@@ -37,7 +37,6 @@ import {
 import {
   FilterUrlForExtraction,
   FormattForLLM,
-  GetDataFromSerpApi,
   GetDataFromSerper,
   ProcessForLLM,
 } from "../OnlineSearchHandler/WebCrawler.js";
@@ -1196,31 +1195,17 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       // we put the results in the webResults array
       WebResults = FormattForLLM(CleanedWebData);
     } else {
-      const response = await GetDataFromSerper(
+      const { response, links: LinksToFetch } = await fetchSearchResults(
+        plan_type,
         query,
         req.user,
-        MessageId,
-        room_id
+        MessageId
       );
 
-      if (!response) {
-        return res
-          .status(400)
-          .send({ message: "An error occured while processing your request" });
-      }
-
-      // convert the results into array of links
-      const LinksToFetch = FilterUrlForExtraction(
-        response,
-        req.user,
-        MessageId,
-        room_id
-      );
-
-      if (LinksToFetch.length === 0) {
-        return res
-          .status(400)
-          .send({ message: "An error occured while processing your request" });
+      if (!response || LinksToFetch?.length === 0) {
+        return res.status(400).send({
+          message: "An error occurred while processing your request",
+        });
       }
 
       EmitEvent(room_id, "query_status", {

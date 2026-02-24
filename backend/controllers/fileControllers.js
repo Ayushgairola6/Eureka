@@ -44,6 +44,10 @@ import {
 } from "../OnlineSearchHandler/WebCrawler.js";
 import { HandleDeepWebResearch } from "./FeaturesController.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
+import {
+  FormalSerpAPIresults,
+  GetDataFromSerpApi,
+} from "../OnlineSearchHandler/serpapi_handler.js";
 export const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
@@ -1037,7 +1041,21 @@ export const GetPrivateDocResultss = async (req, res) => {
     return res.status(500).send({ message: "Server busy" });
   }
 };
-// Do websearch
+
+// Do websearch based on plan_type
+export const fetchSearchResults = async (
+  plan_type,
+  question,
+  user,
+  MessageId
+) => {
+  if (plan_type === "free") {
+    const response = await GetDataFromSerpApi(question, user, null, MessageId);
+    return { response, links: FormalSerpAPIresults(response) };
+  }
+  const response = await GetDataFromSerper(question, user);
+  return { response, links: FilterUrlForExtraction(response, user) };
+};
 export const PostTypeWebSearch = async (req, res) => {
   try {
     const user_id = req.user.user_id;
@@ -1222,29 +1240,20 @@ export const PostTypeWebSearch = async (req, res) => {
     // if user is on surface web so we keep it simple
     else {
       // send the query direct to serper.dev
-      const response = await GetDataFromSerper(question, req.user);
+      const { response, links: LinksToFetch } = await fetchSearchResults(
+        plan_type,
+        question,
+        req.user,
+        MessageId
+      );
 
-      if (!response) {
-        return res
-          .status(400)
-          .send({ message: "An error occured while processing your request" });
+      if (!response || LinksToFetch?.length === 0) {
+        return res.status(400).send({
+          message: "An error occurred while processing your request",
+        });
       }
 
       // convert the results into array of links
-      const LinksToFetch = FilterUrlForExtraction(response, req.user);
-
-      if (LinksToFetch.length === 0) {
-        return res
-          .status(400)
-          .send({ message: "An error occured while processing your request" });
-      }
-      // const LinksToFetch = [
-      //   `https://www.linkedin.com/pulse/from-code-customers-4-go-to-market-strategy-examples-solo-chamaki-hhzic`,
-      //   `https://marketingcrafted.com/playbooks/saas-marketing-strategy`,
-      //   `https://solomarketing.tools/blog/5-marketing-tactics-solo-founders`,
-      //   `https://bitbytetechnology.com/blog/saas-marketing-strategy-for-founders/`,
-      //   `https://unbounce.com/general-marketing/saas-marketing-strategies/`,
-      // ];
 
       // for paid users use embeddings method
       // const UserPromptEmbeddings = await GenerateEmbeddings(
@@ -1315,7 +1324,7 @@ export const PostTypeWebSearch = async (req, res) => {
       InDepthQueries.length > 0
         ? `These are subqueries obtained by understanding the user request created by you earlier use these within your response to make your research to be authentic=${JSON.stringify(
             InDepthQueries
-          )}&UserQuery=${question}`
+          )}&UserQuery=${question}&chathistory=${JSON.stringify(history)}`
         : question,
       JSON.stringify(WebResults.FinalContent),
       WebResultPrompt,

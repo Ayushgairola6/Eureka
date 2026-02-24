@@ -157,11 +157,9 @@ export async function HandleDeepWebResearch(
   let results = [];
 
   for (const query of Queries) {
-    // 1. Clean the query (using the sanitizer we built)
     const sanitizedQuery = query.trim();
     if (!sanitizedQuery) continue;
 
-    // 2. Fetch from Serper
     const data = await GetDataFromSerper(
       sanitizedQuery,
       user,
@@ -169,9 +167,10 @@ export async function HandleDeepWebResearch(
       room_id,
       plan_type
     );
-    results.push(data);
+    if (data) {
+      results.push(data);
+    }
 
-    // 3. Cool-down to prevent rate-limiting and CPU spikes
     await new Promise((res) => setTimeout(res, 700));
   }
 

@@ -6,7 +6,6 @@ import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
 import axios from "axios";
 import dotenv from "dotenv";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
-import { getJson } from "serpapi";
 import { GenerateEmbeddings } from "../controllers/ModelController.js";
 import { cosineSimilarity } from "./utils/math.js"; // You'll need a simple math helper
 import { splitTextIntoChunks } from "../controllers/fileControllers.js";
@@ -16,7 +15,6 @@ dotenv.config();
 
 const turndown = new TurndownService({ headingStyle: "atx" });
 
-// serper query processor
 export async function GetDataFromSerper(
   query,
   user,
@@ -72,27 +70,7 @@ export async function GetDataFromSerper(
   }
 }
 
-/// serper api backup for future
-export const GetDataFromSerpApi = async (query, user, plan_type) => {
-  try {
-    const SERPAPI_KEY = process.env.SERP_API;
-    const response = await getJson({
-      engine: "google_light",
-      api_key: SERPAPI_KEY,
-      q: query,
-      google_domain: "google.com",
-      hl: "en",
-      num: plan_type === "free" ? 1 : 5,
-    });
-
-    return response.data;
-  } catch (error) {
-    await notifyMe("An error has been sent by serperAPI", error);
-    return { error: error }; // Return empty array so your scraper doesn't crash
-  }
-};
-// filter the results into links and ready them for jina-reader
-
+//formatter for serper.dev api results
 export function FilterUrlForExtraction(data, user, MessageId, room_id) {
   const LinksToProcess = [];
 
@@ -193,7 +171,7 @@ export const ProcessForLLM = async (
               .replace(/\n{3,}/g, "\n\n")
               .trim();
             const ProcessedPage = extractHighValueChunks(
-              article,
+              cleanedMarkdown,
               userQuery,
               5000
             );
