@@ -53,15 +53,22 @@ export const VerifyToken = async (req, res, next) => {
             .eq("user_id", DecodedData?.user_id);
 
           if (error || !data) {
-            return res
-              .status(401)
-              .json({ message: "Session expired. Please log in again." });
+            console.error(error, data, "refreshTOkenError");
+            notifyMe(
+              "RefreshTokenError from authMiddleare line 56\n",
+              error,
+              data
+            );
+            return res.status(401).json({
+              message:
+                "Refresh Token cannot be found either refresh with a better internet connection or try logging in again.",
+            });
           }
           refreshToken = data[0].Refresh_Token;
           await redisClient
             .multi()
             .set(RefreshTokenKey, JSON.stringify(data[0].Refresh_Token))
-            .expire(RefreshTokenKey, 1000);
+            .expire(RefreshTokenKey, 10000);
         }
 
         let refreshDecoded;

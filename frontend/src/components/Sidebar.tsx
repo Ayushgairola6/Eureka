@@ -58,8 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
       icon: BsPeople,
       label: "Workspace",
       tab: "Workspace",
-
-      show: isLoggedIn === true && user?.email !== "",
+      show: true,
     },
     {
       path: "/Register",

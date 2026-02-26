@@ -5,6 +5,7 @@ import {
   FindIntent,
   GenerateEmbeddings,
   GenerateResponse,
+  IdentifyUserRequest,
 } from "./ModelController.js";
 import { Pinecone } from "@pinecone-database/pinecone";
 import dotenv from "dotenv";
@@ -48,6 +49,7 @@ import {
   FormalSerpAPIresults,
   GetDataFromSerpApi,
 } from "../OnlineSearchHandler/serpapi_handler.js";
+import { ExecuteTools, WebSerchAgentLoop } from "./WebSearchOrchrestration.js";
 export const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
@@ -1051,11 +1053,37 @@ export const fetchSearchResults = async (
 ) => {
   if (plan_type === "free") {
     const response = await GetDataFromSerpApi(question, user, null, MessageId);
+
     return { response, links: FormalSerpAPIresults(response) };
   }
   const response = await GetDataFromSerper(question, user);
   return { response, links: FilterUrlForExtraction(response, user) };
 };
+
+// handle intentIdentification and formatting
+async function HandleIntentIdentification(question, plan_type) {
+  const IdentifiedIntent = await FindIntent(
+    IntentIdentifier,
+    question,
+    plan_type
+  );
+
+  if (!IdentifiedIntent || IdentifiedIntent?.error) {
+    // console.log("Identified intent\n", IdentifiedIntent);
+    return { error: "Failed to generate a response" };
+  }
+
+  // format the model response into valid queries
+  const FormattedIntent = FilterIntent(IdentifiedIntent);
+  // console.log("FormattedIntent\n", FormattedIntent);
+  if (FormattedIntent?.length === 0) {
+    return { error: "Failed to generate a response" };
+  }
+
+  return FormattedIntent;
+}
+
+// web research handler
 export const PostTypeWebSearch = async (req, res) => {
   try {
     const user_id = req.user.user_id;
@@ -1209,15 +1237,7 @@ export const PostTypeWebSearch = async (req, res) => {
           .status(400)
           .send({ message: "An error occured while processing your request" });
       }
-      // generate embeddings for the user prompt
-      const UserPromptEmbeddings = await GenerateEmbeddings(question);
 
-      if (UserPromptEmbeddings.error) {
-        return res.status(400).send({
-          message:
-            "There was an error while generating embeddings for your prompt please try again.",
-        });
-      }
       // web send the links to the crawler to scrape and process
       const CleanedWebData = await ProcessForLLM(
         FlatLinks,
@@ -1225,10 +1245,11 @@ export const PostTypeWebSearch = async (req, res) => {
         question,
         MessageId,
         null,
-        UserPromptEmbeddings
+        plan_type
       );
 
       if (!CleanedWebData || CleanedWebData.length === 0) {
+        console.log(CleanedWebData);
         return res
           .status(400)
           .send({ message: "An error occured while processing your request" });
@@ -1273,8 +1294,8 @@ export const PostTypeWebSearch = async (req, res) => {
         req.user,
         question,
         MessageId,
-        null
-        // UserPromptEmbeddings
+        null,
+        plan_type
       );
 
       if (CleanedWebData.length === 0) {
@@ -1380,7 +1401,6 @@ export const PostTypeWebSearch = async (req, res) => {
     });
   }
 };
-
 // extract text from the chunks based on the chunk Ids
 export async function getAllDocumentTextsForSummary(docId, totalChunks) {
   // console.log(docId, username, title, totalChunks)

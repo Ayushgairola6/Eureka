@@ -111,7 +111,7 @@ export const ProcessForLLM = async (
   userQuery,
   MessageId,
   room_id,
-  UserPromptEmbeddings
+  plan_type
 ) => {
   try {
     const dataset = [];
@@ -127,7 +127,7 @@ export const ProcessForLLM = async (
     log.setLevel(log.LEVELS.OFF);
     const crawler = new CheerioCrawler(
       {
-        minConcurrency: 10,
+        minConcurrency: 20,
         maxConcurrency: 20,
         maxRequestRetries: 0,
         requestHandlerTimeoutSecs: 20,
@@ -164,28 +164,37 @@ export const ProcessForLLM = async (
             const markdown = turndown.turndown(article.content);
 
             if (markdown.length < 200) return;
-            const wordCount = article.textContent.split(/\s+/).length;
+            const wordCount = article?.textContent.split(/\s+/).length;
             const cleanedMarkdown = markdown
               .replace(/\[.*?\]\(.*?\)/g, "")
               .replace(/#{1,6}\s/g, "")
               .replace(/\n{3,}/g, "\n\n")
               .trim();
-            const ProcessedPage = extractHighValueChunks(
-              cleanedMarkdown,
-              userQuery,
-              5000
-            );
+            let ProcessedPage;
+            try {
+              ProcessedPage =
+                // plan_type === "free"
+                extractHighValueChunks(cleanedMarkdown, userQuery, 5000);
+            } catch (pageerror) {
+              // console.error(pageerror);
+              return;
+            }
+
+            // : await HandleContextFiltering(cleanedMarkdown, userQuery);
+
+            // Guard against null result
+            if (!ProcessedPage || !ProcessedPage?.content) return;
+
+            console.log(ProcessedPage, "the processedPage");
             const object = {
               title: article.title,
-              url: request.url,
+              url: request?.url,
               favicon: `https://www.google.com/s2/favicons?domain=${
                 new URL(request.url).hostname
               }&sz=64`,
-              markdown: ProcessedPage.content,
-              score: ProcessedPage.score,
-              estimatedTokens: Math.ceil(markdown.length / 4),
+              markdown: ProcessedPage?.content,
+              score: ProcessedPage?.score,
             };
-            // await notifyMe(JSON.stringify(object));
 
             if (room_id) {
               EmitEvent(room_id, "query_status", {
@@ -213,10 +222,12 @@ export const ProcessForLLM = async (
     );
 
     await crawler.run(validLinks);
+    console.log(dataset, "the final data set ");
     return dataset;
   } catch (err) {
     console.error("An error in the process llm handler\n", err);
     notifyMe("An error in the process llm handler\n", err);
+    return [];
   }
 };
 
@@ -346,17 +357,18 @@ const filterResearchLinks = (links) => {
 };
 
 function extractHighValueChunks(page, query, maxTokens = 3500) {
+  console.log(query);
   const queryWords = query
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((w) => w.length > 2);
+    ?.toLowerCase()
+    ?.split(/\s+/)
+    ?.filter((w) => w.length > 2);
 
   const estimateTokens = (text) => Math.ceil(text.length / 4);
 
   // ---------- scoring helpers ----------
 
   function scoreChunk(chunk) {
-    const lower = chunk.toLowerCase();
+    const lower = chunk?.toLowerCase();
     let score = 0;
 
     // keyword relevance
@@ -391,7 +403,7 @@ function extractHighValueChunks(page, query, maxTokens = 3500) {
 
   // ---------- page scoring ----------
 
-  const pageScore = scorePage(page.content);
+  const pageScore = scorePage(page);
 
   // Skip low quality pages before even chunking
   if (pageScore < 0) return null;
@@ -399,7 +411,7 @@ function extractHighValueChunks(page, query, maxTokens = 3500) {
 
   // ---------- chunk extraction ----------
 
-  const rawChunks = page.content
+  const rawChunks = page
     .split(/\n{2,}/)
     .map((c) => c.trim())
     .filter((c) => c.length > 80);
@@ -458,7 +470,7 @@ const cleanAndSplitQueries = (llmResponse) => {
 
 // extracts relevant information from scraped search results for better context matching
 
-const HandleContextFiltering = async (UserPromptEmbeddings, CurrentContext) => {
+const HandleContextFiltering = async (CurrentContext, userQuery) => {
   try {
     const { content, title, url } = CurrentContext;
 
@@ -478,6 +490,23 @@ const HandleContextFiltering = async (UserPromptEmbeddings, CurrentContext) => {
       return { content: null, score: 0 };
     }
 
+    let UserPromptEmbeddings = await GenerateEmbeddings(
+      userQuery,
+      "SEMANTIC_SIMILARITY"
+    );
+    // if first try fails wait a bit and try again
+    if (!UserPromptEmbeddings || UserPromptEmbeddings?.error) {
+      await new Promise((res) => setTimeout(res, 700));
+
+      try {
+        UserPromptEmbeddings = await GenerateEmbeddings(
+          userQuery,
+          "SEMANTIC_SIMILARITY"
+        );
+      } catch (retryError) {
+        return { content: null, score: 0 };
+      }
+    }
     const batchSize = 30;
     const results = [];
     const allEmbeddings = await GenerateEmbeddingsRecursive(

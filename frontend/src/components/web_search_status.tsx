@@ -87,7 +87,7 @@ const STATUS_HANDLERS: Record<string, any> = {
       <div className="mt-1 p-3 bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/50 rounded-md">
         <span className="text-xs font-bold text-fuchsia-500 uppercase tracking-wide block mb-1 space-grotesk">Core Objective</span>
         <p className="text-sm text-neutral-700 dark:text-neutral-300 bai-jamjuree-regular leading-relaxed">
-          {Array.isArray(data) ? data[0] : data}
+          {Array.isArray(data) ? data : data}
         </p>
       </div>
     ),

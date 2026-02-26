@@ -67,8 +67,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
           const containerHeight = chat.sent_by !== 'You'
             ? "h-auto"
             : (showCurrent.id === chat.id && showCurrent.status === true)
-              ? "h-auto"
-              : "h-[200px] overflow-hidden";
+              ? "h-auto "
+              : "h-[4rem] overflow-hidden ";
           return (
             <div
               onClick={() => {
@@ -120,9 +120,9 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                           }}><ChevronDown size={15} /></button>}
                         </ul>
                         <span className="text-[10px] font-mono font-bold dark:text-gray-300 text-gray-700 uppercase tracking-widest">
-                          {chat.sent_by === "You" ? ">>ORIGIN_USER" : ">>ANTINODE_RESPONSE"}
+                          {chat.sent_by === "You" ? ">> ORIGIN_USER" : ">> ANTINODE_RESPONSE"}
                         </span>
-                        <div className={`h-[1px] w-4 ${chat.sent_by === "You" ? "bg-orange-600" : "bg-blue-600"}`} />
+                        <div className={`h-[1px] w-4 ${chat.sent_by === "You" ? "bg-orange-600" : "bg-sky-600"}`} />
                       </div>
                       <div
                         className={`relative transition-all duration-500 ease-in-out border shadow-sm

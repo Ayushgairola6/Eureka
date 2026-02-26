@@ -1,3 +1,4 @@
+import { redisClient } from "../CachingHandler/redisClient.js";
 import { supabase } from "../controllers/supabaseHandler.js";
 import { GetDocumentInfo, GetDocumentInfoFromName } from "./phase1_context.js";
 import { extractUUID } from "./phase2_action.js";
@@ -212,6 +213,15 @@ export async function FetchPastMessagesFromDbAndCacheThem(user, plan_type) {
     return { message: "There is no past conversation history of this user" };
   }
 
+  const chronological = data.reverse();
+
+  if (chronological.length === 0) {
+    return res.status(400).send({ message: "Something went wrong" });
+  }
+  const key = `user_id=${user.user_id}_time=${new Date().toDateString()}`;
+
+  const serialized = chronological.map((msg) => JSON.stringify(msg));
+  await redisClient.multi().rPush(key, serialized).expire(key, 5000);
   return data;
 }
 

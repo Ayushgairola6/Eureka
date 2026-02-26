@@ -91,7 +91,9 @@ export const GenerateResponse = async (
         {
           role: "user",
           parts: [
-            { text: `userquery=${question}\nContext: ${FormattedString}` },
+            {
+              text: `userquery=${question}\n web-search-results: ${FormattedString}`,
+            },
           ],
         },
       ],
@@ -304,7 +306,7 @@ export const HandleSummarizationOfChats = async (
   }
 };
 
-export const FindIntent = async (required_prompt, query) => {
+export const FindIntent = async (required_prompt, query, plan_type) => {
   try {
     if (
       !required_prompt ||
