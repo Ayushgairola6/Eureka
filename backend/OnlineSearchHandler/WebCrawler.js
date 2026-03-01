@@ -128,9 +128,9 @@ export const ProcessForLLM = async (
     const crawler = new CheerioCrawler(
       {
         minConcurrency: 20,
-        maxConcurrency: 20,
+        maxConcurrency: 50,
         maxRequestRetries: 0,
-        requestHandlerTimeoutSecs: 20,
+        requestHandlerTimeoutSecs: 10,
         useSessionPool: false,
         failedRequestHandler: ({ request }) => {},
         async requestHandler({ request, body, $ }) {
@@ -185,7 +185,6 @@ export const ProcessForLLM = async (
             // Guard against null result
             if (!ProcessedPage || !ProcessedPage?.content) return;
 
-            console.log(ProcessedPage, "the processedPage");
             const object = {
               title: article.title,
               url: request?.url,
@@ -222,7 +221,6 @@ export const ProcessForLLM = async (
     );
 
     await crawler.run(validLinks);
-    console.log(dataset, "the final data set ");
     return dataset;
   } catch (err) {
     console.error("An error in the process llm handler\n", err);
@@ -357,7 +355,6 @@ const filterResearchLinks = (links) => {
 };
 
 function extractHighValueChunks(page, query, maxTokens = 3500) {
-  console.log(query);
   const queryWords = query
     ?.toLowerCase()
     ?.split(/\s+/)

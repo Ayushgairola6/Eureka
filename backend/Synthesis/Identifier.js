@@ -25,17 +25,53 @@ import {
 } from "./phase1_context.js";
 import {
   CheckWebForInformation,
+  GatherCertainChunks,
   GetChatsForContext,
   SearchUserPrivateDocuments,
 } from "./phase2_action.js";
-import {
-  HandlePreProcessFunctions,
-  ProcessDocumentInfoGathering,
-} from "./helper_functions.js";
-import { supabase } from "../controllers/supabaseHandler.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
-//function to identify the functions needed to process the request
-// import jsonData from "../Tests/response.json" with { type: "json" };
+import {
+  HandleDocumentMetadataGathering,
+  SynthsisOrchrestrator,
+} from "./PreprocessingHandler.js";
+import { AllowedFileTypes } from "../FilerParsers/FilerParser.js";
+
+// checks the count of documents mentioned in the user-prompt
+export const ExtractFileNamesFromPrompt = (prompt) => {
+  if (!prompt || typeof prompt !== "string") return [];
+
+  // Build regex dynamically from allowed extensions
+  const extensionPattern = AllowedFileTypes.join("|");
+  const fileRegex = new RegExp(
+    `\\b([\\w\\-\\.]+\\.(${extensionPattern}))\\b`,
+    "gi"
+  );
+
+  const matches = prompt.match(fileRegex) || [];
+
+  // Deduplicate and clean
+  const unique = [...new Set(matches.map((f) => f.trim().toLowerCase()))];
+  return unique;
+};
+// guardrail function that handles the number of documents selected count
+export const ValidateDocumentLimit = (prompt, plan_type) => {
+  const limit = plan_type === "free" ? 2 : plan_type === "sprint pass" ? 3 : 5;
+
+  const foundFiles = ExtractFileNamesFromPrompt(prompt);
+
+  if (foundFiles.length > limit) {
+    return {
+      allowed: false,
+      found: foundFiles,
+      limit,
+      message: `You mentioned ${foundFiles.length} documents but your ${plan_type} plan allows up to ${limit} at once. Please reduce or upgrade.`,
+    };
+  }
+
+  return { allowed: true, found: foundFiles, limit };
+};
+
+// the central processing of synthesisi modee
 export async function IdentifyRequestInputs(req, res) {
   const user = req.user;
   if (!user) {
@@ -68,6 +104,7 @@ export async function IdentifyRequestInputs(req, res) {
     });
   }
 
+  ///check the user plan status and validity
   const { status, error, plan_status, plan_type } = await CheckUserPlanStatus(
     user.user_id
   );
@@ -77,45 +114,32 @@ export async function IdentifyRequestInputs(req, res) {
       message: "Something went wrong while checking your plan status",
     });
   }
-  let metadata = [];
-  if (selectedDocuments?.length > 0) {
-    const results = await Promise.all(
-      selectedDocuments.map(async (id) => {
-        if (!id) return null;
 
-        const { data, error } = await supabase
-          .from("Contributions")
-          .select("feedback,metadata")
-          .eq("document_id", id)
-          .eq("user_id", user.user_id)
-          .single();
+  const limit = plan_type === "free" ? 2 : plan_type === "sprint pass" ? 3 : 5;
 
-        if (error || !data) {
-          return { error: true, id };
-        }
+  if (selectedDocuments && selectedDocuments?.length > limit) {
+    return res.status(400).json({
+      message: `You can select up to ${DOC_LIMITS[plan_type]} documents at once on your current plan. Upgrade to Pro for higher limits.`,
+    });
+  }
 
-        return data; // Return valid data
-      })
-    );
+  const isAllowed = ValidateDocumentLimit(question, plan_type);
 
-    const metadata = [];
-    for (const result of results) {
-      if (!result) continue; // Skip nulls
+  if (isAllowed?.allowed === false) {
+    return res.status(400).json({
+      message: isAllowed?.message,
+    });
+  }
+  // gather the metadata of manually selected documents
+  const metadata = await HandleDocumentMetadataGathering(
+    selectedDocuments,
+    user
+  );
 
-      // Check for the error flag we returned above
-      if (result.error) {
-        return res.status(400).send({
-          message: `Document with ID ${result.id} not found or access denied.`,
-        });
-      }
-
-      metadata.push(result);
-    }
-
-    // 3. Final Check
-    if (metadata.length === 0 && selectedDocuments.length > 0) {
-      return res.status(400).send({ message: "No valid documents found." });
-    }
+  // if the metadata is empty as well as the selecteddocuments are empty that
+  //means there are no such documents in the db
+  if (metadata.length === 0 && selectedDocuments.length > 0) {
+    return res.status(400).send({ message: "No valid documents found." });
   }
 
   //if metadata was updated send the user an update
@@ -125,8 +149,8 @@ export async function IdentifyRequestInputs(req, res) {
       status: {
         message: "Metadata_analysis",
         data: [
-          `Analyzed the metadata of the for selected-documents ${JSON.stringify(
-            selectedDocuments
+          `Analyzed the metadata of the for selected-documents ${selectedDocuments?.flat(
+            1
           )}`,
         ],
       },
@@ -134,122 +158,19 @@ export async function IdentifyRequestInputs(req, res) {
   }
 
   try {
-    const context = `This is the users question=${question}and these are the manually selected user documents ${JSON.stringify(
-      selectedDocuments
-    )}and this is the information of selected documents=${
-      metadata ? metadata : "['No data found in the database']"
-    } `; //command for the model
+    // a dynamic context for
+    const context = `
+userQuery=${question}
+selectedDocuments=${JSON.stringify(selectedDocuments)}
+documentMetadata=${JSON.stringify(metadata)}
 
-    const responseText = await IdentifyUserRequest(context, IDENTIFIER_PROMPT);
-    if (!responseText || responseText?.error) {
-      notifyMe(
-        `Error while generating a response , the code execution results are these`
-        // JSON.stringify(result.codeExecutionResult)
-      );
-      return res
-        .status(400)
-        .send({ message: "The server is very busy , please try again !" });
-    }
+`;
 
     EmitEvent(user.user_id, "query_status", {
       MessageId,
       status: {
         message: "Understanding Request",
-        data: ["Calling tools"],
-      },
-    });
-
-    const ExtractedFunctions = CentralFunctionProcessor(
-      responseText,
-      user,
-      MessageId
-    );
-
-    //if there is no confidence score or the functions or error
-    if (
-      !ExtractedFunctions?.confidence ||
-      ExtractedFunctions.PreProcessFunctions.length === 0 ||
-      ExtractedFunctions.error
-    ) {
-      return res
-        .status(400)
-        .send({ message: "An error occured while processing your request" });
-    }
-
-    //if there is a message
-    if (ExtractedFunctions.message) {
-      return res.status(200).send({
-        message: ExtractedFunctions.message,
-        favicon: { MessageId, icon: [] },
-      });
-    }
-
-    let PreProcessedData;
-    //if the confidence is low call the functions that are required
-    if (ExtractedFunctions.confidence === "low") {
-      PreProcessedData = await HandlePreProcessFunctions(
-        ExtractedFunctions.PreProcessFunctions,
-        user,
-        selectedDocuments
-      );
-
-      if (!PreProcessedData || PreProcessedData?.error) {
-        return res.status(400).send({
-          message:
-            "Looks like something went wrong while processing your request.",
-        });
-      }
-
-      // if both the fields are empty
-      if (
-        PreProcessedData.AlldocumentInformation?.length === 0 &&
-        PreProcessedData.context_by_uuid.length === 0
-      ) {
-        return res.status(400).send({
-          message:
-            "Looks like something went wrong while processing your request.",
-        });
-      }
-    }
-
-    //if there is preprocesed data re run the loop
-    const SecondTimeresponseText = await IdentifyUserRequest(
-      context,
-      IDENTIFIER_PROMPT
-    );
-    if (!SecondTimeresponseText || SecondTimeresponseText?.error) {
-      notifyMe(
-        `Error while generating a response , the code execution results are these`
-        // JSON.stringify(result.codeExecutionResult)
-      );
-      return res
-        .status(400)
-        .send({ message: "The server is very busy , please try again !" });
-    }
-
-    const ExtractFUnctionsAgain = CentralFunctionProcessor(
-      SecondTimeresponseText,
-      user,
-      MessageId
-    ); //clearing the function string
-
-    //if there is no confidence score or the functions or error
-    if (
-      !ExtractFUnctionsAgain?.confidence ||
-      ExtractFUnctionsAgain.PreProcessFunctions.length === 0 ||
-      ExtractFUnctionsAgain.error
-    ) {
-      return res
-        .status(400)
-        .send({ message: "An error occured while processing your request" });
-    }
-
-    // console.log(ExtractedFunctions);
-    EmitEvent(user.user_id, "query_status", {
-      MessageId,
-      status: {
-        message: "Creating functions",
-        data: [JSON.stringify(ExtractFUnctionsAgain)],
+        data: ["I am now zeroing down on the user request"],
       },
     });
 
@@ -261,42 +182,45 @@ export async function IdentifyRequestInputs(req, res) {
     };
     await CacheCurrentChat(message, req.user);
 
-    const smartExecResult = await ExeCuteContextEngines(
-      ExtractFUnctionsAgain,
+    const Orechrestratedresults = await SynthsisOrchrestrator({
       user,
+      MessageId,
+      context,
       selectedDocuments,
-      MessageId
-    );
-
-    if (!smartExecResult.GlobalContextObject || smartExecResult.error) {
-      console.error("The execution results error", smartExecResult.error);
-      return res
-        .status(400)
-        .send({ message: "An error occured while processing your request" });
-    }
-
-    //get prevoious chats and append them as well
-    const OldChats = await GetChatsForContext(user);
-    if (OldChats.length !== 0) {
-      smartExecResult.GlobalContextObject.pastConversation = [...OldChats];
-    }
-
-    const ModelResponse = await SynthesisResponseGenerator(
-      JSON.stringify(smartExecResult.GlobalContextObject),
       question,
-      user,
-      SYNTHESIS_PROMPT,
-      plan_type
-    );
+      plan_type,
+    });
 
-    if (ModelResponse.error) {
-      console.error(ModelResponse.error);
-      return res
-        .status(400)
-        .send({ message: "Error while processing your request" });
+    if (!Orechrestratedresults || Orechrestratedresults?.error) {
+      notifyMe(
+        `Error from the Synthesis recursive orchrestration handler in identifier.js line 118 file\n`,
+        JSON.stringify(Orechrestratedresults)
+      );
+      console.log(`error in synthesis orchrestrator\n`, Orechrestratedresults);
+      return res.status(400).send({
+        message:
+          "It seems like our AI models are very overloaded right now please wait a bit while we try to resolve this problem.",
+      });
     }
-    // const ModelResponse = JSON.stringify(smartExecResult.GlobalContextObject);
 
+    // console.log(ExtractedFunctions);
+    EmitEvent(user.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: "Creating functions",
+        data: [JSON.stringify(Orechrestratedresults?.functions)],
+      },
+    });
+
+    // if the llm just sent a message
+    if (!Orechrestratedresults?.answer) {
+      return res.status(400).json({
+        message:
+          Orechrestratedresults?.error ||
+          "It seems like our AI models are very overloaded right now please wait a bit while we try to resolve this problem.",
+      });
+    }
+    const ModelResponse = Orechrestratedresults.answer;
     const AiMessage = {
       id: MessageId,
       sent_by: "AntiNode", //sent by the user
@@ -322,7 +246,7 @@ export async function IdentifyRequestInputs(req, res) {
     }
     const formattedFavicon = {
       MessageId,
-      icon: smartExecResult.favicons,
+      icon: Orechrestratedresults?.favicon,
     };
     return res.status(200).send({
       message: "Response generated",
@@ -340,7 +264,6 @@ export async function IdentifyRequestInputs(req, res) {
       .send({ message: "The server failed to generate a response" });
   }
 }
-
 // checks and parse the LLm response for tool and other parameter extraction
 function safeJsonParse(rawResponse) {
   if (!rawResponse || typeof rawResponse !== "string") return null;
@@ -392,10 +315,17 @@ export function CentralFunctionProcessor(resultString, user, MessageId) {
     };
   }
   // functions that are needed to be proceeded to get a more distinct response
-  const PreProcessFunctions = [];
 
-  // if the confidence score it low get the functions that are needed in order to find the documents for the user
-  //find what are the suggested functions by the model
+  // if the llm has responded with a simple answer return
+  if (ParsedObject?.direct_answer && ParsedObject.direct_answer.trim() !== "") {
+    return {
+      confidence: "high",
+      message: ParsedObject.direct_answer, // now message is actually returned
+      PreProcessFunctions: [],
+    };
+  }
+
+  // if there is no message as well as there is not functions
   if (!ParsedObject?.suggested_functions) {
     return { error: "Model suggested no functions to process the prompt" };
   }
@@ -407,8 +337,11 @@ export function CentralFunctionProcessor(resultString, user, MessageId) {
       data: [ParsedObject?.thought],
     },
   });
+
   //trigger the function asked by the model cause we always need to filter out the functions
-  const list = ParsedObject.suggested_functions;
+  const PreProcessFunctions = [];
+
+  const list = ParsedObject?.suggested_functions;
   if (list?.length > 0) {
     list.forEach((obj) => {
       PreProcessFunctions.push({
@@ -426,14 +359,27 @@ export function CentralFunctionProcessor(resultString, user, MessageId) {
 
 //call the functions and execute them based on their priority list from the ToolRegistry
 export async function ExeCuteContextEngines(
-  functionsArray,
-  user,
-  selectedDocuments,
-  MessageId
+  functionsArray, //functions that are required
+  user, //user object
+  selectedDocuments, //manually selected functions
+  MessageId, //MessageId,
+  question,
+  plan_type
 ) {
   try {
+    let GlobalContextObject = {
+      AlldocumentInformation: [],
+      privateFilesResponse: [],
+      knowledgebaseData: [],
+      webSearchResults: [],
+      oldMemories: [],
+      pastConversation: [],
+    };
     if (functionsArray?.PreProcessFunctions?.length === 0) {
-      return { error: "No functions found in the array" };
+      return {
+        GlobalContextObject,
+        favicons: [],
+      };
     }
 
     //distributing requirement in two phases
@@ -467,16 +413,7 @@ export async function ExeCuteContextEngines(
       },
     });
 
-    let GlobalContextObject = {
-      AlldocumentInformation: [],
-      privateFilesResponse: [],
-      knowledgebaseData: [],
-      webSearchResults: [],
-      oldMemories: [],
-      pastConversation: [],
-    }; //will contain the all the context information source and actual context
-
-    //always get the document info if selected or typed
+    // if the data of document needs to be extracted by Id
     const doc_data = await GetDocumentInfo(
       phase1_Context,
       selectedDocuments,
@@ -507,6 +444,21 @@ export async function ExeCuteContextEngines(
       ];
     }
 
+    const certainChunks = await GatherCertainChunks(
+      phase2_Action,
+      user,
+      GlobalContextObject,
+      MessageId,
+      question,
+      plan_type
+    );
+
+    if (certainChunks?.length > 0) {
+      GlobalContextObject.privateFilesResponse = [
+        ...GlobalContextObject?.privateFilesResponse,
+        ...certainChunks,
+      ];
+    }
     // handle by id
     const private_doc_results = await SearchUserPrivateDocuments(
       phase2_Action,
@@ -516,7 +468,10 @@ export async function ExeCuteContextEngines(
     );
 
     if (private_doc_results?.length > 0) {
-      GlobalContextObject.privateFilesResponse = [...private_doc_results];
+      GlobalContextObject.privateFilesResponse = [
+        ...GlobalContextObject.privateFilesResponse,
+        ...private_doc_results,
+      ];
     }
 
     //get iformation from pubic contributed knowledgebase
@@ -536,7 +491,8 @@ export async function ExeCuteContextEngines(
       phase2_Action,
       GlobalContextObject,
       user,
-      MessageId
+      MessageId,
+      plan_type
     );
 
     let favicons = [];
@@ -547,23 +503,9 @@ export async function ExeCuteContextEngines(
       }
     }
 
-    //if private documents are needed to be scanned
-
-    // const private_doc_results = await SearchUserPrivateDocuments(
-    //   phase2_Action,
-    //   user,
-    //   GlobalContextObject
-    // );
-    // //if older memories are required
-    // console.log("private_doc_results :,", private_doc_results);
-
-    // if (private_doc_results?.length > 0) {
-    //   GlobalContextObject.privateFilesResponse = [...private_doc_results];
-    // }
-
     return { GlobalContextObject, favicons };
   } catch (processingError) {
-    await notifyMe(
+    notifyMe(
       "An error occured in synthesis context gathering algorithm at line:380",
       processingError
     );

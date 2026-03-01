@@ -1,3 +1,4 @@
+import { convertKeysToCamelCase } from "@pinecone-database/pinecone/dist/utils/convertKeys.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
 import { supabase } from "../controllers/supabaseHandler.js";
 import { GetDocumentInfo, GetDocumentInfoFromName } from "./phase1_context.js";
@@ -16,11 +17,11 @@ export async function ProcessDocumentInfoGathering(ReferenceArray, user) {
           try {
             // Assuming config.execute returns { metadata: {...} }
             const result = await req.config.execute(docId, user);
-            if (result) {
+            if (result && result?.data) {
               Document_Information.push({
                 doc_id: docId,
-                result,
-              }); //with the document_id identifier
+                result: result?.data || result,
+              });
             }
           } catch (e) {
             console.error(`Failed to fetch doc ${docId}`, e);
@@ -52,9 +53,9 @@ export async function ProcessKnowledgeBaseContextGathering(
           let results;
           if (current) {
             results = await req.config.execute(
-              current.result.metadata.category || "General",
-              current.result.metadata.subCategory || "General",
-              current.result.metadata.about,
+              current?.result?.metadata?.category || "General",
+              current?.result?.metadata?.subCategory || "General",
+              current?.result?.metadata?.category || "General",
               user
             );
           }
@@ -99,9 +100,11 @@ export async function ProcessKnowledgeBaseContextGathering(
 
 //helped function to process web results
 export async function ProcessWebContextGathering(
-  ReferenceArray,
+  ReferenceArray, //
   user,
-  documentInfoArray
+  documentInfoArray,
+  MessageId,
+  plan_type
 ) {
   const FinalResult = [];
   let AllFavicons = [];
@@ -132,8 +135,11 @@ export async function ProcessWebContextGathering(
       await Promise.all(
         FinalFetchRequests.map(async (req) => {
           try {
-            console.log(req.query, "the web search query");
-            const result = await req.func.config.execute(req.query, user);
+            const result = await req.func.config.execute(req.query, {
+              user,
+              plan_type,
+              MessageId,
+            });
 
             if (result?.favicons) {
               AllFavicons.push(...result.favicons); // Safe push
@@ -175,29 +181,88 @@ export async function CheckPrivateDocs(ReferenceArray, user, DocumentArray) {
           documentQuery?.result?.metadata?.about,
           user
         ); //user file description as query
+
         FinalResult.push({ document_id: document_id, context: result });
       } else {
-        // const documentQuery = DocumentArray.find(
-        //   (func) => func.doc_id !== document_id
-        // );
         const documentQuery = DocumentArray[0];
+        if (!documentQuery) return; // guard
         const result = await req.config.execute(
-          document_id,
-          documentQuery?.result.about,
+          documentQuery.doc_id, // use fallback doc id
+          documentQuery?.result?.metadata?.about,
           user
         ); //user file description as query
-        FinalResult.push({ document_id: document_id, context: result });
+
+        if (result && result?.data)
+          FinalResult.push({ document_id: document_id, context: result });
       }
     })
   );
   return FinalResult;
 }
+export async function getSelectedChunks(
+  ReferenceArray,
+  user,
+  question,
+  plan_type
+) {
+  try {
+    const SelectedChunks = [];
 
+    await Promise.all(
+      ReferenceArray.map(async (func) => {
+        if (func && func?.arguments) {
+          const doc_id = func.arguments?.doc_id; //the document to find
+          const query = func.arguments?.query || question; //the specific query
+
+          if (doc_id && query) {
+            const result = await func?.config?.execute(
+              doc_id,
+              query,
+              user,
+              plan_type
+            );
+
+            if (result && result?.data) {
+              SelectedChunks.push({ doc_id, data: result?.data });
+            }
+          }
+        }
+      })
+    );
+    return SelectedChunks;
+  } catch (getSelectedChunksError) {
+    console.log(`getSelectedChunksError\n`, getSelectedChunksError);
+  }
+}
 //storing any memories for the user
-export async function HandleMemoryStorage(user, ReferenceArray) {}
+export async function HandleMemoryStorage(user, ReferenceArray) {
+  try {
+  } catch (MemoryStorageError) {
+    console.error(`Memory storage error\n`, MemoryStorageError);
+  }
+}
 
-//retrieving any memories
-export async function RetrieveMemories(user, ReferenceArray) {}
+//retrieving any memories from postgrestable
+export async function RetrieveMemories(user, ReferenceArray) {
+  try {
+    const MemoryRetrieval = ReferenceArray?.map((func) => {
+      if (func && func.arguments) {
+      }
+    });
+    const { data: memory, error } = await supabase
+      .from("memories")
+      .select("*")
+      .eq("user_id", user?.user_id);
+
+    if (!memory || error) {
+      return { error, memory: [] };
+    }
+
+    return { error: null, memory };
+  } catch (MemoryRetrievalError) {
+    console.error(`Memory retreival error\n`, MemoryRetrievalError);
+  }
+}
 
 //fetch last few messages for reminder whwer we left off
 export async function FetchPastMessagesFromDbAndCacheThem(user, plan_type) {
@@ -216,7 +281,7 @@ export async function FetchPastMessagesFromDbAndCacheThem(user, plan_type) {
   const chronological = data.reverse();
 
   if (chronological.length === 0) {
-    return res.status(400).send({ message: "Something went wrong" });
+    return [];
   }
   const key = `user_id=${user.user_id}_time=${new Date().toDateString()}`;
 
@@ -243,81 +308,90 @@ export async function ExtractChatsSummary(
 export async function RetrieveInformatioByName(ReferenceArray, user) {
   const Document_Information = [];
 
-  if (ReferenceArray.length > 0) {
-    // Execute all doc fetches in parallel
-    await Promise.all(
-      ReferenceArray.map(async (req) => {
-        const filename = req?.arguments?.filename;
-        //if there is a file name and the file name is of string type
-        if (filename && typeof filename === "string") {
-          try {
-            // Assuming config.execute returns { metadata: {...} }
-            const result = await req.config.execute(filename, user);
-
-            if (result) {
-              Document_Information.push(result); //with the document_id identifier
+  try {
+    if (ReferenceArray.length > 0) {
+      // Execute all doc fetches in parallel
+      await Promise.all(
+        ReferenceArray.map(async (req) => {
+          const filename = req?.arguments?.filename;
+          //if there is a file name and the file name is of string type
+          if (filename && typeof filename === "string") {
+            try {
+              // Assuming config.execute returns { metadata: {...} }
+              const result = await req.config.execute(filename, user);
+              if (result && result?.data) {
+                Document_Information.push(result); //with the document_id identifier
+              }
+            } catch (e) {
+              console.error(`Failed to fetch doc ${filename}`, e);
             }
-          } catch (e) {
-            console.error(`Failed to fetch doc ${filename}`, e);
           }
-        }
-      })
-    );
+        })
+      );
+    }
+    return Document_Information;
+  } catch (getByNameError) {
+    console.error(`Get document info by name error\n`, getByNameError);
+    return Document_Information;
   }
-  return Document_Information;
 }
 
-// handles the pre process functions requirements
+// handles the pre process functions requirements that are asked by the model
 export async function HandlePreProcessFunctions(
-  functionsArray,
-  user,
-  alreadyFetchedIds
+  functionsArray, //array of functions the llm asked for
+  user, // the user object
+  alreadyFetchedIds //ids that have been fetched already
 ) {
   if (!functionsArray || !Array.isArray(functionsArray)) {
     return { error: "The funcion list array is empty" };
   }
-  const Context = { AlldocumentInformation: [], context_by_uuid: [] };
-  const phase1_Context = [];
 
-  functionsArray.forEach((func) => {
-    const config = ToolRegistry[func.function_name];
-    if (!config) return; // Skip unknown functions
-    if (config.importance === 1) {
-      phase1_Context.push({ ...func, config });
+  const Context = { AlldocumentInformation: [], context_by_uuid: [] }; //the global context object of preprocessing
+
+  try {
+    const phase1_Context = [];
+
+    functionsArray.forEach((func) => {
+      const config = ToolRegistry[func.function_name];
+      if (!config) return;
+      if (config.importance === 1) {
+        phase1_Context.push({ ...func, config });
+      }
+    });
+
+    // get doc_data_by name condition
+    const doc_data_fromName = await GetDocumentInfoFromName(
+      phase1_Context, // to scane the executable function from the toolregistry
+      user, //handle the extraction by matching user id
+      alreadyFetchedIds || [] //ids of any manually selected documents
+    );
+
+    // if some data is retrieved fill it in the array of context
+    if (doc_data_fromName.length > 0) {
+      // console.log(" data based on name", doc_data_fromName);
+      Context.AlldocumentInformation = [
+        ...(Context.AlldocumentInformation || []),
+        ...(doc_data_fromName || []),
+      ];
     }
-  });
-  // console.log("phase1 context array:", phase1_Context);
-  //get document_by_name caller cause we do not allow actions in this processor
 
-  // get doc_data_by name condition
-  const doc_data_fromName = await GetDocumentInfoFromName(
-    phase1_Context, // to scane the executable function from the toolregistry
-    user, //handle the extraction by matching user id
-    alreadyFetchedIds || [] //ids of any manually selected documents
-  );
+    //if the models asked for document_by id
 
-  // if some data is retrieved fill it in the array of context
-  if (doc_data_fromName.length > 0) {
-    // console.log(" data based on name", doc_data_fromName);
-    Context.AlldocumentInformation = [
-      ...(Context.AlldocumentInformation || []),
-      ...(doc_data_fromName || []),
-    ];
+    const doc_data = await GetDocumentInfo(
+      phase1_Context,
+      alreadyFetchedIds,
+      user
+    );
+
+    if (doc_data && doc_data?.length > 0) {
+      // console.log(" data based on id", doc_data);
+
+      Context.context_by_uuid = [...doc_data];
+    }
+
+    return Context;
+  } catch (preProcessingHandlerError) {
+    console.error(`preProcessingHandlerErorr\n`, preProcessingHandlerError);
+    return Context;
   }
-
-  //if the models asked for document_by id
-
-  const doc_data = await GetDocumentInfo(
-    phase1_Context,
-    alreadyFetchedIds,
-    user
-  );
-
-  if (doc_data && doc_data?.length > 0) {
-    // console.log(" data based on id", doc_data);
-
-    Context.context_by_uuid = [...doc_data];
-  }
-
-  return Context;
 }

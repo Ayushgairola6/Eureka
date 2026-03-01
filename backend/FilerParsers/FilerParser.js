@@ -11,7 +11,15 @@ import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { supabase } from "../controllers/supabaseHandler.js";
 import pdf2md from "@opendocsg/pdf2md";
 
-const AllowedFileTypes = ["docx", "json", "md", "pptx", "csv", "txt", "pdf"];
+export const AllowedFileTypes = [
+  "docx",
+  "json",
+  "md",
+  "pptx",
+  "csv",
+  "txt",
+  "pdf",
+];
 
 const pdfExtract = new PDFExtract();
 
@@ -172,17 +180,13 @@ export function formatSSEChunk(chunk) {
 }
 
 // creating a batch to process the chunks of context from public docs
-export const HandleSourceCreation = async (
-  response,
-  plan_type,
-  MessageId
-) => {
+export const HandleSourceCreation = async (response, plan_type, MessageId) => {
   const Reference = {
     MessageId,
     docs: [],
   };
   const IdsToFetch = [];
-  const batchSize = plan_type === 'free' ? 10 : 20; //this determine how many documents to process at once
+  const batchSize = plan_type === "free" ? 10 : 20; //this determine how many documents to process at once
 
   const seen = new Set(); // a set to track the uniqueness of document
 

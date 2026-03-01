@@ -1249,7 +1249,6 @@ export const PostTypeWebSearch = async (req, res) => {
       );
 
       if (!CleanedWebData || CleanedWebData.length === 0) {
-        console.log(CleanedWebData);
         return res
           .status(400)
           .send({ message: "An error occured while processing your request" });
@@ -1273,21 +1272,38 @@ export const PostTypeWebSearch = async (req, res) => {
           message: "An error occurred while processing your request",
         });
       }
-
-      // convert the results into array of links
-
-      // for paid users use embeddings method
-      // const UserPromptEmbeddings = await GenerateEmbeddings(
-      //   question,
-      //   "RETRIEVAL_QUERY"
-      // );
-
-      // if (UserPromptEmbeddings.error) {
-      //   return res.status(400).send({
-      //     message:
-      //       "There was an error while generating embeddings for your prompt please try again.",
-      //   });
-      // }
+      organic_results: [
+        {
+          position: 1,
+          title: "SaaS go-to-market strategy for an agentic AI world",
+          link: "https://www.ey.com/en_us/insights/tech-sector/saas-go-to-market-strategy-for-an-agentic-ai-world",
+          displayed_link:
+            "www.ey.com › en_us › insights › tech-sector › saas-go-to-market-strategy-...",
+          snippet:
+            "Agentic AI is transforming the SaaS industry, prompting leaders to rethink business models and go-to-market strategies.",
+        },
+        {
+          position: 2,
+          title:
+            "How AI Agents Will Redefine The Future Of Enterprise SaaS - Forbes",
+          link: "https://www.forbes.com/councils/forbestechcouncil/2025/12/01/the-agentic-layer-how-ai-agents-will-redefine-the-future-of-enterprise-saas/",
+          displayed_link: "www.forbes.com › Innovation",
+          snippet:
+            "The agentic layer is poised to redefine enterprise SaaS by turning our tools into intelligent collaborators.",
+          extensions: [Array],
+          date: "Dec 1, 2025",
+          missing: [Array],
+        },
+        {
+          position: 3,
+          title: "What are effective strategies to market AI agents? - UMU",
+          link: "https://www.umu.com/ask/a11122301573853961648",
+          displayed_link: "www.umu.com › ask",
+          snippet:
+            "To market AI agents effectively, it's crucial to first understand your target audience and tailor your marketing message to address their ...",
+          date: "Jan 15, 2026",
+        },
+      ];
       // scrape and optimize the context for the llm
       const CleanedWebData = await ProcessForLLM(
         LinksToFetch,

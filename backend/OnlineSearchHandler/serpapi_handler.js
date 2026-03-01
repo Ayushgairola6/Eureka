@@ -32,10 +32,9 @@ export const GetDataFromSerpApi = async (query, user, room_id, MessageId) => {
       q: query,
       google_domain: "google.com",
       hl: "en",
-      num: 3,
+      num: 10,
     });
 
-    console.log(response);
     return response;
   } catch (error) {
     notifyMe("An error has been sent by serperAPI", error);

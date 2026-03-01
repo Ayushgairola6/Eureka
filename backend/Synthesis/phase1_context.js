@@ -8,7 +8,7 @@ import {
 import { extractUUID } from "./phase2_action.js";
 import { ToolRegistry } from "./tools.js";
 
-//extract the document information if the user has asked for it
+//extract the document information if the user has asked for it based on Id
 export async function GetDocumentInfo(
   phase1_Context,
   selectedDocuments,
@@ -22,7 +22,7 @@ export async function GetDocumentInfo(
   //get the conif object of the function from toolRegistery
   const docToolConfig = ToolRegistry["GetDoc_info"];
 
-  //if there is need to look for idocment information
+  //if there is need to look for docment information
   if (needs_doc_info?.length > 0 || selectedDocuments?.length > 0) {
     const uniqueDocsMap = new Map(); //map to store only unique values
 
@@ -66,10 +66,9 @@ export async function GetDocumentInfo(
       });
 
       return docdata; //an array of information
-    } else {
-      return {}; //empty array to avoid infinite stuck loop or error
     }
   }
+  return [];
 }
 
 export async function GetDocumentInfoFromName(
@@ -105,11 +104,16 @@ export async function GetDocumentInfoFromName(
 
     const FinalArray = [];
     for (const docs of rawResults) {
+      const docData = docs?.data; // ← extract data first
+      if (!docData) continue;
       // if this is a different document
       if (!documentsToNeglect.includes(docs.doc_id)) {
         FinalArray.push({
-          doc_id: docs.document_id,
-          result: { feedback: docs.feedback, metadata: docs.metadata },
+          doc_id: docData.document_id, // ← was docs.document_id
+          result: {
+            feedback: docData.feedback, // ← was docs.feedback
+            metadata: docData.metadata, // ← was docs.metadata
+          },
         });
       }
     }
@@ -159,7 +163,11 @@ export async function GetKnowledgebaseInfo(
 }
 
 //if the model wants to check something in the summary history for informatin
-export async function Check_ChatRoomSummary(phase2_Action) {
+export async function Check_ChatRoomSummary(
+  phase2_Action,
+  room_id,
+  user_query
+) {
   //if the request is for a room chatHistory retrieval
   const checkchatSummmary = phase2_Action.filter(
     (li) => li.func_name === "Search_InRoomChat"
@@ -173,7 +181,7 @@ export async function Check_ChatRoomSummary(phase2_Action) {
     );
 
     if (Summary) {
-      GlobalContextObject.room_chat_summary = [Summary];
+      return Summary;
     }
   }
   return [];

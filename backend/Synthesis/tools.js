@@ -1,4 +1,5 @@
 import {
+  fetchSearchResults,
   getAllDocumentTextsForSummary,
   index,
   pc,
@@ -20,7 +21,7 @@ export const ToolRegistry = {
     importance: 1,
     execute: async (doc_id, user) => {
       if (!doc_id || typeof doc_id !== "string") {
-        return { message: "Invalid arguments" };
+        return { message: "Invalid arguments", data: null };
       }
       // const results = await
       const { data, error } = await supabase
@@ -32,10 +33,10 @@ export const ToolRegistry = {
       if (error) {
         return {
           message: "There is not such document in the db found",
-          data: "",
+          data: null,
         };
       }
-      return data; //data includes, category, subcategory,and titile of the file written by the user
+      return { message: "Data of the file foung", data: data };
     },
   },
   searchByName: {
@@ -50,16 +51,15 @@ export const ToolRegistry = {
         .eq("user_id", user.user_id)
         .single();
 
-      // 3. Await the final query
       const { data, error } = await query;
       if (error) {
         console.error(error);
         return {
           message: "There is not such document in the db found",
-          data: "",
+          data: null,
         };
       }
-      return data; //data includes, category, subcategory,and titile of the file written by the user
+      return { message: "document data found", data: data }; //data includes, category, subcategory,and titile of the file written by the user
     },
   },
   search_knowledge: {
@@ -131,8 +131,13 @@ export const ToolRegistry = {
       "Find the data of a document whose document id is available to us",
     importance: 2,
     execute: async (docId, question, user) => {
-      if (!question || typeof question !== "string") {
-        return { message: "Invalid arguments" };
+      if (
+        !question ||
+        typeof question !== "string" ||
+        !docId ||
+        typeof docId !== "string"
+      ) {
+        return { error: "Invalid arguments", data: null };
       }
 
       const { data, error } = await supabase
@@ -141,7 +146,10 @@ export const ToolRegistry = {
         .eq("document_id", docId);
 
       if (error) {
-        return `An error occured while finding the information of document=${docId}`;
+        return {
+          error: `An error occured while finding the information of document=${docId}`,
+          data: null,
+        };
       }
       const response = await getAllDocumentTextsForSummary(
         docId,
@@ -149,14 +157,17 @@ export const ToolRegistry = {
       );
 
       if (!response || response.length === 0) {
-        return `An error occured while finding the information of document=${docId}`;
+        return {
+          error: `An error occured while finding the information of document=${docId}`,
+          data: null,
+        };
       }
       let ResultString = `Following are the chunks related to the document=${docId} from memory=`;
       response.forEach((str) => {
         ResultString += str; //append the context values
       });
 
-      return ResultString;
+      return { error: null, data: ResultString };
     },
   },
   get_selected_chunks: {
@@ -170,13 +181,13 @@ export const ToolRegistry = {
         !docId ||
         typeof docId !== "string"
       ) {
-        return { message: "Invalid arguments" };
+        return { error: "Invalid arguments", data: null };
       }
 
       // getting the text chunks from the db
       const response = await index.searchRecords({
         query: {
-          topK: plan_type !== "free" ? 20 : 10,
+          topK: plan_type !== "free" ? 100 : 50,
           inputs: { text: question },
           filter: {
             documentId: { $eq: docId },
@@ -188,23 +199,25 @@ export const ToolRegistry = {
       });
 
       if (response.result.hits.length < 0) {
-        return `No info in knowledge-base regard this query`;
+        return {
+          error: null,
+          data: `No info in knowledge-base regard this query`,
+        };
       }
       let ResultString = "";
 
       response.result.hits.forEach((e) => {
         if (e.fields.text) {
-          ResultString += `score=${e.fields._score}&text=${e.fields.text}`;
+          ResultString += `score=${e._score}&text=${e.fields.text}`;
         }
       });
-      return ResultString;
+      return { error: null, data: ResultString };
     },
   },
   search_web: {
-    description:
-      "Find the data of a document whose document id is available to us",
+    description: "Search the web for real-time information",
     importance: 2,
-    execute: async (question, user) => {
+    execute: async (question, data) => {
       if (!question || typeof question !== "string") {
         return {
           FormattedResults: "Some error occured in the web seach handler.",
@@ -212,36 +225,38 @@ export const ToolRegistry = {
         };
       }
 
+      const { user, plan_type, MessageId } = data;
+      if (!user || !plan_type || !MessageId) {
+        return {
+          FormattedResults: "Some error occured in the web seach handler.",
+          favicons: [],
+        };
+      }
       // fetch relevant links from the seper
-      const response = await GetDataFromSerper(question, user);
+      const { response, links: LinksToFetch } = await fetchSearchResults(
+        plan_type,
+        question,
+        user,
+        MessageId
+      );
 
-      if (!response) {
+      if (!response || LinksToFetch?.length === 0) {
         return {
           FormattedResults: "Some error occured in the web seach handler.",
           favicons: [],
         };
       }
 
-      // format the response into array of links
-      const LinksToFetch = FilterUrlForExtraction(response, req.user);
-
-      if (LinksToFetch.length === 0) {
-        return {
-          FormattedResults: "Some error occured in the web seach handler.",
-          favicons: [],
-        };
-      }
-      // const LinksToFetch = [
-      //   `https://encharge.io/best-saas-marketing-automation-tools/`,
-      //   `https://www.reddit.com/r/SaaS/comments/1iyk7r1/best_marketing_automation_tool_for_saas/`,
-      //   `https://zapier.com/blog/best-marketing-automation-software/`,
-      //   `https://www.bayleafdigital.com/boost-roi-by-improving-social-media-for-saas/`,
-      //   `https://www.madx.digital/learn/10-strategies-for-dominating-saas-social-media-marketing`,
-      //   `https://www.labsmedia.com/saas/strategy/social-media/`,
-      // ];
-
+      // scrape and optimize the context for the llm
+      const CleanedWebData = await ProcessForLLM(
+        LinksToFetch,
+        user,
+        question,
+        MessageId,
+        null,
+        plan_type
+      );
       // extract only necessary chunks for context
-      const CleanedWebData = await ProcessForLLM(LinksToFetch, user, question);
 
       if (CleanedWebData.length === 0) {
         // console.log(CleanedWebData, "The cleanedWebData ");

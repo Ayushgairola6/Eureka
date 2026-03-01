@@ -197,7 +197,6 @@ export const CheckUserContributionCount = async (
     const userLimit = limits[plan_type] || 0;
 
     if (plan_type === "free" && contributionCount >= userLimit) {
-      console.log();
       return { message: "Limit reached", count: contributionCount };
     }
 

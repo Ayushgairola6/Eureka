@@ -85,7 +85,7 @@ export const GenerateResponse = async (
     }
 
     const result = await genAI.models.generateContent({
-      model: plan_type === "free" ? "gemini-2.5-flash-lite" : "gemini-2.5-pro",
+      model: plan_type === "free" ? "gemini-2.5-pro" : "gemini-2.5-pro",
 
       contents: [
         {
@@ -107,7 +107,7 @@ export const GenerateResponse = async (
 
     const responseText = result.text;
     if (!responseText) {
-      await notifyMe(
+      notifyMe(
         `Error while generating a response , the code execution results are these`,
         JSON.stringify(result.codeExecutionResult)
       );

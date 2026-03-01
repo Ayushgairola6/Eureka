@@ -61,19 +61,13 @@ export const ExecuteTools = async (toolsRequired, context) => {
     return { error: "Context is missing data", message: null, results: [] };
   }
 
-  //   {
-  //   "response": "Your answer. Professional tone, no hallucinations. Cite sources inline as [Title — date]. Never truncate.",
-  //   "tools_required": [{"tool_name": "tool_name_here", "argument": "argument_here"}],
-  //   "thought": "Brief reasoning — why you chose these tools or answered directly"
-  // }
-  // emit thoughts
   const thoughts = toolsRequired?.thought;
   if (thoughts) {
     EmitEvent(user.user_id, "query_status", {
       MessageId,
       status: {
         message: "new_thread",
-        data: [thoughts],
+        data: [thoughts || "No thinking required"],
       },
     });
   }
@@ -98,6 +92,7 @@ export const ExecuteTools = async (toolsRequired, context) => {
       data: tools_required,
     },
   });
+
   const contextResults = await OrchrestrateTools(toolsRequired, {
     user,
     room_id,

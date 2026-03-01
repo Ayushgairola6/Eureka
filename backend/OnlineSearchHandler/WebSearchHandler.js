@@ -221,7 +221,7 @@ export const WebSearchHandle = async (req, res) => {
       Answer
     );
     if (Store.error) {
-      console.log(Store.error);
+      console.error(Store.error);
     }
 
     const Chunks = chunkMarkdown(Answer);

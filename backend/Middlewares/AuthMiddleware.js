@@ -50,7 +50,8 @@ export const VerifyToken = async (req, res, next) => {
           const { data, error } = await supabase
             .from("Tokens")
             .select("Refresh_Token")
-            .eq("user_id", DecodedData?.user_id);
+            .eq("user_id", DecodedData?.user_id)
+            .single(); // returns object not array
 
           if (error || !data) {
             console.error(error, data, "refreshTOkenError");
@@ -64,11 +65,7 @@ export const VerifyToken = async (req, res, next) => {
                 "Refresh Token cannot be found either refresh with a better internet connection or try logging in again.",
             });
           }
-          refreshToken = data[0].Refresh_Token;
-          await redisClient
-            .multi()
-            .set(RefreshTokenKey, JSON.stringify(data[0].Refresh_Token))
-            .expire(RefreshTokenKey, 10000);
+          refreshToken = data.Refresh_Token;
         }
 
         let refreshDecoded;
@@ -89,6 +86,12 @@ export const VerifyToken = async (req, res, next) => {
             .json({ message: "Session expired. Please log in again." });
         }
 
+        // only store token after it has been verified
+        await redisClient
+          .multi()
+          .set(RefreshTokenKey, JSON.stringify(refreshToken))
+          .expire(RefreshTokenKey, 10000)
+          .exec();
         // If refresh token is valid, issue new access token
         const newAccessToken = GenerateAccessTokens(
           refreshDecoded.user_id,
@@ -112,7 +115,12 @@ export const VerifyToken = async (req, res, next) => {
           maxAge: 24 * 60 * 60 * 1000,
         });
 
-        req.user = refreshDecoded;
+        req.user = {
+          user_id: refreshDecoded?.user_id,
+          email: refreshDecoded?.email,
+          username: refreshDecoded?.username,
+          AllowedTrainingModels: refreshDecoded?.AllowedTrainingModels,
+        };
         res.set("X-New-Access-Token", "true");
         return next();
       }

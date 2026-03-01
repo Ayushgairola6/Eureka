@@ -156,9 +156,9 @@ export const initializeSocketIo = (httpServer) => {
   // connecting with the websocket connection
   io.on("connection", (socket) => {
     // joining a specific chatRoom
-    console.log("new user connected to the socket");
+    // console.log("new user connected to the socket");
     socket.conn.on("upgrade", (transport) => {
-      console.log(`transport upgraded to ${transport.name}`);
+      // console.log(`transport upgraded to ${transport.name}`);
     });
     if (socket.user_id) {
       socket.join(socket.user_id);
@@ -168,7 +168,7 @@ export const initializeSocketIo = (httpServer) => {
     socket.on("Joining_a_chat_room", (room_information) => {
       const { username, room_id, room_name, user_id } = room_information;
       // console.log("Joining chat room");
-      console.log(username, "is the joining chat room:", room_id);
+      // console.log(username, "is the joining chat room:", room_id);
 
       if (!room_id || !room_name || !username || !user_id) {
         socket.emit("Room_notification", {
@@ -189,7 +189,7 @@ export const initializeSocketIo = (httpServer) => {
     // leaving a chatRoom
     socket.on("leaving_chat_room", (data) => {
       const { room_id, username } = data;
-      console.log(username, "is the Leaving chat room:", room_id);
+      // console.log(username, "is the Leaving chat room:", room_id);
 
       if (!room_id || !username) {
         socket.emit("Room_notification", {

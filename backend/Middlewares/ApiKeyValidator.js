@@ -17,7 +17,6 @@ export const ValidateApiKey = async (req, res, next) => {
     // Rate limiting check
     const currentRequests = await redisClient.incr(rateLimitKey);
     if (currentRequests === 1) {
-      console.log("Rate limiting working");
       await redisClient.expire(rateLimitKey, 60);
     }
 
