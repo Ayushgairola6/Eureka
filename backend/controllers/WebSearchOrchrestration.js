@@ -4,43 +4,136 @@ import {
 } from "../OnlineSearchHandler/serpapi_handler.js";
 import { ProcessForLLM } from "../OnlineSearchHandler/WebCrawler.js";
 import { WEB_SEARCH_DISTRIBUTOR_PROMPT } from "../Prompts/Prompts.js";
+import { safeJsonParse } from "../Synthesis/Identifier.js";
 import { GetChatsForContext } from "../Synthesis/phase2_action.js";
 import { ToolRegistry } from "../Synthesis/tools.js";
 import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
+import { HandleInference } from "./GroqInferenceController.js";
 import { GenerateResponse } from "./ModelController.js";
 import { supabase } from "./supabaseHandler.js";
 
 // parse the llm response
-export const ExtractJSON = (response) => {
-  try {
-    if (!response || typeof response !== "string") {
-      return { error: "Invalid response type" };
-    }
+function ExtractJSON(rawResponse) {
+  if (!rawResponse || typeof rawResponse !== "string") return null;
 
-    // Strip markdown code blocks if present
-    const cleaned = response
-      .replace(/```json\n?/gi, "")
-      .replace(/```\n?/gi, "")
-      .trim();
+  const cleanString = rawResponse.trim();
 
-    // Find JSON object boundaries
-    const start = cleaned.indexOf("{");
-    const end = cleaned.lastIndexOf("}");
+  // All extraction strategies, tried in order of confidence
+  const strategies = [
+    () => tryExtractFromCodeBlock(cleanString),
+    () => tryExtractJsonObject(cleanString),
+    () => tryExtractJsonArray(cleanString),
+    () => tryParseRepaired(cleanString),
+  ];
 
-    if (start === -1 || end === -1) {
-      return { error: "No JSON object found in response" };
-    }
-
-    const jsonString = cleaned.slice(start, end + 1);
-    const parsed = JSON.parse(jsonString);
-
-    return parsed;
-  } catch (error) {
-    console.error("JSON extraction failed:", error.message);
-    return { error: "Failed to parse JSON", raw: response };
+  for (const strategy of strategies) {
+    const result = strategy();
+    if (result !== null) return result;
   }
-};
 
+  console.error(
+    "All extraction strategies failed. Raw string was:",
+    rawResponse
+  );
+  return null;
+}
+
+function tryParse(str) {
+  if (!str) return null;
+  try {
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
+}
+
+// Strategy 1: Extract from ```json ... ``` or ``` ... ``` blocks
+function tryExtractFromCodeBlock(str) {
+  const codeBlockRegex = /```(?:json)?\s*\n?([\s\S]*?)\n?```/gi;
+  let match;
+  while ((match = codeBlockRegex.exec(str)) !== null) {
+    const candidate = match[1].trim();
+    const parsed = tryParse(candidate);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
+// Strategy 2: Find the outermost JSON object {}
+// Walks char-by-char to correctly handle nested braces
+function tryExtractJsonObject(str) {
+  return extractByBrackets(str, "{", "}");
+}
+
+// Strategy 3: Find the outermost JSON array []
+function tryExtractJsonArray(str) {
+  return extractByBrackets(str, "[", "]");
+}
+
+// Scans the string for ALL occurrences of a valid JSON structure
+// defined by an open/close bracket pair, returns the first valid one
+function extractByBrackets(str, openChar, closeChar) {
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] !== openChar) continue;
+
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+
+    for (let j = i; j < str.length; j++) {
+      const char = str[j];
+
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (char === "\\" && inString) {
+        escape = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (inString) continue;
+
+      if (char === openChar) depth++;
+      else if (char === closeChar) {
+        depth--;
+        if (depth === 0) {
+          const candidate = str.substring(i, j + 1);
+          const parsed = tryParse(candidate);
+          if (parsed !== null) return parsed;
+          break; // This start index failed, try the next one
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// Strategy 4: Last resort — attempt common syntax repairs on the whole string
+function tryParseRepaired(str) {
+  let repaired = str;
+
+  // Remove any leading/trailing non-JSON text if braces/brackets exist
+  const firstBrace = str.search(/[{[]/);
+  const lastBrace = str.search(/[}\]]/);
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    repaired = str.substring(firstBrace, lastBrace + 1);
+  }
+
+  // Fix trailing commas: [1, 2,] or {a: 1,}
+  repaired = repaired.replace(/,\s*([\]}])/g, "$1");
+
+  // Fix unquoted keys: {name: "value"} → {"name": "value"}
+  repaired = repaired.replace(
+    /([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g,
+    '$1"$2":'
+  );
+
+  return tryParse(repaired);
+}
 // Function 2: Execute tools from parsed response — yours to write
 export const ExecuteTools = async (toolsRequired, context) => {
   if (!toolsRequired) {
@@ -50,7 +143,7 @@ export const ExecuteTools = async (toolsRequired, context) => {
   if (!user) {
     return { error: "Context is missing data", message: null, results: [] };
   }
-  const ParsedResults = ExtractJSON(modelResponse);
+  const ParsedResults = safeJsonParse(modelResponse);
 
   console.log(
     "The models parsed and plain response\n",
@@ -274,24 +367,51 @@ export async function WebSerchAgentLoop(
     question
   );
   if (currentIteration >= MAX_AGENT_LOOPS) {
-    const FinalAnswer = await GenerateResponse(
-      `userQuery=${question}`,
-      JSON.stringify(context),
-      WEB_SEARCH_DISTRIBUTOR_PROMPT,
-      user,
-      plan_type
+    // const FinalAnswer = await GenerateResponse(
+    //   `userQuery=${question}`,
+    //   JSON.stringify(context),
+    //   WEB_SEARCH_DISTRIBUTOR_PROMPT,
+    //   user,
+    //   plan_type
+    // );
+    const FinalAnswer = await HandleInference(
+      `user_prompt=${question}&context=${context}`,
+      WEB_SEARCH_DISTRIBUTOR_PROMPT
     );
-    return { error: null, message: FinalAnswer, results: context };
-  }
-  const Answer = await GenerateResponse(
-    `userQuery=${question}&previous-chats=${JSON.stringify(history)}`,
-    JSON.stringify(context),
-    WEB_SEARCH_DISTRIBUTOR_PROMPT,
-    user,
-    plan_type
-  );
 
-  if (!Answer || Answer?.error) {
+    const FinalReport = await ExecuteTools(FinalAnswer?.result, {
+      user,
+      MessageId,
+      Answer: FinalAnswer?.result,
+      room_id,
+    });
+
+    if (!ModelReport || ModelReport?.error) {
+      console.error(ModelReport?.error);
+      notifyMe(
+        "The llm orcreshtration in post type web search sent an error\n",
+        ModelReport?.error
+      );
+      return {
+        error:
+          "Our AI models are overloaded right now please wait a bit while, in the meantime you can try out the sysnthesis mode or wait till we fix this issue.",
+        message: null,
+        results: { web_search_results: [], session_chat: [], memories: [] },
+      };
+    }
+    return {
+      error: null,
+      message: FinalReport?.message,
+      results: FinalReport?.results,
+    };
+  }
+  const Answer = await HandleInference(
+    `user_prompt${question}&context=${context}`,
+    WEB_SEARCH_DISTRIBUTOR_PROMPT
+  );
+  console.log(Answer);
+
+  if (!Answer || Answer?.error || !Answer?.result) {
     return {
       error:
         "Our AI models are overloaded right now please wait a bit while, in the meantime you can try out the sysnthesis mode or wait till we fix this issue.",
@@ -299,12 +419,11 @@ export async function WebSerchAgentLoop(
       results: { web_search_results: [], session_chat: [], memories: [] },
     };
   }
-
   // handle llm response orchrestration
-  const ModelReport = await ExecuteTools(Answer, {
+  const ModelReport = await ExecuteTools(Answer.result, {
     user,
     MessageId,
-    Answer,
+    Answer: Answer?.result,
     room_id,
   });
 

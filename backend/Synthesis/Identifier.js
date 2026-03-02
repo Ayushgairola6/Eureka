@@ -191,68 +191,31 @@ documentMetadata=${JSON.stringify(metadata)}
       plan_type,
     });
 
-    if (!Orechrestratedresults || Orechrestratedresults?.error) {
-      notifyMe(
-        `Error from the Synthesis recursive orchrestration handler in identifier.js line 118 file\n`,
-        JSON.stringify(Orechrestratedresults)
-      );
-      console.log(`error in synthesis orchrestrator\n`, Orechrestratedresults);
-      return res.status(400).send({
-        message:
-          "It seems like our AI models are very overloaded right now please wait a bit while we try to resolve this problem.",
+    const { answer, functions, favicon, error } = Orechrestratedresults;
+
+    if (answer) {
+      const ModelResponse = answer;
+      const AiMessage = {
+        id: MessageId,
+        sent_by: "AntiNode", //sent by the user
+        message: {
+          isComplete: true,
+          content: ModelResponse,
+        },
+        sent_at: currentTime,
+      };
+      // update the cache
+      CacheCurrentChat(AiMessage, req.user);
+      StoreQueryAndResponse(user.user_id, question, ModelResponse);
+      return res.status(200).send({
+        message: "Response generated",
+        Answer: ModelResponse,
+        favicon: { MessageId, icon: favicon?.icon || [] },
       });
     }
 
+    return res.status(400).json({ message: "Failed to generate response" });
     // console.log(ExtractedFunctions);
-    EmitEvent(user.user_id, "query_status", {
-      MessageId,
-      status: {
-        message: "Creating functions",
-        data: [JSON.stringify(Orechrestratedresults?.functions)],
-      },
-    });
-
-    // if the llm just sent a message
-    if (!Orechrestratedresults?.answer) {
-      return res.status(400).json({
-        message:
-          Orechrestratedresults?.error ||
-          "It seems like our AI models are very overloaded right now please wait a bit while we try to resolve this problem.",
-      });
-    }
-    const ModelResponse = Orechrestratedresults.answer;
-    const AiMessage = {
-      id: MessageId,
-      sent_by: "AntiNode", //sent by the user
-      message: {
-        isComplete: true,
-        content: ModelResponse,
-      },
-      sent_at: currentTime,
-    };
-    // update the cache
-    await CacheCurrentChat(AiMessage, req.user);
-
-    // storing the convo in solid state db
-    const StoreChats = await StoreQueryAndResponse(
-      user.user_id,
-      question,
-      ModelResponse
-    );
-    if (StoreChats.error) {
-      await notifyMe(
-        `Error while storing response history ${StoreChats.error}`
-      );
-    }
-    const formattedFavicon = {
-      MessageId,
-      icon: Orechrestratedresults?.favicon,
-    };
-    return res.status(200).send({
-      message: "Response generated",
-      Answer: ModelResponse,
-      favicon: formattedFavicon,
-    });
   } catch (SynthesisError) {
     console.error(SynthesisError);
     await notifyMe(
@@ -265,7 +228,7 @@ documentMetadata=${JSON.stringify(metadata)}
   }
 }
 // checks and parse the LLm response for tool and other parameter extraction
-function safeJsonParse(rawResponse) {
+export function safeJsonParse(rawResponse) {
   if (!rawResponse || typeof rawResponse !== "string") return null;
 
   let cleanString = rawResponse.trim();

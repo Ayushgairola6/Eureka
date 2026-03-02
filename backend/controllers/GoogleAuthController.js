@@ -168,6 +168,14 @@ export const HandleGoogleCallback = async (req, res) => {
 
     notifyMe(`User ${user.username} logged in via Google OAuth`);
 
+    const clientIp =
+      req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;
+
+    notifyMe(
+      `User ${user.username} logged into their AntiNode account from IP: ${clientIp}`
+    );
+
+    // Uncomment if you want to send email notifications
     EmailServices.sendLoginNotification(user, {
       ip: clientIp,
       userAgent: req.headers["user-agent"],

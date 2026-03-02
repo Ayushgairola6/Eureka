@@ -27,6 +27,7 @@ import PrivateDocuments from "@/components/PrivateDocuments.tsx";
 import PublicQueryOptions from "@/components/PublicQueryOptions.tsx";
 import { Notice } from "@/components/Notice.tsx";
 import { v4 as uuid } from 'uuid'
+import { CiStreamOff, CiStreamOn } from "react-icons/ci";
 function Interface() {
   const [searchParams] = useSearchParams();
   // handling google auth localstorage sessionToken storage
@@ -43,7 +44,7 @@ function Interface() {
   const { isLoggedIn } = useAppSelector((state) => state.auth);
   const { question, category, visibility, subCategory, Chats, selectedDoc, search_depth, queryType } =
     useAppSelector((state) => state.interface);
-
+  const { isConnected } = useAppSelector(s => s.socket) //socket conection state (boolean)
   const textareaRef = useRef<HTMLInputElement>(null);
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
@@ -259,6 +260,7 @@ function Interface() {
       <div
         className={`w-full  flex items-center justify-between flex-col min-h-[90vh]  dark:bg-black  relative z-[1]  px-4 py-3 `}
       >
+        <ul className={`border ${isConnected === true ? "border-green-600 bg-green-400/10 text-green-600 rounded-xl " : "border-red-600 bg-red-400/10 text-red-600 rounded-xl "} space-grotesk text-xs fixed top-15 right-2  z-[5] py-1 px-2 flex items-center justify-center gap-2`}>{isConnected === true ? (<><CiStreamOn /> Live Tail</>) : (<><CiStreamOff /> No Live Tail</>)}</ul>
         <Notice />
 
         <ChatBubble

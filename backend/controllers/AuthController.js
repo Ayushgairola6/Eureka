@@ -366,7 +366,7 @@ const cacheRefreshToken = async (user, refreshToken) => {
 };
 
 // Helper function for login notification
-const sendLoginNotification = async (req, user) => {
+export const sendLoginNotification = async (req, user) => {
   try {
     const clientIp =
       req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;

@@ -5,7 +5,13 @@ import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 dotenv.config();
 
 // currrently being used for free users
-export const GetDataFromSerpApi = async (query, user, room_id, MessageId) => {
+export const GetDataFromSerpApi = async (
+  query,
+  user,
+  room_id,
+  MessageId,
+  plan_type
+) => {
   try {
     if (room_id) {
       EmitEvent(room_id, "query_status", {
@@ -32,7 +38,7 @@ export const GetDataFromSerpApi = async (query, user, room_id, MessageId) => {
       q: query,
       google_domain: "google.com",
       hl: "en",
-      num: 10,
+      num: plan_type === "free" ? 2 : plan_type === "sprint pass" ? 5 : 10,
     });
 
     return response;

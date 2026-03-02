@@ -9,7 +9,7 @@ import {
 import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
 import { IdentifyUserRequest } from "../controllers/ModelController.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
-
+import { HandleInference } from "../controllers/GroqInferenceController.js";
 //fetches the metadata of the document from the db for synthesis mode
 
 export const HandleDocumentMetadataGathering = async (
@@ -100,9 +100,8 @@ export async function SynthsisOrchrestrator(data, iterator = 0) {
       };
     }
 
-    const responseText = await IdentifyUserRequest(context, IDENTIFIER_PROMPT);
-
-    if (!responseText || responseText?.error) {
+    const result = await HandleInference(context, IDENTIFIER_PROMPT);
+    if (!result || result?.error) {
       return {
         error: "LLM failed",
         answer: null,
@@ -110,6 +109,7 @@ export async function SynthsisOrchrestrator(data, iterator = 0) {
         favicon: { MessageId, icon: [] },
       };
     }
+    const responseText = result?.result;
 
     const ExtractedFunctions = CentralFunctionProcessor(
       responseText,
@@ -185,7 +185,14 @@ export async function SynthsisOrchrestrator(data, iterator = 0) {
           favicon: { MessageId, icon: [] },
         };
       }
-
+      if (ExtractedFunctions?.message) {
+        return {
+          error: null,
+          answer: ExtractedFunctions.message, 
+          functions: null,
+          favicon: { MessageId, icon: [] },
+        };
+      }
       const smartExecResult = await ExeCuteContextEngines(
         ExtractedFunctions,
         user,
@@ -218,7 +225,7 @@ export async function SynthsisOrchrestrator(data, iterator = 0) {
 
       // recurse with enriched context - model will now have data to answer
       return SynthsisOrchrestrator(
-        { user, MessageId, context: NewContext, selectedDocuments },
+        { user, MessageId, context: NewContext, selectedDocuments,question,plan_type },
         iterator + 1
       );
     }

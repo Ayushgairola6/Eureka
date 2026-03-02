@@ -23,7 +23,6 @@ const OAuthCallbackHandler = () => {
 
 
       if (error) {
-        console.error("OAuth failed:", error);
         setMessage({
           type: "error",
           text: serverMessage || error || "Authentication failed",
@@ -37,10 +36,8 @@ const OAuthCallbackHandler = () => {
           text: serverMessage || "Authentication successful!",
         });
 
-        // Small delay to show success message before redirect
-        setTimeout(() => {
-          navigate("/Interface");
-        }, 1500);
+        navigate("/Interface");
+        ;
         return;
       }
 

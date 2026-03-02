@@ -85,7 +85,7 @@ export const GenerateResponse = async (
     }
 
     const result = await genAI.models.generateContent({
-      model: plan_type === "free" ? "gemini-2.5-pro" : "gemini-2.5-pro",
+      model: plan_type === "free" ? "gemini-2.5-flash" : "gemini-2.5-pro",
 
       contents: [
         {
@@ -349,7 +349,7 @@ export const FindIntent = async (required_prompt, query, plan_type) => {
 };
 
 export function FilterIntent(resultstring) {
-  const lists = resultstring.split(";");
+  const lists = resultstring?.split(";");
 
   if (!lists || !lists?.length) {
     return { error: "An error occured while proceeding with your request!" };
