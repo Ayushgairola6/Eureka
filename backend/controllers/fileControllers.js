@@ -1068,7 +1068,7 @@ export const fetchSearchResults = async (
 };
 
 // handle intentIdentification and formatting
-async function HandleIntentIdentification(question, plan_type) {
+export async function HandleIntentIdentification(question, plan_type) {
   const IdentifiedIntent = await HandleInference(
     `user_prompt{question}&plan_type=${plan_type}`,
     IntentIdentifier
@@ -1158,13 +1158,11 @@ export const PostTypeWebSearch = async (req, res) => {
     let WebResults;
 
     // no matter the search type send the user prompt to llm for better search query
-    // const FormattedQueries = await HandleIntentIdentification(
-    //   question,
-    //   plan_type
-    // );
-    const FormattedQueries = [
-      `To address the user's question effectively, I will deconstruct it into a series of specialized subqueries. Given the plan type is "free," I will generate 3 high-value queries to target authentic information from the web. 1. What are the key aspects of the user's question that need to be addressed? 2. How can the question be reframed to yield more precise and relevant results from the web? 3. What are the most authoritative sources or keywords that should be included in the search to ensure high-quality results?`,
-    ];
+    const FormattedQueries = await HandleIntentIdentification(
+      question,
+      plan_type
+    );
+
     if (!FormattedQueries || FormattedQueries?.length === 0) {
       return res.status(400).json({
         message:
