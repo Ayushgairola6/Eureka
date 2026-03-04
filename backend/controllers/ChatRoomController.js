@@ -172,9 +172,9 @@ export const CreateChatRooms = async (req, res) => {
 
       // if therer is count value and the count value is greater 1 for free users this is the limit
       if (count && count >= 1) {
-        return res
-          .status(401)
-          .send({ message: "On free tier you can only create one room" });
+        return res.status(401).send({
+          message: "Currently on free tier you can only create one room",
+        });
       }
     }
 
@@ -187,7 +187,7 @@ export const CreateChatRooms = async (req, res) => {
     if (!Room_Joining_code) {
       return res
         .status(400)
-        .send({ message: "Error while assigning your room a code" });
+        .send({ message: "Error while assigning your workspace a code" });
     }
     // Inserting the data in the database
     const { data: insertData, error: RoomCreationError } = await supabase
@@ -204,14 +204,14 @@ export const CreateChatRooms = async (req, res) => {
       .select();
 
     if (RoomCreationError) {
-      await notifyMe(
+      notifyMe(
         "Something went wrong while creating a chatRoom",
         RoomCreationError
       );
 
-      return res
-        .status(400)
-        .send({ message: "Error while processing your request " });
+      return res.status(400).send({
+        message: "Error while processing your request and creating a workspace",
+      });
     }
 
     // update the room and members table as well to insert a new member
@@ -233,25 +233,21 @@ export const CreateChatRooms = async (req, res) => {
     }
 
     // update the user cacche value
-    const UserAccountDataKey = `user_id=${user_id}'s_dashboardData`;
+    const cacheKey = `user:${user_id}:dashboard`;
 
-    const previousCachedData = await redisClient.hGet(
-      UserAccountDataKey,
-      "rooms"
-    );
+    const previousCachedData = await redisClient.hGet(cacheKey, "rooms");
     if (previousCachedData) {
       const parsed = JSON.parse(previousCachedData);
       parsed.push(insertData[0]);
 
-      await redisClient.hSet(
-        UserAccountDataKey,
-        "rooms",
-        JSON.stringify(parsed)
-      );
+      redisClient.hSet(cacheKey, "rooms", JSON.stringify(parsed));
     }
-    return res.status(200).send({ message: "Room created Successfully !" });
+
+    return res
+      .status(200)
+      .send({ message: "Room created Successfully !", data: insertData[0] });
   } catch (roomcreationError) {
-    await notifyMe("Room creation controller error", roomcreationError);
+    notifyMe("Room creation controller error", roomcreationError);
     return res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -1090,7 +1086,7 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       });
     }
 
-    if (plan_type === "free" && web_search_depth !== "deep_web") {
+    if (plan_type === "free" && web_search_depth === "deep_web") {
       return res.status(400).send({
         message: "You need a premium plan in order to access deep web search.",
       });
@@ -1151,6 +1147,11 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
         MessageId,
         plan_type
       );
+      // const FinalLinksToScrape = [
+      //   "https://news.ycombinator.com",
+      //   "https://techcrunch.com",
+      //   "https://arxiv.org/abs/2301.00001",
+      // ];
 
       if (FinalLinksToScrape?.length === 0) {
         return res.status(400).send({
@@ -1160,7 +1161,11 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       }
 
       // parse the results and extract organic results and convert it into an array of link(string)
-      let LinksToFetch = [];
+      // const LinksToFetch = [
+      //   "https://news.ycombinator.com",
+      //   "https://techcrunch.com",
+      //   "https://arxiv.org/abs/2301.00001",
+      // ];
       // handle each source links extraction
       FinalLinksToScrape.forEach((li) => {
         if (li) {
@@ -1216,6 +1221,11 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
         });
       }
 
+      // const LinksToFetch = [
+      //   "https://news.ycombinator.com",
+      //   "https://techcrunch.com",
+      //   "https://arxiv.org/abs/2301.00001",
+      // ];
       // scrape and optimize the context for the llm
       const CleanedWebData = await ProcessForLLM(
         LinksToFetch,

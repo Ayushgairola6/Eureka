@@ -26,6 +26,7 @@ export async function HandleInference(user_prompt, SYSTEM_PROMPT) {
       temperature: 0.5,
       stream: false,
       top_p: 1,
+      max_completion_tokens: 32768,
     });
     if (response && response?.choices[0]?.message?.content) {
       return { error: null, result: response.choices[0].message.content };

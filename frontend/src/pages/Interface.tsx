@@ -28,6 +28,7 @@ import PublicQueryOptions from "@/components/PublicQueryOptions.tsx";
 import { Notice } from "@/components/Notice.tsx";
 import { v4 as uuid } from 'uuid'
 import { CiStreamOff, CiStreamOn } from "react-icons/ci";
+import { QuotaIndicator } from "@/components/QuotaIndicator.tsx";
 function Interface() {
   const [searchParams] = useSearchParams();
   // handling google auth localstorage sessionToken storage
@@ -127,7 +128,7 @@ function Interface() {
           if (res.message === "Results found") {
             dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
             dispatch(updateFavicon(res.favicon));
-            dispatch(SetQueryCount());
+            dispatch(SetQueryCount('surface_web'));
             sessionStorage.removeItem("AntiNode_Redirect_prompt");
 
           }
@@ -269,6 +270,7 @@ function Interface() {
           chatcontainer={chatcontainer}
         />
         <div className="w-full flex items-center justify-center fixed bottom-0 py-0.5 left-0 md:px-2 px-0.5   dark:bg-black bg-white ">
+
           <PrivateDocuments
             selectedDoc={selectedDoc}
             setSelectedDoc={setSelectedDoc}
@@ -284,6 +286,8 @@ function Interface() {
             <div
               className={`relative bg-white dark:bg-black  backdrop-blur-md overflow-y-visible rounded-sm`}
             >
+              <QuotaIndicator />
+
               <PublicQueryOptions />
 
               {/* Slightly smaller radius */}

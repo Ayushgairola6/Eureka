@@ -52,9 +52,8 @@ const setupSocketListeners = (dispatch: any) => {
     dispatch(Setroom_info(data));
   });
 
-  socket.on("reauthenticate", (data) => {
-    localStorage.setItem("AntiNode_six_eta_v1_Authtoken", data.newAccessToken);
-    dispatch(SetCookies(data.newAccessToken));
+  socket.on("session_refresh_required", () => {
+    dispatch(SetCookies());
   });
   socket.on("recieved_message", (data) => {
     dispatch(NewMessageReceived(data));
@@ -113,15 +112,13 @@ export const socketMiddleware =
           socket.disconnect();
           listenerInitialized = false;
         }
-        const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
 
         socket = io(ServerUrl, {
+          transports: ["websocket", "polling"],
           reconnection: true,
           reconnectionAttempts: 5,
           reconnectionDelay: 2000,
-          auth: {
-            token: AuthToken,
-          },
+
           withCredentials: true,
         });
         setupSocketListeners(dispatch);

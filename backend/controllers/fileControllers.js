@@ -1,12 +1,6 @@
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
-import {
-  FilterIntent,
-  FindIntent,
-  GenerateEmbeddings,
-  GenerateResponse,
-  IdentifyUserRequest,
-} from "./ModelController.js";
+import { FilterIntent } from "./ModelController.js";
 import { Pinecone } from "@pinecone-database/pinecone";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
@@ -285,10 +279,10 @@ export const FileUploadHandle = async (req, res) => {
       chunkNumber,
       documentmetadata
     );
-    const UserAccountDataKey = `user_id=${userid}'s_dashboardData`;
+    const UserAccountDataKey = `user:${user_id}:dashboard`;
 
     if (StoredContribution?.error) {
-      await notifyMe(StoredContribution.error);
+      notifyMe(StoredContribution.error);
       return res.status(400).json({
         message: StoredContribution.error,
         insertData: {
@@ -302,7 +296,7 @@ export const FileUploadHandle = async (req, res) => {
     if (StoredContribution.InsertedData) {
       // handle user cache information if the documents are not private
       if (visibility === "Private") {
-        await UpdateUserFileListCacheInfo(
+        UpdateUserFileListCacheInfo(
           UserAccountDataKey,
           StoredContribution.InsertedData
         );
@@ -325,7 +319,7 @@ export const FileUploadHandle = async (req, res) => {
       insertData: StoredContribution.InsertedData || {},
     });
   } catch (error) {
-    await notifyMe("Error in file upload handler", error);
+    notifyMe("Error in file upload handler", error);
     return res.status(500).json({ message: "Internal Server error" });
   }
 };
@@ -363,7 +357,7 @@ export const DeleteFileHandle = async (req, res) => {
     const { document_id } = req.query;
 
     let preference;
-    const UserAccountDataKey = `user_id=${user.user_id}'s_dashboardData`;
+    const UserAccountDataKey = `user:${user?.user_id}:dashboard`;
     const info = await redisClient.hGet(UserAccountDataKey, "userdata");
 
     if (info) {
@@ -601,12 +595,10 @@ export const GetPublicRecords = async (req, res) => {
     // update the cache
     await CacheCurrentChat(message, req.user);
 
-    const AnswerToUsersQuestion = await GenerateResponse(
-      question,
-      finalinfo,
-      KNOWLEDGE_DISTRIBUTOR_PROMPT,
-      req.user,
-      plan_type
+    const AnswerToUsersQuestion = await HandleInference(
+      `user_prompt=${question}&context=
+      ${finalinfo}`,
+      KNOWLEDGE_DISTRIBUTOR_PROMPT
     );
 
     if (AnswerToUsersQuestion.error) {
@@ -618,7 +610,7 @@ export const GetPublicRecords = async (req, res) => {
     const AImessage = {
       id: MessageId, //users message Id
       sent_by: "AntiNode", //sent by the user
-      message: { isComplete: true, content: AnswerToUsersQuestion },
+      message: { isComplete: true, content: AnswerToUsersQuestion?.result },
       sent_at: currentTime,
     };
     // update the cache
@@ -627,7 +619,7 @@ export const GetPublicRecords = async (req, res) => {
     const storeResponses = await StoreQueryAndResponse(
       user_id,
       question,
-      AnswerToUsersQuestion,
+      AnswerToUsersQuestion?.result,
       null,
       category,
       subCategory
@@ -644,7 +636,6 @@ export const GetPublicRecords = async (req, res) => {
       });
     }
 
-    // console.log(AnswerToUsersQuestion);
     // updating the chats cache
     try {
       const misallaneousChatsKey = `user=${req.user.username}'s_misallaneousChats`;
@@ -655,7 +646,7 @@ export const GetPublicRecords = async (req, res) => {
         newChats.push({
           created_at: new Date().toISOString(),
           question: question,
-          AI_response: AnswerToUsersQuestion,
+          AI_response: AnswerToUsersQuestion?.result,
         });
         // console.log("new misallaneous chats", newChats[newChats.length - 1]);
 
@@ -674,7 +665,7 @@ export const GetPublicRecords = async (req, res) => {
 
     return res.status(200).json({
       message: "Response found",
-      answer: AnswerToUsersQuestion,
+      answer: AnswerToUsersQuestion?.result,
       docUsed: DocumentsUserForReference,
     });
   } catch (err) {
@@ -814,16 +805,6 @@ export const GetPrivateDocResultss = async (req, res) => {
       },
     });
     // if the user plan is of free or sprint pass type
-    if (
-      plan_status === "active" &&
-      (plan_type === "free" || plan_type === "sprint pass") &&
-      query_type === "Summary"
-    ) {
-      return res.status(402).send({
-        message:
-          "You need an active plan in order to be able to access this feature",
-      });
-    }
 
     //  setting the specific headers for stream type
     // check the current credit limit record for the user
@@ -980,14 +961,14 @@ export const GetPrivateDocResultss = async (req, res) => {
     // update the cache
     await CacheCurrentChat(message, user);
     // geenrating the response based on the found context
-    const AnswerToUsersQuestion = await GenerateResponse(
-      question,
-      FormattedContextString !== 0
-        ? FormattedContextString
-        : "No relevant results were found in the database",
-      SYSTEM_PROMPT,
-      user,
-      plan_type
+    const AnswerToUsersQuestion = await HandleInference(
+      ` user_prompt${question}
+      context=${
+        FormattedContextString
+          ? FormattedContextString
+          : "No relevant results were found in the database"
+      }`,
+      SYSTEM_PROMPT
     );
 
     if (AnswerToUsersQuestion?.error) {
@@ -999,7 +980,7 @@ export const GetPrivateDocResultss = async (req, res) => {
     const Aimessage = {
       id: MessageId, //AI  message Id
       sent_by: "AntiNode", //sent by the model
-      message: { isComplete: true, content: AnswerToUsersQuestion },
+      message: { isComplete: true, content: AnswerToUsersQuestion?.result },
       sent_at: currentTime,
     };
     // update the cache
@@ -1009,7 +990,7 @@ export const GetPrivateDocResultss = async (req, res) => {
     const storeResponse = await StoreQueryAndResponse(
       user.user_id,
       question,
-      AnswerToUsersQuestion,
+      AnswerToUsersQuestion?.result,
       docId
     );
 
@@ -1027,7 +1008,7 @@ export const GetPrivateDocResultss = async (req, res) => {
       newChats.push({
         created_at: new Date().toISOString(),
         question: question,
-        AI_response: AnswerToUsersQuestion,
+        AI_response: AnswerToUsersQuestion?.result,
       });
       // update the cache
       await redisClient
@@ -1037,7 +1018,7 @@ export const GetPrivateDocResultss = async (req, res) => {
     }
     return res.status(200).send({
       message: "Response found",
-      Answer: AnswerToUsersQuestion,
+      Answer: AnswerToUsersQuestion?.result,
     });
   } catch (err) {
     await notifyMe(`Error from Private doc result ${err}`);
@@ -1070,7 +1051,7 @@ export const fetchSearchResults = async (
 // handle intentIdentification and formatting
 export async function HandleIntentIdentification(question, plan_type) {
   const IdentifiedIntent = await HandleInference(
-    `user_prompt{question}&plan_type=${plan_type}`,
+    `user_prompt${question}&plan_type=${plan_type}`,
     IntentIdentifier
   );
 
@@ -1212,6 +1193,11 @@ export const PostTypeWebSearch = async (req, res) => {
             "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
         });
       }
+      // const FinalLinksToScrape = [
+      //   "https://news.ycombinator.com",
+      //   "https://techcrunch.com",
+      //   "https://arxiv.org/abs/2301.00001",
+      // ];
 
       // parse the results and extract organic results and convert it into an array of link(string)
       let LinksToFetch = [];
@@ -1270,9 +1256,9 @@ export const PostTypeWebSearch = async (req, res) => {
         });
       }
       // const LinksToFetch = [
-      //   "https://www.ey.com/en_us/insights/tech-sector/saas-go-to-market-strategy-for-an-agentic-ai-world",
-      //   "https://www.forbes.com/councils/forbestechcouncil/2025/12/01/the-agentic-layer-how-ai-agents-will-redefine-the-future-of-enterprise-saas/",
-      //   "https://www.umu.com/ask/a11122301573853961648",
+      //   "https://news.ycombinator.com",
+      //   "https://techcrunch.com",
+      //   "https://arxiv.org/abs/2301.00001",
       // ];
       // scrape and optimize the context for the llm
       const CleanedWebData = await ProcessForLLM(
@@ -1386,7 +1372,7 @@ export const PostTypeWebSearch = async (req, res) => {
       "An error occured in the postTypewebsearch controller function filecontroller.js line 1204",
       err
     );
-
+    console.error(err);
     return res.status(500).send({
       message:
         "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",

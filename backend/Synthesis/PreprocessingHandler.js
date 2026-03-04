@@ -92,9 +92,19 @@ export async function SynthsisOrchrestrator(data, iterator = 0) {
       data;
 
     if (iterator >= 4) {
+      const finalResult = await HandleInference(
+        context +
+          `&instruction=Max iterations reached. Synthesize everything you have into a final answer now.`,
+        IDENTIFIER_PROMPT
+      );
+      const finalParsed = CentralFunctionProcessor(
+        finalResult?.result,
+        user,
+        MessageId
+      );
       return {
-        error: "Max iterations reached",
-        answer: null,
+        error: null,
+        answer: finalParsed?.message || "Unable to generate response",
         functions: null,
         favicon: { MessageId, icon: [] },
       };
@@ -169,30 +179,61 @@ export async function SynthsisOrchrestrator(data, iterator = 0) {
       await new Promise((r) => setTimeout(r, 2000));
 
       return SynthsisOrchrestrator(
-        { user, MessageId, context: NewContext, selectedDocuments },
+        {
+          user,
+          MessageId,
+          context: NewContext,
+          selectedDocuments,
+          question,
+          plan_type,
+        },
         iterator + 1
       );
     }
 
     // high confidence - has all context, execute and return
     if (ExtractedFunctions.confidence === "high") {
+      // if there is an answer return
+      if (ExtractedFunctions?.message) {
+        return {
+          error: null,
+          answer: ExtractedFunctions.message,
+          functions: null,
+          favicon: { MessageId, icon: [] },
+        };
+      }
       // if no functions needed - model already answered directly
       if (!ExtractedFunctions.PreProcessFunctions?.length) {
+        const finalResult = await HandleInference(
+          context +
+            `&instruction=You now have all required context. Write your complete analytical response in direct_answer. Do not call any more functions.`,
+          IDENTIFIER_PROMPT
+        );
+
+        const finalParsed = CentralFunctionProcessor(
+          finalResult?.result,
+          user,
+          MessageId
+        );
+
+        if (finalParsed?.message) {
+          return {
+            error: null,
+            answer: finalParsed.message,
+            functions: null,
+            favicon: { MessageId, icon: [] },
+          };
+        }
+
+        // if still no answer after forcing it
         return {
-          error: "No functions but no answer either",
+          error: "Model failed to generate final answer",
           answer: null,
           functions: null,
           favicon: { MessageId, icon: [] },
         };
       }
-      if (ExtractedFunctions?.message) {
-        return {
-          error: null,
-          answer: ExtractedFunctions.message, 
-          functions: null,
-          favicon: { MessageId, icon: [] },
-        };
-      }
+
       const smartExecResult = await ExeCuteContextEngines(
         ExtractedFunctions,
         user,
@@ -221,11 +262,18 @@ export async function SynthsisOrchrestrator(data, iterator = 0) {
           smartExecResult.GlobalContextObject
         )}`;
 
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 3000));
 
       // recurse with enriched context - model will now have data to answer
       return SynthsisOrchrestrator(
-        { user, MessageId, context: NewContext, selectedDocuments,question,plan_type },
+        {
+          user,
+          MessageId,
+          context: NewContext,
+          selectedDocuments,
+          question,
+          plan_type,
+        },
         iterator + 1
       );
     }

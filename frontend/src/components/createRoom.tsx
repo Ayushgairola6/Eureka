@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { CreateChatRoom } from "../store/chatRoomSlice.ts";
 import { useAppDispatch, useAppSelector } from "../store/hooks.tsx";
 import { toast } from "sonner";
+import { updateChatRooms } from "../store/AuthSlice.ts";
 
 type RoomProps = {
   showcard: boolean;
@@ -49,7 +50,7 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
 
     dispatch(CreateChatRoom(data))
       .unwrap()
-      .then(() => {
+      .then((res: any) => {
         toast.success("Room created successfully");
         setShowCard(false);
         // Reset form
@@ -57,6 +58,10 @@ const CreateRoom: React.FC<RoomProps> = ({ showcard, setShowCard }) => {
         if (RoomDescriptions.current) RoomDescriptions.current.value = "";
         setParticipantCount(2);
         setRoomType("public");
+        if (res?.data) {
+          dispatch(updateChatRooms(res.data))
+
+        }
       })
       .catch((error) => {
         toast.error(error || "Failed to create room");

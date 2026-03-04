@@ -6,7 +6,11 @@
   "type": "module",
   "scripts": {
     "build": "npm install",
-    "start": "node index"
+    "start": "node index",
+    "test": "mocha \"tests/**/*.test.js\" --exit",
+    "test:watch": "mocha --watch \"tests/**/*.test.js\"",
+    "test:ci": "mocha \"tests/**/*.test.js\" --reporter spec --exit",
+    "coverage": "nyc --reporter=lcov --reporter=text mocha \"tests/**/*.test.js\" --exit"
   },
   "author": "ayush_gairola",
   "license": "ISC",
@@ -60,6 +64,11 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
-    "@types/node": "^24.0.3"
+    "@types/node": "^24.0.3",
+    "chai": "^6.2.2",
+    "mocha": "^11.7.5",
+    "nyc": "^18.0.0",
+    "sinon": "^21.0.1",
+    "supertest": "^7.2.2"
   }
 }

@@ -191,6 +191,7 @@ documentMetadata=${JSON.stringify(metadata)}
       plan_type,
     });
 
+    console.log(`the orchrestrator results\n`, Orechrestratedresults);
     const { answer, functions, favicon, error } = Orechrestratedresults;
 
     if (answer) {
@@ -205,8 +206,8 @@ documentMetadata=${JSON.stringify(metadata)}
         sent_at: currentTime,
       };
       // update the cache
-      CacheCurrentChat(AiMessage, req.user);
-      StoreQueryAndResponse(user.user_id, question, ModelResponse);
+      await CacheCurrentChat(AiMessage, req.user);
+      await StoreQueryAndResponse(user.user_id, question, ModelResponse, null);
       return res.status(200).send({
         message: "Response generated",
         Answer: ModelResponse,
@@ -233,35 +234,83 @@ export function safeJsonParse(rawResponse) {
 
   let cleanString = rawResponse.trim();
 
-  // 1. Remove Markdown Code Blocks (```json ... ``` or ``` ...)
-  // This is the most common cause of the SyntaxError you're seeing
-  cleanString = cleanString
-    .replace(/^```(?:json)?\n?/i, "")
-    .replace(/\n?```$/i, "");
+  // Step 1 — strip markdown code blocks anywhere in string
+  cleanString = cleanString.replace(/```json\s*/gi, "").replace(/```\s*/gi, "");
 
-  // 2. Extract only the content between the first { and the last }
-  // This handles cases where the model adds "Here is the JSON:" text
+  // Step 2 — find outermost { } boundaries
   const firstBrace = cleanString.indexOf("{");
   const lastBrace = cleanString.lastIndexOf("}");
 
-  if (firstBrace !== -1 && lastBrace !== -1) {
-    cleanString = cleanString.substring(firstBrace, lastBrace + 1);
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    console.error("No JSON object found in response");
+    return null;
   }
 
+  cleanString = cleanString.substring(firstBrace, lastBrace + 1);
+
+  // Step 3 — try direct parse first
   try {
     return JSON.parse(cleanString);
-  } catch (parseError) {
-    console.error("Critical Parse Error. Raw string was:", rawResponse);
+  } catch (e) {}
 
-    // LAST RESORT: Try to fix common minor syntax errors (like trailing commas)
-    try {
-      // Very basic fix for trailing commas before a closing brace/bracket
-      const fixedString = cleanString.replace(/,\s*([\]}])/g, "$1");
-      return JSON.parse(fixedString);
-    } catch (finalError) {
-      return null;
+  // Step 4 — fix unescaped newlines inside string values
+  // this is the main cause of your current failure
+  try {
+    const fixed = cleanString
+      .replace(/\r\n/g, "\\n") // windows newlines
+      .replace(/\r/g, "\\n") // old mac newlines
+      .replace(/\n/g, "\\n") // unix newlines
+      .replace(/\t/g, "\\t") // tabs
+      .replace(/,\s*([\]}])/g, "$1"); // trailing commas
+    return JSON.parse(fixed);
+  } catch (e) {}
+
+  // Step 5 — nuclear option
+  // extract each field manually if JSON is too broken
+  try {
+    const result = {};
+
+    // extract confidence_score
+    const scoreMatch = cleanString.match(/"confidence_score"\s*:\s*([0-9.]+)/);
+    if (scoreMatch) result.confidence_score = parseFloat(scoreMatch[1]);
+
+    // extract thought
+    const thoughtMatch = cleanString.match(
+      /"thought"\s*:\s*"((?:[^"\\]|\\.)*)"/
+    );
+    if (thoughtMatch) result.thought = thoughtMatch[1];
+
+    // extract direct_answer — everything between "direct_answer": " and the next field
+    const answerMatch = cleanString.match(
+      /"direct_answer"\s*:\s*"([\s\S]*?)(?:"\s*,\s*"(?:thought|suggested_functions|confidence_score|enrichment)|\s*"\s*})/
+    );
+    if (answerMatch)
+      result.direct_answer = answerMatch[1]
+        .replace(/\\n/g, "\n")
+        .replace(/\\t/g, "\t")
+        .replace(/\\"/g, '"');
+
+    // extract suggested_functions array
+    const funcMatch = cleanString.match(
+      /"suggested_functions"\s*:\s*(\[[\s\S]*?\])/
+    );
+    if (funcMatch) {
+      try {
+        result.suggested_functions = JSON.parse(funcMatch[1]);
+      } catch {
+        result.suggested_functions = [];
+      }
     }
-  }
+
+    // only return if we got at least confidence_score
+    if (result.confidence_score !== undefined) {
+      console.log("Recovered via manual extraction");
+      return result;
+    }
+  } catch (e) {}
+
+  console.error("All parse attempts failed. Raw:", rawResponse.slice(0, 200));
+  return null;
 }
 //central funciton that will process the request based on the functionname
 export function CentralFunctionProcessor(resultString, user, MessageId) {
@@ -313,11 +362,11 @@ export function CentralFunctionProcessor(resultString, user, MessageId) {
       });
     });
   }
-  if (ParsedObject?.confidence_score && ParsedObject.confidence_score < 0.5) {
-    return { confidence: "low", PreProcessFunctions };
+  if (ParsedObject?.confidence_score >= 0.5) {
+    return { confidence: "high", PreProcessFunctions };
   }
 
-  return { confidence: "high", PreProcessFunctions };
+  return { confidence: "low", PreProcessFunctions };
 }
 
 //call the functions and execute them based on their priority list from the ToolRegistry

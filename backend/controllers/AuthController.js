@@ -9,6 +9,7 @@ import { getIo } from "../websocketsHandler.js/socketIoInitiater.js";
 import { EmailServices } from "../EmailHandlers/EmailTemplates.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
+import { verifyJwtAsync } from "../Middlewares/AuthMiddleware.js";
 export const GenerateRefreshTokens = (
   id,
   email,
@@ -279,24 +280,57 @@ export const HandleUserLogin = async (req, res) => {
 //update the user cookies
 export const updateCookies = async (req, res) => {
   try {
-    const newAccessToken = req.headers.authorization.split(" ")[1];
-    if (!newAccessToken) {
-      return res.status(401).send({ message: "The token was not found" });
-    }
+    const AuthToken = req.cookies["AntiNode_eta_six_version1_AuthToken"];
+    if (!AuthToken) return res.status(401).json({ message: "No token" });
+
+    const decoded = jwt.decode(AuthToken);
+    if (!decoded) return res.status(401).json({ message: "Malformed" });
+
+    const RefreshTokenKey = `user=${decoded.username}'s_userId=${decoded.user_id}`;
+    const cached = await redisClient.get(RefreshTokenKey);
+
+    const refreshToken = cached
+      ? JSON.parse(cached)
+      : (
+          await supabase
+            .from("Tokens")
+            .select("Refresh_Token")
+            .eq("user_id", decoded.user_id)
+            .single()
+        ).data?.Refresh_Token;
+
+    if (!refreshToken)
+      return res.status(401).json({ message: "Session expired" });
+
+    const refreshDecoded = await verifyJwtAsync(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const newAccessToken = GenerateAccessTokens(
+      refreshDecoded.user_id,
+      refreshDecoded.email,
+      refreshDecoded.username,
+      refreshDecoded.AllowedTrainingModels
+    );
+
+    await supabase
+      .from("Tokens")
+      .update({ Access_Token: newAccessToken })
+      .eq("Refresh_Token", refreshToken);
+
+    // This sets the httpOnly cookie properly
     res.cookie("AntiNode_eta_six_version1_AuthToken", newAccessToken, {
       httpOnly: true,
-      secure: true, // Required for sameSite: "none"
-      sameSite: "none", // Allows the cookie to survive the jump from api. to www.
-      domain: ".antinodeai.space", // The leading dot is the "Subdomain Unlock"
+      secure: true,
+      domain: ".antinodeai.space",
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    return res.send({ message: "cookies updated" });
+    return res.status(200).json({ message: "Session refreshed" });
   } catch (error) {
-    await notifyMe(
-      "An error occured while updating the client side cookies",
-      error
-    );
+    notifyMe("An error occured while updating the client side cookies", error);
   }
 };
 // checking for previous refreshtoken validity helper function
@@ -1129,7 +1163,7 @@ export const DeleteNotification = async (req, res) => {
     return res.send({ message: "deleted" });
   } catch (error) {
     // console.error("Server exception:", error);
-    await notifyMe("Notification deletion controller error", error);
+    notifyMe("Notification deletion controller error", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };

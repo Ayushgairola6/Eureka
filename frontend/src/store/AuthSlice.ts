@@ -292,19 +292,13 @@ export const LogoutUser = createAsyncThunk(
 );
 export const SetCookies = createAsyncThunk(
   "update/cookies",
-  async (newToken, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      // const AuthToken = localStorage.getItem(
-      //   "AntiNode_eta_six_version1_AuthToken"
-      // );
       const response = await axios.post(
-        `${BaseApiUrl}/api/user/refreshSession/`,
+        `${BaseApiUrl}/api/user/refreshSession`,
         {},
         {
           withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${newToken}`,
-          },
         }
       );
       return response.data;
@@ -484,8 +478,27 @@ const authSlice = createSlice({
     setUseStatus: (state, action) => {
       state.userStatus = action.payload;
     },
-    SetQueryCount: (state) => {
-      state.Querycount += 1;
+    SetQueryCount: (state, action) => {
+      const modeValue = action.payload;
+      const Quota = state.user?.IsPremiumUser === false ? 5 : 10;
+      // if quota has been exceeded stop updating state
+      if (state.Querycount > Quota) return;
+      if (!modeValue) {
+        state.Querycount += 1;
+      } else if (
+        modeValue.toLowerCase() === "deep_web" ||
+        modeValue.toLowerCase() === "synthesis"
+      ) {
+        state.Querycount += 5;
+      } else {
+        state.Querycount += 1;
+      }
+    },
+    // updates the the authslice chatrooms array value with server sent new room data
+    updateChatRooms: (state, action) => {
+      if (action.payload) {
+        state.chatrooms.push(action.payload);
+      }
     },
   },
   extraReducers: (builder) => {
@@ -558,5 +571,6 @@ export const {
   togglePreference,
   UpdatedPreference,
   setVariant,
+  updateChatRooms,
 } = authSlice.actions;
 export default authSlice.reducer;

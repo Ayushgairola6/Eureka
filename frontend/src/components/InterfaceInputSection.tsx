@@ -34,6 +34,7 @@ import { useState } from "react";
 import { setCurrentStatus } from "../store/websockteSlice.ts";
 import { currentTime } from "../../utlis/Date.ts";
 import { Cloud } from "lucide-react";
+
 type InputProps = {
   textareaRef: React.Ref<HTMLInputElement>;
   isActive: boolean;
@@ -62,7 +63,6 @@ const InputSection: React.FC<InputProps> = ({
   const { user, isLoggedIn } = useAppSelector((state) => state.auth);
 
   const [Showfeatures, SetShowFeatures] = useState(false);
-
 
   // handles user message Insert with placeholder message insert
   function handleUUidCreationAndMessageInsert() {
@@ -112,10 +112,7 @@ const InputSection: React.FC<InputProps> = ({
         toast.info("Please select a query type");
         return;
       }
-      if (queryType === "Summary" && user?.IsPremiumUser === false) {
-        toast.info("Get our premium membership to access this feature.");
-        return;
-      }
+
 
       const { AiId, user_id } = handleUUidCreationAndMessageInsert()
       const data = {
@@ -134,7 +131,7 @@ const InputSection: React.FC<InputProps> = ({
         .then((res) => {
           if (res.message) {
             dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
-            dispatch(SetQueryCount());
+            dispatch(SetQueryCount('private_rag'));
           }
         })
         .catch((err) => {
@@ -175,7 +172,7 @@ const InputSection: React.FC<InputProps> = ({
           if (res.message === "Results found") {
             dispatch(MimicSSE({ id: AiId, delta: res.Answer }));
             dispatch(updateFavicon(res.favicon));
-            dispatch(SetQueryCount());
+            dispatch(SetQueryCount(search_depth));
           }
         })
         .catch((err) => {
@@ -224,7 +221,7 @@ const InputSection: React.FC<InputProps> = ({
             dispatch(updateFavicon(res.favicon));
           }
 
-          dispatch(SetQueryCount());
+          dispatch(SetQueryCount('synthesis'));
         }
       })
       .catch((err) => {
@@ -248,6 +245,11 @@ const InputSection: React.FC<InputProps> = ({
       if (loading === true) {
         return;
       }
+      // check if the user is within quota or not
+      // if (Querycount >= Quota) {
+      //   toast.info('You have exhausted your quota when it resets you will be notified via app and email')
+      //   return;
+      // }
       // if the dropdown menu is visible
       if (shwoOptions === true) {
         dispatch(setShowOptions(false));
@@ -289,7 +291,7 @@ const InputSection: React.FC<InputProps> = ({
         .then((res) => {
           if (res.message) {
             dispatch(MimicSSE({ id: AiId, delta: res.answer }));
-            dispatch(SetQueryCount());
+            dispatch(SetQueryCount('rag'));
           }
         })
         .catch((err) => {
@@ -323,8 +325,9 @@ const InputSection: React.FC<InputProps> = ({
           duration: 0.3,
           ease: "linear",
         }}
-        className="relative overflow-visible w-full px-4 py-3 dark:bg-neutral-950 bg-white border border-gray-200 dark:border-neutral-800 bai-jamjuree-regular rounded-xl z-[3] shadow-lg"
+        className="relative overflow-visible w-full px-4 py-3 dark:bg-neutral-950 bg-white border border-gray-200 dark:border-neutral-800 bai-jamjuree-regular rounded-xl z-[3] shadow-lg "
       >
+
         {/* Input section */}
         <div className="w-full flex items-center gap-3">
           <input
@@ -372,7 +375,7 @@ const InputSection: React.FC<InputProps> = ({
                   dispatch(setShowOptions(!shwoOptions));
                   SetShowFeatures(false);
                   dispatch(setVariant("signal-break"));
-                  dispatch(setQueryType(""));
+                  dispatch(setQueryType("PUBLIC_RAG"));
                 }}
                 className={`p-2 rounded-lg transition-colors duration-150 ${shwoOptions
                   ? "bg-black dark:bg-white text-white dark:text-black"
@@ -389,6 +392,7 @@ const InputSection: React.FC<InputProps> = ({
                   onClick={() => {
                     dispatch(setShowType(!showType));
                     dispatch(setVariant("binary-cut"));
+
                   }}
                   className="p-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-neutral-900 dark:text-white hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors duration-150"
                   title="Query Type"

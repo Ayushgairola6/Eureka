@@ -15,7 +15,7 @@ const Room_And_their_members = new Map();
 let io;
 export const initializeSocketIo = (httpServer) => {
   io = new Server(httpServer, {
-    // transports: ["webtransport", "websocket", "polling"],
+    transports: ["websocket", "polling"],
     cors: {
       origin: [
         "http://localhost:5173",
@@ -43,8 +43,7 @@ export const initializeSocketIo = (httpServer) => {
 
       const AuthTokenFromCookies =
         cookies["AntiNode_eta_six_version1_AuthToken"];
-      const AuthTokenFromHandshake = socket.handshake.auth.token;
-      const AccessToken = AuthTokenFromCookies || AuthTokenFromHandshake;
+      const AccessToken = AuthTokenFromCookies;
 
       if (!AccessToken) {
         return next(new Error("Authentication error: Token not provided"));
@@ -83,13 +82,14 @@ export const initializeSocketIo = (httpServer) => {
             const { data, error } = await supabase
               .from("Tokens")
               .select("Refresh_Token")
-              .eq("user_id", DecodedData.user_id);
+              .eq("user_id", DecodedData.user_id)
+              .single();
 
             if (error || !data || data.length === 0) {
               return next(new Error("Session expired. Please log in again."));
             }
 
-            refreshToken = data[0].Refresh_Token;
+            refreshToken = data.Refresh_Token;
 
             // 6. Update Redis Cache (Matching API Logic)
             await redisClient
@@ -134,13 +134,7 @@ export const initializeSocketIo = (httpServer) => {
           socket.user = refreshDecoded;
           socket.user_id = refreshDecoded.user_id;
 
-          // if (socket.handshake.headers.cookie) {
-          //   socket.handshake.headers.cookie =
-          //     socket.handshake.headers.cookie.replace(
-          //       AccessToken,
-          //       newAccessToken
-          //     );
-          // }
+          socket.emit("session_refresh_required", {}); //update the client side cookie
 
           return next();
         }

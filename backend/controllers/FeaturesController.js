@@ -5,6 +5,10 @@ import {
 } from "../ErroHandler/ErrorHandler.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
+import {
+  FormalSerpAPIresults,
+  GetDataFromSerpApi,
+} from "../OnlineSearchHandler/serpapi_handler.js";
 import { GetDataFromSerper } from "../OnlineSearchHandler/WebCrawler.js";
 import { supabase } from "./supabaseHandler.js";
 
@@ -160,15 +164,16 @@ export async function HandleDeepWebResearch(
     const sanitizedQuery = query.trim();
     if (!sanitizedQuery) continue;
 
-    const data = await GetDataFromSerper(
+    const data = await GetDataFromSerpApi(
       sanitizedQuery,
       user,
-      MessageId,
       room_id,
+      MessageId,
       plan_type
     );
     if (data) {
-      results.push(data);
+      const extractedUrls = FormalSerpAPIresults(data); //extract the urls from serp results
+      results.push(extractedUrls.flat());
     }
 
     await new Promise((res) => setTimeout(res, 700));

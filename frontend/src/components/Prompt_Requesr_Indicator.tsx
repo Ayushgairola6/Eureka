@@ -2,6 +2,7 @@ import { GitMerge, Globe } from 'lucide-react';
 import { useAppSelector } from '../store/hooks';
 import { IoHourglass, IoSubway } from 'react-icons/io5';
 import { motion } from 'framer-motion'
+import { RiCommunityFill } from 'react-icons/ri';
 const HUD_CONFIGS = [
 
     {
@@ -36,6 +37,14 @@ const HUD_CONFIGS = [
         bgColor: "bg-yellow-600",
         icon: <IoSubway size={14} className='animate-bounce' />,
     },
+    {
+        name: "PUBLIC_RAG",
+        label: "PUBLIC_RAG",
+        idCode: "PUBLIC_RAG_01",
+        color: "text-teal-600",
+        bgColor: "bg-teal-600",
+        icon: <RiCommunityFill size={14} className='animate-bounce' />
+    }
 ];
 
 
