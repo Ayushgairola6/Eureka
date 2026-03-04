@@ -15,7 +15,7 @@ export function HandleSSEConnection(url: any, AiId: string, dispatch: any) {
   evtSource.onmessage = (e) => {
     if (e.data === "[DONE]") {
       dispatch(finalizeMessage({ id: AiId }));
-      SetQueryCount();
+      SetQueryCount("none");
       evtSource.close();
       return;
     }
