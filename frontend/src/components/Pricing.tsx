@@ -1,8 +1,15 @@
 import { FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import { BiPurchaseTag } from "react-icons/bi";
 import { Crown, Target, Zap } from "lucide-react";
-
-
+import axios from 'axios';
+import { toast } from "sonner";
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
+interface Plan {
+  id: number, planName: string, amount: number, currency: string,
+}
+interface paymentObject {
+  razorpay_payment_id: string, razorpay_order_id: string, razorpay_signature: string
+}
 const Pricing = () => {
   // const stripePromise = loadStripe('your-publishable-key-here');
   const PlanDetails = [
@@ -31,11 +38,12 @@ const Pricing = () => {
       validity: "Forever",
       cta: "Try now",
       highlight: false,
+      amount: 0, currency: 'INR'
     },
     {
       id: 2,
       planName: "Architect",
-      price: "$25",
+      price: "$20",
       label: "Easy to use",
       description:
         "For teams and individuals doing research, content creation and small scale team managements.",
@@ -52,7 +60,8 @@ const Pricing = () => {
       not_available: ["Custom Enterprise RAG", "Dedicated Room Infrastructure", 'Dedicated support', "Long memory retention"],
       validity: "Per Month",
       cta: "Order now",
-      highlight: true, // Use this to apply your "Arctic Neon" glow to this card
+      highlight: true,
+      amount: 20, currency: 'INR'
     },
     {
       id: 4, // Added as a "Sprint" option
@@ -71,12 +80,12 @@ const Pricing = () => {
 
       validity: "7 Days",
       cta: "Order now",
-      isPass: true, // Special flag for styling
+      isPass: true, amount: 10, currency: 'INR'
     },
     {
       id: 3,
       planName: "Planners",
-      price: "120$",
+      price: "50$",
       label: "Large scale",
       description:
         "Full set of features for large teams and individuals working as freelancers, consultants etc specializations.",
@@ -94,31 +103,61 @@ const Pricing = () => {
       not_available: [],
       validity: "month",
       cta: "Order now",
-      highlight: false,
+      highlight: false, amount: 10, currency: 'INR'
     },
-    // {
-    //   id: 3,
-    //   planName: "Ecosystem",
-    //   price: "Custom",
-    //   label: "Enterprise Scale",
-    //   description:
-    //     "Full-scale intelligence infrastructure for large organizations.",
-    //   features: [
-    //     "Everything in Architect",
-    //     "Unlimited Collaborative Rooms",
-    //     "Unlimited Private Document RAG",
-    //     "Custom Model Fine-Tuning",
-    //     "White-Label Knowledge Hub",
-    //     "API Access for Workflows",
-    //     "Dedicated Support Engineer",
-    //     "SSO & Advanced Security",
-    //   ],
-    //   not_available: [],
-    //   validity: "Annual/Custom",
-    //   cta: "Contact Sales",
-    //   highlight: false,
-    // },
+
   ];
+
+  async function verifyPayment(paymentObject: paymentObject) {
+    if (!paymentObject) return;
+
+    try {
+      const response = await axios.post(`${BaseApiUrl}/api/payments/verify-payment`, paymentObject, {
+        withCredentials: true
+      })
+
+      if (response.data?.message) {
+        toast.info(response.data.message);
+      }
+      return response.data;
+    } catch (error: any) {
+      console.error(error);
+    }
+  }
+  async function HandleOrderCreation(plan: Plan) {
+    if (!plan || !plan.amount || !plan.currency) return;
+
+    try {
+      const response = await axios.post(`${BaseApiUrl}/api/payments/create-order`, { amount: plan.amount, currency: plan.currency, plan_name: plan.planName }, {
+        withCredentials: true,
+      })
+
+      if (response.data.Paymentdata) {
+        const paymentinfo = response.data.Paymentdata
+
+
+        const options = {
+          key: "rzp_test_SNXKC107qupHAG", // Public Key
+          amount: paymentinfo.amount,    // From your server
+          currency: "INR",
+          name: "AntiNodeAI",
+          order_id: paymentinfo.id,      // The order_id created by your server
+          handler: function (paymentinfo: paymentObject) {
+            verifyPayment(paymentinfo);
+          },
+          prefill: {
+            name: "User Name",
+            email: "user@example.com"
+          },
+          theme: { color: "#3399cc" }
+        };
+        const rzp1 = new (window as any).Razorpay(options);
+        rzp1.open();
+      }
+      return response.data;
+    } catch (error: any) {
+    }
+  }
   return (
     <>
       <div id="pricing" className="bg-white dark:bg-[#020202] py-24 w-full relative overflow-hidden">
@@ -207,6 +246,7 @@ const Pricing = () => {
                   </div>
 
                   <button
+                    onClick={() => HandleOrderCreation(plan)}
                     className={`w-full py-4 rounded-sm space-grotesk font-bold text-[11px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 transition-all active:scale-95
                     ${isRecommended
                         ? "bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-500/20"

@@ -15,7 +15,7 @@ const RefundPolicy = () => {
             </h2>
             <p>
               Since we provide immediate digital access, we do provide refunds
-              if requested .
+              if requested and refunds take 1 - 5 buisness days to reflect on user account and dashboard .
             </p>
           </section>
 
@@ -39,7 +39,7 @@ const RefundPolicy = () => {
             </h2>
             <p>
               Contact us within 24 hours of purchase at:
-              ayushgairola2002@yourdomain.com
+              support@antinodeai.space
             </p>
             <p className="text-sm text-red-400 mt-2">
               * Include your purchase receipt and reason for refund request.
@@ -55,7 +55,6 @@ const RefundPolicy = () => {
               <li>Payment security and compliance</li>
               <li>Invoice generation</li>
               <li>Tax calculations</li>
-              {/* <li>Initial refund requests</li> */}
             </ul>
           </section>
 

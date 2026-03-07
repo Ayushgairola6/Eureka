@@ -15,6 +15,7 @@ import { ChatsRouter } from "./routers/ChatsRouter.js";
 import { ReviewRouter } from "./routers/ReviewRouter.js";
 import { API_Router } from "./routers/ApiRouter.js";
 import { SdkRouter } from "./routers/sdkRouter.js";
+import { PaymentsRouter } from "./routers/PaymentsRouter.js";
 import "./controllers/supabaseHandler.js";
 // import "./Tests/tests.js";
 // import formData from 'express-form-data';
@@ -47,10 +48,13 @@ app.use(cookieParser());
 app.use(express.urlencoded());
 app.use("/api/", Router);
 app.use("/api/", AuthRouter);
+app.use("/api", PaymentsRouter);
+app.use("/api/", ChatsRouter);
+
 app.use("/api/", ReviewRouter);
 app.use("/api/", API_Router);
+
 app.use("/api/", SdkRouter);
-app.use("/api/", ChatsRouter);
 
 httpServer.listen(process.env.PORT, "0.0.0.0", () => {
   console.log(`Server has started on port ${process.env.PORT}`);

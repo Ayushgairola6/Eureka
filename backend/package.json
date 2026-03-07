@@ -54,6 +54,7 @@
     "officeparser": "^4.2.0",
     "pdf-parse": "^1.1.1",
     "pdf.js-extract": "^0.2.1",
+    "razorpay": "^2.9.6",
     "redis": "^5.8.2",
     "remark-parse": "^11.0.0",
     "serpapi": "^2.2.1",
