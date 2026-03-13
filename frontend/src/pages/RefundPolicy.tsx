@@ -10,12 +10,11 @@ const RefundPolicy = () => {
 
         <div className="space-y-6">
           <section>
-            <h2 className="text-xl font-semibold mb-3 bai-jamjuree-semibold">
-              Digital Service Refunds
-            </h2>
+            <h2 className="text-xl font-semibold mb-3">Digital Service Refunds</h2>
             <p>
-              Since we provide immediate digital access, we do provide refunds
-              if requested and refunds take 1 - 5 buisness days to reflect on user account and dashboard .
+              Since we provide immediate digital access, we provide refunds if requested
+              within 24 hours of purchase. Approved refunds will be processed and
+              credited to the **original payment method** within **5-7 business days**.
             </p>
           </section>
 

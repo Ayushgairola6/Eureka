@@ -53,6 +53,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import RefundPolicy from "./pages/RefundPolicy.tsx";
 import UserChatRooms from "./pages/Rooms.tsx";
 import { setCurrenTheme } from "./store/InterfaceSlice.ts";
+import { ContactUs } from "./pages/ContactUs.tsx";
+import { UnfinishedResearchPage } from "./pages/UnfinishedResearch.tsx";
 
 // stripe api
 // const stripePromise = loadStripe(
@@ -263,6 +265,7 @@ const App = () => {
             <Route element={<EmailVerification />} path="/user/verify-email" />
             <Route element={<Interface />} path="/Interface"></Route>
             <Route element={<UserChatRooms />} path="/user/rooms" />
+            <Route element={<UnfinishedResearchPage />} path='/user/research-archive' />
             <Route element={<Login />} path="/Login" />
             <Route element={<Register />} path="/Register" />
             <Route element={<Feedback />} path="/Feedback" />
@@ -273,6 +276,10 @@ const App = () => {
             <Route
               element={<TermsAndConditions />}
               path="/terms-and-conditions"
+            />
+            <Route
+              element={<ContactUs />}
+              path="/Contact-Us"
             />
             <Route element={<LandingPage />} path="/#pricing"></Route>
 

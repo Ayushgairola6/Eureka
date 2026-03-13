@@ -1,163 +1,184 @@
 import { FiArrowRight, FiCheckCircle } from "react-icons/fi";
-import { BiPurchaseTag } from "react-icons/bi";
 import { Crown, Target, Zap } from "lucide-react";
-import axios from 'axios';
-import { toast } from "sonner";
-const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
-interface Plan {
-  id: number, planName: string, amount: number, currency: string,
-}
-interface paymentObject {
-  razorpay_payment_id: string, razorpay_order_id: string, razorpay_signature: string
-}
+// import axios from 'axios';
+// import { toast } from "sonner";
+// import { useAppSelector } from '../store/hooks';
+// import { IoBagCheckOutline, IoShieldCheckmarkOutline } from 'react-icons/io5';
+
+// const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
+// interface Plan {
+//   id: number, planName: string, amount: number, currency: string, duration: string, plan_type: string
+// }
+
 const Pricing = () => {
   // const stripePromise = loadStripe('your-publishable-key-here');
   const PlanDetails = [
     {
       id: 1,
-      planName: "FREE",
+      planName: "Free",
       price: "$0",
-      label: "Free Forever",
-      description:
-        "Ideal for verifying facts and exploring the public knowledge base.",
+      label: "Start exploring",
+      description: "Get a feel for AntiNode. Verify facts, explore the knowledge base, and try surface web research.",
       features: [
-        "One time limited quota",
-        "Access to community contributed public knowledgebase",
-        "Limited surface web search",
-        "Very Short term memory for AI", // Sells the "Long Memory" upgrade
-        "2 Private Documents (max 5 pgs)",
-        "Standard AI Response Mode",
+        "Limited monthly shards",
+        "Surface web search (basic)",
+        "2 private documents (up to 5 pages each)",
+        "Access to public knowledge base",
+        "Standard AI responses",
+        "Short-term AI memory",
       ],
       not_available: [
-        "Advanced mutlti source analysis",
-        "Autonomus deep web search",
-        "Collaborative AntiNode Rooms",
-        "Persistent Long-Term Memory",
-        "Unlimited Private RAG",
-      ],
-      validity: "Forever",
-      cta: "Try now",
+        "Multi-source synthesis mode",
+        "Deep web research",
+        "AntiNode Rooms",
+        "Persistent long-term memory",
+        "Unlimited private documents",
+      ], validity: "forever",
+      cta: "Start for free",
       highlight: false,
-      amount: 0, currency: 'INR'
+      amount: 0, currency: 'USD', plan_type: "free", duration: 0
     },
     {
       id: 2,
       planName: "Architect",
       price: "$20",
-      label: "Easy to use",
-      description:
-        "For teams and individuals doing research, content creation and small scale team managements.",
+      label: "Most popular",
+      description: "For students, researchers, and professionals who research regularly and need answers they can trust.",
       features: [
-        "Everything in Explorer",
-        "Advanced multi source synthesis mode", // Your core differentiator
-        "10 Antinode rooms",
-        "Solo & Workspace session only Persistent Memory.",
-        "Unlimited Queries & Web Search ",
-        "50 Private Documents upto 50mb size",
+        "Unlimited shards & web search",
+        "Multi-source synthesis — analyze multiple documents together",
+        "Deep web research with intent decomposition",
+        "50 private documents (up to 50MB)",
+        "10 AntiNode collaborative rooms",
+        "Persistent memory across sessions",
+        "Full transparency layer",
         "24/7 customer support",
-        "Transparency layer always visible"
       ],
-      not_available: ["Custom Enterprise RAG", "Dedicated Room Infrastructure", 'Dedicated support', "Long memory retention"],
-      validity: "Per Month",
-      cta: "Order now",
+      not_available: [
+        "Enterprise RAG",
+        "Dedicated infrastructure",
+        "Extended memory retention",
+      ],
+      validity: "per month",
+      cta: "Get Architect",
       highlight: true,
-      amount: 20, currency: 'INR'
+      amount: 20, currency: 'USD', plan_type: "Architect", duration: '30'
     },
     {
       id: 4, // Added as a "Sprint" option
       planName: "Sprint Pass",
-      price: "$10",
-      label: "Single time purchase",
-      description: "Access to core features without commitment.",
+      price: "$8",
+      label: "No commitment",
+      description: "Full access for 14 days. Perfect for a research project, assignment, or trying before committing.",
       features: [
-        "All Architect Features",
-        "One time customer support",
-        "Limited AntiNode rooms",
-        "50 queries per day quota",
-        'Short solo use AI memory'
+        "All Architect features",
+        "50 shards per day",
+        "Limited AntiNode Rooms",
+        "Short-term AI memory",
+        "One-time customer support",
       ],
-      not_available: ["Large workspace and Solor AI memory clusters", "Unlimited shards", 'Full time support'],
-
-      validity: "7 Days",
-      cta: "Order now",
-      isPass: true, amount: 10, currency: 'INR'
+      not_available: [
+        "Persistent long-term memory",
+        "Unlimited shards",
+        "Full-time support",
+      ],
+      validity: "14 days",
+      cta: "Get Sprint Pass",
+      isPass: true, amount: 8, currency: 'USD', plan_type: "sprint pass", duration: '7'
     },
     {
       id: 3,
       planName: "Planners",
-      price: "50$",
-      label: "Large scale",
-      description:
-        "Full set of features for large teams and individuals working as freelancers, consultants etc specializations.",
+      price: "$50",
+      label: "For power users",
+      description: "For freelancers, consultants, and teams doing heavy research and analysis at scale.",
       features: [
         "Everything in Architect",
-        "Unlimited Antinode Collaborative Rooms",
-        "Unlimited Private Document RAG",
-        "Dedicated 24/7 customer support",
-        "Best orchrestration algorithms",
-        "Better model reasoning capabilities and algorithms.",
-        "Deep transparency layer visibility",
-        "Unlimited Private document summarization and analysis",
-        'Longer workspace and Solor use AI memories'
+        "Unlimited AntiNode collaborative rooms",
+        "Unlimited private document analysis",
+        "Extended long-term AI memory",
+        "Best orchestration algorithms",
+        "Enhanced reasoning capabilities",
+        "Dedicated 24/7 priority support",
+        "Deep transparency layer",
       ],
       not_available: [],
-      validity: "month",
-      cta: "Order now",
-      highlight: false, amount: 10, currency: 'INR'
+      validity: "per month",
+      cta: "Get Planners",
+      highlight: false, amount: 50, currency: 'USD', plan_type: "Planners", duration: '40'
     },
 
   ];
 
-  async function verifyPayment(paymentObject: paymentObject) {
-    if (!paymentObject) return;
+  // const { user } = useAppSelector(s => s.auth);
+  // const [processingPayment, setProcessingPayment] = React.useState(false);
+  // const [verifyingPayment, setVerifyingPayment] = React.useState(false)
+  // const [chosenPlan, setChosenPlan] = React.useState<number | null>(null)
+  // async function verifyPayment(paymentObject: any) {
+  //   if (!paymentObject) return;
+  //   setVerifyingPayment(true)
+  //   try {
+  //     const response = await axios.post(`${BaseApiUrl}/api/payments/verify-payment`, paymentObject, {
+  //       withCredentials: true
+  //     })
 
-    try {
-      const response = await axios.post(`${BaseApiUrl}/api/payments/verify-payment`, paymentObject, {
-        withCredentials: true
-      })
+  //     if (response.data?.message) {
+  //       toast.info(response.data.message);
+  //     }
+  //     setVerifyingPayment(false)
+  //     setChosenPlan(null)
 
-      if (response.data?.message) {
-        toast.info(response.data.message);
-      }
-      return response.data;
-    } catch (error: any) {
-      console.error(error);
-    }
-  }
-  async function HandleOrderCreation(plan: Plan) {
-    if (!plan || !plan.amount || !plan.currency) return;
+  //     return response.data;
+  //   } catch (error: any) {
+  //     setChosenPlan(null)
 
-    try {
-      const response = await axios.post(`${BaseApiUrl}/api/payments/create-order`, { amount: plan.amount, currency: plan.currency, plan_name: plan.planName }, {
-        withCredentials: true,
-      })
+  //     toast.error(error?.response?.data?.message || "An error occured while verifying the payment if you face any issues you can connect with our support at support@antinodeai.space.")
+  //     setVerifyingPayment(false)
 
-      if (response.data.Paymentdata) {
-        const paymentinfo = response.data.Paymentdata
+  //   }
+  // }
+  // async function HandleOrderCreation(plan: any) {
+  //   if (!plan || !plan.amount || !plan.currency) return;
+  //   setProcessingPayment(true)
+  //   setChosenPlan(plan.id)
+  //   try {
+  //     const response = await axios.post(`${BaseApiUrl}/api/payments/create-order`, { amount: plan.amount, plan_name: plan.planName, duration: plan.duration, plan_type: plan.plan_type }, {
+  //       withCredentials: true,
+  //     })
 
 
-        const options = {
-          key: "rzp_test_SNXKC107qupHAG", // Public Key
-          amount: paymentinfo.amount,    // From your server
-          currency: "INR",
-          name: "AntiNodeAI",
-          order_id: paymentinfo.id,      // The order_id created by your server
-          handler: function (paymentinfo: paymentObject) {
-            verifyPayment(paymentinfo);
-          },
-          prefill: {
-            name: "User Name",
-            email: "user@example.com"
-          },
-          theme: { color: "#3399cc" }
-        };
-        const rzp1 = new (window as any).Razorpay(options);
-        rzp1.open();
-      }
-      return response.data;
-    } catch (error: any) {
-    }
-  }
+  //     if (response.data.Paymentdata) {
+  //       const paymentinfo = response.data.Paymentdata
+
+
+  //       const options = {
+  //         key: "rzp_test_SNXKC107qupHAG", // Public Key
+  //         amount: paymentinfo.amount,
+  //         currency: "INR",
+  //         name: "AntiNodeAI",
+  //         order_id: paymentinfo.id,
+  //         handler: function (paymentinfo: any) {
+  //           verifyPayment(paymentinfo);
+  //         },
+  //         prefill: {
+  //           name: user?.username,
+  //           email: user?.email
+  //         },
+  //         theme: { color: "#3399cc" }
+  //       };
+  //       const rzp1 = new (window as any).Razorpay(options);
+  //       rzp1.open();
+  //     }
+  //     return response.data;
+  //   } catch (error: any) {
+  //     setProcessingPayment(false)
+  //     setChosenPlan(null)
+
+  //     toast.error(error?.response?.data.message || "An error occured while processing your payment")
+
+  //   }
+  // }
+  // const isBusy = processingPayment || verifyingPayment
   return (
     <>
       <div id="pricing" className="bg-white dark:bg-[#020202] py-24 w-full relative overflow-hidden">
@@ -244,16 +265,37 @@ const Pricing = () => {
                       </div>
                     ))}
                   </div>
+                  {/* ${isBusy && plan.id === chosenPlan ? "cursor-not-allowed opacity-70" : "active:scale-95"} */}
 
                   <button
-                    onClick={() => HandleOrderCreation(plan)}
-                    className={`w-full py-4 rounded-sm space-grotesk font-bold text-[11px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 transition-all active:scale-95
-                    ${isRecommended
+                    // onClick={() => !isBusy && HandleOrderCreation(plan)}
+                    // disabled={isBusy}
+                    className={`
+    w-full py-4 rounded-sm space-grotesk font-bold text-[11px] tracking-[0.2em] uppercase 
+    flex items-center justify-center gap-3 transition-all duration-300
+    ${isRecommended
                         ? "bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-500/20"
-                        : "bg-black text-white dark:bg-white dark:text-black hover:opacity-80"
-                      }`}
+                        : "bg-black text-white dark:bg-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200"
+                      }
+  `}
                   >
-                    {plan.cta} <BiPurchaseTag size={14} />
+                    {/* {processingPayment && plan.id === chosenPlan ? (
+                      <>
+                        <LucideClockFading className="animate-spin" size={16} />
+                        <span>Securing Order...</span>
+                      </>
+                    ) : verifyingPayment && plan.id === chosenPlan ? (
+                      <>
+                        <IoShieldCheckmarkOutline className="animate-pulse" size={16} />
+                        <span>Verifying Payment...</span>
+                      </>
+                    ) : (
+                      <>
+                        <IoBagCheckOutline size={16} />
+                        <span>{plan.cta}</span>
+                      </>
+                    )} */}
+                    {plan.cta}
                   </button>
                 </div>
               );

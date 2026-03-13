@@ -65,7 +65,22 @@ const PrivacyPolicy = () => {
               </li> */}
             </ul>
           </section>
+          <section>
+            <h2 className="text-xl font-semibold mb-3">Data Retention</h2>
+            <p>
+              We retain your personal information only for as long as is necessary for the
+              purposes set out in this Privacy Policy. Account data is deleted within 30 days
+              of a formal account deletion request.
+            </p>
+          </section>
 
+          <section>
+            <h2 className="text-xl font-semibold mb-3">Cookies</h2>
+            <p>
+              We use essential cookies to maintain your session and provide authentication
+              services. By using AntiNode, you consent to the use of these necessary cookies.
+            </p>
+          </section>
           <section>
             <h2 className="text-xl font-semibold mb-3 bai-jamjuree-semibold">
               Your Rights
@@ -82,13 +97,13 @@ const PrivacyPolicy = () => {
             <h2 className="text-xl font-semibold mb-3 bai-jamjuree-semibold">
               Contact
             </h2>
-            <p>For privacy concerns: Ayushgairola200@gmail.com</p>
+            <p>For privacy concerns: support@antinodeai.space</p>
           </section>
         </div>
         <div className="mt-8 p-4 bg-yellow-100 text-black rounded">
           <p className="text-sm">
             <strong>Note:</strong> If you have any questions regarding any of
-            the mentioned points you can email us at ayushgairola2002@gmail.com
+            the mentioned points you can email us at support@antinodeai.space
             or send you feedback at{" "}
             <Link
               to="/Feedback"

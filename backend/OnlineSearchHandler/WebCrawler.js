@@ -152,7 +152,6 @@ export const ProcessForLLM = async (
             });
           }
 
-          // 1. Quick Check: If Cheerio ($) sees the page is empty or tiny, skip immediately
           if (body.length < 500) return;
 
           const { document } = parseHTML(body);
@@ -200,7 +199,7 @@ export const ProcessForLLM = async (
                 MessageId,
                 status: {
                   message: "Cleaning_Context",
-                  data: [ProcessedPage.content.slice(0, 500)],
+                  data: [ProcessedPage.content.slice(0, 1000)],
                 },
               });
             } else {
@@ -208,7 +207,7 @@ export const ProcessForLLM = async (
                 MessageId,
                 status: {
                   message: "Cleaning_Context",
-                  data: [ProcessedPage.content.slice(0, 500)],
+                  data: [ProcessedPage.content.slice(0, 1000)],
                 },
               });
             }
@@ -223,7 +222,6 @@ export const ProcessForLLM = async (
     await crawler.run(validLinks);
     return dataset;
   } catch (err) {
-    console.error("An error in the process llm handler\n", err);
     notifyMe("An error in the process llm handler\n", err);
     return [];
   }

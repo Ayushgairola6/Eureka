@@ -5,7 +5,7 @@ import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
 import QueryType from "./Query_type.tsx";
 import { v4 as uuid } from "uuid";
 // import axios from "axios";
-import { IoOptions } from "react-icons/io5";
+import { IoAnalyticsOutline, IoOptions } from "react-icons/io5";
 import { BiHourglass, BiSend, BiUpload } from "react-icons/bi";
 import { BsMic, BsPlusLg } from "react-icons/bs";
 import { GoZap } from "react-icons/go";
@@ -25,6 +25,10 @@ import {
   setLoading,
   updateFavicon,
   ProcessSynthesis,
+  ShowVerificationPopup,
+  setIsVerificationMode,
+  VerificationModeWebSearch,
+  UpdateResearchData,
 } from "../store/InterfaceSlice.ts";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
@@ -34,6 +38,7 @@ import { useState } from "react";
 import { setCurrentStatus } from "../store/websockteSlice.ts";
 import { currentTime } from "../../utlis/Date.ts";
 import { Cloud } from "lucide-react";
+import { MdAutoFixHigh } from "react-icons/md";
 
 type InputProps = {
   textareaRef: React.Ref<HTMLInputElement>;
@@ -57,13 +62,14 @@ const InputSection: React.FC<InputProps> = ({
     queryType,
     selectedDoc,
     shhowUserForm,
-    SynthesisDocuments, search_depth
+    SynthesisDocuments, search_depth, isVerificatioMode
   } = useAppSelector((state) => state.interface);
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAppSelector((state) => state.auth);
+  const { user, isLoggedIn, Querycount } = useAppSelector((state) => state.auth);
 
   const [Showfeatures, SetShowFeatures] = useState(false);
 
+  const Quota = user?.IsPremiumUser === false ? 5 : Infinity
   // handles user message Insert with placeholder message insert
   function handleUUidCreationAndMessageInsert() {
     const user_id = uuid();
@@ -195,6 +201,27 @@ const InputSection: React.FC<InputProps> = ({
     }
   };
 
+  // when verifiaction mode is active and the mode is web_search
+  const VerificationGradeSearchWeb = async () => {
+    if (isVerificatioMode === false && queryType !== 'Web Search') return toast.error("Invalid mode selection.")
+
+    const { AiId, user_id } = handleUUidCreationAndMessageInsert()
+
+    const information = {
+      question: question, web_search_depth: search_depth, MessageId: AiId, userMessageId: user_id
+    }
+    dispatch(VerificationModeWebSearch(information)).unwrap().then((res) => {
+      if (res?.message) {
+        toast.message(res.message)
+        dispatch(UpdateResearchData(res));
+        dispatch(ShowVerificationPopup(res?.MessageId))
+      }
+    }).catch(err => toast.error(err))
+
+  }
+
+
+  // synthesis hanadler
   const PerformSynthesis = async () => {
     if (!question || typeof question !== "string") {
       return;
@@ -222,6 +249,8 @@ const InputSection: React.FC<InputProps> = ({
           }
 
           dispatch(SetQueryCount('synthesis'));
+        } else if (res.message === "ReadyToSynthesize") {
+          dispatch(ShowVerificationPopup(res?.message_id))
         }
       })
       .catch((err) => {
@@ -235,6 +264,7 @@ const InputSection: React.FC<InputProps> = ({
       })
       .finally(() => setIsActive(false));
   };
+
   // centeral function that manages when to call which function
   const handleAsk = async () => {
     try {
@@ -246,10 +276,10 @@ const InputSection: React.FC<InputProps> = ({
         return;
       }
       // check if the user is within quota or not
-      // if (Querycount >= Quota) {
-      //   toast.info('You have exhausted your quota when it resets you will be notified via app and email')
-      //   return;
-      // }
+      if (Querycount >= Quota) {
+        toast.info('You have exhausted your quota when it resets you will be notified via app and email')
+        // return;
+      }
       // if the dropdown menu is visible
       if (shwoOptions === true) {
         dispatch(setShowOptions(false));
@@ -261,7 +291,12 @@ const InputSection: React.FC<InputProps> = ({
       }
       // if private doc is not selected and query type web search is chosen
       else if (!selectedDoc && queryType === "Web Search") {
-        await SearchWeb();
+        if (isVerificatioMode === false) {
+          await SearchWeb();
+
+        } else {
+          await VerificationGradeSearchWeb()
+        }
         return;
       } else if (queryType === "Synthesis" && !selectedDoc) {
         await PerformSynthesis();
@@ -284,6 +319,7 @@ const InputSection: React.FC<InputProps> = ({
         subCategory: subCategory,
         MessageId: AiId,
         userMessageId: user_id,
+
       };
       // get answers
       dispatch(QueryAIQuestions(data))
@@ -456,12 +492,46 @@ const InputSection: React.FC<InputProps> = ({
         )}
 
         {/* Status display */}
-        {isActive && (queryType || category) && (
+        {isActive && (queryType || category) && (<div className='flex items-center justify-between px-2'>
+
+
           <div className="mt-3 pt-2 border-t border-gray-200 dark:border-neutral-800">
             <span className="inline-block px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-neutral-900 rounded space-grotesk">
               {queryType ? `Process: ${queryType}` : `Category: ${category}`}
             </span>
           </div>
+          {/* verification mode toggle */}
+          <section className="pt-3  flex items-center justify-center gap-2">
+            <ul className='bai-jamjuree-semibold text-xs'>Analyst Mode</ul>
+
+            <button
+              onClick={() => dispatch(setIsVerificationMode())}
+              role="switch"
+              aria-checked={isVerificatioMode}
+              className={`
+    relative inline-flex h-6 w-12 shrink-0 cursor-pointer items-center rounded-full 
+    border-2 border-transparent transition-colors duration-300 ease-in-out 
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+    ${isVerificatioMode ? 'bg-blue-600' : 'bg-gray-300 dark:bg-neutral-700'}
+  `}
+            >
+              <span className="sr-only">Toggle Verification Mode</span>
+              <span
+                className={` flex items-center justify-center
+      pointer-events-none  h-5 w-5 transform rounded-full 
+      bg-white shadow-md ring-0 transition duration-300 ease-in-out
+      ${isVerificatioMode ? 'translate-x-6' : 'translate-x-0'}
+    `}
+              >
+                <ul className='m-auto'>
+                  {isVerificatioMode === true ? (<IoAnalyticsOutline size={14} color="black" />) : (<MdAutoFixHigh size={14} color="black" />)}
+                </ul>
+              </span>
+            </button>
+
+          </section>
+
+        </div>
         )}
       </motion.section >
     </>

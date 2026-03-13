@@ -31,9 +31,14 @@ const Navbar = () => {
       to: "/user/dashboard",
       tab: "Control Center",
       requiresAuth: true,
+    }, {
+      label: "Research Archive",
+      to: '/user/research-archive',
+      tab: "Research Archive",
+      requiresAuth: true
     },
-    { label: "Workspace", to: "/user/rooms", tab: "Workspace" },
-    { label: "Archives", to: "/user/misallaneous-chats", tab: "Archives" },
+    { label: "Workspace", to: "/user/rooms", tab: "Workspace", requiresAuth: true },
+    { label: "Archives", to: "/user/misallaneous-chats", tab: "Archives", requiresAuth: true },
     { label: "Support", to: "/Feedback", tab: "Support" },
 
   ];

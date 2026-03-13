@@ -9,6 +9,8 @@ import WebSearchStatus from "./web_search_status.tsx";
 import { ChatMessage } from "./Streaming_Component.tsx";
 import { AgentWelcome } from "./InterfaceWelcome_Components.tsx";
 import { ChevronDown } from "lucide-react";
+import { FinalizePopup } from "./Reject_Popup.tsx";
+import { ResearchDataCenter } from "./ResearchDataRenders.tsx";
 
 
 type ChatBubbleProps = {
@@ -22,7 +24,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   setIsActive,
 }) => {
   const ReceivedResponseId: any = []; //just a tracker array
-  const { Chats, ResponseStatus } = useAppSelector(
+  const { Chats, ResponseStatus, MessageToVerify, ResearchData } = useAppSelector(
     (state) => state.interface
   );
   const [showCurrent, setShowCurrent] = React.useState({ id: '', status: false })
@@ -94,72 +96,79 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                     setShowDocUsed={setShowDocUsed}
                   />
                 )}
-                {chat.sent_by === 'AntiNode' && chat.message.content !== '' && web_search_status.some((e) => e.MessageId === chat.id) && <WebSearchStatus chat={chat} lastMessageId={chat.id} />}
-                {chat.sent_by === "AntiNode" &&
-                  chat.message.content === ""
-                  ? (
-                    web_search_status?.length > 0 ? (
-                      <WebSearchStatus chat={chat} lastMessageId={chat.id} />
+
+                {chat.sent_by === "AntiNode" && (chat.message.content === "" || web_search_status.some(e => e.MessageId === chat.id)) && (
+                  <>
+                    {web_search_status.length > 0 ? (
+                      <>
+                        {web_search_status?.some((item) => item.MessageId === chat.id) && <WebSearchStatus chat={chat} lastMessageId={chat.id} />}
+                        {ResearchData?.some((del) => del?.MessageId === chat.id) && <ResearchDataCenter />}
+                        {MessageToVerify?.includes(chat.id) && <FinalizePopup message={chat} />}
+
+                      </>
                     ) : (
-                      <Loader />
-                    )
-                  ) : (<>
-                    <div
-                      className={`relative group flex flex-col gap-2 mb-6 ${chat.sent_by === "You" ? "items-end ml-auto" : "items-start"
-                        }`}
-                    >
-                      {/* Header Label: Keeping that Industrial vibe */}
-                      <div className="flex items-center justify-center gap-2 px-1">
-                        <ul>
-                          {chat.sent_by === "You" && <button onClick={() => {
-                            if (showCurrent?.id === chat.id) {
-                              setShowCurrent({ id: '', status: false })
-                            } else {
-                              setShowCurrent({ id: chat?.id.toString(), status: true })
-                            }
-                          }}><ChevronDown size={15} /></button>}
-                        </ul>
-                        <span className="text-[10px] font-mono font-bold dark:text-gray-300 text-gray-700 uppercase tracking-widest">
-                          {chat.sent_by === "You" ? ">> ORIGIN_USER" : ">> ANTINODE_RESPONSE"}
-                        </span>
-                        <div className={`h-[1px] w-4 ${chat.sent_by === "You" ? "bg-orange-600" : "bg-sky-600"}`} />
-                      </div>
-                      <div
-                        className={`relative transition-all duration-500 ease-in-out border shadow-sm
+                      chat.message.content === "" && <Loader />
+                    )}
+                  </>
+                )}
+
+                {chat.message.content !== '' && < div
+                  className={`relative group flex flex-col gap-2 mb-6 ${chat.sent_by === "You" ? "items-end ml-auto" : "items-start"
+                    }`}
+                >
+
+                  {/* Header Label: Keeping that Industrial vibe */}
+                  <div className="flex items-center justify-center gap-2 px-1">
+                    <ul>
+                      {chat.sent_by === "You" && <button onClick={() => {
+                        if (showCurrent?.id === chat.id) {
+                          setShowCurrent({ id: '', status: false })
+                        } else {
+                          setShowCurrent({ id: chat?.id.toString(), status: true })
+                        }
+                      }}><ChevronDown size={15} /></button>}
+                    </ul>
+                    <span className="text-[10px] font-mono font-bold dark:text-gray-300 text-gray-700 uppercase tracking-widest">
+                      {chat.sent_by === "You" ? ">> ORIGIN_USER" : ">> ANTINODE_RESPONSE"}
+                    </span>
+                    <div className={`h-[1px] w-4 ${chat.sent_by === "You" ? "bg-orange-600" : "bg-sky-600"}`} />
+                  </div>
+                  <div
+                    className={`relative transition-all duration-500 ease-in-out border shadow-sm
       ${chat.sent_by === "You"
-                            ? "dark:bg-white bg-black dark:text-black text-white border-transparent rounded-2xl rounded-tr-none px-4 py-3 w-full md:w-120"
-                            : "dark:bg-black bg-gray-50 dark:text-neutral-200 text-black border-neutral-200 dark:border-neutral-800 rounded-2xl rounded-tl-none px-5 py-4"
-                          } 
+                        ? "dark:bg-white bg-black dark:text-black text-white border-transparent rounded-2xl rounded-tr-none px-4 py-3 w-full md:w-120"
+                        : "dark:bg-black bg-gray-50 dark:text-neutral-200 text-black border-neutral-200 dark:border-neutral-800 rounded-2xl rounded-tl-none px-5 py-4"
+                      } 
              ${containerHeight} 
        transition-all duration-300`}
+                  >
+                    {chat.sent_by !== "You" && (
+                      <button
+                        onClick={() => {
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(chat.message.content);
+                            toast.info("Copied to clipboard");
+                            return;
+                          }
+                        }}
                       >
-                        {chat.sent_by !== "You" && (
-                          <button
-                            onClick={() => {
-                              if (navigator.clipboard) {
-                                navigator.clipboard.writeText(chat.message.content);
-                                toast.info("Copied to clipboard");
-                                return;
-                              }
-                            }}
-                          >
-                            <BiCopy />
-                          </button>
-                        )}
-                        <ChatMessage
-                          chat={chat}
-                          lastMessageId={Chats[Chats.length - 1].id}
-                        />
-                      </div>
-                      {chat.sent_at && (
-                        <section className='flex items-center justify-end gap-2 text-xs space-grotesk  text-gray-600 dark:text-gray-400'>
-                          {chat.sent_at?.split("|").join("-")}
-                        </section>
+                        <BiCopy />
+                      </button>
+                    )}
+                    <ChatMessage
+                      chat={chat}
+                      lastMessageId={Chats[Chats.length - 1].id}
+                    />
+                  </div>
+                  {chat.sent_at && (
+                    <section className='flex items-center justify-end gap-2 text-xs space-grotesk  text-gray-600 dark:text-gray-400'>
+                      {chat.sent_at?.split("|").join("-")}
+                    </section>
 
-                      )}
-                    </div>
-                  </>
                   )}
+                </div>}
+
+
 
 
                 {chat.sent_by !== "You" &&
@@ -177,7 +186,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
 
               </div>
 
-            </div>
+            </div >
           );
         })
       ) : (

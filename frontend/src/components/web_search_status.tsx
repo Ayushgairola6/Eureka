@@ -376,7 +376,6 @@ const STATUS_HANDLERS: Record<string, any> = {
 const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }) => {
   const { web_search_status, showProcess } = useAppSelector((s) => s.socket || {});
   const [isOpen, setIsOpen] = useState(true);
-
   // Logic to determine if this component should even show
   const isActive = (!lastMessageId) || (chat?.id || chat?.message_id) === lastMessageId;
   if (!isActive) return null;

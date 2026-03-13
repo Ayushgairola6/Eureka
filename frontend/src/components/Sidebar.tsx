@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LogoRender } from "./LogoRender.tsx";
 import { FiX } from "react-icons/fi";
 import { setCurrTab } from '../store/AuthSlice.ts'
+import { ArchiveX } from "lucide-react";
 type SidebarProps = {
   isVisble: boolean;
   setIsVisible: React.Dispatch<React.SetStateAction<boolean>>;
@@ -60,6 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
       tab: "Workspace",
       show: true,
     },
+    { path: '/user/research-archive', icon: ArchiveX, label: "Research Archive", tab: "Research Archive", show: isLoggedIn === true && user?.email !== "" },
     {
       path: "/Register",
       icon: FaRegRegistered,

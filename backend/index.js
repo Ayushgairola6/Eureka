@@ -16,6 +16,7 @@ import { ReviewRouter } from "./routers/ReviewRouter.js";
 import { API_Router } from "./routers/ApiRouter.js";
 import { SdkRouter } from "./routers/sdkRouter.js";
 import { PaymentsRouter } from "./routers/PaymentsRouter.js";
+import { VerificationModeRouter } from "./routers/Verification_modeRouter.js";
 import "./controllers/supabaseHandler.js";
 // import "./Tests/tests.js";
 // import formData from 'express-form-data';
@@ -50,7 +51,7 @@ app.use("/api/", Router);
 app.use("/api/", AuthRouter);
 app.use("/api", PaymentsRouter);
 app.use("/api/", ChatsRouter);
-
+app.use("/api/", VerificationModeRouter);
 app.use("/api/", ReviewRouter);
 app.use("/api/", API_Router);
 

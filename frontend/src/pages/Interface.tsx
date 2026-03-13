@@ -29,6 +29,7 @@ import { Notice } from "@/components/Notice.tsx";
 import { v4 as uuid } from 'uuid'
 import { CiStreamOff, CiStreamOn } from "react-icons/ci";
 import { QuotaIndicator } from "@/components/QuotaIndicator.tsx";
+import { CreatingReport } from "@/components/createReportIndicator.tsx";
 function Interface() {
   const [searchParams] = useSearchParams();
   // handling google auth localstorage sessionToken storage
@@ -43,7 +44,7 @@ function Interface() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(false);
   const { isLoggedIn } = useAppSelector((state) => state.auth);
-  const { question, category, visibility, subCategory, Chats, selectedDoc, search_depth, queryType } =
+  const { question, category, visibility, subCategory, Chats, selectedDoc, search_depth, queryType, creatingReport } =
     useAppSelector((state) => state.interface);
   const { isConnected } = useAppSelector(s => s.socket) //socket conection state (boolean)
   const textareaRef = useRef<HTMLInputElement>(null);
@@ -263,7 +264,7 @@ function Interface() {
       >
         <ul className={`border ${isConnected === true ? "border-green-600 bg-green-400/10 text-green-600 rounded-xl " : "border-red-600 bg-red-400/10 text-red-600 rounded-xl "} space-grotesk text-xs fixed top-15 right-2  z-[5] py-1 px-2 flex items-center justify-center gap-2`}>{isConnected === true ? (<><CiStreamOn /> Live Tail</>) : (<><CiStreamOff /> No Live Tail</>)}</ul>
         <Notice />
-
+        {creatingReport === true && <CreatingReport />}
         <ChatBubble
           isActive={isActive}
           setIsActive={setIsActive}

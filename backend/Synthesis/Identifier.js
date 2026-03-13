@@ -157,20 +157,24 @@ export async function IdentifyRequestInputs(req, res) {
     });
   }
 
+  const chats = await GetChatsForContext(user, plan_type);
+
   try {
     // a dynamic context for
     const context = `
 userQuery=${question}
 selectedDocuments=${JSON.stringify(selectedDocuments)}
-documentMetadata=${JSON.stringify(metadata)}
-
+documentMetadataFetchedUsingSelectedIds=${JSON.stringify(metadata)}
+previousChats=${JSON.stringify(chats || [])}
 `;
 
     EmitEvent(user.user_id, "query_status", {
       MessageId,
       status: {
         message: "Understanding Request",
-        data: ["I am now zeroing down on the user request"],
+        data: [
+          "I am now zeroing down on the user request and trying to analyze the request",
+        ],
       },
     });
 
@@ -191,7 +195,6 @@ documentMetadata=${JSON.stringify(metadata)}
       plan_type,
     });
 
-    console.log(`the orchrestrator results\n`, Orechrestratedresults);
     const { answer, functions, favicon, error } = Orechrestratedresults;
 
     if (answer) {
@@ -328,13 +331,16 @@ export function CentralFunctionProcessor(resultString, user, MessageId) {
   }
   // functions that are needed to be proceeded to get a more distinct response
 
-  // if the llm has responded with a simple answer return
+  // // if the llm has responded with a simple answer return
   if (ParsedObject?.direct_answer && ParsedObject.direct_answer.trim() !== "") {
     return {
       confidence: "high",
       message: ParsedObject.direct_answer, // now message is actually returned
       PreProcessFunctions: [],
     };
+  }
+  if (ParsedObject?.ReadyToSynthesize === true) {
+    return { confidence: "mid", PreProcessFunctions };
   }
 
   // if there is no message as well as there is not functions
@@ -362,6 +368,8 @@ export function CentralFunctionProcessor(resultString, user, MessageId) {
       });
     });
   }
+  // if the llm thinks that it is ready to synthesize
+
   if (ParsedObject?.confidence_score >= 0.5) {
     return { confidence: "high", PreProcessFunctions };
   }

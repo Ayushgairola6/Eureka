@@ -119,10 +119,10 @@ const Footer = () => {
                 <ShieldCheck size={12} /> Governance
               </h3>
               <ul className="space-y-3">
-                {['Privacy Policy', 'Refund Policy', 'Terms and conditions'].map((item) => (
-                  <li key={item}>
-                    <Link to="#" className="space-grotesk text-sm text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
-                      {item}
+                {[{ label: 'Privacy Policy', link: "/Privacy" }, { label: 'Refund Policy', link: "/Refund-Policy" }, { label: 'Terms and conditions', link: '/terms-and-conditions' }, { label: "Contact Us", link: "Contact-Us" }].map((item) => (
+                  <li key={item.label}>
+                    <Link to={item.link} className="space-grotesk text-sm text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
+                      {item.label}
                     </Link>
                   </li>
                 ))}

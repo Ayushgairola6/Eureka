@@ -1176,7 +1176,6 @@ export const PostTypeWebSearch = async (req, res) => {
           data: [`I am now Breaking down ${req.user.username}'s intent`],
         },
       });
-      // break the query into subquries for deep_research and google dorking stuff
 
       // send queries to the crawler to scrape
       const FinalLinksToScrape = await HandleDeepWebResearch(
@@ -1193,11 +1192,6 @@ export const PostTypeWebSearch = async (req, res) => {
             "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
         });
       }
-      // const FinalLinksToScrape = [
-      //   "https://news.ycombinator.com",
-      //   "https://techcrunch.com",
-      //   "https://arxiv.org/abs/2301.00001",
-      // ];
 
       // parse the results and extract organic results and convert it into an array of link(string)
       let LinksToFetch = [];
@@ -1255,11 +1249,7 @@ export const PostTypeWebSearch = async (req, res) => {
             "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
         });
       }
-      // const LinksToFetch = [
-      //   "https://news.ycombinator.com",
-      //   "https://techcrunch.com",
-      //   "https://arxiv.org/abs/2301.00001",
-      // ];
+
       // scrape and optimize the context for the llm
       const CleanedWebData = await ProcessForLLM(
         LinksToFetch,

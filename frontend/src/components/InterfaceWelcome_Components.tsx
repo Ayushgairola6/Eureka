@@ -42,7 +42,7 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
     if (!chosenPrompt) return;
 
     const user_id = uuid();
-    const ai_id = uuid();
+    const ai_id = "msg_98765";
 
     dispatch(
       UpdateChats({

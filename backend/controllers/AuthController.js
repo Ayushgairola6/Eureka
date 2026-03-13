@@ -141,6 +141,20 @@ export const HandleUserRegistration = async (req, res) => {
       async (error) =>
         await notifyMe("Error while sending an email for registration", error)
     );
+
+    // create a new payment record
+    const { error: PaymentCreationError } = await supabase
+      .from("Payments")
+      .upsert(
+        { user_id: user.id, plan_type: "free", plan_status: "active" },
+        { onConflict: "user_id" }
+      );
+    if (PaymentCreationError) {
+      await notifyMe(
+        "The authController failed while inserting the payment status into the database",
+        JSON.stringify(PaymentCreationError)
+      );
+    }
     const verificationtoken = GenerateEmailVerificationTokens(username, email);
 
     const verificationEmail = await EmailServices.sendAccountVerficicationEmail(
@@ -242,19 +256,6 @@ export const HandleUserLogin = async (req, res) => {
     // Cache the new refresh token
     await cacheRefreshToken(user, RefreshToken);
 
-    const { error } = await supabase
-      .from("Payments")
-      .upsert(
-        { user_id: user.id, plan_type: "free", plan_status: "active" },
-        { onConflict: "user_id" }
-      );
-    if (error) {
-      await notifyMe(
-        "The authController failed while inserting the payment status into the database",
-        error
-      );
-      return res.status(400).send({ message: "Something went wrong" });
-    }
     // Set cookie
     const isProduction = process.env.NODE_ENV === "production";
 
