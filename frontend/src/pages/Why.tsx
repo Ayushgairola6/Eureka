@@ -23,12 +23,12 @@ const aboutAntiNode = [
   },
   {
     id: "about-3",
-    title: "Built for Accuracy",
+    title: "Built for Accuracy & Performance",
     subtitle: "Self-Correcting Agentic system",
     description:
       "Agents verify their own claims before showing results. Deep web access finds sources others miss. You control the process, AI handles the work.",
     icon: <Target />,
-    img: "/Self_correction.png",
+    img: "/AnalystMode.png",
     badge: "How It Works",
   },
 ];

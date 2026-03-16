@@ -8,6 +8,7 @@ const AntiNodeFeatures = [
     icon: <Globe size={16} />,
     img: "/Process logs2.png",
   },
+  { id: "feat-0", title: "Controlled research environment", subtitle: "Control what you research and consume", description: "With Analyst mode you can now not only control sources but also verify them before beforehand, then go deeper, or finalize or if the AI hallucinated then report it. Everything at your fingertips, no more blackboxes, but you and your research.", icon: <PiControlDuotone size={16} />, img: "/AnalystMode.png" },
   {
     id: "feat-2",
     title: "Real-Time Collaboration",
@@ -59,6 +60,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BsArrowUpRight } from "react-icons/bs";
 import { Database, GitBranch, Globe, ShieldCheck, Users } from "lucide-react";
+import { PiControlDuotone } from "react-icons/pi";
 
 export const Features = () => {
   const [activeTab, setActiveTab] = useState(0);

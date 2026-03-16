@@ -113,3 +113,29 @@ export const HandleNewsLetterAcceptance = async (req, res) => {
     return res.status(500).send({ message: "Something went wrong!" });
   }
 };
+
+// non authenticated user newsletter acceptance
+export const GetNewsLetter = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email)
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid email address" });
+
+    const { data, error } = await supabase
+      .from("want_news_letter")
+      .insert({ email: email });
+
+    return res
+      .status(400)
+      .json({
+        message:
+          "You will now receive latest updates and Feature ideas before anyone else.",
+      });
+  } catch (error) {
+    notifyMe("Error in non auth user newsletter", error);
+    return res.status(500).json({ message: "Thanks for trusting us." });
+  }
+};

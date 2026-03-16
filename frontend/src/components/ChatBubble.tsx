@@ -58,6 +58,31 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   }, []);
 
 
+  //  function to handle the specialized rendering part to display a popup over report and indicating that the line whhich source is it from
+
+  async function ShowSourceOnHover(message: any) {
+    if (!text) return;
+    // check if there are source in the researchData for the current response
+    const ReportSource = ResearchData.findIndex((elem) => elem.MessageId === message.id);
+
+    // if it does not exists return
+    if (!ReportSource || ReportSource === -1) return;
+
+    const IncludesInfo = ResearchData[ReportSource].research_data.details.find((res) => {
+      res.content.includes(message);
+    })
+    if (IncludesInfo)
+
+      return (<>
+        <div className='absolute -bottom-5 left-3 '>
+          <h1 className='space-grotesk '>{IncludesInfo?.title || "Source name not included"}</h1>
+          <span>score:{IncludesInfo?.score} </span>
+          <span>source:{IncludesInfo?.url} </span>
+        </div>
+      </>)
+
+
+  }
 
   return (
     <>
@@ -159,6 +184,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                       chat={chat}
                       lastMessageId={Chats[Chats.length - 1].id}
                     />
+                    {/* <ShowSourceOnHover message={chat} /> */}
                   </div>
                   {chat.sent_at && (
                     <section className='flex items-center justify-end gap-2 text-xs space-grotesk  text-gray-600 dark:text-gray-400'>

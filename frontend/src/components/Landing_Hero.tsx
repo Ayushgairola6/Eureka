@@ -7,7 +7,7 @@ import { LightBlob } from '@/components/light_blob.tsx'
 import { Pause, Play } from "lucide-react";
 import { DataFlowGrid } from '@/components/DataFlow_grid.tsx'
 import { BsChatDots } from "react-icons/bs";
-import { FaWebflow } from "react-icons/fa6";
+import { FaResearchgate, FaWebflow } from "react-icons/fa6";
 import { GiMultipleTargets } from "react-icons/gi";
 type props = {
   value: string;
@@ -15,9 +15,11 @@ type props = {
 const ChatroomUrl = import.meta.env.VITE_CHATROOM_URL;
 const webSearchUrl = import.meta.env.VITE_WEBSEARCH_URL;
 const synthesisUrl = import.meta.env.VITE_SYNTHESIS_URL
+const AnalystUrl = import.meta.env.VITE_ANALYST_MODE
 
 const Hero: React.FC<props> = ({ value }) => {
   const services = [
+    { id: "04", title: "Analyst Mode", description: "Researching about the effects of quantum computing on encryption standards ", tag: "Control AI Research", video: AnalystUrl, icon: <FaResearchgate />, logs: [">INTENT DECOMPOSITION", ">PROCESS LOGS", ">REASONING", ">READING SOURCES", ">PIT STOP", ">FINALIZING THE REPORT"] },
     {
       id: "01",
       title: "Research workspace .",

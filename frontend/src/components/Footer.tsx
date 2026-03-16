@@ -10,8 +10,9 @@ import { Link } from "react-router";
 import { toast } from 'sonner';
 import axios from 'axios';
 import { LogoRender } from "./LogoRender";
-import React from 'react';
-import { CheckCircle, ShieldCheck, Zap } from "lucide-react";
+import React, { useRef } from 'react';
+import { CheckCircle, ShieldCheck, User2, Zap } from "lucide-react";
+import { PiMemberOfLight } from "react-icons/pi";
 
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
@@ -37,6 +38,7 @@ const Footer = () => {
       toast.error(error?.message || error?.response?.data?.message);
     }
   }
+  const emailRef = useRef<HTMLInputElement>(null)
 
   return (
     <footer className="relative border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#050505] overflow-hidden">
@@ -65,6 +67,8 @@ const Footer = () => {
                       <Zap size={14} className="text-orange-500" />
                       <span className="bai-jamjuree-bold text-xs uppercase tracking-widest">Early Access Updates</span>
                     </div>
+
+                    <span className='bai-jamjuree-regular flex items-center justify-start gap-2 text-sm'><User2 size={14} />Already a member</span>
                     <div className="flex flex-col gap-3">
                       <label className="flex items-start gap-3 cursor-pointer group">
                         <input
@@ -82,6 +86,27 @@ const Footer = () => {
                         className="w-full py-2 bg-black dark:bg-white text-white dark:text-black text-xs font-bold uppercase tracking-tighter flex items-center justify-center gap-2 hover:opacity-80 transition-opacity disabled:opacity-30"
                       >
                         Confirm Subscription <FiArrowRight />
+                      </button>
+                    </div>
+
+                    <span className='bai-jamjuree-regular flex items-center justify-start gap-2 text-sm'><PiMemberOfLight size={14} />I am new</span>
+                    <div>
+                      <div className='space-grotesk  border rounded-xs text-xs'>
+                        <input ref={emailRef} className='text-black dark:text-white border-none outline-none focus:ring-0 p-2 w-full' type="text" placeholder="Your email address" />
+                      </div>
+                      <button
+                        onClick={async () => {
+                          await axios.post(`${BaseApiUrl}/api/news-letter`, { email: emailRef?.current?.value }, {
+                            withCredentials: true
+                          }).then((res: any) => {
+                            toast.message(res.message)
+                          }).catch((error: any) => {
+                            toast.error(error?.response.data.message || "Something went wrong!")
+                          })
+                        }}
+                        disabled={!emailRef?.current?.value}
+                        className={`mt-2 w-full py-2 bg-black dark:bg-white text-white dark:text-black text-xs font-bold uppercase tracking-tighter disabled:opacity-30`}>
+                        Join
                       </button>
                     </div>
                   </>
@@ -103,13 +128,20 @@ const Footer = () => {
                 <FiLink2 /> Ecosystem
               </h3>
               <ul className="space-y-3">
-                {['Public Demo', 'How to use', 'Get in touch'].map((item) => (
-                  <li key={item}>
-                    <Link to="#" className="space-grotesk text-sm text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
-                      {item}
-                    </Link>
-                  </li>
-                ))}
+                <li >
+                  <a href='https://youtube.com/@antinode-q5k?si=uO3xbrmjPYHc4QG1' className="space-grotesk text-sm text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
+                    Public Demo
+                  </a>
+                </li>
+                <li >
+                  <Link to="/userManual/AntiNode/Know-How" className="space-grotesk text-sm text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
+                    How to use
+                  </Link>
+                </li><li >
+                  <a href="mailto:support@antinodeai.space" className="space-grotesk text-sm text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
+                    Get in touch
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -133,9 +165,9 @@ const Footer = () => {
             <div className="space-y-6">
               <h3 className="text-[10px] font-bold text-neutral-400 dark:text-neutral-600 uppercase tracking-[0.2em]">Connect</h3>
               <div className="flex flex-wrap gap-3">
-                <SocialIcon href="https://github/com/Ayushgairola6" icon={<FiGithub />} color="hover:bg-neutral-800" />
-                <SocialIcon href="https://X.com/AntiNode" icon={<FiTwitter />} color="hover:bg-blue-500" />
-                <SocialIcon href="https://youtube.com/AntiNode" icon={<FiYoutube />} color="hover:bg-red-600" />
+                <SocialIcon href="https://github.com/Ayushgairola6" icon={<FiGithub />} color="hover:bg-neutral-800" />
+                <SocialIcon href="https://x.com/AyushGairo14362" icon={<FiTwitter />} color="hover:bg-blue-500" />
+                <SocialIcon href="https://youtube.com/@antinode-q5k?si=uO3xbrmjPYHc4QG1" icon={<FiYoutube />} color="hover:bg-red-600" />
               </div>
             </div>
           </div>
@@ -144,7 +176,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-neutral-100 dark:border-neutral-900 flex flex-col md:flow-row justify-between items-center gap-4">
           <p className="bai-jamjuree-semibold text-[10px] text-neutral-400 uppercase tracking-widest">
-            © {new Date().getFullYear()} AntiNode / Knowledge Synthesis Protocol
+            © {new Date().getFullYear()} AntiNode / RESEARCH WITH CONTROL AND PRIVACY
           </p>
           <div className="flex gap-6">
             <span className="flex items-center gap-2 text-[10px] text-emerald-500 font-mono">

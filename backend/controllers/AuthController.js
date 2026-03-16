@@ -105,7 +105,7 @@ export const HandleUserRegistration = async (req, res) => {
     if (error) {
       return res
         .status(400)
-        .json({ message: "Error setting up you account ." });
+        .json({ message: "Error while setting up you account ." });
     }
 
     if (data.length > 0) {
@@ -122,12 +122,15 @@ export const HandleUserRegistration = async (req, res) => {
         .json({ message: "Error setting up you account ." });
     }
 
-    const NewUserAccount = await supabase.from("users").insert({
-      username: username.trim(),
-      email: email.toLowerCase(),
-      password: HashedPassword,
-      AllowedTrainingModels: "TRUE",
-    });
+    const NewUserAccount = await supabase
+      .from("users")
+      .insert({
+        username: username.trim(),
+        email: email.toLowerCase(),
+        password: HashedPassword,
+        AllowedTrainingModels: "TRUE",
+      })
+      .select("id");
 
     if (NewUserAccount.error) {
       return res
@@ -145,14 +148,16 @@ export const HandleUserRegistration = async (req, res) => {
     // create a new payment record
     const { error: PaymentCreationError } = await supabase
       .from("Payments")
-      .upsert(
-        { user_id: user.id, plan_type: "free", plan_status: "active" },
-        { onConflict: "user_id" }
-      );
+      .insert({
+        user_id: NewUserAccount.data[0].id,
+        plan_type: "free",
+        plan_status: "active",
+      });
     if (PaymentCreationError) {
-      await notifyMe(
+      console.log(PaymentCreationError, "payment creation error\n");
+      notifyMe(
         "The authController failed while inserting the payment status into the database",
-        JSON.stringify(PaymentCreationError)
+        JSON.stringify(PaymentCreationError.message)
       );
     }
     const verificationtoken = GenerateEmailVerificationTokens(username, email);

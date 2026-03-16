@@ -146,10 +146,7 @@ export const HandleGoogleCallback = async (req, res) => {
 
     const { error: dbError } = await supabase
       .from("Payments")
-      .upsert(
-        { user_id: user.id, plan_type: "free", plan_status: "active" },
-        { onConflict: "user_id" }
-      );
+      .upsert({ user_id: user.id, plan_type: "free", plan_status: "active" });
     if (dbError) {
       await notifyMe(
         "The googleAuthController failed while inserting the payment status into the database",
@@ -249,7 +246,7 @@ async function findOrCreateUser(googleUser) {
     // FIX: Correct logic for checking error code
     // PGRST116 is the code for "Row not found" (which is expected for new users)
     if (selectError.code !== "PGRST116") {
-      await notifyMe("Critical DB Error during user selection", selectError);
+      notifyMe("Critical DB Error during user selection", selectError);
       return { error: "Database error during login check." };
     }
   }
@@ -259,10 +256,7 @@ async function findOrCreateUser(googleUser) {
     const newUser = await createNewUser(name, emailLower, googleId);
 
     if (!newUser || newUser.error) {
-      await notifyMe(
-        "Error while creating a new user",
-        newUser?.error || "Unknown"
-      );
+      notifyMe("Error while creating a new user", newUser?.error || "Unknown");
       return { message: "Unable to create a new user." };
     }
     await notifyMe("A new user Logged In using Google Auth", newUser);
