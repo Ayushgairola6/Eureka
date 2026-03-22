@@ -278,7 +278,7 @@ const InputSection: React.FC<InputProps> = ({
       // check if the user is within quota or not
       if (Querycount >= Quota) {
         toast.info('You have exhausted your quota when it resets you will be notified via app and email')
-        // return;
+        return;
       }
       // if the dropdown menu is visible
       if (shwoOptions === true) {

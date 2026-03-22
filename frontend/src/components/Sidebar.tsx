@@ -18,7 +18,6 @@ type SidebarProps = {
 
 const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
   const { isLoggedIn, user } = useAppSelector((state) => state.auth);
-  const { CurrentTheme } = useAppSelector((state) => state.interface);
   const location = useLocation();
   const dispatch = useAppDispatch();
 
@@ -148,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
               <Link
                 to="/user/dashboard"
                 onClick={handleLinkClick}
-                className={`p-2 flex items-center justify-center h-10 w-10 rounded-full ${CurrentTheme.user} space-grotesk font-semibold text-base shadow-md hover:shadow-lg transition-shadow`}
+                className={`p-2 flex items-center justify-center h-10 w-10 rounded-full  space-grotesk font-semibold text-base shadow-md hover:shadow-lg transition-shadow`}
               >
                 {user?.username?.trim().split("")[0] || "C"}
               </Link>

@@ -12,7 +12,12 @@ import { ChevronDown } from "lucide-react";
 import { FinalizePopup } from "./Reject_Popup.tsx";
 import { ResearchDataCenter } from "./ResearchDataRenders.tsx";
 
-
+const STEPS = [
+  "Uncovering",
+  "Synthesizing",
+  "Decoding",
+  "Verifying",
+  "Solving",]
 type ChatBubbleProps = {
   chatcontainer: React.Ref<HTMLDivElement>;
   isActive: boolean;
@@ -23,7 +28,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   isActive,
   setIsActive,
 }) => {
-  const ReceivedResponseId: any = []; //just a tracker array
+  const ReceivedResponseId = React.useRef([]);; //just a tracker array
   const { Chats, ResponseStatus, MessageToVerify, ResearchData } = useAppSelector(
     (state) => state.interface
   );
@@ -33,28 +38,17 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   );
   const [docused, setShowDocUsed] = useState(false);
   // array of welcom messages
-  const steps = [
-    "Uncovering",
-    "Synthesizing",
-    "Decoding",
-    "Verifying",
-    "Solving",]
-  const [text, setText] = useState<string>(steps[0]); //default the first value of steps message
+
+  const [text, setText] = useState<string>(STEPS[0]); //default the first value of steps message
 
 
   useEffect(() => {
     let i = 0;
-
-
     const interval = setInterval(() => {
-      setText(steps[i]); //update the value of text
-      i++;
-      if (i >= steps.length - 1 || Chats.length > 0) {
-        i = 0;
-      }
+      setText(STEPS[i]);
+      i = (i + 1) % (STEPS.length - 1);
     }, 4000);
-
-    return () => clearInterval(interval); //clear the interval on unmount
+    return () => clearInterval(interval);
   }, []);
 
 

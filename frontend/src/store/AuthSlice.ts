@@ -155,15 +155,11 @@ export const AcceptOrRejectRequest = createAsyncThunk<any, ActionPayload>(
     { rejectWithValue }
   ) => {
     try {
-      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/user/requests/${action_type}/${requested_user_id}/${room_id}/${room_name}/${admin_id}`,
         {},
         {
           withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${AuthToken}`,
-          },
         }
       );
       return response.data;
@@ -191,15 +187,11 @@ export const DeleteNotification = createAsyncThunk(
   "delete/notification",
   async (notification_id, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.put(
         `${BaseApiUrl}/api/user/delete/notification/${notification_id}`,
         {},
         {
           withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${AuthToken}`,
-          },
         }
       );
       return response.data;

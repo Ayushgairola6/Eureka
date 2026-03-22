@@ -249,10 +249,7 @@ export const HandleUserLogin = async (req, res) => {
       user.username
     );
     if (store.error) {
-      await notifyMe(
-        `Unable to store user tokens: ${JSON.stringify(store.error)}`,
-        store.error
-      );
+      await notifyMe(`Unable to store user tokens: `, store.error);
       return res
         .status(400)
         .json({ message: "Error while creating a session" });
@@ -467,7 +464,8 @@ export const VerifyEmail = async (req, res) => {
 
     if (!token) {
       notifyMe(
-        `Token for was not found in the parameters in verifyEmail controller`
+        `Token for was not found in the parameters in verifyEmail controller`,
+        "token not found while trying to verify an email"
       );
       return res.status(400).send({ message: "Verification token not found" });
     }
@@ -477,7 +475,7 @@ export const VerifyEmail = async (req, res) => {
     try {
       decoded = jwt.verify(token, Secret);
     } catch (jwterror) {
-      await notifyMe("Email verifficationtoken expired");
+      await notifyMe("Email verifficationtoken expired", jwterror);
       return res.status(400).send({ message: "Link expired" });
     }
 
@@ -548,9 +546,8 @@ export const VerifyEmail = async (req, res) => {
     );
     if (store.error) {
       notifyMe(
-        `Error while storing the tokens in the db for user= ${
-          data.username
-        } error message=${JSON.stringify(store.error)}`
+        `Error while storing the tokens in the db for user= ${data.username} `,
+        store.error
       );
       return res
         .status(400)
@@ -935,9 +932,7 @@ export const GetUserAccountDetails = async (req, res) => {
 
     return res.json(finalResponse);
   } catch (error) {
-    notifyMe(
-      `CRITICAL: Dashboard Failure for ${req.user.username}: ${error.message}`
-    );
+    notifyMe(`CRITICAL: Dashboard Failure for ${req.user.username}`, error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };

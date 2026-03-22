@@ -237,13 +237,14 @@ export async function getSelectedChunks(
 //storing any memories for the user
 export async function HandleMemoryStorage(user, ReferenceArray) {
   try {
+    // const
   } catch (MemoryStorageError) {
     console.error(`Memory storage error\n`, MemoryStorageError);
   }
 }
 
 //retrieving any memories from postgrestable
-export async function RetrieveMemories(user, ReferenceArray) {
+export async function RetrieveOlderMemories(user, ReferenceArray) {
   try {
     const MemoryRetrieval = ReferenceArray?.map((func) => {
       if (func && func.arguments) {

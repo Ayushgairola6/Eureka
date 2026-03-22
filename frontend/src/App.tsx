@@ -52,7 +52,6 @@ import TermsAndConditions from "./pages/TermsAndConditions.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import RefundPolicy from "./pages/RefundPolicy.tsx";
 import UserChatRooms from "./pages/Rooms.tsx";
-import { setCurrenTheme } from "./store/InterfaceSlice.ts";
 import { ContactUs } from "./pages/ContactUs.tsx";
 import { UnfinishedResearchPage } from "./pages/UnfinishedResearch.tsx";
 
@@ -229,16 +228,7 @@ const App = () => {
     };
   }, [dispatch]);
 
-  //update the theme of the interface for the user
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const lastChosenTheme = localStorage.getItem("AntiNode_Interface_Theme");
 
-      if (lastChosenTheme) {
-        dispatch(setCurrenTheme(JSON.parse(lastChosenTheme)));
-      }
-    }
-  }, []);
   return (
     <>
       {/* Global Loading Overlay */}

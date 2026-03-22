@@ -94,7 +94,7 @@ function SourceNode({
                         <p className="text-[11px] font-bold dark:text-neutral-300 text-black line-clamp-1 bai-jamjuree-semibold group-hover:text-green-500 transition-colors">
                             {source.title}
                         </p>
-                        <p className="font-mono text-[9px] dark:text-neutral-400 text-black truncate mt-0.5">
+                        <p className=" text-[9px] text-purple-500 truncate mt-0.5 bai-jamjuree-regular">
                             {hostname}
                         </p>
                     </div>
@@ -118,8 +118,8 @@ function SourceNode({
                         </p>
 
                         <div className="flex items-center justify-between mt-3 pt-2 border-t border-neutral-800/50">
-                            <span className="font-mono text-[9px] text-neutral-600">
-                                SIG:{" "}
+                            <span className="space-grotesk text-[9px] text-neutral-600">
+                                SCORE:{" "}
                                 <span className="text-sky-500">
                                     {typeof source.score === "number"
                                         ? `${(source.score * 10).toFixed(0)}%`
@@ -133,7 +133,7 @@ function SourceNode({
                                 className="flex items-center gap-1 text-[9px] bai-jamjuree-semibold dark:text-neutral-300 text-black hover:text-sky-400 transition-colors"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                OPEN_SOURCE <TbExternalLink size={9} />
+                                VISIT SOURCE <TbExternalLink size={9} />
                             </a>
                         </div>
                     </div>
@@ -146,10 +146,10 @@ function SourceNode({
 // ─── Root node header ─────────────────────────────────────────────────────────
 function RootNode({ status, count }: { status: MessageResearch["status"]; count: number }) {
     const cfg = {
-        complete: { label: "SYNTHESIS_READY", dot: "bg-green-400", glow: "shadow-green-400/40" },
-        partial: { label: "PARTIAL_GRAPH", dot: "bg-amber-400 animate-pulse", glow: "shadow-amber-400/30" },
-        pending: { label: "GRAPH_BUILDING", dot: "bg-sky-400 animate-pulse", glow: "shadow-sky-400/30" },
-        failed: { label: "GRAPH_FAILED", dot: "bg-red-500", glow: "shadow-red-500/30" },
+        complete: { label: "SYNTHESIS READY", dot: "bg-green-400", glow: "shadow-green-400/40" },
+        partial: { label: "PARTIAL GRAPH", dot: "bg-amber-400 animate-pulse", glow: "shadow-amber-400/30" },
+        pending: { label: "GRAPH BUILDING", dot: "bg-sky-400 animate-pulse", glow: "shadow-sky-400/30" },
+        failed: { label: "GRAPH FAILED", dot: "bg-red-500", glow: "shadow-red-500/30" },
     }[status];
 
     return (
@@ -215,7 +215,7 @@ export function ResearchDataCenter() {
                                         <div className="absolute left-0 top-0 w-px h-[14px] dark:bg-neutral-800 bg-gray-50" />
                                         <div className="absolute left-0 top-[13px] w-4 h-px dark:bg-neutral-800 bg-gray-50" />
                                         <span className="font-mono text-[9px] dark:text-neutral-400 text-black  uppercase">
-                                            └─ graph complete · {details.length} node{details.length !== 1 ? "s" : ""} resolved
+                                            └─ graph complete · {details.length} source{details.length !== 1 ? "s" : ""} resolved
                                         </span>
                                     </div>
                                 </>
@@ -230,7 +230,7 @@ export function ResearchDataCenter() {
                                 </div>
                             ) : (
                                 <div className="pl-6 font-mono text-[10px] text-red-500/50 italic py-2">
-                                    {">> GRAPH_ERROR · no nodes resolved · 0x404"}
+                                    {">> GRAPH ERROR · no sources resolved · 404"}
                                 </div>
                             )}
                         </div>

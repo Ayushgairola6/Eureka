@@ -34,13 +34,6 @@ interface ChatsInterface {
   message: messageInt;
   sent_at: string;
 }
-interface currenttheme {
-  id: string;
-  name: string;
-  color: string;
-  user: string;
-  ai: string;
-}
 
 // individual research source interface
 export interface ResearchSource {
@@ -92,12 +85,12 @@ interface InterfaceState {
   uploadStatus: string;
   fetchingSessionHistory: boolean;
   ResponseStatus: any[];
-  CurrentTheme: currenttheme;
   search_depth: string;
   MessageToVerify: string[];
   isVerificatioMode: boolean;
   ResearchData: MessageResearch[];
   creatingReport: boolean;
+  fetchingPendingResearch: boolean;
 }
 
 const initialState: InterfaceState = {
@@ -136,110 +129,13 @@ const initialState: InterfaceState = {
   uploadStatus: "Processing",
   fetchingSessionHistory: false,
   ResponseStatus: [],
-  CurrentTheme: {
-    id: "void-prime",
-    name: "Void Prime",
-    color: "#000000",
-    // Absolute contrast. High-end Swiss style.
-    user: "bg-zinc-950 text-white dark:bg-white dark:text-black rounded-none border-l-[1px] border-zinc-500 pl-4 py-1 my-4 uppercase tracking-widest text-[10px] font-bold",
-    ai: "bg-transparent text-zinc-800 dark:text-zinc-200 border-t border-zinc-100 dark:border-zinc-900/50 pt-6 pb-12 leading-[1.8] tracking-tight",
-  },
+
   search_depth: "surface_web",
   MessageToVerify: [],
   isVerificatioMode: false,
-  ResearchData: [
-    // {
-    //   MessageId: "msg_98765",
-    //   status: "complete",
-    //   timestamp: Date.now() - 300000,
-    //   research_data: {
-    //     // urls
-    //     sources: [
-    //       "https://quantumcomputingreport.com/shor-qldpc-codes-and-the-compression-of-rsa-2048-resource-estimates-part-i/",
-    //       "https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards",
-    //       "https://csrc.nist.gov/projects/post-quantum-cryptography",
-    //     ],
-    //     // favicons
-    //     favicons: [
-    //       "https://www.google.com/s2/favicons?domain=quantumcomputingreport.com&sz=64",
-    //       "https://www.google.com/s2/favicons?domain=www.nist.gov&sz=64",
-    //       "https://www.google.com/s2/favicons?domain=csrc.nist.gov&sz=64",
-    //     ],
-    //     // details (ResearchSource[])
-    //     details: [
-    //       {
-    //         title:
-    //           "Shor, QLDPC Codes, and the Compression of RSA-2048 Resource Estimates (Part I)",
-    //         content:
-    //           "The technical baseline for evaluating RSA-2048 was updated in February 2026 with the Pinnacle analysis. This research identifies a specific pathway to reduce the physical qubit overhead for Shor's algorithm by an order of magnitude. While previous estimates brought physical qubit requirements below one million, the integration of Quantum Low-Density Parity-Check (QLDPC) codes suggests a footprint of approximately 100,000 physical qubits. The architecture requires non-local qubit connectivity, complicating signal routing compared to planar surface codes. The estimated runtime for factoring is approximately one month — a significant increase from the one-week estimate in Gidney's 2025 model. Additionally, classical decoding logic must process errors within a 10-microsecond window, a reaction time not yet demonstrated at this scale.",
-    //         url: "https://quantumcomputingreport.com/shor-qldpc-codes-and-the-compression-of-rsa-2048-resource-estimates-part-i/",
-    //         score: 5,
-    //       },
-    //       {
-    //         title:
-    //           "NIST Releases First 3 Finalized Post-Quantum Encryption Standards",
-    //         content:
-    //           "The U.S. Department of Commerce's National Institute of Standards and Technology (NIST) has released post-quantum encryption standards designed to withstand cyberattacks from a quantum computer. Researchers around the world are racing to build quantum computers that would operate in radically different ways from ordinary computers and could break the current encryption that provides security and privacy for just about everything we do online. The three new standards — CRYSTALS-Kyber, CRYSTALS-Dilithium, and FALCON — are ready for immediate use. Some experts predict that a device capable of breaking current encryption methods could appear within a decade, threatening the security and privacy of individuals, organizations and entire nations.",
-    //         url: "https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards",
-    //         score: 5,
-    //       },
-    //       {
-    //         title: "NIST Post-Quantum Cryptography Standardization Project",
-    //         content:
-    //           "NIST initiated the post-quantum cryptography standardization project in 2016, evaluating 82 submissions from 25 countries. The project's goal is to standardize one or more quantum-resistant public-key cryptographic algorithms. Following multiple evaluation rounds, NIST selected CRYSTALS-Kyber for general encryption and CRYSTALS-Dilithium, FALCON, and SPHINCS+ for digital signatures. Organizations are encouraged to begin migration planning immediately, as the transition to post-quantum cryptography is expected to take years for large-scale infrastructure. The 'Harvest Now, Decrypt Later' threat means adversaries may already be collecting encrypted data for future decryption once cryptographically relevant quantum computers become available.",
-    //         url: "https://csrc.nist.gov/projects/post-quantum-cryptography",
-    //         score: 4,
-    //       },
-    //     ],
-    //   },
-    // },
-    // {
-    //   MessageId: "msg_98765",
-    //   status: "complete",
-    //   timestamp: Date.now() - 300000,
-    //   research_data: {
-    //     // urls
-    //     sources: [
-    //       "https://quantumcomputingreport.com/shor-qldpc-codes-and-the-compression-of-rsa-2048-resource-estimates-part-i/",
-    //       "https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards",
-    //       "https://csrc.nist.gov/projects/post-quantum-cryptography",
-    //     ],
-    //     // favicons
-    //     favicons: [
-    //       "https://www.google.com/s2/favicons?domain=quantumcomputingreport.com&sz=64",
-    //       "https://www.google.com/s2/favicons?domain=www.nist.gov&sz=64",
-    //       "https://www.google.com/s2/favicons?domain=csrc.nist.gov&sz=64",
-    //     ],
-    //     // details (ResearchSource[])
-    //     details: [
-    //       {
-    //         title:
-    //           "Shor, QLDPC Codes, and the Compression of RSA-2048 Resource Estimates (Part I)",
-    //         content:
-    //           "The technical baseline for evaluating RSA-2048 was updated in February 2026 with the Pinnacle analysis. This research identifies a specific pathway to reduce the physical qubit overhead for Shor's algorithm by an order of magnitude. While previous estimates brought physical qubit requirements below one million, the integration of Quantum Low-Density Parity-Check (QLDPC) codes suggests a footprint of approximately 100,000 physical qubits. The architecture requires non-local qubit connectivity, complicating signal routing compared to planar surface codes. The estimated runtime for factoring is approximately one month — a significant increase from the one-week estimate in Gidney's 2025 model. Additionally, classical decoding logic must process errors within a 10-microsecond window, a reaction time not yet demonstrated at this scale.",
-    //         url: "https://quantumcomputingreport.com/shor-qldpc-codes-and-the-compression-of-rsa-2048-resource-estimates-part-i/",
-    //         score: 5,
-    //       },
-    //       {
-    //         title:
-    //           "NIST Releases First 3 Finalized Post-Quantum Encryption Standards",
-    //         content:
-    //           "The U.S. Department of Commerce's National Institute of Standards and Technology (NIST) has released post-quantum encryption standards designed to withstand cyberattacks from a quantum computer. Researchers around the world are racing to build quantum computers that would operate in radically different ways from ordinary computers and could break the current encryption that provides security and privacy for just about everything we do online. The three new standards — CRYSTALS-Kyber, CRYSTALS-Dilithium, and FALCON — are ready for immediate use. Some experts predict that a device capable of breaking current encryption methods could appear within a decade, threatening the security and privacy of individuals, organizations and entire nations.",
-    //         url: "https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards",
-    //         score: 5,
-    //       },
-    //       {
-    //         title: "NIST Post-Quantum Cryptography Standardization Project",
-    //         content:
-    //           "NIST initiated the post-quantum cryptography standardization project in 2016, evaluating 82 submissions from 25 countries. The project's goal is to standardize one or more quantum-resistant public-key cryptographic algorithms. Following multiple evaluation rounds, NIST selected CRYSTALS-Kyber for general encryption and CRYSTALS-Dilithium, FALCON, and SPHINCS+ for digital signatures. Organizations are encouraged to begin migration planning immediately, as the transition to post-quantum cryptography is expected to take years for large-scale infrastructure. The 'Harvest Now, Decrypt Later' threat means adversaries may already be collecting encrypted data for future decryption once cryptographically relevant quantum computers become available.",
-    //         url: "https://csrc.nist.gov/projects/post-quantum-cryptography",
-    //         score: 4,
-    //       },
-    //     ],
-    //   },
-    // },
-  ],
+  ResearchData: [],
   creatingReport: false,
+  fetchingPendingResearch: false,
 };
 
 // Async Thunks
@@ -614,7 +510,35 @@ export const FianLizeResearch = createAsyncThunk<any, any>(
 
       return response.data;
     } catch (err: any) {
-      console.error(err);
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
+      }
+
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
+      }
+
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
+    }
+  }
+);
+
+export const getResearchHistory = createAsyncThunk(
+  "research/pending",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${BaseApiUrl}/api/fetch-research`, {
+        withCredentials: true,
+      });
+
+      return response.data;
+    } catch (err: any) {
       if (err.response && err.response.data) {
         const serverMessage =
           err.response.data.message || err.response.data.error;
@@ -684,9 +608,7 @@ const interfaceSlice = createSlice({
         state.SynthesisDocuments = [...NewArray];
       }
     },
-    setCurrenTheme: (state, action) => {
-      state.CurrentTheme = action.payload;
-    },
+
     EmptyTheSynthesisArray: (state) => {
       state.SynthesisDocuments = [];
     },
@@ -930,6 +852,18 @@ const interfaceSlice = createSlice({
       })
       .addCase(GetSessionHistory.fulfilled, (state, _action) => {
         state.fetchingSessionHistory = false;
+      })
+      // fetch pending researches
+      .addCase(getResearchHistory.pending, (state) => {
+        state.fetchingPendingResearch = true;
+      })
+      .addCase(getResearchHistory.rejected, (state) => {
+        state.fetchingPendingResearch = false;
+      })
+      .addCase(getResearchHistory.fulfilled, (state, action) => {
+        if (!action.payload.history) return;
+        state.fetchingPendingResearch = false;
+        state.ResearchData.push(...action.payload.history); //server returns and array of data
       });
   },
 });
@@ -966,7 +900,6 @@ export const {
   ResponseLikeStatus,
   likeResponse,
   UpdateResponseStatus,
-  setCurrenTheme,
   setSearchDepth,
   ShowVerificationPopup,
   setIsVerificationMode,

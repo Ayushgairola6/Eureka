@@ -72,8 +72,9 @@ export const UpdateTheNotificationCache = async (
     .single();
 
   if (insertError) {
-    await notifyMe(
-      `${insertError}= This error occured while Inserting notification data in file upload controller `
+    notifyMe(
+      ` This error occured while Inserting notification data in file upload controller `,
+      insertError
     );
   }
 

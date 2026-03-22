@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useAppSelector } from "../store/hooks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { GiArchiveResearch } from "react-icons/gi";
 import { TbClockExclamation, TbArrowRight, TbTrash, TbReload } from "react-icons/tb";
 import { RiRadarLine } from "react-icons/ri";
-import type { MessageResearch } from "../store/InterfaceSlice";
-
+import { getResearchHistory, type MessageResearch } from "../store/InterfaceSlice";
+import { toast } from 'sonner'
 
 
 
@@ -223,6 +223,19 @@ function ResearchCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export function UnfinishedResearchPage() {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+    const { isLoggedIn, user } = useAppSelector(s => s.auth)
+
+    // on mount fetch the past history
+    useEffect(() => {
+        if (isLoggedIn === false || !user) return;
+
+        dispatch(getResearchHistory()).unwrap().then((res) => {
+            if (res.message) return toast.message(res.message)
+        }).catch((err) => toast.error(err))
+    }, [user, isLoggedIn])
+
+
     const { ResearchData } = useAppSelector(s => s.interface);
 
     // Filter to only incomplete sessions: pending or partial

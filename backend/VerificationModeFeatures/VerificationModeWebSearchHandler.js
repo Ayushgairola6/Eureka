@@ -348,10 +348,7 @@ export const VerificationModeSearchWeb = async (req, res) => {
       return res.status(400).json({ message: "Invalid query type" });
 
     // process the rate limit nd plan status
-    const UpdateState = await ProcessUserQuery(
-      user,
-      "web_search_with_verification"
-    );
+    const UpdateState = await ProcessUserQuery(user, "analyst");
 
     // if user has reached the
     if (UpdateState?.status === false) {
@@ -415,7 +412,7 @@ async function StoreResearchData(research_data, data) {
       return { error: "Invalid or missing parmaters." };
     const key = `message:${MessageId}:research_report`;
     try {
-      const cacheExpiryTime = 60 * 60 * 3; //store for 3 hours
+      const cacheExpiryTime = 60 * 60 * 1; //store for 3 hours
       await redisClient
         .multi()
         .rPush(key, JSON.stringify(research_data))

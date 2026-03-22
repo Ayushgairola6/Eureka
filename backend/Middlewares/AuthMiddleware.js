@@ -55,11 +55,7 @@ export const VerifyToken = async (req, res, next) => {
 
           if (error || !data) {
             console.error(error, data, "refreshTOkenError");
-            notifyMe(
-              "RefreshTokenError from authMiddleare line 56\n",
-              error,
-              data
-            );
+            notifyMe("RefreshTokenError from authMiddleare line 56\n", error);
             return res.status(401).json({
               message:
                 "Refresh Token cannot be found either refresh with a better internet connection or try logging in again.",
@@ -231,7 +227,7 @@ export async function authenticateStream(req, res) {
 
 export async function HandlePreferenceToggle(req, res) {
   try {
-    const user = req.user;
+    // const user = req.user;
     if (!user) {
       return res.status(401).send({ message: "Please login to continue" });
     }
@@ -300,7 +296,7 @@ export async function HandlePreferenceToggle(req, res) {
   } catch (error) {
     console.error(error);
 
-    await notifyMe("Error while toggling the preference", error);
+    notifyMe("This is an error from the authMiddleware.js line 299", error);
   }
 }
 

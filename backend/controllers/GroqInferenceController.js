@@ -45,6 +45,7 @@ export async function HandleInference(user_prompt, SYSTEM_PROMPT) {
   }
 }
 
+// only for analyst mode strcutured response handler
 export async function StructuredOutPutInferenceHandler(
   user_prompt,
   SYSTEM_PROMPT
@@ -74,7 +75,7 @@ export async function StructuredOutPutInferenceHandler(
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "Research_mode",
+          name: "analyst_mode",
           strict: true,
           schema: {
             type: "object",

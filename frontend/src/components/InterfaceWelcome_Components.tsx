@@ -115,23 +115,7 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
               "https://letswinpc.org/research/kras-trial-recruiting-worldwide/",
               "https://ir.revmed.com/news-releases/news-release-details/revolution-medicines-announces-first-patient-randomized-rasolute",
               "https://www.onclive.com/view/daraxonrasib-demonstrates-efficacy-potential-to-inhibit-major-ras-on-variants-in-ras-pdac",
-              "https://pmc.ncbi.nlm.nih.gov/articles/PMC12507178/",
-              "https://www.mdpi.com/1424-8247/18/12/1788",
-              "https://www.targetedonc.com/view/daraxonrasib-earns-fda-breakthrough-status-in-pancreatic-cancer",
-              "https://aacrjournals.org/cancerdiscovery/article/15/7/1325/763195/Response-and-Resistance-to-RAS-Inhibition-in",
-              "https://lustgarten.org/from-undruggable-to-unstoppable-the-state-of-kras-drug-development-in-pancreatic-cancer/",
-              "https://www.clinicaltrials.gov/study/NCT06625320",
-              "https://sigma.larvol.com/product.php?e1=902439&tab=newstrac",
-              "https://www.fda.gov/news-events/press-announcements/fda-issues-guidance-modernizing-statistical-methods-clinical-trials",
-              "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/use-bayesian-methodology-clinical-trials-drug-and-biological-products",
-              "https://www.fda.gov/media/190505/download",
-              "https://www.federalregister.gov/documents/2026/01/12/2026-00325/use-of-bayesian-methodology-in-clinical-trials-of-drug-and-biological-products-draft-guidance-for",
-              "https://qa.raps.org/news-and-articles/news-articles/2026/1/fda-issues-guidance-on-use-of-bayesian-methods-to",
-              "https://www.govinfo.gov/app/details/FR-2026-01-12/2026-00325",
-              "https://public-inspection.federalregister.gov/2026-00325.pdf",
-              "https://www.regulations.gov/document/FDA-2025-D-3217-0002",
-              "https://www.parexel.com/insights/blog/advancing-rare-disease-research-exploring-opportunities-for-bayesian-methods-with-fdas-upcoming-guidance",
-              "https://www.berryconsultants.com/resource/the-rumored-shift-to-a-one-trial-standard-for-fda-substantial-evidence",
+
             ], url: [
               "https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1673098/full",
               "https://pmc.ncbi.nlm.nih.gov/articles/PMC12528169/",
@@ -161,18 +145,7 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
               "https://www.targetedonc.com/view/daraxonrasib-earns-fda-breakthrough-status-in-pancreatic-cancer",
               "https://aacrjournals.org/cancerdiscovery/article/15/7/1325/763195/Response-and-Resistance-to-RAS-Inhibition-in",
               "https://lustgarten.org/from-undruggable-to-unstoppable-the-state-of-kras-drug-development-in-pancreatic-cancer/",
-              "https://www.clinicaltrials.gov/study/NCT06625320",
-              "https://sigma.larvol.com/product.php?e1=902439&tab=newstrac",
-              "https://www.fda.gov/news-events/press-announcements/fda-issues-guidance-modernizing-statistical-methods-clinical-trials",
-              "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/use-bayesian-methodology-clinical-trials-drug-and-biological-products",
-              "https://www.fda.gov/media/190505/download",
-              "https://www.federalregister.gov/documents/2026/01/12/2026-00325/use-of-bayesian-methodology-in-clinical-trials-of-drug-and-biological-products-draft-guidance-for",
-              "https://qa.raps.org/news-and-articles/news-articles/2026/1/fda-issues-guidance-on-use-of-bayesian-methods-to",
-              "https://www.govinfo.gov/app/details/FR-2026-01-12/2026-00325",
-              "https://public-inspection.federalregister.gov/2026-00325.pdf",
-              "https://www.regulations.gov/document/FDA-2025-D-3217-0002",
-              "https://www.parexel.com/insights/blog/advancing-rare-disease-research-exploring-opportunities-for-bayesian-methods-with-fdas-upcoming-guidance",
-              "https://www.berryconsultants.com/resource/the-rumored-shift-to-a-one-trial-standard-for-fda-substantial-evidence",
+
             ]
           }))
         }
@@ -196,7 +169,8 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
 
       {/* Core prompt */}
       <div className="flex flex-col gap-4">
-        <h1 className="text-3xl md:text-4xl font-semibold leading-tight bai-jamjuree-bold">
+        <h1 className='space-grotesk text-2xl font-semibold'>Hi, I am AntinodeAI a research assistant rather than a basic chatbot.</h1>
+        <h1 className="text-xl   leading-tight space-grotesk">
           What are we{" "}
           <AnimatePresence mode="wait">
             <motion.span
@@ -214,16 +188,17 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
         </h1>
 
 
+
       </div>
 
       {/* Primary action */}
-      <div className="flex gap-2 w-full flex-col items-normal justify-center  ">
+      <div className="flex gap-2 w-full flex-col items-normal justify-center ">
         <section>
-          <h1 className="bai-jamjuree-semibold text-xl">
+          <h1 className="bai-jamjuree-regular text-sm">
             Not sure where to start?
           </h1>
-          <span className="text-gray-600 dark:text-gray-400 bai-jamjuree-regular text-sm">
-            Try these
+          <span className="text-gray-600 dark:text-gray-400 space-grotesk text-xs">
+            Why not try these-
           </span>
         </section>
 

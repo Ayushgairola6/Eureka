@@ -116,14 +116,10 @@ export const GetChatRoomHistory = createAsyncThunk(
   "room/history",
   async (room_id: string, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.get(
         `${BaseApiUrl}/api/user/chatrooms/${room_id}`,
         {
           withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${AuthToken}`,
-          },
         }
       );
       // console.log(response.data)
@@ -154,15 +150,11 @@ export const AskAI = createAsyncThunk<any, any>(
     { rejectWithValue }
   ) => {
     try {
-      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/chat-room/ask-doc`,
         { question, document_id, room_id, user_id, MessageId },
         {
           withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${AuthToken}`,
-          },
         }
       );
       return response.data;
@@ -195,15 +187,11 @@ export const SearchWeb = createAsyncThunk<any, any>(
     { rejectWithValue }
   ) => {
     try {
-      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/user/chat-room/ask-web`,
         { room_id, MessageId, query, web_search_depth },
         {
           withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${AuthToken}`,
-          },
         }
       );
       return {
@@ -235,15 +223,11 @@ export const FetchMoreChatsInTheRoom = createAsyncThunk<any, object>(
   "get/more-chats",
   async (data, { rejectWithValue }) => {
     try {
-      const AuthToken = localStorage.getItem("AntiNode_six_eta_v1_Authtoken");
       const response = await axios.post(
         `${BaseApiUrl}/api/room/history/chats`,
         data,
         {
           withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${AuthToken}`,
-          },
         }
       );
       return response.data;

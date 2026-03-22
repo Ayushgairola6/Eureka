@@ -111,6 +111,8 @@ export async function CheckQuotaInCacheAndDB(user_id, query_type) {
     if (exists) {
       if (query_type === "Synthesis") {
         newCount = await redisClient.incrBy(redisKey, 2);
+      } else if (qyert_type === "analyst") {
+        newCount = await redisClient.incrBy(redisKey, 4);
       } else {
         newCount = await redisClient.incr(redisKey);
       }

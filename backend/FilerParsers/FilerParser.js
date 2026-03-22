@@ -191,7 +191,10 @@ export const HandleSourceCreation = async (response, plan_type, MessageId) => {
   const seen = new Set(); // a set to track the uniqueness of document
 
   if (!response || !response.result || !Array.isArray(response.result.hits)) {
-    await notifyMe("Invalid response passed to HandleSourceCreation");
+    notifyMe(
+      "Invalid response passed to HandleSourceCreation in fileparser.js",
+      "Invalid data type"
+    );
     return { error: "Invalid response" };
   }
 
@@ -277,7 +280,10 @@ export const processContextStringCreation = async (response) => {
   });
 
   if (!result || result === "") {
-    await notifyMe("An error occured while creating the context string");
+    await notifyMe(
+      "An error occured while creating the context string",
+      "there were no results in the fileparser.js processContextStringCreation Handler line:283"
+    );
     return {
       message:
         "I do not have necessary information regarding your query right now.",
