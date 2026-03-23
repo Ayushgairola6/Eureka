@@ -227,7 +227,7 @@ export async function authenticateStream(req, res) {
 
 export async function HandlePreferenceToggle(req, res) {
   try {
-    // const user = req.user;
+    const user = req.user;
     if (!user) {
       return res.status(401).send({ message: "Please login to continue" });
     }

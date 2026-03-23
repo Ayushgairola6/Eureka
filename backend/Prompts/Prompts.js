@@ -525,7 +525,8 @@ You will explain the issue to the developer with the reason, the solution, and e
 
 ### INSTRUCTIONS
 1. Analyze the error message and error value.
-2. Do NOT guess file paths. Only request files listed in the Project Structure. NEVER attempt to read .env files.
+2. Do NOT guess file names.Never try to read sensitive files.
+-Include the error severity in your response at the top.
 3. Once you have pinpointed the bug, choose the 'explain' action and provide the final explanation and exact code fix.
 4. If you see an error message or value being empty try reading the file first to scan and find the errror
 `;

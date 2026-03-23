@@ -52,11 +52,9 @@ export const CHAT_THEMES = [
 ];
 
 import { useState, useRef } from "react";
-import { useAppSelector, useAppDispatch } from "../store/hooks";
-import { setCurrenTheme } from "../store/InterfaceSlice";
+// import { setCurrenTheme } from "../store/InterfaceSlice";
 export const CustomDropdown = () => {
-  const currentTheme = useAppSelector((s) => s.interface.CurrentTheme);
-  const dispatch = useAppDispatch();
+  // const currentTheme = useAppSelector((s) => s.interface.CurrentTheme);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -71,7 +69,6 @@ export const CustomDropdown = () => {
       >
         <div
           className="w-5 h-5 rounded-full border border-black/5 dark:border-gray-400/70 shadow-sm"
-          style={{ backgroundColor: currentTheme?.color }}
         />
         <span className="text-sm font-medium hidden sm:block">Theme</span>
       </button>
@@ -81,11 +78,10 @@ export const CustomDropdown = () => {
         className={`
         absolute left-0 mt-2 w-48 rounded-xl border border-zinc-200 dark:border-zinc-800 
         bg-white dark:bg-zinc-900 shadow-xl z-[100] transition-all duration-200 origin-top-left
-        ${
-          isOpen
+        ${isOpen
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
-        }
+          }
       `}
       >
         <div className="p-1.5 space-y-1">
@@ -96,20 +92,16 @@ export const CustomDropdown = () => {
           {CHAT_THEMES.map((t) => (
             <button
               key={t.id}
-              onClick={() => {
-                dispatch(setCurrenTheme(t));
-                localStorage.setItem(
-                  "AntiNode_Interface_Theme",
-                  JSON.stringify(t)
-                );
-              }}
+              // onClick={() => {
+              //   dispatch(setCurrenTheme(t));
+              //   localStorage.setItem(
+              //     "AntiNode_Interface_Theme",
+              //     JSON.stringify(t)
+              //   );
+              // }}
               className={`
                 w-full flex items-center gap-3 px-2 py-2 text-sm rounded-lg transition-colors
-                ${
-                  currentTheme.id === t.id
-                    ? "bg-zinc-100 dark:bg-zinc-800"
-                    : "hover:bg-zinc-50 dark:hover:bg-zinc-700"
-                }
+                
               `}
             >
               <div
@@ -117,9 +109,7 @@ export const CustomDropdown = () => {
                 style={{ backgroundColor: t.color }}
               />
               <span className="flex-1 text-left">{t.name}</span>
-              {currentTheme.id === t.id && (
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              )}
+
             </button>
           ))}
         </div>
