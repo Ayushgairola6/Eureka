@@ -35,6 +35,7 @@ export const InitiateGoogleAuth = async (req, res) => {
       scope: [
         "https://www.googleapis.com/auth/userinfo.profile",
         "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/drive.readonly", //to access users drive files
       ].join(" "),
       state: state,
     };
@@ -85,7 +86,11 @@ export const HandleGoogleCallback = async (req, res) => {
       );
     }
 
-    const { access_token } = tokenResponse.data;
+    const {
+      access_token,
+      refresh_token, // ← Google's refresh token — not your app's
+      expiry_date,
+    } = tokenResponse.data;
     // 4. Get user profile from Google
     const userProfile = await getUserProfile(access_token);
 
@@ -102,10 +107,29 @@ export const HandleGoogleCallback = async (req, res) => {
     if (user?.error) {
       const errorrMessage = encodeURIComponent(user.error);
       return res.redirect(
-        `${
-          process.env.CLIENT_URL
-        }/client/OAuthCallback?error=${encodeURIComponent(user.error)}`
+        `${process.env.CLIENT_URL}/client/OAuthCallback?error=${errorrMessage}`
       );
+    }
+    // store the drive access to tokens and refershTokens
+    if (refresh_token) {
+      const { error: driveTokenError } = await supabase
+        .from("user_integrations")
+        .upsert(
+          {
+            user_id: user.id,
+            provider: "google_drive",
+            access_token,
+            refresh_token,
+            expiry_date: JSON.stringify(Date.now() + 3600 * 1000), // 1 hr expiry time converted to string format
+          },
+          {
+            onConflict: "user_id, provider", // update if already exists
+          }
+        );
+
+      if (driveTokenError) {
+        notifyMe("Failed to store Google Drive tokens", driveTokenError);
+      }
     }
     // 6. Generate application tokens (using your existing functions)
 

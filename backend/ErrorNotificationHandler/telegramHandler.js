@@ -107,19 +107,12 @@ async function notifyMe(message, error, history = [], depth = 0) {
 
     // Parse the LLM's structured decision
     const responseData = JSON.parse(result.text);
-    console.log(
-      "This is the llm text\n",
-      responseData,
-      "iteration_count:",
-      depth
-    );
 
     // =========================================================
     // BRANCH 1: Agent asked to read a file (Doc or Codebase)
     // =========================================================
     if (responseData.action === "request_file" && responseData.fileName) {
       const requestedPath = responseData.fileName;
-      console.log(`[Dweller] Reading file: ${requestedPath} (Depth: ${depth})`);
 
       // Add the model's request to the history so it remembers what it did
       history.push({
@@ -147,7 +140,7 @@ async function notifyMe(message, error, history = [], depth = 0) {
         fileContent = `[SYSTEM BLOCK] Access Denied: Restricted path: ${requestedPath}`;
       } else {
         try {
-          const rawContent = fs.readFileSync(absolutePath, "utf-8");
+          const rawContent = await fs.readFile(absolutePath, "utf-8");
           fileContent =
             rawContent.length > 30000
               ? rawContent.substring(0, 30000) + "\n\n...[FILE TRUNCATED]..."
@@ -157,6 +150,7 @@ async function notifyMe(message, error, history = [], depth = 0) {
         }
       }
 
+      console.log("Filecontent\n", fileContent);
       // Feed the file content back to the LLM as the user
       history.push({
         role: "user",
@@ -184,7 +178,6 @@ async function notifyMe(message, error, history = [], depth = 0) {
     );
   } catch (err) {
     // Edge Case: Fallback (JSON parse fails, API key invalid, etc)
-    console.error("[Dweller Error]", err);
     return await bot.sendMessage(
       MY_CHAT_ID,
       `🚨 **Raw Error (Dweller is unconscious)**\n\nMessage: ${message}\nValue: ${

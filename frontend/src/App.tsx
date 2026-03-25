@@ -54,7 +54,8 @@ import RefundPolicy from "./pages/RefundPolicy.tsx";
 import UserChatRooms from "./pages/Rooms.tsx";
 import { ContactUs } from "./pages/ContactUs.tsx";
 import { UnfinishedResearchPage } from "./pages/UnfinishedResearch.tsx";
-
+import { DriveAuthPage } from '@/components/ConnectorCallback.tsx'
+import PaymentCallback from "./pages/PaymentCallback.tsx";
 // stripe api
 // const stripePromise = loadStripe(
 //   "pk_test_51BTUDGJAJfZb9HEBwDg86TN1KNprHjkfipXmEDMb0gSCassK5T3ZfxsAbcgKVmAIXF7oZ6ItlZZbXO6idTHE67IM007EwQ4uN3"
@@ -251,6 +252,8 @@ const App = () => {
               element={<OAuthCallbackHandler />}
               path="/client/OAuthCallback"
             />
+            <Route element={<DriveAuthPage />} path='/client/Drive_Auth' />
+            <Route element={<PaymentCallback />} path='/checkout' />
             <Route element={<LandingPage />} path="/"></Route>
             <Route element={<EmailVerification />} path="/user/verify-email" />
             <Route element={<Interface />} path="/Interface"></Route>

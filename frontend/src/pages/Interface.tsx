@@ -30,20 +30,18 @@ import { v4 as uuid } from 'uuid'
 import { CiStreamOff, CiStreamOn } from "react-icons/ci";
 import { QuotaIndicator } from "@/components/QuotaIndicator.tsx";
 import { CreatingReport } from "@/components/createReportIndicator.tsx";
+import { ConnectDriveButton } from "@/components/ToolConnector.tsx"
+import { CheckDriveConnectorState } from "../store/ToolsSlice.ts";
 function Interface() {
   const [searchParams] = useSearchParams();
-  // handling google auth localstorage sessionToken storage
-  useEffect(() => {
-    const SessionId = searchParams.get("SessionId");
-    if (SessionId) {
-      localStorage.setItem("AntiNode_six_eta_v1_Authtoken", SessionId);
-    }
-  }, []);
+
+
+
   const dispatch = useAppDispatch();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(false);
-  const { isLoggedIn } = useAppSelector((state) => state.auth);
+  const { isLoggedIn, user } = useAppSelector((state) => state.auth);
   const { question, category, visibility, subCategory, Chats, selectedDoc, search_depth, queryType, creatingReport } =
     useAppSelector((state) => state.interface);
   const { isConnected } = useAppSelector(s => s.socket) //socket conection state (boolean)
@@ -168,6 +166,14 @@ function Interface() {
     }
 
   }, [dispatch])
+
+  // check the drive connector status
+  useEffect(() => {
+    if (isLoggedIn === false || !user) return;
+    dispatch(CheckDriveConnectorState()).unwrap().then((res) => toast.message(res.message)).catch(err => toast.error(err))
+  }, [isLoggedIn, user])
+
+
   // const FetchCountRef = React.useRef(0);
   // useEffect(() => {
   //   // Only fetch if logged in and we haven't loaded history yet
@@ -262,15 +268,39 @@ function Interface() {
       <div
         className={`w-full  flex items-center justify-between flex-col min-h-[90vh]  dark:bg-black  relative z-[1]  px-4 py-3 `}
       >
-        <ul className={`border ${isConnected === true ? "border-green-600 bg-green-400/10 text-green-600 rounded-xl " : "border-red-600 bg-red-400/10 text-red-600 rounded-xl "} space-grotesk text-xs fixed top-15 right-2  z-[5] py-1 px-2 flex items-center justify-center gap-2`}>{isConnected === true ? (<><CiStreamOn /> Live Tail</>) : (<><CiStreamOff /> No Live Tail</>)}</ul>
+        <div className={`fixed top-15 right-2 z-[5] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all duration-300 ${isConnected
+          ? "border-green-500/30 bg-green-500/6"
+          : "border-red-500/30 bg-red-500/6"
+          }`}>
+          {isConnected ? (
+            <>
+              <span className="relative flex w-[7px] h-[7px]">
+                <span className="absolute inset-0 rounded-full bg-green-500 opacity-40 animate-ping" />
+                <span className="relative w-[7px] h-[7px] rounded-full bg-green-500 block" />
+              </span>
+              <span className="flex items-center justify-center gap-2 space-grotesk text-[10px] font-semibold text-green-500 tracking-widest">
+                LIVE TAIL <CiStreamOn />
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="w-[7px] h-[7px] rounded-full bg-red-500 opacity-70 block" />
+              <span className="flex items-center justify-center gap-2 space-grotesk text-[10px] font-semibold text-red-500 tracking-widest">
+                NO TAIL <CiStreamOff />
+              </span>
+            </>
+          )}
+        </div>
         <Notice />
         {creatingReport === true && <CreatingReport />}
+
         <ChatBubble
           isActive={isActive}
           setIsActive={setIsActive}
           chatcontainer={chatcontainer}
         />
         <div className="w-full flex items-center justify-center fixed bottom-0 py-0.5 left-0 md:px-2 px-0.5   dark:bg-black bg-white ">
+          <ConnectDriveButton />
 
           <PrivateDocuments
             selectedDoc={selectedDoc}
@@ -284,6 +314,7 @@ function Interface() {
           <div className="w-full md:max-w-3/5 relative rounded-2xl p-0.5 dark:bg-black bg-white ">
             {" "}
             {/* Added padding */}
+
             <div
               className={`relative bg-white dark:bg-black  backdrop-blur-md overflow-y-visible rounded-sm`}
             >

@@ -7,7 +7,7 @@ Backend Architecture Overview
    Redis for cache/rate-limits/session state
    Pinecone vector DB for semantic doc search
    Optional Neo4j for graph relationships
-   AI: Google Gemini 2.5 + Groq Llama 3.3 (70B) + RAG via web-search APIs
+   AI: Groq Llama 3.3 (70B) & kimi k2 + RAG via web-search APIs
 2. Core Responsibilities
    Authentication, user management, subscription/plan checks
    Document ingestion (PDF/DOCX/JSON/CSV/MD/PPTX/TXT) + embedding pipeline
@@ -15,7 +15,7 @@ Backend Architecture Overview
    Web search orchestration and synthesis mode
    Chat room collaboration + message history + SSE streaming
    Quota/rate limit enforcement per plan
-   Error reporting (Telegram, logs), email service (Brevo), payments (Razorpay)
+   Error reporting (Telegram, logs), email service (Brevo), payments (dodopayments)
 3. Data flows
    Ingest route → parser → chunker → Gemini embeddings → Pinecone insertion → DB metadata in Supabase
    Query route → intent analyzer → read doc chunks + web sources → Gemini/Groq generation → response + history log

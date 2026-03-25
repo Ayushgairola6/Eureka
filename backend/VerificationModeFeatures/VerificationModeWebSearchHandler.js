@@ -372,7 +372,13 @@ export const VerificationModeSearchWeb = async (req, res) => {
           "There is something wrong with your account please contact our support at support@antinodeai.space to invoke a problem ticket.",
       });
     }
-
+    // free users not allowed
+    if (plan_type === "free" || plan_type === "sprint pass") {
+      return res.status(403).json({
+        message:
+          "This plan does not include analyst mode, if you want to try it please considering upgrading your plan.",
+      });
+    }
     // orchestrate results
     const result = await HandleOrchestratedResultsHandling({
       user: req.user,
@@ -581,9 +587,8 @@ export const FinalAnalyzer = async (req, res) => {
       });
 
     // if there are further instructions for the user
-    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
-      user.user_id
-    );
+    const { status, error, plan_type, plan_status, decision_type } =
+      await CheckUserPlanStatus(user.user_id);
 
     //if the user is not paid or the paid staus is not even available
     if (status === false || error || !plan_type) {
@@ -621,7 +626,7 @@ export const FinalAnalyzer = async (req, res) => {
     }
 
     /// free and sprint pass users aren't eligible for this
-    if (instructions) {
+    if (instructions && decision_type != "finalize") {
       if (plan_type === "free" || plan_type === "sprint pass") {
         return res.status(400).json({
           message:
@@ -649,6 +654,74 @@ export const FinalAnalyzer = async (req, res) => {
         });
     }
 
+    // instruction but with finalize report
+    if (instructions && decision_type === "finalize") {
+      // cache the user message
+      const message = {
+        id: userMessageId, //users message Id
+        sent_by: "You", //sent by the user
+        message: { isComplete: true, content: instructions },
+        sent_at: currentTime,
+      };
+      await CacheCurrentChat(message, req.user);
+      const Information = await GetResearchData(MessageId);
+      // create a report
+      if (!Information || Information.error) {
+        return res.status(400).json({
+          message:
+            "Seems like our AI models are overloaded right now please stand by while we try to fix this problem, you can continue this research from your archive.",
+        });
+      }
+      const finalReportSynthesizer = await HandleInference(
+        `Create a detailed report of this information fetched by you in the previous step of the research \n,the source information also contains the previous original query of the user so also keep that into consideration\n,
+        these are new and additional instructions from the user=${instructions}\n,this is the information from sources=${JSON.stringify(
+          Information.data
+        )}`,
+        ANALYST_PROMPT
+      );
+
+      if (finalReportSynthesizer?.error || !finalReportSynthesizer?.result) {
+        return res.status(400).json({
+          message:
+            "Our AI models are very overloaded right now please wait a bit before trying again later.",
+        });
+      }
+      const { error: updationError } = await supabase
+        .from("research_data")
+        .update({ isSynthesized: true })
+        .eq("message_id", MessageId); //update the synthesis value
+
+      if (updationError) {
+        notifyMe(
+          "There was an error while trying to update the isSynthesized value for analyst mode",
+          JSON.stringify(updationError)
+        );
+      }
+
+      const AiMessage = {
+        id: MessageId,
+        sent_by: "AntiNode", //sent by the user
+        message: {
+          isComplete: true,
+          content: finalReportSynthesizer.result,
+        },
+        sent_at: currentTime,
+      };
+      // update the cache
+      await CacheCurrentChat(AiMessage, req.user);
+      await StoreQueryAndResponse(
+        user.user_id,
+        user_choice,
+        finalReportSynthesizer.result,
+        null
+      );
+
+      return res.status(200).send({
+        message: "Report ready",
+        result: finalReportSynthesizer.result,
+        isSynthesized: true,
+      });
+    }
     //  final report path
     const message = {
       id: userMessageId, //users message Id
@@ -667,9 +740,9 @@ export const FinalAnalyzer = async (req, res) => {
       });
     }
     const finalReportSynthesizer = await HandleInference(
-      `Analyze and create a report of this information regarding the sources and the previous instructions and queries used to fetch the results =${JSON.stringify(
+      `Analyze and create a report of this information based of  the sources and the previous instructions and queries used to fetch the results =${JSON.stringify(
         Information.data
-      )}`,
+      )} `,
       ANALYST_PROMPT
     );
 

@@ -11,7 +11,6 @@ import { AgentWelcome } from "./InterfaceWelcome_Components.tsx";
 import { ChevronDown } from "lucide-react";
 import { FinalizePopup } from "./Reject_Popup.tsx";
 import { ResearchDataCenter } from "./ResearchDataRenders.tsx";
-
 const STEPS = [
   "Uncovering",
   "Synthesizing",

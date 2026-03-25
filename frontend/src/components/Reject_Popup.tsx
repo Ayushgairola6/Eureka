@@ -29,12 +29,16 @@ export const FinalizePopup = ({ message }: any) => {
 
 
     const [rejectOpen, setRejectOpen] = React.useState(false);
+    const [decision_type, setDecision_Type] = React.useState<string | null>(null);
     const [focused, setFocused] = React.useState(false);
 
-    function handleConfirm() {
+
+    function handleConfirm(decision: string) {
+        setDecision_Type(decision);
         FinalizeReport("confirm", '');
     }
 
+    //labeling a report
     function handleReject(label: string) {
         setRejectOpen(false);
         FinalizeReport("reject", label);
@@ -90,6 +94,7 @@ export const FinalizePopup = ({ message }: any) => {
         if (loading === true) {
             return;
         }
+        if (!decision_type) return;
         if (!message || !message.id) return;
         if (!choice) return toast.error("Please choose whether you want to reject or confirm this.");
 
@@ -103,7 +108,8 @@ export const FinalizePopup = ({ message }: any) => {
                 MessageId: message.id,
                 userMessageId: user_id,
                 report: label,
-                web_search_depth: search_depth
+                web_search_depth: search_depth,
+                decision_type: decision_type,
             }
 
             dispatch(FianLizeResearch(info)).unwrap().then((res) => {
@@ -210,14 +216,14 @@ export const FinalizePopup = ({ message }: any) => {
                     placeholder="Additional instructions, corrections, or deeper focus..."
                     className="bai-jamjuree-regular text-[11px] dark:text-neutral-300 text-black space-grotesk placeholder:text-neutral-700 bg-transparent border-none outline-none focus:ring-0 w-full"
                     onKeyDown={(e) => {
-                        if (e.key === "Enter" && instructionsRef.current?.value) handleConfirm();
+                        if (e.key === "Enter" && instructionsRef.current?.value) handleConfirm("finalize");
                     }}
                 />
             </div>
 
             {/* Confirm */}
             <button
-                onClick={() => handleConfirm()}
+                onClick={() => handleConfirm("finalize")}
                 title="Finalize report"
                 disabled={creatingReport === true}
                 className={` group flex items-center gap-1.5 px-3 py-2 rounded-lg ${creatingReport === true ? "bg-gray-100 text-black opacity-60" : " hover:bg-green-500/20 bg-green-500/10 border border-green-500/20 text-green-400  hover:border-green-500/40 opacity-100"} transition-all text-[10px] font-mono uppercase`}

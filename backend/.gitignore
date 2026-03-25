@@ -5,5 +5,5 @@ tests/
 rejectedApproaches.js
 coverage
 .nyc_output
-PaymentHandler/
-routers/PaymentsRouter.js
+# PaymentHandler/
+# routers/PaymentsRouter.js

@@ -1127,6 +1127,21 @@
     local-pkg "^1.1.1"
     mlly "^1.7.4"
 
+"@iframe-resizer/core@5.5.9":
+  version "5.5.9"
+  resolved "https://registry.yarnpkg.com/@iframe-resizer/core/-/core-5.5.9.tgz#bcc6fca02bd4071b3c36f421c853bf06f20469db"
+  integrity sha512-HacDQx81pgHlmY48tRogcX02TOXfvjllJzI+xfVYmvEXhxoViyi9yEobhNQEt8Mq6NmrH1vHhz6FRfQ9uBTsjQ==
+  dependencies:
+    auto-console-group "1.3.0"
+
+"@iframe-resizer/parent@^5.5.7":
+  version "5.5.9"
+  resolved "https://registry.yarnpkg.com/@iframe-resizer/parent/-/parent-5.5.9.tgz#4f5cad7cdedf36f0f295f3968387555a6fb0b90f"
+  integrity sha512-DfNb9KlOf7WyCNOM2xWPGxJfWtqA/gg7sjHvqvD4k6cfpntPXrKfCd3WdOPNKA980urGkhOdM9Ye0unV2gnYYw==
+  dependencies:
+    "@iframe-resizer/core" "5.5.9"
+    auto-console-group "1.3.0"
+
 "@isaacs/fs-minipass@^4.0.0":
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/@isaacs/fs-minipass/-/fs-minipass-4.0.1.tgz#2d59ae3ab4b38fb4270bfa23d30f8e2e86c7fe32"
@@ -2176,6 +2191,11 @@ at-least-node@^1.0.0:
   resolved "https://registry.yarnpkg.com/at-least-node/-/at-least-node-1.0.0.tgz#602cd4b46e844ad4effc92a8011a3c46e0238dc2"
   integrity sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==
 
+auto-console-group@1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/auto-console-group/-/auto-console-group-1.3.0.tgz#21870bad097192b5950f10a3bdf6054c74971934"
+  integrity sha512-W/G5jy1ZPeVYPyqOVGND7EjbzrsLgRD3s+1QegXfJ7bYlphFxjqG60rviFXWw0d2YCj0Clc7hU5/nTqrBEhBIw==
+
 available-typed-arrays@^1.0.7:
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/available-typed-arrays/-/available-typed-arrays-1.0.7.tgz#a5cc375d6a03c2efc87a553f3e0b1522def14846"
@@ -2917,6 +2937,13 @@ devlop@^1.0.0, devlop@^1.1.0:
   integrity sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==
   dependencies:
     dequal "^2.0.0"
+
+dodopayments-checkout@^1.8.0:
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/dodopayments-checkout/-/dodopayments-checkout-1.8.0.tgz#3ad042a8d436637d77112733da39f6ebd0dfa5bc"
+  integrity sha512-KvQfzGpSPzV0GITSBHvSmDQehGhx6R8XtpuLgvt0RuyxrvumDBboE9/5Iv1sd98cVXeeSl3B6OeVIo4IQmXDdQ==
+  dependencies:
+    "@iframe-resizer/parent" "^5.5.7"
 
 dompurify@^3.2.5, dompurify@^3.2.6:
   version "3.2.6"
