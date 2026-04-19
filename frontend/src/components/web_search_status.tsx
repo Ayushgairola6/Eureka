@@ -233,7 +233,7 @@ const STATUS_HANDLERS: Record<string, any> = {
     render: (data: any) => (
       <div className="mt-2 pl-4 border-l-2 border-emerald-200 dark:border-emerald-800">
         <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest space-grotesk block mb-1">Analyzing</span>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 bai-jamjuree-regular leading-relaxed">{data}</p>
+        <p className="text-xs text-neutral-600 dark:text-neutral-400 bai-jamjuree-regular leading-relaxed">{data}</p>
       </div>
     ),
   },
@@ -246,7 +246,7 @@ const STATUS_HANDLERS: Record<string, any> = {
         <div className="flex space-x-1">
           {[0, 150, 300].map(d => <div key={d} className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
         </div>
-        <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium font-mono">{data}</span>
+        <span className="text-xs text-neutral-700 dark:text-neutral-300 font-medium space-grotesk">{data}</span>
       </div>
     ),
   },
@@ -268,7 +268,7 @@ const STATUS_HANDLERS: Record<string, any> = {
     render: (data: any) => (
       <div className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 bai-jamjuree-regular bg-neutral-50 dark:bg-neutral-800/50 p-2 rounded border-l-4 border-blue-400">
         <span className="text-xs font-bold text-blue-500 uppercase tracking-wide block">System Query</span>
-        <span className="font-semibold text-neutral-800 dark:text-neutral-200">{data}</span>
+        <span className="font-semibold text-neutral-800 dark:text-neutral-200 space-grotesk">{data}</span>
       </div>
     ),
   },
@@ -403,11 +403,11 @@ const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }
             {!isProcessActive && (
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             )}
-            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${!isProcessActive ? "bg-orange-500" : "bg-neutral-400"}`}></span>
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${!isProcessActive ? "bg-green-500" : "bg-neutral-400"}`}></span>
           </div>
 
-          <span className="text-xs font-bold text-neutral-700 dark:text-neutral-200 uppercase tracking-widest space-grotesk">
-            {currentMessageStatus?.status[currentMessageStatus.status.length - 1].message || "PROCESS_LOGS"} <span className="text-neutral-400 space-grotesk font-normal ml-2">{">>"} OP_COUNT({currentMessageStatus?.status.length})</span>
+          <span className="text-xs  text-neutral-700 dark:text-neutral-200 uppercase  space-grotesk">
+            {currentMessageStatus?.status[currentMessageStatus.status.length - 1].message || "PROCESS_LOGS"} <span className="text-neutral-400 space-grotesk font-normal ml-2">steps- {currentMessageStatus?.status.length}</span>
           </span>
         </div>
         <button className="text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">

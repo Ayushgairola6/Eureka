@@ -19,29 +19,32 @@ import {
   setSearchDepth,
   UploadDocuments,
   WebSearchHandler,
+  ContinuePendingResearch,
+  UpdateResearchData,
+  ShowVerificationPopup,
+  setCreatingReport,
 } from "../store/InterfaceSlice.ts";
 import { setDocs, SetQueryCount } from "../store/AuthSlice.ts";
 import UserForm from "@/components/ui/userDetail.tsx";
-import { useSearchParams } from "react-router";
 import PrivateDocuments from "@/components/PrivateDocuments.tsx";
 import PublicQueryOptions from "@/components/PublicQueryOptions.tsx";
 import { Notice } from "@/components/Notice.tsx";
 import { v4 as uuid } from 'uuid'
 import { CiStreamOff, CiStreamOn } from "react-icons/ci";
-import { QuotaIndicator } from "@/components/QuotaIndicator.tsx";
+// import { QuotaIndicator } from "@/components/QuotaIndicator.tsx";
 import { CreatingReport } from "@/components/createReportIndicator.tsx";
-import { ConnectDriveButton } from "@/components/ToolConnector.tsx"
-import { CheckDriveConnectorState } from "../store/ToolsSlice.ts";
+// import { ConnectDriveButton } from "@/components/ToolConnector.tsx"
+// import { CheckDriveConnectorState } from "../store/ToolsSlice.ts";
+import { InterfaceFeatureSelector } from "@/components/Interface_FeatureSelector.tsx";
+import { useSearchParams } from "react-router";
 function Interface() {
-  const [searchParams] = useSearchParams();
-
-
 
   const dispatch = useAppDispatch();
-
+  const [searchParams] = useSearchParams();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(false);
-  const { isLoggedIn, user } = useAppSelector((state) => state.auth);
+  const [showFeatures, setShowFeatures] = useState(false);
+  const { isLoggedIn } = useAppSelector((state) => state.auth);
   const { question, category, visibility, subCategory, Chats, selectedDoc, search_depth, queryType, creatingReport } =
     useAppSelector((state) => state.interface);
   const { isConnected } = useAppSelector(s => s.socket) //socket conection state (boolean)
@@ -129,7 +132,6 @@ function Interface() {
             dispatch(updateFavicon(res.favicon));
             dispatch(SetQueryCount('surface_web'));
             sessionStorage.removeItem("AntiNode_Redirect_prompt");
-
           }
         })
         .catch((err: any) => {
@@ -168,33 +170,64 @@ function Interface() {
   }, [dispatch])
 
   // check the drive connector status
-  useEffect(() => {
-    if (isLoggedIn === false || !user) return;
-    dispatch(CheckDriveConnectorState()).unwrap().then((res) => toast.message(res.message)).catch(err => toast.error(err))
-  }, [isLoggedIn, user])
-
-
-  // const FetchCountRef = React.useRef(0);
   // useEffect(() => {
-  //   // Only fetch if logged in and we haven't loaded history yet
-  //   if (!isLoggedIn || Chats.length > 0 || FetchCountRef?.current > 0) return;
+  //   if (isLoggedIn === false || !user) return;
+  //   dispatch(CheckDriveConnectorState()).unwrap().then((res) => toast.message(res.message)).catch(err => toast.error(err))
+  // }, [isLoggedIn, user])
 
-  //   // Use a loading flag to prevent multiple simultaneous fetches
-  //   dispatch(GetSessionHistory("0")) // Or your timestamp logic
-  //     .unwrap()
-  //     .then((res) => {
-  //       if (res.history?.length > 0) {
-  //         FetchCountRef.current = 1; //flag to toggle state
-  //         dispatch(UpdateResponseStatus(res.history));
-  //         // Map your "single row" DB format to your UI format here
-  //         // if the reducer doesn't do it
-  //         dispatch(UpdateSessionChats(res.history));
-  //         dispatch(updatefetchingSessionHistory(false));
-  //       }
-  //     })
-  //     .catch((err) => console.error(err))
-  //     .finally(() => (FetchCountRef.current = 1));
-  // }, [isLoggedIn, dispatch]);
+
+  useEffect(() => {
+    const MessageId = searchParams.get("MessageId");
+    const depth = searchParams.get("depth");
+    const action_type = searchParams.get("action_type");
+    const instructions = searchParams.get("instructions")
+
+    if (!MessageId || !depth) {
+      return;
+    };
+    const user_id = uuid()
+
+    dispatch(
+      UpdateChats({
+        id: user_id,
+        sent_at: currentTime,
+        sent_by: "You",
+        message: {
+          isComplete: true,
+          content: `Continuing research-thread id ${MessageId} additional isntructions-> ${instructions ?? "None provided"}`,
+        },
+      })
+    );
+
+
+    const data = {
+      MessageId: MessageId, web_search_depth: depth, room_id: null, action_type: action_type, instructions: instructions, userMessageId: user_id
+    }
+
+    dispatch(setCreatingReport());
+
+    dispatch(ContinuePendingResearch(data)).unwrap().then((res) => {
+      toast.message(res.message)
+      if (res?.direct_answer) {
+        dispatch(MimicSSE({ id: MessageId, delta: res?.direct_answer }));
+      }
+      dispatch(UpdateResearchData(res));
+      dispatch(ShowVerificationPopup(res?.MessageId))
+      dispatch(SetQueryCount('analyst'));
+    }).catch(err => {
+      toast.error(err)
+      dispatch(MimicSSE({ id: MessageId, delta: err }));
+
+
+    }).finally(() => {
+      dispatch(setCreatingReport());
+
+    });
+
+
+  }, [])
+
+
   // uploading a document
   const handleUpload = async (UserData: FormData) => {
     try {
@@ -268,6 +301,8 @@ function Interface() {
       <div
         className={`w-full  flex items-center justify-between flex-col min-h-[90vh]  dark:bg-black  relative z-[1]  px-4 py-3 `}
       >
+        <InterfaceFeatureSelector showFeatures={showFeatures} setShowFeatures={setShowFeatures} />
+
         <div className={`fixed top-15 right-2 z-[5] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all duration-300 ${isConnected
           ? "border-green-500/30 bg-green-500/6"
           : "border-red-500/30 bg-red-500/6"
@@ -300,7 +335,8 @@ function Interface() {
           chatcontainer={chatcontainer}
         />
         <div className="w-full flex items-center justify-center fixed bottom-0 py-0.5 left-0 md:px-2 px-0.5   dark:bg-black bg-white ">
-          <ConnectDriveButton />
+          {/* <ConnectDriveButton /> */}
+
 
           <PrivateDocuments
             selectedDoc={selectedDoc}
@@ -318,7 +354,8 @@ function Interface() {
             <div
               className={`relative bg-white dark:bg-black  backdrop-blur-md overflow-y-visible rounded-sm`}
             >
-              <QuotaIndicator />
+              {/* <QuotaIndicator /> */}
+
 
               <PublicQueryOptions />
 
@@ -328,6 +365,8 @@ function Interface() {
                 isActive={isActive}
                 setIsActive={setIsActive}
                 textareaRef={textareaRef}
+                showFeatures={showFeatures}
+                setShowFeatures={setShowFeatures}
               />
               <div className='space-grotesk text-[10px] text-gray-700 dark:text-gray-500 text-center '>
                 Always verify critical information from primary sources

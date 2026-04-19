@@ -152,11 +152,11 @@ const Hero: React.FC<props> = ({ value }) => {
           </h1>
 
           <h2 className="bai-jamjuree-semibold text-md md:text-xl text-gray-900 dark:text-gray-300">
-            Research together with AI. Verify sources. Real-time collaboration. Full Transparency.
+            Control and steer research at orchestration layer. Freedom from cognitive overload.
           </h2>
 
           <p className='text-sm md:text-md bai-jamjuree-regular dark:text-gray-400 text-gray-700'>
-            "Deep web search, multi-document analysis, and team workspaces in one platform."
+            "User-directed research, Deep web search, multi-document analysis, and team workspaces in one platform."
           </p>
 
           {/* Search Input */}
@@ -283,6 +283,7 @@ const Hero: React.FC<props> = ({ value }) => {
               <div className="p-6">
                 <div className="group relative rounded-md overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm z-10">
                   <video
+                    preload='metadata'
                     ref={videoRef}
                     key={active.video}
                     autoPlay muted loop playsInline

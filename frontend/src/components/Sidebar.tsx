@@ -11,6 +11,7 @@ import { LogoRender } from "./LogoRender.tsx";
 import { FiX } from "react-icons/fi";
 import { setCurrTab } from '../store/AuthSlice.ts'
 import { ArchiveX } from "lucide-react";
+// import { ConnectDriveButton } from "./ToolConnector.tsx";
 type SidebarProps = {
   isVisble: boolean;
   setIsVisible: React.Dispatch<React.SetStateAction<boolean>>;
@@ -223,6 +224,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
             )}
           </div>
         </nav>
+        {/* <section className='absolute bottom-10 right-30  w-full'>
+          <ConnectDriveButton />
+        </section> */}
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 dark:border-neutral-800">

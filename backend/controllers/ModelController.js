@@ -65,60 +65,61 @@ export const HandleSynthesisMode = async (
   }
 };
 
-export const GenerateResponse = async (
-  question,
-  FormattedString,
-  SYSTEM_PROMPT,
-  user,
-  plan_type
-) => {
+export const GenerateResponse = async (user_prompt, SYSTEM_PROMPT) => {
+  // 1. Unified Validation
+  if (
+    !user_prompt ||
+    !SYSTEM_PROMPT ||
+    typeof user_prompt !== "string" ||
+    typeof SYSTEM_PROMPT !== "string"
+  ) {
+    return {
+      error: "Some arguments are either invalid or missing",
+      result: null,
+    };
+  }
+
   try {
-    if (
-      !question ||
-      !FormattedString ||
-      typeof FormattedString !== "string" ||
-      !SYSTEM_PROMPT ||
-      !plan_type ||
-      typeof plan_type !== "string"
-    ) {
-      return { error: "Some parameters are missing or invalid" };
-    }
-
+    // 2. Model Selection & Inference
     const result = await genAI.models.generateContent({
-      model: plan_type === "free" ? "gemini-2.5-flash" : "gemini-2.5-pro",
-
+      model: "gemini-2.5-flash-lite",
       contents: [
         {
           role: "user",
           parts: [
             {
-              text: `userquery=${question}\n web-search-results: ${FormattedString}`,
+              text: user_prompt,
             },
           ],
         },
       ],
-
       config: {
         systemInstruction: SYSTEM_PROMPT,
         temperature: 0.7,
-        maxOutputTokens: 8000,
       },
     });
 
+    // 3. Extracting Response
     const responseText = result.text;
-    if (!responseText) {
-      notifyMe(
-        `Error while generating a response , the code execution results are these`,
-        JSON.stringify(result.codeExecutionResult)
-      );
-      return { error: "The server is very busy , please try again !" };
+
+    if (responseText) {
+      return {
+        error: null,
+        result: responseText,
+      };
     }
-    // const responseText = FormattedString;
-    // return { error: "Testing out the error fallback function" };
-    return responseText;
+
+    return {
+      error: "The server is very busy, please try again!",
+      result: null,
+    };
   } catch (error) {
-    console.error(error);
-    return { error: "Error while generating a response by the model" };
+    // 5. Catch Block consistent with HandleInference
+    console.error("Gemini inference error:", error);
+    return {
+      error: "Error while generating a response by the model",
+      result: null,
+    };
   }
 };
 

@@ -43,7 +43,6 @@ export const ProcessUserQuery = async (user, queryType) => {
     user_id
   );
   if (status === false || error || !plan_type) {
-    console.log(status, error, "error ans staus from checkUserPlan");
     return {
       status: false,
       message: "Something went wrong with the plan status check",
@@ -56,7 +55,6 @@ export const ProcessUserQuery = async (user, queryType) => {
     plan_type !== "free" &&
     plan_type !== "sprint pass"
   ) {
-    console.log("The user is on premium pass so let them pass");
     return { status: true, message: "Premium user - no limits" };
   }
 

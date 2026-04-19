@@ -56,6 +56,25 @@ export interface MessageResearch {
   timestamp: string;
   status: string;
 }
+interface research_details {
+  url: string;
+  score: number;
+  title: string;
+  content: string;
+}
+interface Information {
+  details: research_details[];
+}
+interface PastResearch {
+  created_at: string;
+  depth: string;
+  id: number;
+  information: Information;
+  query: string;
+  sources_count: number;
+  isSynthesized: boolean;
+  message_id: string;
+}
 interface InterfaceState {
   question: string;
   answer: string;
@@ -91,6 +110,7 @@ interface InterfaceState {
   ResearchData: MessageResearch[];
   creatingReport: boolean;
   fetchingPendingResearch: boolean;
+  Research_Archive: PastResearch[];
 }
 
 const initialState: InterfaceState = {
@@ -136,6 +156,68 @@ const initialState: InterfaceState = {
   ResearchData: [],
   creatingReport: false,
   fetchingPendingResearch: false,
+  Research_Archive: [
+    {
+      created_at: "9890432",
+      depth: "surface_web",
+      id: 1,
+      information: {
+        details: [
+          {
+            url: "google.com",
+            score: 4,
+            title: "TESTING OUT THE RENDERING AND CONTINUATION",
+            content:
+              "GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH",
+          },
+        ],
+      },
+      query: "HOW TO CONTINUE THE ANITNODE RESEARCH ARCHIVE",
+      sources_count: 10,
+      isSynthesized: false,
+      message_id: "490jjfkd65",
+    },
+    {
+      created_at: "9890432",
+      depth: "surface_web",
+      id: 1,
+      information: {
+        details: [
+          {
+            url: "google.com",
+            score: 4,
+            title: "TESTING OUT THE RENDERING AND CONTINUATION",
+            content:
+              "GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH",
+          },
+        ],
+      },
+      query: "HOW TO CONTINUE THE ANITNODE RESEARCH ARCHIVE",
+      sources_count: 10,
+      isSynthesized: false,
+      message_id: "490jjfkd33",
+    },
+    {
+      created_at: "9890432",
+      depth: "surface_web",
+      id: 1,
+      information: {
+        details: [
+          {
+            url: "google.com",
+            score: 4,
+            title: "TESTING OUT THE RENDERING AND CONTINUATION",
+            content:
+              "GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH",
+          },
+        ],
+      },
+      query: "HOW TO CONTINUE THE ANITNODE RESEARCH ARCHIVE",
+      sources_count: 10,
+      isSynthesized: false,
+      message_id: "490jjfkd3",
+    },
+  ],
 };
 
 // Async Thunks
@@ -463,6 +545,7 @@ export const ProcessSynthesis = createAsyncThunk<any, any>(
   }
 );
 
+// /analyst mode
 export const VerificationModeWebSearch = createAsyncThunk<any, any>(
   "verification/web-searc",
   async (data, { rejectWithValue }) => {
@@ -529,6 +612,41 @@ export const FianLizeResearch = createAsyncThunk<any, any>(
   }
 );
 
+// refresh research archive
+export const RefreshResearchArchive = createAsyncThunk(
+  "refresh/archive",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${BaseApiUrl}/api/refresh-archive`,
+
+        {
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    } catch (err: any) {
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
+      }
+
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
+      }
+
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
+    }
+  }
+);
+
+// get pending research
 export const getResearchHistory = createAsyncThunk(
   "research/pending",
   async (_, { rejectWithValue }) => {
@@ -537,6 +655,39 @@ export const getResearchHistory = createAsyncThunk(
         withCredentials: true,
       });
 
+      return response.data;
+    } catch (err: any) {
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
+      }
+
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
+      }
+
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
+    }
+  }
+);
+
+// continue a analyst report from where left off
+export const ContinuePendingResearch = createAsyncThunk<any, object>(
+  "research/continue",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BaseApiUrl}/api/query/finalize`,
+        data,
+        {
+          withCredentials: true,
+        }
+      );
       return response.data;
     } catch (err: any) {
       if (err.response && err.response.data) {
@@ -673,12 +824,17 @@ const interfaceSlice = createSlice({
       // let the sources and favicons existence slide in
       if (!details) return;
 
+      // if already exists
+      // the array can have mulitple research sets for single query
       state.ResearchData.push({
         MessageId: MessageId,
         research_data: research_data,
         timestamp: new Date().toDateString(),
         status: status ?? "complete",
       });
+    },
+    emptyArchive: (state) => {
+      state.Research_Archive = [];
     },
     setQuestion: (state, action) => {
       state.question = action.payload;
@@ -856,14 +1012,29 @@ const interfaceSlice = createSlice({
       // fetch pending researches
       .addCase(getResearchHistory.pending, (state) => {
         state.fetchingPendingResearch = true;
+        state.loading = true;
       })
       .addCase(getResearchHistory.rejected, (state) => {
         state.fetchingPendingResearch = false;
+        state.loading = false;
       })
       .addCase(getResearchHistory.fulfilled, (state, action) => {
-        if (!action.payload.history) return;
         state.fetchingPendingResearch = false;
-        state.ResearchData.push(...action.payload.history); //server returns and array of data
+        state.loading = false;
+
+        state.Research_Archive = [...action.payload.history]; //server returns and array of data
+      });
+    // refresh archive
+    builder
+      .addCase(RefreshResearchArchive.pending, (state) => {
+        state.fetchingPendingResearch = true;
+      })
+      .addCase(RefreshResearchArchive.rejected, (state) => {
+        state.fetchingPendingResearch = false;
+      })
+      .addCase(RefreshResearchArchive.fulfilled, (state, action) => {
+        state.fetchingPendingResearch = false;
+        state.Research_Archive = [...action.payload.history];
       });
   },
 });
@@ -905,6 +1076,7 @@ export const {
   setIsVerificationMode,
   UpdateResearchData,
   setCreatingReport,
+  emptyArchive,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

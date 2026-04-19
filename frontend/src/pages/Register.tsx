@@ -140,9 +140,9 @@ const Register = () => {
           <div className="flex items-center justify-between px-4 py-2 bg-neutral-900 dark:bg-neutral-800 rounded-t-xl border-x border-t border-neutral-800">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-widest">Protocol: NEW_USER_REG</span>
+              <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-widest">Protocol: Registration</span>
             </div>
-            <span className="font-mono text-[9px] text-neutral-500 uppercase italic">Ver: 1.0.1-beta</span>
+            <span className="font-mono text-[9px] text-neutral-500 uppercase italic">Ver: 1.0.3 stable</span>
           </div>
 
           {/* --- Main Registration Form --- */}
@@ -186,7 +186,7 @@ const Register = () => {
               {/* Email Field */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold space-grotesk text-neutral-700 dark:text-neutral-300 flex items-center gap-2">
-                  <MdEmail className="text-neutral-400" size={14} /> Email Address
+                  <MdEmail className="text-neutral-400" size={14} /> Email Identifier
                 </label>
                 <input
                   ref={Email}
@@ -199,7 +199,7 @@ const Register = () => {
               {/* Password Field */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold space-grotesk text-neutral-700 dark:text-neutral-300 flex items-center gap-2">
-                  <MdPassword className="text-neutral-400" size={14} /> Secure Password
+                  <MdPassword className="text-neutral-400" size={14} /> Pass Key
                 </label>
                 {Strength < 7 && <p className='text-[10px] text-red-600 space-grotesk'>
                   * Password must be minimum 8 characters long and should included one UPPERCASE, one SYMBOL and one NUMBER at least.

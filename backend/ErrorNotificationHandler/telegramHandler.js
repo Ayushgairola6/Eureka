@@ -150,7 +150,6 @@ async function notifyMe(message, error, history = [], depth = 0) {
         }
       }
 
-      console.log("Filecontent\n", fileContent);
       // Feed the file content back to the LLM as the user
       history.push({
         role: "user",

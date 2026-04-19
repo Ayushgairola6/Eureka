@@ -1,47 +1,142 @@
-import { useAppSelector, useAppDispatch } from "../store/hooks";
-import { useSearchParams } from "react-router";
-import { useEffect } from "react";
-import { setPaymentStatus } from "../store/PaymentsSlice.ts";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+import axios from "axios";
+import { useAppSelector } from '../store/hooks'
+import { toast } from 'sonner'
+const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
-export const PaymentCallback = () => {
-    const [searchParams] = useSearchParams()
-    const dispatch = useAppDispatch()
+type Status = "pending" | "paid" | "failed";
+
+const PaymentCallback = () => {
+    const { isLoggedIn, user } = useAppSelector((s) => s.auth);
+    const navigate = useNavigate();
+    const [status, setStatus] = useState<Status>("pending");
+    const [attempts, setAttempts] = useState(0);
+
     useEffect(() => {
-        const serverMessage = searchParams.get("message")
-        if (serverMessage) {
-            dispatch(setPaymentStatus(serverMessage))
-        }
-    }, [])
-    const { isProcessingPayment, paymentStatus } = useAppSelector(s => s.payments)
-    return (<>
-        <div>
+        if (isLoggedIn === false || !user) return;
+        const order_id = localStorage.getItem("antinode_order_id");
+        if (!order_id) { setStatus("failed"); return; }
 
+        let count = 0;
+        const interval = setInterval(async () => {
+            count++;
+            try {
+                const { data } = await axios.post(`${BaseApiUrl}/api/payment-status`, { order_id: order_id }, {
+                    withCredentials: true,
+                });
+                setAttempts(count);
+                toast.message(`Your payment staus is ${data.status}`)
+                if (data.status === "paid") {
+                    setStatus("paid");
+                    localStorage.removeItem("antinode_order_id"); // only remove on resolution
+                    clearInterval(interval);
+                } else if (data.status === "failed" || count >= 10) {
+                    setStatus("failed");
+                    localStorage.removeItem("antinode_order_id");
+                    clearInterval(interval);
+                }
+                else if (count >= 10) {
+                    localStorage.removeItem("antinode_order_id");
+                    setStatus("failed"); clearInterval(interval);
+                }
+            } catch (err: any) {
+                toast.error(err?.message || err?.response?.data?.message)
+                setStatus("failed");
+                clearInterval(interval);
+                localStorage.removeItem("antinode_order_id");
+
+            }
+        }, 1500);
+
+        return () => {
+            clearInterval(interval)
+            localStorage.removeItem("antinode_order_id")
+        };
+    }, [isLoggedIn, user]);
+
+    if (status === "pending") return (
+        <div className="min-h-screen flex items-center justify-center bg-black">
+            <div className="flex flex-col items-center gap-6 p-10 rounded-2xl border border-neutral-800 bg-neutral-950 w-full max-w-sm">
+                <span className="font-mono text-[9px] uppercase tracking-widest text-neutral-500">verifying</span>
+                <div className="relative flex items-center justify-center w-14 h-14">
+                    <div className="absolute inset-0 rounded-full border border-neutral-800" />
+                    <div className="absolute inset-0 rounded-full border-t border-sky-500 animate-spin" />
+                    <div className="w-2 h-2 rounded-full bg-sky-500" />
+                </div>
+                <div className="text-center">
+                    <p className="text-sm font-medium text-white">Verifying your payment</p>
+                    <p className="text-[11px] text-neutral-500 font-mono mt-1">
+                        Attempt {attempts}/10 · talking to gateway...
+                    </p>
+                </div>
+                <div className="flex gap-1.5">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div
+                            key={i}
+                            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i < Math.min(Math.ceil(attempts / 3.5), 3) ? "bg-sky-500" : "bg-neutral-700"}`}
+                        />
+                    ))}
+                </div>
+            </div>
         </div>
-        {isProcessingPayment ? (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Processing your payment...</div>
-                <div style={{ border: '4px solid #f3f3f3', borderTop: '4px solid #3498db', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 2s linear infinite', margin: '0 auto' }}></div>
-                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+    );
+
+    if (status === "paid") return (
+        <div className="min-h-screen flex items-center justify-center bg-black">
+            <div className="flex flex-col items-center gap-6 p-10 rounded-2xl border border-green-500/20 bg-neutral-950 w-full max-w-sm">
+                <span className="font-mono text-[9px] uppercase tracking-widest text-green-500">confirmed</span>
+                <div className="w-14 h-14 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </div>
+                <div className="text-center">
+                    <p className="text-sm font-medium text-white">Payment successful</p>
+                    <p className="text-[11px] text-neutral-500 font-mono mt-1">Your plan is now active</p>
+                </div>
+                <button
+                    onClick={() => { localStorage.removeItem("antinode_order_id"); navigate("/"); }}
+                    className="w-full py-2.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-[11px] font-mono uppercase tracking-widest hover:bg-green-500/20 transition-all"
+                >
+                    Continue to app
+                </button>
             </div>
-        ) : paymentStatus === 'success' ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#28a745' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>✅ Payment Successful!</div>
-                <div style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Thank you for your purchase. Your order has been confirmed.</div>
-                <button style={{ padding: '0.5rem 1rem', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>Return to Home</button>
+        </div>
+    );
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-black">
+            <div className="flex flex-col items-center gap-6 p-10 rounded-2xl border border-red-500/20 bg-neutral-950 w-full max-w-sm">
+                <span className="font-mono text-[9px] uppercase tracking-widest text-red-500">failed</span>
+                <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 6l12 12M18 6L6 18" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                </div>
+                <div className="text-center">
+                    <p className="text-sm font-medium text-white">Payment failed</p>
+                    <p className="text-[11px] text-neutral-500 font-mono mt-1">
+                        {attempts >= 10 ? "Gateway timed out" : "Something went wrong"}
+                    </p>
+                </div>
+                <div className="flex flex-col gap-2 w-full">
+                    <button
+                        onClick={() => navigate("/checkout")}
+                        className="w-full py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-mono uppercase tracking-widest hover:bg-red-500/20 transition-all"
+                    >
+                        Try again
+                    </button>
+                    <button
+                        onClick={() => navigate("/")}
+                        className="w-full py-2.5 rounded-lg border border-neutral-800 text-neutral-500 text-[11px] font-mono uppercase tracking-widest hover:border-neutral-600 hover:text-neutral-300 transition-all"
+                    >
+                        Back to home
+                    </button>
+                </div>
             </div>
-        ) : paymentStatus === 'failed' ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#dc3545' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>❌ Payment Failed</div>
-                <div style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Unfortunately, your payment could not be processed. Please try again.</div>
-                <button style={{ padding: '0.5rem 1rem', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '1rem' }} onClick={() => window.location.reload()}>Retry Payment</button>
-                <button style={{ padding: '0.5rem 1rem', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>Go Back</button>
-            </div>
-        ) : (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <div style={{ fontSize: '1.5rem' }}>Payment status unknown. Please contact support if you have any issues.</div>
-            </div>
-        )}
-    </>)
-}
+        </div>
+    );
+};
 
 export default PaymentCallback;

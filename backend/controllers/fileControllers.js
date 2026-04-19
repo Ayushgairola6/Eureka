@@ -1060,17 +1060,17 @@ export async function HandleIntentIdentification(question, plan_type) {
     IdentifiedIntent?.error ||
     !IdentifiedIntent?.result
   ) {
-    return { error: "Failed to generate a response" };
+    return { error: "Failed to generate a response", data: null };
   }
 
   // format the model response into valid queries
   const FormattedIntent = FilterIntent(IdentifiedIntent?.result);
   // console.log("FormattedIntent\n", FormattedIntent);
   if (FormattedIntent?.length === 0) {
-    return { error: "Failed to generate a response" };
+    return { error: "Failed to generate a response", data: null };
   }
 
-  return FormattedIntent;
+  return { error: null, data: FormattedIntent };
 }
 
 // web research handler
@@ -1139,15 +1139,20 @@ export const PostTypeWebSearch = async (req, res) => {
     let WebResults;
 
     // no matter the search type send the user prompt to llm for better search query
-    const FormattedQueries = await HandleIntentIdentification(
-      question,
-      plan_type
-    );
+    const Intent = await HandleIntentIdentification(question, plan_type);
 
-    if (!FormattedQueries || FormattedQueries?.length === 0) {
+    if (!Intent || Intent.error || !Intent.data) {
       return res.status(400).json({
         message:
           "Our AI models are overloaded right now please wait a bit and try again later.",
+      });
+    }
+    const FormattedQueries = Intent?.data.length > 0 ? Intent.data : [];
+
+    if (FormattedQueries.length === 0) {
+      return res.status(400).json({
+        message:
+          "Model failed to search for any information because it is overloaded right now",
       });
     }
     // send the event about he query to the user

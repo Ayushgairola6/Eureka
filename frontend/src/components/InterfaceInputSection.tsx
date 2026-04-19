@@ -5,7 +5,6 @@ import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
 import QueryType from "./Query_type.tsx";
 import { v4 as uuid } from "uuid";
 // import axios from "axios";
-import { IoAnalyticsOutline, IoOptions } from "react-icons/io5";
 import { BiHourglass, BiSend, BiUpload } from "react-icons/bi";
 import { BsMic, BsPlusLg } from "react-icons/bs";
 import { GoZap } from "react-icons/go";
@@ -19,16 +18,15 @@ import {
   QueryAIQuestions,
   WebSearchHandler,
   MimicSSE,
-  setQueryType,
-  setSelectedDoc,
+
   setShowUserForm,
   setLoading,
   updateFavicon,
   ProcessSynthesis,
   ShowVerificationPopup,
-  setIsVerificationMode,
   VerificationModeWebSearch,
   UpdateResearchData,
+  setCreatingReport,
 } from "../store/InterfaceSlice.ts";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
@@ -38,17 +36,19 @@ import { useState } from "react";
 import { setCurrentStatus } from "../store/websockteSlice.ts";
 import { currentTime } from "../../utlis/Date.ts";
 import { Cloud } from "lucide-react";
-import { MdAutoFixHigh } from "react-icons/md";
-
+import { PiOptionBold } from "react-icons/pi";
 type InputProps = {
   textareaRef: React.Ref<HTMLInputElement>;
   isActive: boolean;
   setIsActive: React.Dispatch<React.SetStateAction<boolean>>;
+  showFeatures: boolean;
+  setShowFeatures: React.Dispatch<React.SetStateAction<boolean>>;
 };
 const InputSection: React.FC<InputProps> = ({
   textareaRef,
   isActive,
   setIsActive,
+  showFeatures, setShowFeatures
 }) => {
   const dispatch = useAppDispatch();
   const {
@@ -203,20 +203,34 @@ const InputSection: React.FC<InputProps> = ({
 
   // when verifiaction mode is active and the mode is web_search
   const VerificationGradeSearchWeb = async () => {
-    if (isVerificatioMode === false && queryType !== 'Web Search') return toast.error("Invalid mode selection.")
+    if (isVerificatioMode === false && queryType !== 'Web Search') return toast.error("Invalid mode selection.");
 
     const { AiId, user_id } = handleUUidCreationAndMessageInsert()
 
     const information = {
       question: question, web_search_depth: search_depth, MessageId: AiId, userMessageId: user_id
     }
+
+    dispatch(setCreatingReport());
     dispatch(VerificationModeWebSearch(information)).unwrap().then((res) => {
       if (res?.message) {
         toast.message(res.message)
+        if (res?.direct_answer) {
+          dispatch(MimicSSE({ id: AiId, delta: res?.direct_answer }));
+        }
         dispatch(UpdateResearchData(res));
         dispatch(ShowVerificationPopup(res?.MessageId))
+        dispatch(SetQueryCount('analyst'));
+
       }
-    }).catch(err => toast.error(err))
+    }).catch(err => {
+      toast.error(err)
+      dispatch(MimicSSE({ id: AiId, delta: err }));
+
+    }).finally(() => {
+      dispatch(setCreatingReport());
+
+    })
 
   }
 
@@ -405,21 +419,9 @@ const InputSection: React.FC<InputProps> = ({
             {/* Action buttons */}
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {/* Domains button */}
-              <button
-                onClick={() => {
-                  if (selectedDoc) dispatch(setSelectedDoc(""));
-                  dispatch(setShowOptions(!shwoOptions));
-                  SetShowFeatures(false);
-                  dispatch(setVariant("signal-break"));
-                  dispatch(setQueryType("PUBLIC_RAG"));
-                }}
-                className={`p-2 rounded-lg transition-colors duration-150 ${shwoOptions
-                  ? "bg-black dark:bg-white text-white dark:text-black"
-                  : "bg-gray-100 dark:bg-neutral-900 text-neutral-900 dark:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
-                  }`}
-                title="Domains"
-              >
-                <IoOptions size={18} />
+
+              <button onClick={() => setShowFeatures(!showFeatures)} className='p-2 rounded-md bg-white dark:bg-neutral-900  bottom-20 left-12'>
+                <PiOptionBold />
               </button>
 
               {/* Query type */}
@@ -501,35 +503,7 @@ const InputSection: React.FC<InputProps> = ({
             </span>
           </div>
           {/* verification mode toggle */}
-          <section className="pt-3  flex items-center justify-center gap-2">
-            <ul className='bai-jamjuree-semibold text-xs'>Analyst Mode</ul>
 
-            <button
-              onClick={() => dispatch(setIsVerificationMode())}
-              role="switch"
-              aria-checked={isVerificatioMode}
-              className={`
-    relative inline-flex h-6 w-12 shrink-0 cursor-pointer items-center rounded-full 
-    border-2 border-transparent transition-colors duration-300 ease-in-out 
-    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-    ${isVerificatioMode ? 'bg-blue-600' : 'bg-gray-300 dark:bg-neutral-700'}
-  `}
-            >
-              <span className="sr-only">Toggle Verification Mode</span>
-              <span
-                className={` flex items-center justify-center
-      pointer-events-none  h-5 w-5 transform rounded-full 
-      bg-white shadow-md ring-0 transition duration-300 ease-in-out
-      ${isVerificatioMode ? 'translate-x-6' : 'translate-x-0'}
-    `}
-              >
-                <ul className='m-auto'>
-                  {isVerificatioMode === true ? (<IoAnalyticsOutline size={14} color="black" />) : (<MdAutoFixHigh size={14} color="black" />)}
-                </ul>
-              </span>
-            </button>
-
-          </section>
 
         </div>
         )}
@@ -539,3 +513,78 @@ const InputSection: React.FC<InputProps> = ({
 };
 
 export default InputSection;
+{/* <section className="pt-3  flex items-center justify-center gap-2">
+  <ul className='bai-jamjuree-semibold text-xs'>Analyst Mode</ul>
+
+  <button
+    onClick={() => dispatch(setIsVerificationMode())}
+    role="switch"
+    aria-checked={isVerificatioMode}
+    className={`
+    relative inline-flex h-6 w-12 shrink-0 cursor-pointer items-center rounded-full 
+    border-2 border-transparent transition-colors duration-300 ease-in-out 
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+    ${isVerificatioMode ? 'bg-blue-600' : 'bg-gray-300 dark:bg-neutral-700'}
+  `}
+  >
+    <span className="sr-only">Toggle Verification Mode</span>
+    <span
+      className={` flex items-center justify-center
+      pointer-events-none  h-5 w-5 transform rounded-full 
+      bg-white shadow-md ring-0 transition duration-300 ease-in-out
+      ${isVerificatioMode ? 'translate-x-6' : 'translate-x-0'}
+    `}
+    >
+      <ul className='m-auto'>
+        {isVerificatioMode === true ? (<IoAnalyticsOutline size={14} color="black" />) : (<MdAutoFixHigh size={14} color="black" />)}
+      </ul>
+    </span>
+  </button>
+
+</section> */}
+
+{/* <button
+                onClick={() => {
+                  if (selectedDoc) dispatch(setSelectedDoc(""));
+                  dispatch(setShowOptions(!shwoOptions));
+                  SetShowFeatures(false);
+                  dispatch(setVariant("signal-break"));
+                  dispatch(setQueryType("PUBLIC_RAG"));
+                }}
+                className={`p-2 rounded-lg transition-colors duration-150 ${shwoOptions
+                  ? "bg-black dark:bg-white text-white dark:text-black"
+                  : "bg-gray-100 dark:bg-neutral-900 text-neutral-900 dark:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
+                  }`}
+                title="Domains"
+              >
+                <IoOptions size={18} />
+              </button> */}
+{/* <section className="pt-3  flex items-center justify-center gap-2">
+  <ul className='bai-jamjuree-semibold text-xs'>Analyst Mode</ul>
+
+  <button
+    onClick={() => dispatch(setIsVerificationMode())}
+    role="switch"
+    aria-checked={isVerificatioMode}
+    className={`
+    relative inline-flex h-6 w-12 shrink-0 cursor-pointer items-center rounded-full 
+    border-2 border-transparent transition-colors duration-300 ease-in-out 
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+    ${isVerificatioMode ? 'bg-blue-600' : 'bg-gray-300 dark:bg-neutral-700'}
+  `}
+  >
+    <span className="sr-only">Toggle Verification Mode</span>
+    <span
+      className={` flex items-center justify-center
+      pointer-events-none  h-5 w-5 transform rounded-full 
+      bg-white shadow-md ring-0 transition duration-300 ease-in-out
+      ${isVerificatioMode ? 'translate-x-6' : 'translate-x-0'}
+    `}
+    >
+      <ul className='m-auto'>
+        {isVerificatioMode === true ? (<IoAnalyticsOutline size={14} color="black" />) : (<MdAutoFixHigh size={14} color="black" />)}
+      </ul>
+    </span>
+  </button>
+
+</section> */}

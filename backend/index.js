@@ -19,6 +19,7 @@ import { PaymentsRouter } from "./routers/PaymentsRouter.js";
 import { VerificationModeRouter } from "./routers/Verification_modeRouter.js";
 import { ConnectorRouter } from "./routers/ConnectorRouter.js";
 import "./controllers/supabaseHandler.js";
+import { DodoWebhook } from "./PaymentHandler/DodoPayments.js";
 // import "./Tests/tests.js";
 // import formData from 'express-form-data';
 app.use(
@@ -45,6 +46,11 @@ app.use(
 // Set this if your app is behind a reverse proxy (e.g., Heroku, Nginx)
 app.set("trust proxy", 1);
 // middlewares
+app.post(
+  "/dodo/webhook",
+  express.raw({ type: "application/json" }),
+  DodoWebhook
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded());

@@ -1,6 +1,8 @@
 import { Groq } from "groq-sdk";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import dotenv from "dotenv";
+import { Intent_identifier_prompt } from "../Prompts/Prompts.js";
+import { CheckFileTypeAndParseIt } from "../FilerParsers/FilerParser.js";
 dotenv.config();
 const groq = new Groq({ apiKey: process.env.GROQ_INFERENCE_KEY });
 
@@ -26,7 +28,6 @@ export async function HandleInference(user_prompt, SYSTEM_PROMPT) {
       temperature: 0.5,
       stream: false,
       top_p: 1,
-      max_completion_tokens: 30000,
     });
     if (response && response?.choices[0]?.message?.content) {
       return { error: null, result: response.choices[0].message.content };
@@ -67,24 +68,24 @@ export async function StructuredOutPutInferenceHandler(
         { content: SYSTEM_PROMPT, role: "system" },
         { role: "user", content: user_prompt },
       ],
-      model: "moonshotai/kimi-k2-instruct-0905",
+      model: "openai/gpt-oss-120b",
       temperature: 0.5,
       stream: false,
       top_p: 1,
-      max_completion_tokens: 16384,
       response_format: {
         type: "json_schema",
         json_schema: {
           name: "analyst_mode",
-          strict: true,
+          strict: CheckFileTypeAndParseIt,
           schema: {
             type: "object",
             properties: {
               confidence_score: { type: "number" },
               thought: { type: "string" },
-              queries: { type: "array" },
+              queries: { type: "array", items: { type: "string" } },
+              direct_answer: { type: "string" },
             },
-            required: ["confidence_score", "thought", "queries"],
+            required: ["confidence_score", "thought"],
             additionalProperties: false,
           },
         },
@@ -105,4 +106,47 @@ export async function StructuredOutPutInferenceHandler(
       result: null,
     };
   }
+}
+
+export async function FindIntent(instructions) {
+  if (!instructions || typeof instructions !== "string")
+    return { status: false, result: null };
+
+  const response = await groq.chat.completions.create({
+    messages: [
+      { content: Intent_identifier_prompt, role: "system" },
+      { role: "user", content: instructions },
+    ],
+    model: "openai/gpt-oss-120b",
+    temperature: 0.5,
+    stream: false,
+    top_p: 1,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "intent_classifier",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            intent: {
+              type: "string",
+              enum: ["dig_deeper", "finalize_report", "not_sure"],
+            },
+          },
+          required: ["intent"],
+          additionalProperties: false,
+        },
+      },
+    },
+  });
+
+  const data = JSON.parse(response?.choices[0].message.content || "{}");
+  if (data) {
+    return { status: true, result: data };
+  }
+  return {
+    status: false,
+    result: null,
+  };
 }

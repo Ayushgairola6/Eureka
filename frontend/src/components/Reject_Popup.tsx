@@ -29,19 +29,12 @@ export const FinalizePopup = ({ message }: any) => {
 
 
     const [rejectOpen, setRejectOpen] = React.useState(false);
-    const [decision_type, setDecision_Type] = React.useState<string | null>(null);
     const [focused, setFocused] = React.useState(false);
 
-
-    function handleConfirm(decision: string) {
-        setDecision_Type(decision);
-        FinalizeReport("confirm", '');
-    }
-
+    // The land and real estate mafia in india how is it affecting the normal pople of india, some real cases that came in front but got forgotten, what the governemtis trying to do about it, how rents are going high and how people of india are getting affected by this. I want a detailed report
     //labeling a report
-    function handleReject(label: string) {
+    function handleReject() {
         setRejectOpen(false);
-        FinalizeReport("reject", label);
         // optionally pass label up: FinalizeReport("reject", label)
     }
 
@@ -90,13 +83,12 @@ export const FinalizePopup = ({ message }: any) => {
         return { AiId, user_id }
     }
     // sends the further instructions and the indication toward the response
-    const FinalizeReport = (choice: string, label: string) => {
+    const FinalizeReport = () => {
         if (loading === true) {
             return;
         }
-        if (!decision_type) return;
         if (!message || !message.id) return;
-        if (!choice) return toast.error("Please choose whether you want to reject or confirm this.");
+
 
         dispatch(setCreatingReport());
         try {
@@ -104,13 +96,11 @@ export const FinalizePopup = ({ message }: any) => {
             dispatch(setLoading(true))
             const info = {
                 instructions: instructionsRef.current?.value || "",
-                user_choice: choice,
                 MessageId: message.id,
                 userMessageId: user_id,
-                report: label,
                 web_search_depth: search_depth,
-                decision_type: decision_type,
             }
+
 
             dispatch(FianLizeResearch(info)).unwrap().then((res) => {
                 if (res.message) toast.message(res.message);
@@ -118,7 +108,6 @@ export const FinalizePopup = ({ message }: any) => {
                 if (res.message === 'Research done') {
                     dispatch(UpdateResearchData(res));
                     dispatch(ShowVerificationPopup(res?.MessageId))
-
                     return;
                 }
 
@@ -139,16 +128,13 @@ export const FinalizePopup = ({ message }: any) => {
             }).finally(() => {
                 dispatch(setCreatingReport())
                 dispatch(setLoading(false))
-
             })
         } catch (error: any) {
             return toast.error(error?.response?.data?.message || "Our system is overloaded right now , we are trying to resolve this problem thanks you!")
         }
-
     }
 
 
-    ///-----m ain render
     return (<div
         aria-disabled={creatingReport}
         className={`relative flex flex-col gap-0 w-full rounded-xl border transition-all duration-300 overflow-visible
@@ -216,14 +202,14 @@ export const FinalizePopup = ({ message }: any) => {
                     placeholder="Additional instructions, corrections, or deeper focus..."
                     className="bai-jamjuree-regular text-[11px] dark:text-neutral-300 text-black space-grotesk placeholder:text-neutral-700 bg-transparent border-none outline-none focus:ring-0 w-full"
                     onKeyDown={(e) => {
-                        if (e.key === "Enter" && instructionsRef.current?.value) handleConfirm("finalize");
+                        if (e.key === "Enter" && instructionsRef.current?.value) FinalizeReport();
                     }}
                 />
             </div>
 
             {/* Confirm */}
             <button
-                onClick={() => handleConfirm("finalize")}
+                onClick={() => FinalizeReport()}
                 title="Finalize report"
                 disabled={creatingReport === true}
                 className={` group flex items-center gap-1.5 px-3 py-2 rounded-lg ${creatingReport === true ? "bg-gray-100 text-black opacity-60" : " hover:bg-green-500/20 bg-green-500/10 border border-green-500/20 text-green-400  hover:border-green-500/40 opacity-100"} transition-all text-[10px] font-mono uppercase`}
@@ -255,7 +241,7 @@ export const FinalizePopup = ({ message }: any) => {
                         {REJECT_LABELS.map((r) => (
                             <button
                                 key={r.value}
-                                onClick={() => handleReject(r.value)}
+                                onClick={() => handleReject()}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-[10px] space-grotesk text-black dark:text-neutral-400 hover:bg-red-500/10 hover:text-red-400 transition-colors text-left"
                             >
                                 <TbAlertTriangle size={10} className="shrink-0" />

@@ -1,47 +1,72 @@
-# 🧠 AntiNode: The Neuro-Symbolic RAG Engine
+# AntiNodeAI
 
-![Status](https://img.shields.io/badge/Status-Live-success) ![Stack](https://img.shields.io/badge/Stack-MERN_%7C_Gemini_%7C_Supabase_%7C_Pinecone-blue) ![Focus](https://img.shields.io/badge/Focus-Agentic_AI-purple)
+**Verification-first. Transparency-focused. Built for researchers who need control.**
 
-> **Beyond Semantic Search:** An Agentic RAG pipeline that combines deterministic function calling, multi-document synthesis, and live web verification to eliminate hallucinations.
-
-## 🏗️ The Problem: The "Black Box" of AI
-
-Standard RAG systems blindly inject vector chunks into a context window, leading to "Generative Guessing." **AntiNode** bridges the gap between neural generation and symbolic retrieval.
-
-### Core Architecture:
-
-1.  **Agentic Router:** Analyzes intent to determine if the user needs a private file, a deep web crawl, or a logic audit.
-2.  **Symbolic Tools:** Executes deterministic functions (e.g., `searchByName`) to retrieve exact financial or code data.
-3.  **Collaborative Synthesis:** Multi-agent processing that cross-references private "Vault" data against live web standards.
+![Status](https://img.shields.io/badge/Status-Live-success)
+![Focus](https://img.shields.io/badge/Focus-Agentic_AI-purple)
 
 ---
 
-## ✨ Key Features
+## Overview
 
-- **📂 Multi-Doc RAG Vault:** Securely upload and chat with PDFs, TXTs, and Code files.
-- **🌐 Live Web Synthesis:** Real-time fact-verification against the live internet using Deep Research agents.
-- **🤝 Collaborative Workspaces:** Create "Rooms" with public/private visibility for team-based research.
-- **🧠 Neuro-Symbolic Audit:** A "Think before you speak" architecture that audits code and logic before responding.
-- **📱 Hybrid PWA:** A touch-optimized, Arctic Neon interface available on mobile and desktop.
+In the age of AI, speed and efficiency are no longer bottlenecks — control is.
 
-## 🛠️ Tech Stack
+AntiNodeAI is a research platform built around a single principle: the user stays in control. Instead of abstracting away the complexity of AI-driven research behind opaque pipelines, we expose it — giving you direct authority over how research is conducted, which sources are trusted, and how results are verified.
 
-- **Core AI:** Google Gemini 1.5 Pro (Logic) + Flash (Intent)
-- **Vector DB:** Pinecone (Serverless)
-- **Database:** Supabase (Auth & Usage Quotas)
-- **Backend:** Node.js / Express (Custom RAG Pipelines)
-- **Frontend:** React (Vite) + TailwindCSS
+> _"We're not claiming to have solved the black-box problem. We're choosing complexity and control over the industry's default of building agents that are hard to predict and harder to audit."_
 
 ---
 
-## 🚀 Performance Case Studies
+## Stack
 
-Check out [EXAMPLE.md](./EXAMPLE.md) for full server logs and synthesis deep-dives.
+| Layer            | Technologies                                                        |
+| ---------------- | ------------------------------------------------------------------- |
+| **Frontend**     | React, Tailwind CSS, Framer Motion, Recharts                        |
+| **Backend**      | Node.js, Express.js, PostgreSQL, Prisma, Pinecone, Redis, Socket.io |
+| **AI Inference** | GROQ / Gemini                                                       |
+| **Architecture** | Custom orchestration layer, custom web-search pipelines             |
 
-> **Author's Note:** AntiNode was built to solve the "Black Box" problem of AI. By exposing the _Process_ (the function calls, the sources, the logic checks), we turn AI from a magic trick into a reliable engineering tool.
+---
 
-```
+## Features
 
+### Analyst Mode
 
+The most powerful feature on the platform. Analyst Mode puts you in direct control of the research process:
 
-```
+- Filter sources by type, domain, or credibility tier
+- Target specific sources or exclude them entirely
+- Cross-verify AI-generated responses against raw retrieval logs
+- Track exactly where every piece of information came from
+
+**Research Archive** lets you save and resume sessions without time pressure — pick up exactly where you left off, whenever you want.
+
+---
+
+### Synthesis Mode
+
+Multi-document reasoning with optional web cross-verification. Upload private documents and let the system reason across them, with the option to validate findings against live web results. All uploaded documents remain private.
+
+---
+
+### Workspace
+
+Dedicated collaborative environments for teams, clients, or working groups. All platform features are available in real time, shared across members of a workspace.
+
+---
+
+### Web Search
+
+The foundational research layer. Includes **depth control** — choose between a focused source set for quick answers or a broad source set for comprehensive coverage.
+
+---
+
+## Status
+
+AntiNodeAI is live at **[antinodeai.space](https://antinodeai.space)** and under active development. Some features may behave unexpectedly under certain conditions — known issues are being actively tracked and resolved.
+
+The platform's future is being shaped by early user feedback. If you're interested in what we're building, try it out and share your experience.
+
+---
+
+_This project is not open source._

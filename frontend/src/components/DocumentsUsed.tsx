@@ -60,7 +60,7 @@ const DocUsed: React.FC<props> = ({ chat }) => {
               >
                 <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
               </svg>
-              <span>Sources</span>
+              <span className="bai-jamjuree-bold">Sources</span>
             </div>
 
             {/* Divider */}
@@ -133,8 +133,8 @@ const DocUsed: React.FC<props> = ({ chat }) => {
                       target="_blank"
                       className="flex items-center gap-2 bg-gray-50 dark:bg-neutral-950 curosor-pointer  px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                     >
-                      <img src={icon?.includes('google.com') ? icon : `https://www.google.com/s2/favicons?domain=${icon}&sz=64 `} alt="" className="w-4 h-4 rounded-full" />
-                      <span className="text-xs text-gray-700 dark:text-gray-300 truncate ">
+                      <img src={icon?.includes('google.com') ? icon : `https://www.google.com/s2/favicons?domain=${icon}&sz=64 `} alt="" className="w-4 h-4 rounded-full border" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300 truncate space-grotesk">
                         Source {SourceUrls[idx]}
                       </span>
                     </a>

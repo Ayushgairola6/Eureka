@@ -11,14 +11,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Shield, Zap } from "lucide-react";
 ///words that render dynamically
 const words = [
-  "Unbiased",
-  "Grounded",
-  "Limitless",
-  "Agentic",
-  "Private",
-  "Federated ",
-  "Verified",
-  "Shared",
+  "Orchestrated",
+  "Transparent",
+  "Steerable",
+  "Traceable",
+  "Delibrate",
+  "Sovereign",
+  "Decomposed",
+  "Intentional",
 ];
 
 const LandingPage = () => {

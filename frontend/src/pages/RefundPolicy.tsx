@@ -13,7 +13,7 @@ const RefundPolicy = () => {
             <h2 className="text-xl font-semibold mb-3">Digital Service Refunds</h2>
             <p>
               Since we provide immediate digital access, we provide refunds if requested
-              within 24 hours of purchase. Approved refunds will be processed and
+              within 30 days of purchase. Approved refunds will be processed and
               credited to the **original payment method** within **5-7 business days**.
             </p>
           </section>

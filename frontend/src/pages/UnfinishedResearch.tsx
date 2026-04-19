@@ -1,348 +1,379 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useState, type JSX, useEffect, useRef, useMemo } from "react";
+import { Link, useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { GiArchiveResearch } from "react-icons/gi";
-import { TbClockExclamation, TbArrowRight, TbTrash, TbReload } from "react-icons/tb";
+import { TbArrowRight, TbTrash, TbBooks, TbSearch, TbQuote, TbChevronUp, TbChevronDown, TbLink } from "react-icons/tb";
 import { RiRadarLine } from "react-icons/ri";
-import { getResearchHistory, type MessageResearch } from "../store/InterfaceSlice";
-import { toast } from 'sonner'
-
-
-
-
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function timeAgo(timestamp: number): string {
-    const diff = Date.now() - timestamp;
-    const mins = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (mins > 0) return `${mins}m ago`;
-    return "just now";
-}
-
-function getStatusConfig(status: MessageResearch["status"]) {
-    switch (status) {
-        case "complete":
-            return {
-                label: "DATA_READY",
-                dot: "bg-green-400",
-                badge: "bg-green-500/10 text-green-400 border-green-500/20",
-                glow: "shadow-green-500/5",
-            };
-        case "partial":
-            return {
-                label: "PARTIAL_SYNC",
-                dot: "bg-amber-400 animate-pulse",
-                badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                glow: "shadow-amber-500/5",
-            };
-        case "pending":
-            return {
-                label: "SCANNING_WEB",
-                dot: "bg-sky-400 animate-pulse",
-                badge: "bg-sky-500/10 text-sky-400 border-sky-500/20",
-                glow: "shadow-sky-500/5",
-            };
-        case "failed":
-            return {
-                label: "CYCLE_FAILED",
-                dot: "bg-red-500",
-                badge: "bg-red-500/10 text-red-400 border-red-500/20",
-                glow: "shadow-red-500/5",
-            };
-    }
-}
-
-// ─── Scan Line Background ─────────────────────────────────────────────────────
-function ScanLines() {
-    return (
-        <div
-            className="pointer-events-none fixed inset-0 z-0 opacity-[0.025]"
-            style={{
-                backgroundImage:
-                    "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.08) 2px, rgba(255,255,255,0.08) 4px)",
-                backgroundSize: "100% 4px",
-            }}
-        />
-    );
-}
-
-// ─── Empty State ──────────────────────────────────────────────────────────────
-function EmptyState() {
-    return (
-        <div className="flex flex-col items-center justify-center gap-6 py-32 text-center">
-            <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-sky-500/10 blur-2xl scale-150" />
-                <div className="relative w-20 h-20 rounded-full border border-dashed border-neutral-700 flex items-center justify-center">
-                    <RiRadarLine className="text-neutral-600 text-3xl" />
-                </div>
-            </div>
-            <div className="space-y-2">
-                <p className="font-mono text-xs text-neutral-600 uppercase tracking-widest">
-                    {">> NO_PENDING_THREADS_FOUND"}
-                </p>
-                <p className="bai-jamjuree-regular text-sm text-neutral-500 max-w-xs">
-                    All your research sessions have been finalized or no sessions exist yet.
-                </p>
-            </div>
-        </div>
-    );
-}
-
-// ─── Research Card ────────────────────────────────────────────────────────────
-function ResearchCard({
-    entry,
-    onResume,
-    onDiscard,
-}: {
-    entry: MessageResearch;
-    onResume: (id: string) => void;
-    onDiscard: (id: string) => void;
-}) {
-    const { sources, favicons, details } = entry.research_data;
-    const config = getStatusConfig(entry.status);
-    const sourceCount = sources.length;
-    const shortId = entry.MessageId.slice(-6).toUpperCase();
-
-    return (
-        <article
-            className={`group relative flex flex-col gap-4 bg-neutral-950 border border-neutral-800/80 rounded-xl p-5 hover:border-neutral-700 transition-all duration-300 shadow-lg ${config?.glow}`}
-        >
-            {/* Top row: ID + status + time */}
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-3">
-                    <span className="font-mono text-[10px] text-neutral-600 tracking-widest uppercase">
-                        THREAD_{shortId}
-                    </span>
-                    <div
-                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-mono font-bold uppercase ${config?.badge}`}
-                    >
-                        <span className={`w-1.5 h-1.5 rounded-full ${config?.dot}`} />
-                        {config?.label}
-                    </div>
-                </div>
-                <span className="font-mono text-[10px] text-neutral-600">
-                    <TbClockExclamation className="inline mb-0.5 mr-1" />
-                    {timeAgo(parseInt(entry?.timestamp))}
-                </span>
-            </div>
-
-            {/* Source preview strip */}
-            {details.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                    {details.slice(0, 2).map((src, i) => {
-                        let hostname = "";
-                        try { hostname = new URL(src.url).hostname; } catch { hostname = src.url; }
-
-                        return (
-                            <div
-                                key={i}
-                                className="flex items-start gap-3 bg-neutral-900/60 border border-neutral-800 rounded-lg px-3 py-2.5"
-                            >
-                                <img
-                                    src={
-                                        favicons[i] ||
-                                        `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
-                                    }
-                                    className="w-3.5 h-3.5 mt-0.5 rounded-sm grayscale"
-                                    alt=""
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src =
-                                            `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
-                                    }}
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-semibold text-neutral-300 truncate bai-jamjuree-semibold">
-                                        {src.title}
-                                    </p>
-                                    <p className="text-[10px] text-neutral-600 font-mono truncate mt-0.5">
-                                        {hostname}
-                                    </p>
-                                </div>
-                                <span className="text-[9px] font-mono text-neutral-600 shrink-0 mt-0.5">
-                                    {typeof src.score === "number" ? `${(src.score * 10).toFixed(0)}%` : "N/A"}
-                                </span>
-                            </div>
-                        );
-                    })}
-
-                    {/* Overflow count */}
-                    {sourceCount > 2 && (
-                        <p className="text-[10px] font-mono text-neutral-600 pl-1">
-                            +{sourceCount - 2} more source{sourceCount - 2 > 1 ? "s" : ""} not shown
-                        </p>
-                    )}
-                </div>
-            ) : (
-                <div className="h-16 rounded-lg border border-dashed border-neutral-800 flex items-center justify-center">
-                    <span className="text-[10px] font-mono text-neutral-700 uppercase tracking-widest">
-                        {entry.status === "pending" ? "● Awaiting data stream..." : "No data captured"}
-                    </span>
-                </div>
-            )}
-
-            {/* Metadata row */}
-            <div className="flex items-center gap-4 pt-1 border-t border-neutral-800/60">
-                <span className="text-[10px] font-mono text-neutral-600">
-                    SRC_COUNT: <span className="text-neutral-400">{sourceCount}</span>
-                </span>
-                <span className="text-[10px] font-mono text-neutral-600">
-                    MSG_ID: <span className="text-neutral-400 tracking-tight">{entry.MessageId.slice(-8)}</span>
-                </span>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 pt-1">
-                {entry.status !== "failed" && (
-                    <button
-                        onClick={() => onResume(entry.MessageId)}
-                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-white text-black text-[11px] font-bold bai-jamjuree-semibold uppercase tracking-wide hover:bg-neutral-200 transition-colors"
-                    >
-                        {entry.status === "pending" ? (
-                            <><TbReload className="text-sm" /> Continue Scan</>
-                        ) : (
-                            <><TbArrowRight className="text-sm" /> Resume & Finalize</>
-                        )}
-                    </button>
-                )}
-                <button
-                    onClick={() => onDiscard(entry.MessageId)}
-                    className="p-2 rounded-lg border border-neutral-800 text-neutral-600 hover:border-red-500/40 hover:text-red-400 transition-colors"
-                    title="Discard"
-                >
-                    <TbTrash className="text-sm" />
-                </button>
-            </div>
-        </article>
-    );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
+import { toast } from 'sonner';
+import { Archive, Clock } from "lucide-react";
+import { emptyArchive, getResearchHistory, RefreshResearchArchive } from '../store/InterfaceSlice'
+import { GoReport } from "react-icons/go";
+import { IoReload } from "react-icons/io5";
+import { MdDoneAll } from "react-icons/md";
+import axios from 'axios'
+const QUICK_TAGS = [
+    { label: "go deeper", value: "Go deeper on this topic with more authoritative sources." },
+    { label: "find more sources", value: "Cross-verify the key claims with additional independent sources." },
+    { label: "focus on X", value: "Focus specifically on " },
+];
 export function UnfinishedResearchPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    const { isLoggedIn, user } = useAppSelector(s => s.auth)
-
-    // on mount fetch the past history
+    const { isLoggedIn, user } = useAppSelector(s => s.auth);
+    const { Research_Archive, fetchingPendingResearch } = useAppSelector(s => s.interface);
+    const [expandedCard, setExpandedCard] = useState<string | null>(null);
+    const FetchcountRef = useRef(0);
     useEffect(() => {
-        if (isLoggedIn === false || !user) return;
+        if (Research_Archive?.length > 0) return;
+        if (FetchcountRef.current > 3) return;
+        if (isLoggedIn === false || !user) {
+            // navigate('/login')
+            return
+        };
 
         dispatch(getResearchHistory()).unwrap().then((res) => {
-            if (res.message) return toast.message(res.message)
-        }).catch((err) => toast.error(err))
-    }, [user, isLoggedIn])
+            if (res?.message) {
+                toast.message(res.message)
+            }
+        }).catch(err => toast.error(err)).finally(() => {
+            FetchcountRef.current += 1
+        })
 
+    }, [isLoggedIn, user])
 
-    const { ResearchData } = useAppSelector(s => s.interface);
+    // 1. Setup refs to access the DOM elements for cursor focus
+    const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
-    // Filter to only incomplete sessions: pending or partial
-    // "complete" with no final report is also unfinished — no report means the pit stop was never passed
-    const unfinished = ResearchData.filter(
-        (entry) => entry.status === "pending" || entry.status === "partial"
-    );
+    // 2. State should be an object to handle multiple items independently
+    const [instructions, setInstructions] = useState<{ [key: string]: string }>({});
 
-    // Sort by most recent first
-    const sorted = [...unfinished].sort((a: any, b: any) => b.timestamp - a.timestamp);
+    function injectTag(value: string, item_id: number) {
+        // Update the state for the specific item
+        setInstructions(prev => ({
+            ...prev,
+            [item_id]: value
+        }));
 
-    const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-    const visible = sorted.filter((e) => !dismissed.has(e.MessageId));
-
-    function handleResume(MessageId: string) {
-        navigate(`/interface?resume=${MessageId}`);
+        // Focus and place cursor at the end after the DOM updates
+        setTimeout(() => {
+            const input = inputRefs.current[item_id];
+            if (input) {
+                input.focus();
+                const len = value.length;
+                input.setSelectionRange(len, len);
+            }
+        }, 0);
     }
 
-    function handleDiscard(MessageId: string) {
-        setDismissed((prev) => new Set([...prev, MessageId]));
-        // TODO: dispatch(RemoveResearchData(MessageId)) when you wire up the action
+    // Helper for manual typing
+    function handleInputChange(item_id: number, value: string) {
+        setInstructions(prev => ({
+            ...prev,
+            [item_id]: value
+        }));
     }
 
-    return (
-        <div className="relative min-h-screen w-full bg-black text-white overflow-hidden">
-            <ScanLines />
 
-            {/* Ambient glow top left */}
-            <div className="pointer-events-none fixed top-0 left-0 w-96 h-96 bg-sky-500/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-            <div className="pointer-events-none fixed bottom-0 right-0 w-80 h-80 bg-orange-500/4 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+    // conntinue hte pending research
 
-            <div className="relative z-10 mx-auto max-w-3xl px-4 py-12 flex flex-col gap-10">
+    function handleResult(id: string, search_depth: string, action_type: string, item_id: number) {
+        const resumed_research = Research_Archive.filter((res) => res.message_id === id);
 
-                {/* Page Header */}
-                <header className="flex flex-col gap-3 border-b border-neutral-800 pb-8">
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-neutral-600 uppercase tracking-widest">
-                            AntiNode / Archives /
-                        </span>
-                        <span className="text-[10px] font-mono text-sky-500 uppercase tracking-widest">
-                            Unfinished_Threads
-                        </span>
-                    </div>
+        if (!action_type) {
+            toast.info("An action_type is mandatory")
+            return
+        };
+        if (resumed_research && resumed_research?.some((elem) => elem.isSynthesized === true)) {
+            toast.message("This report has already been synthesized")
+            return;
+        }
 
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="flex flex-col gap-1">
-                            <h1 className="bai-jamjuree-bold text-2xl md:text-3xl flex items-center gap-3">
-                                <GiArchiveResearch className="text-sky-500" />
-                                Unfinished Research
-                            </h1>
-                            <p className="space-grotesk text-sm text-neutral-500 max-w-md">
-                                Sessions where data was collected but no final report was generated.
-                                Resume to finalize or discard to clean up.
-                            </p>
-                        </div>
 
-                        {/* Live count badge */}
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-800 bg-neutral-950 shrink-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                            <span className="font-mono text-[11px] text-neutral-400">
-                                {visible.length} pending thread{visible.length !== 1 ? "s" : ""}
-                            </span>
-                        </div>
-                    </div>
+        navigate(`/interface?MessageId=${id}&depth=${search_depth}&action_type=${action_type}&instructions=${instructions[item_id]}`)
+    }
 
-                    {/* Stats strip */}
-                    {visible.length > 0 && (
-                        <div className="flex items-center gap-6 pt-2">
-                            {(["partial", "pending"] as const).map((s) => {
-                                const count = visible.filter((e) => e.status === s).length;
-                                const cfg = getStatusConfig(s);
-                                return count > 0 ? (
-                                    <div key={s} className="flex items-center gap-2">
-                                        <span className={`w-1.5 h-1.5 rounded-full ${cfg?.dot}`} />
-                                        <span className="font-mono text-[10px] text-neutral-500 uppercase">
-                                            {count} {cfg?.label}
+    const research_history = useMemo(() => {
+        return Research_Archive
+    }, [Research_Archive])
+    // discard a resarch
+    const handleDiscard = (id: string) => {
+        const Source_index = Research_Archive.findIndex((item) => item.message_id === id);
+        console.log(Source_index, 'the index of the source to be deleted')
+        Research_Archive.splice(Source_index, 1);
+        toast.message(`Thread id: ${id} is removed from archive`)
+
+    };
+
+
+
+
+    // refresh The archive
+    function handleRefresh() {
+        dispatch(emptyArchive());
+        dispatch(RefreshResearchArchive()).unwrap().then((res) => {
+            if (res.message) {
+                toast.message(res.message);
+            }
+        }).catch((err: any) => {
+            toast.error(err);
+        })
+    }
+
+    // handle markdone
+
+    async function handleMarkDone(id: string) {
+        try {
+
+            const response = await axios.put(`BaseApiUrl/api/markdone`, { message_id: id }, {
+                withCredentials: true
+            })
+            toast.message(response.data.message);
+            return response.data;
+        } catch (err: any) {
+            return toast.error(err?.message || err?.response?.data?.message);
+        }
+    }
+    return (<>
+        <section className='p-4 relative'>
+            <h1 className="flex items-center justify-start gap-2 bai-jamjuree-bold text-2xl">
+                <Archive /> Research Archive
+            </h1>
+            <span className='space-grotesk text-xs text-gray-600 dark:text-neutral-500'>Continue your pending research</span>
+            <button onClick={handleRefresh} className='bai-jamjuree-semibold text-xs flex items-center justify-center gap-3 bg-neutral-200 dark:bg-neutral-900 rounded-sm p-2 cursor-pointer'>Refresh <IoReload /></button>
+        </section>
+
+
+        <div className="p-6 max-w-7xl mx-auto ">
+
+            {fetchingPendingResearch === true ? (<LoadingState />) :
+                research_history.length > 0 ? (<>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {research_history.map((item, ind) => {
+                            const isExpanded = expandedCard === item.message_id;
+
+                            return (
+                                <article
+                                    key={`${item.message_id}/${ind}`}
+                                    className="group flex flex-col border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-900 transition-all hover:border-blue-500/50 relative"
+                                >
+
+                                    {/* Header: Status bar */}
+                                    <div className="flex items-center justify-between px-3 py-1.5 bg-neutral-900 text-white dark:bg-neutral-800/50">
+                                        <span className="space-grotesk text-[9px] uppercase tracking-tighter opacity-80 flex items-center gap-1">
+                                            <RiRadarLine /> {item.depth}
+                                        </span>
+                                        <span className="flex items-center gap-1.5 space-grotesk text-[9px] uppercase font-bold">
+                                            <div className={`h-1.5 w-1.5 rounded-full ${item.isSynthesized ? "bg-green-500" : "bg-red-500 animate-pulse"}`} />
+                                            {item.isSynthesized ? "Ready" : "Pending"}
                                         </span>
                                     </div>
-                                ) : null;
-                            })}
+
+                                    {/* Body: Query Heading */}
+                                    <div className="p-4 flex-grow">
+                                        <h2 className="bai-jamjuree-bold text-base leading-tight mb-4">
+                                            {item.query.split('&')[0].replace('new_instructions', '').trim()}
+                                        </h2>
+
+                                        {/* COLLAPSIBLE TOGGLE */}
+                                        <button
+                                            onClick={() => setExpandedCard(isExpanded ? null : item.message_id)}
+                                            className="flex items-center justify-between w-full p-2 rounded bg-neutral-50 dark:bg-neutral-800 text-neutral-500 hover:text-blue-500 transition-colors"
+                                        >
+                                            <span className="space-grotesk text-[10px] font-bold uppercase flex items-center gap-2">
+                                                <TbBooks /> Intelligence Details ({item.sources_count})
+                                            </span>
+                                            {isExpanded ? <TbChevronUp size={16} /> : <TbChevronDown size={16} />}
+                                        </button>
+
+                                        {/* EXPANDABLE SECTION: SCROLLABLE */}
+                                        {isExpanded && (
+                                            <div className="mt-2 border border-neutral-200 dark:border-neutral-800 rounded overflow-hidden">
+                                                <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 bg-neutral-50/50 dark:bg-neutral-900/50">
+                                                    {item.information.details.map((source, idx) => (
+                                                        <SourceDetail key={idx} source={source} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Footer: Actions */}
+                                    <div className="max-w-[480px] w-full bg-white dark:bg-zinc-950 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden shadow-sm">
+
+
+                                        {/* Interactive Section */}
+                                        <div className="p-3.5 border-b border-neutral-200 dark:border-neutral-800 flex flex-col gap-2">
+                                            {/* Input Wrapper */}
+                                            <div className="flex items-center gap-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md px-2.5 py-2 focus-within:border-sky-500/50 transition-colors">
+                                                <Clock size={12} className="opacity-40" />
+                                                <input
+                                                    ref={(el) => { (inputRefs.current[item.id] = el) }}
+                                                    value={instructions[item.id] || ""}
+                                                    onChange={(e) => handleInputChange(item.id, e.target.value)}
+                                                    type="text"
+                                                    placeholder="Optional: add new instructions before continuing..."
+                                                    className="bai-jamjuree-regular bg-transparent border-none outline-none text-[11px] w-full text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400"
+                                                />
+                                            </div>
+
+                                            {/* Quick Tags */}
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {QUICK_TAGS.map((tag) => (
+                                                    <button
+                                                        key={tag.label}
+                                                        onClick={() => injectTag(tag.value, item.id)}
+                                                        className="bai-jamjuree-semibold text-[9px] uppercase tracking-wide px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-800 text-neutral-500 hover:border-sky-500/40 hover:text-sky-500 transition-colors"
+                                                    >
+                                                        + {tag.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Footer Action Grid */}
+                                        <div className="grid grid-cols-[auto_1fr_1fr] border-t border-neutral-200 dark:border-neutral-800">
+                                            <div className='flex items-center justify-center '>
+                                                <button
+                                                    onClick={() => handleDiscard(item.message_id)}
+                                                    className="flex items-center justify-center p-3 border-r border-neutral-200 border-red-800 dark:text-neutral-400 hover:bg-red-500/20 bg-red-500/10 hover:text-red-500 transition-all"
+                                                >
+                                                    <TbTrash size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleMarkDone(item.message_id)}
+                                                    className="flex items-center justify-center p-3 border-r border-neutral-200 border-sky-800 dark:text-neutral-400
+                                                    bg-sky-500/10 hover:bg-sky-500/20 hover:text-sky-500 transition-all"
+                                                >
+                                                    <MdDoneAll size={14} />
+                                                </button>
+                                            </div>
+
+                                            <button
+                                                onClick={() => handleResult(item.message_id, item.depth, 'continue', item.id)}
+                                                className="flex items-center justify-center gap-2 p-3 text-[9px] bai-jamjuree-semibold uppercase tracking-widest border-r border-neutral-200 dark:border-neutral-800 dark:text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all"
+                                            >
+                                                <Clock size={12} /> Continue
+                                            </button>
+
+                                            <button
+                                                onClick={() => handleResult(item.message_id, item.depth, 'finalize', item.id)}
+                                                className="flex items-center justify-center gap-2 p-3 text-[9px] bai-jamjuree-semibold uppercase tracking-widest bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 hover:opacity-80 transition-all"
+                                            >
+                                                <GoReport size={12} /> Finalize
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                </>) : (
+                    <EmptyState />
+                )
+
+            }
+
+        </div>
+    </>);
+}
+
+function SourceDetail({ source }: { source: any }) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="border-b border-neutral-200 dark:border-neutral-800 last:border-0">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors"
+            >
+                <div className="flex flex-col items-start text-left max-w-[90%]">
+                    <span className="bai-jamjuree-bold text-xs truncate w-full">{source.title}</span>
+                    <span className="space-grotesk text-[10px] text-blue-500 truncate w-full flex items-center gap-1">
+                        <TbLink size={10} /> {source.url}
+                    </span>
+                </div>
+                {isOpen ? <TbChevronUp size={14} /> : <TbChevronDown size={14} />}
+            </button>
+
+            {isOpen && (
+                <div className="px-3 pb-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                    {/* Raw Content Block */}
+                    <div className="bg-neutral-50 dark:bg-neutral-950 p-2 rounded border border-neutral-100 dark:border-neutral-800">
+                        <div className="flex items-center gap-1 mb-1 text-neutral-400">
+                            <TbQuote size={12} />
+                            <span className="text-[10px] uppercase font-bold space-grotesk">Extracted Content</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400 italic">
+                            "{source.content}"
+                        </p>
+                    </div>
+
+                    {/* Queries that returned this result */}
+                    {source.queries && (
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-1 text-neutral-400">
+                                <TbSearch size={12} />
+                                <span className="text-[10px] uppercase font-bold space-grotesk">Source Queries</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                                {source.queries.map((q: string, i: number) => (
+                                    <span key={i} className="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                                        {q}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     )}
-                </header>
-
-                {/* Content */}
-                {visible.length === 0 ? (
-                    <EmptyState />
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {visible.map((entry) => (
-                            <ResearchCard
-                                key={entry.MessageId}
-                                entry={entry}
-                                onResume={handleResume}
-                                onDiscard={handleDiscard}
-                            />
-                        ))}
-                    </div>
-                )}
-
-                {/* Footer hint */}
-                {visible.length > 0 && (
-                    <p className="text-center font-mono text-[10px] text-neutral-700 uppercase tracking-widest">
-                        {">> DATA_PERSISTS_FOR_3H >> AFTER_EXPIRY_RELOAD_FROM_DB"}
-                    </p>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
+}
+
+function EmptyState(): JSX.Element {
+    return (<>
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4 w-full mx-auto">
+            <div className="relative">
+                <div className="absolute inset-0 bg-blue-500/10 blur-3xl rounded-full" />
+                <TbBooks className="relative text-neutral-300 dark:text-neutral-700" size={64} />
+            </div>
+
+            <div className="space-y-1">
+                <h3 className="bai-jamjuree-bold text-xl text-neutral-900 dark:text-neutral-100">
+                    No research archives found
+                </h3>
+                <p className="space-grotesk text-sm text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
+                    Your intelligence reports and synthesized data will appear here once generated.
+                </p>
+            </div>
+
+            <button className="group flex items-center gap-2 bg-neutral-900 dark:bg-white text-white dark:text-black space-grotesk px-4 py-2 rounded-md font-bold text-xs uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-blue-400 transition-all">
+                <Link to='/interface'>
+                    Start New Research
+                </Link>
+                <TbArrowRight className="group-hover:translate-x-1 transition-transform" />
+            </button>
+        </div>
+    </>)
+}
+
+function LoadingState(): JSX.Element {
+    return (<>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6  w-full mx-auto">
+            {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex flex-col border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-900 animate-pulse">
+                    <div className="h-8 bg-neutral-100 dark:bg-neutral-800" /> {/* Header Shim */}
+                    <div className="p-4 flex-grow space-y-3">
+                        <div className="h-4 bg-neutral-200 dark:bg-neutral-800 rounded w-3/4" />
+                        <div className="h-4 bg-neutral-200 dark:bg-neutral-800 rounded w-1/2" />
+                        <div className="h-10 bg-neutral-50 dark:bg-neutral-800 rounded mt-4" />
+                    </div>
+                    <div className="grid grid-cols-2 border-t border-neutral-100 dark:border-neutral-800">
+                        <div className="h-10 border-r border-neutral-100 dark:border-neutral-800" />
+                        <div className="h-10" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    </>)
+
 }

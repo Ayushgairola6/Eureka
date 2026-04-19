@@ -1104,12 +1104,20 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
     let WebResults; //stores the values of deep web results based on the quermode
 
     // no matter the search type send the user prompt to llm for better search query
-    const FormattedQueries = await HandleIntentIdentification(query, plan_type);
+    const Intent = await HandleIntentIdentification(question, plan_type);
 
-    if (!FormattedQueries || FormattedQueries?.length === 0) {
+    if (!Intent || Intent.error || !Intent.data) {
       return res.status(400).json({
         message:
           "Our AI models are overloaded right now please wait a bit and try again later.",
+      });
+    }
+    const FormattedQueries = Intent?.data.length > 0 ? Intent.data : [];
+
+    if (FormattedQueries.length === 0) {
+      return res.status(400).json({
+        message:
+          "Model failed to search for any information because it is overloaded right now",
       });
     }
     // send the event about he query to the user

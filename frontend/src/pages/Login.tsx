@@ -88,9 +88,9 @@ const Login = () => {
           <div className="flex items-center justify-between px-4 py-2 bg-neutral-900 dark:bg-neutral-800 rounded-t-xl border-x border-t border-neutral-800">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
-              <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-[0.2em]">Auth_Protocol_v2.0</span>
+              <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-[0.2em]">Auth protocol</span>
             </div>
-            <span className="font-mono text-[9px] text-neutral-500 uppercase">Ver: 1.0.1-beta</span>
+            <span className="font-mono text-[9px] text-neutral-500 uppercase">Ver: 1.0.3 stable</span>
           </div>
 
           {/* --- Main Identity Card --- */}
@@ -99,7 +99,7 @@ const Login = () => {
             {/* Header */}
             <div className="mb-8">
               <h1 className="bai-jamjuree-bold text-3xl text-neutral-900 dark:text-white tracking-tighter">
-                ACCESS_IDENTITY
+                ACCESS IDENTITY
               </h1>
               <p className="text-xs space-grotesk text-neutral-500 dark:text-neutral-400 mt-1 uppercase tracking-widest">
                 Establish secure connection to AntiNode
@@ -110,7 +110,7 @@ const Login = () => {
               {/* Email Field */}
               <div className="group flex flex-col gap-2">
                 <label className="font-mono text-[10px] font-black text-neutral-400 uppercase tracking-tighter flex items-center gap-2 group-focus-within:text-orange-600 transition-colors">
-                  <MdEmail size={12} /> User_Identifier
+                  <MdEmail size={12} /> Email identifier
                 </label>
                 <input
                   ref={Email}
@@ -124,7 +124,7 @@ const Login = () => {
               <div className="group flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <label className="font-mono text-[10px] font-black text-neutral-400 uppercase tracking-tighter flex items-center gap-2 group-focus-within:text-orange-600 transition-colors">
-                    <MdPassword size={12} /> Access_Key
+                    <MdPassword size={12} /> Pass Key
                   </label>
                   <Link to="/ResetPassword" title="Recovery" className="text-[10px] font-mono text-neutral-400 hover:text-orange-600 transition-colors uppercase">
                     Forgot?
@@ -185,10 +185,10 @@ const Login = () => {
             {/* Footer Links */}
             <div className="mt-10 pt-6 border-t border-neutral-100 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4">
               <Link to="/Register" className="flex items-center gap-2 text-[10px] font-mono font-bold text-neutral-500 hover:text-orange-600 transition-all uppercase">
-                <LuUserPlus size={14} /> New_Operator?
+                <LuUserPlus size={14} /> New Here?
               </Link>
               <Link to="/Verification" className="text-[10px] font-mono text-neutral-400 hover:text-neutral-200 transition-all flex items-center gap-1">
-                Expired link? <PiArrowUpRight />
+                Expired account verification link? <PiArrowUpRight />
               </Link>
             </div>
           </div>

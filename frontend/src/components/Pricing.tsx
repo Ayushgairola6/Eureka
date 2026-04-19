@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { FiArrowRight, FiCheckCircle } from "react-icons/fi";
-import { LucideClockFading, Zap } from "lucide-react";
+import { LucideClockFading } from "lucide-react";
 import axios from 'axios';
 import { toast } from "sonner";
 import { DodoPayments } from "dodopayments-checkout";
 import { useAppSelector } from '../store/hooks'
-import { IoBagCheckOutline, IoShieldCheckmarkOutline } from 'react-icons/io5';
+import { setOrderId, setIsProcessingPayment } from '../store/PaymentsSlice';
+import { IoBagCheckOutline } from 'react-icons/io5';
 const BaseApiUrl = import.meta.env.VITE_BACKEND_API_URL
 
 const PlanDetails = [
@@ -50,13 +51,16 @@ const PlanDetails = [
       "For researchers, students, and analysts who need answers they can verify and trust — every session.",
     features: [
       "Unlimited shards & web search",
+      "Analyst mode for steered research",
       "Multi-source synthesis",
-      "Deep web research with intent decomposition",
+      "Deep web research capabilities",
       "50 private documents (up to 50MB)",
       "10 AntiNode collaborative rooms",
       "Persistent memory across sessions",
       "Full transparency layer",
       "24/7 customer support",
+      "Access to best reasoning and processing models"
+
     ],
     not_available: [
       "Analyst Mode (mid-research steering)",
@@ -73,7 +77,7 @@ const PlanDetails = [
     duration: 30,
   },
   {
-    id: "pdt_architect_annual",
+    id: "pdt_0NcYPAXDbJxhN8kKBdulh",
     planName: "Architect Annual",
     actual_price: "$204",
     price: "$149",
@@ -82,14 +86,15 @@ const PlanDetails = [
       "Full Architect access at $12.40/month. Lock in the lowest price — ideal if research is part of your regular workflow.",
     features: [
       "Everything in Architect",
-      "2 months free vs monthly billing",
+      "One time payment",
       "Priority access to new features",
       "Locked-in rate — no price increases",
-    ],
-    not_available: [
-      "Analyst Mode (mid-research steering)",
-      "Enterprise RAG",
-      "Extended memory retention",
+      "Access to all features",
+      "No automatic billing without permission",
+      "Long term memory",
+      "Research re-processing",
+      "24/7 priority customer support",
+      "Access to best reasoning and processing models"
     ],
     validity: "per year",
     cta: "Get Annual Access",
@@ -113,6 +118,7 @@ const PlanDetails = [
       "5 AntiNode Rooms",
       "Short-term AI memory",
       "One-time customer support",
+      "Limited file uploads with fixed page limits",
     ],
     not_available: [
       "Persistent long-term memory",
@@ -158,7 +164,7 @@ const PlanDetails = [
     duration: 30,
   },
 ];
-
+// 
 const Pricing = () => {
   // initiating the payments client
 
@@ -176,7 +182,6 @@ const Pricing = () => {
     });
   }, [])
 
-  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [chosenPlan, setChosenPlan] = useState<string | null>(null) //empty or a plan id
 
 
@@ -185,18 +190,23 @@ const Pricing = () => {
     if (!offer || !offer?.amount || !offer.duration) return;
 
     setChosenPlan(offer.id)
+    setIsProcessingPayment(true)
     try {
-      const response = await axios.post(`${BaseApiUrl}/api/create-subscription`, { amount: offer.amount, duration: offer.duration, product_id: offer.id })
-
-
+      const response = await axios.post(`${BaseApiUrl}/api/create-subscription`, { amount: offer.amount, duration: offer.duration, product_id: offer.id }, {
+        withCredentials: true
+      })
 
       const checkoutUrl = response.data.checkOutUrl;
-
+      console.log(response.data)
+      localStorage.setItem("antinode_order_id", response.data.order_id);
+      setOrderId(response.data.order_id);
       await DodoPayments.Checkout.open({
         checkoutUrl,
       });
       return response.data;
     } catch (error: any) {
+      setIsProcessingPayment(false)
+
       console.log(error)
       return toast.error(error?.response?.data?.message || "Unable to create a new subscription for you");
     }
@@ -229,7 +239,7 @@ const Pricing = () => {
         <div className="max-w-[1400px] mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
             {PlanDetails.map((plan, index) => {
-              const isRecommended = plan.id === "pdt_architect_annual";
+              const isRecommended = plan.id === "pdt_0NcYPAXDbJxhN8kKBdulh";
 
               return (<>
                 <div
@@ -299,9 +309,9 @@ const Pricing = () => {
                         </div>
                       ))}
                       {plan.not_available?.map((feat, ind) => (
-                        <div key={ind} className="flex items-start gap-3 text-xs space-grotesk opacity-20">
-                          <div className="w-3 h-px bg-neutral-500 mt-2 flex-shrink-0" />
-                          <span className="line-through text-neutral-500">{feat}</span>
+                        <div key={ind} className="flex items-start gap-3 text-xs space-grotesk ">
+                          <div className="w-3 h-px  mt-2 flex-shrink-0" />
+                          <span className="line-through text-gray-500 dark:text-gray-400">{feat}</span>
                         </div>
                       ))}
                     </div>
@@ -320,10 +330,8 @@ const Pricing = () => {
                         }
       `}
                     >
-                      {isProcessingPayment && plan.id === chosenPlan ? (
+                      {isProcessingPayment === true && plan.id === chosenPlan ? (
                         <><LucideClockFading className="animate-spin" size={14} /><span>Securing Order...</span></>
-                      ) : verifyingPayment && plan.id === chosenPlan ? (
-                        <><IoShieldCheckmarkOutline className="animate-pulse" size={14} /><span>Verifying Payment...</span></>
                       ) : (
                         <><IoBagCheckOutline size={14} /><span>{plan.cta}</span></>
                       )}
@@ -338,7 +346,7 @@ const Pricing = () => {
         </div>
 
         <footer className="w-full text-center mt-20 flex flex-col items-center gap-2">
-          <h3 className="bai-jamjuree-semibold text-sm dark:text-neutral-300">Deployment Assistance Required?</h3>
+          <h3 className="bai-jamjuree-semibold text-sm dark:text-neutral-300">For refunds or billing issues, contact us at support@antinodeai.space</h3>
           <a
             className="group space-grotesk flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-orange-500 transition-colors"
             href="mailto:support@antinodeai.space"

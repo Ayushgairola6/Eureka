@@ -4,7 +4,12 @@ import {
   VerificationModeSearchWeb,
   FinalAnalyzer,
 } from "../VerificationModeFeatures/VerificationModeWebSearchHandler.js";
-import { GetPendingResearch } from "../VerificationModeFeatures/VerificationModeFeatures.js";
+import {
+  GetPendingResearch,
+  RefreshArchive,
+  ResumePendingThread,
+  MarkResearchDone,
+} from "../VerificationModeFeatures/VerificationModeFeatures.js";
 export const VerificationModeRouter = express.Router();
 
 VerificationModeRouter.post(
@@ -13,4 +18,7 @@ VerificationModeRouter.post(
   VerificationModeSearchWeb
 )
   .post("/query/finalize", VerifyToken, FinalAnalyzer)
-  .get("/fetch-research", VerifyToken, GetPendingResearch);
+  .get("/fetch-research", VerifyToken, GetPendingResearch)
+  .post("/research-continue", VerifyToken, ResumePendingThread)
+  .get("/refresh-archive", VerifyToken, RefreshArchive)
+  .put("/markdone", VerifyToken, MarkResearchDone);

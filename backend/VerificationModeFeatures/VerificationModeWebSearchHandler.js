@@ -9,10 +9,11 @@ import {
   StoreQueryAndResponse,
 } from "../controllers/fileControllers.js";
 import {
+  FindIntent,
   HandleInference,
   StructuredOutPutInferenceHandler,
 } from "../controllers/GroqInferenceController.js";
-import { FilterIntent } from "../controllers/ModelController.js";
+import { GenerateResponse } from "../controllers/ModelController.js";
 import { supabase } from "../controllers/supabaseHandler.js";
 import { ProcessUserQuery } from "../controllers/UserCreditLimitController.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
@@ -22,12 +23,9 @@ import {
   FormattForLLM,
   ProcessForLLM,
 } from "../OnlineSearchHandler/WebCrawler.js";
-import {
-  ANALYST_PROMPT,
-  IntentIdentifier,
-  VerificationModePrompt,
-} from "../Prompts/Prompts.js";
+import { ANALYST_PROMPT, VerificationModePrompt } from "../Prompts/Prompts.js";
 import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
+import { CheckInstructionsStatus } from "./VerificationModeFeatures.js";
 
 // helper function to extract necessary fields from the model response
 
@@ -56,7 +54,13 @@ function ExtractFields(response, data) {
 
   const confidence_score = response?.confidence_score;
 
-  return { error: null, queries: queries || [], score: confidence_score || 0 };
+  const direct_answer = response?.direct_answer;
+  return {
+    error: null,
+    queries: queries || [],
+    score: confidence_score || 0,
+    direct_answer,
+  };
 }
 // recursive web search orchestration
 // Lightweight context tracker — only queries + URLs, no raw content
@@ -75,6 +79,7 @@ function FormatContextForLLM(iterationContext) {
   )}&scraped_urls=${JSON.stringify(iterationContext.urls)}`;
 }
 
+// recursive orchestrator
 async function WebSearchOrchestrator(
   iteration = 0,
   data,
@@ -92,7 +97,6 @@ async function WebSearchOrchestrator(
 
     const iterationLimit = web_search_depth === "deep_web" ? 5 : 2;
 
-    // Hard stop — no recursion, no string stuffing, just bail
     if (iteration >= iterationLimit) {
       return {
         error: "Iteration limit reached without sufficient results",
@@ -100,6 +104,7 @@ async function WebSearchOrchestrator(
         MessageId,
         iteration,
         queries: iterationContext?.queries,
+        direct_answer: null,
       };
     }
 
@@ -125,6 +130,7 @@ async function WebSearchOrchestrator(
         MessageId,
         iteration,
         queries: iterationContext.queries,
+        direct_answer: null,
       };
     }
 
@@ -140,27 +146,38 @@ async function WebSearchOrchestrator(
         data: null,
         MessageId,
         iteration,
+        direct_answer: null,
       };
     }
+
+    // if the answer was simple
+    if (extractedInformation?.direct_answer)
+      return {
+        error: null,
+        data: null,
+        MessageId,
+        iteration,
+        direct_answer: extractedInformation.direct_answer,
+      };
 
     // High confidence — fetch results and return immediately if they exist
     if (extractedInformation?.score >= 0.5) {
       const results =
-        web_search_depth === "deep_web"
-          ? await DeepSearchRequest(extractedInformation.queries, {
-              user,
-              user_prompt,
-              MessageId,
-              room_id,
-              plan_type,
-            })
-          : await SurfaceWebSearchRequst(extractedInformation.queries, {
-              user,
-              plan_type,
-              MessageId,
-              user_prompt,
-              room_id,
-            });
+        // // web_search_depth === "deep_web "?
+        // await DeepSearchRequest(extractedInformation.queries, {
+        //   user,
+        //   user_prompt,
+        //   MessageId,
+        //   room_id,
+        //   plan_type,
+        // });
+        await SurfaceWebSearchRequst(extractedInformation.queries, {
+          user,
+          plan_type,
+          MessageId,
+          user_prompt,
+          room_id,
+        });
 
       if (results && !results.error && results.data) {
         return {
@@ -169,9 +186,9 @@ async function WebSearchOrchestrator(
           MessageId,
           iteration,
           queries: extractedInformation.queries,
+          direct_answer: null,
         };
       }
-
       // Results came back empty — track what we tried and retry
       const updatedContext = BuildIterationContext(
         iterationContext,
@@ -195,15 +212,16 @@ async function WebSearchOrchestrator(
     return {
       error: "Failed to find any results",
       data: null,
-      MessageId,
+      MessageId: data.MessageId,
       iteration,
       queries: [],
+      direct_answer: null,
     };
   }
 }
 
 //helper function for deep-search request
-async function DeepSearchRequest(FormattedQueries, data) {
+export async function DeepSearchRequest(FormattedQueries, data) {
   try {
     const {
       user,
@@ -286,7 +304,7 @@ async function SurfaceWebSearchRequst(FormattedQueries, data) {
       status: {
         message: `Searching for`,
         data: [
-          `Crawling deep web for following queries ,${JSON.stringify(
+          `Looking in the web for following queries ,${JSON.stringify(
             FormattedQueries?.flat()
           )}`,
         ],
@@ -373,12 +391,12 @@ export const VerificationModeSearchWeb = async (req, res) => {
       });
     }
     // free users not allowed
-    if (plan_type === "free" || plan_type === "sprint pass") {
-      return res.status(403).json({
-        message:
-          "This plan does not include analyst mode, if you want to try it please considering upgrading your plan.",
-      });
-    }
+    // if (plan_type === "free" || plan_type === "sprint pass") {
+    //   return res.status(403).json({
+    //     message:
+    //       "This plan does not include analyst mode, if you want to try it please considering upgrading your plan.",
+    //   });
+    // }
     // orchestrate results
     const result = await HandleOrchestratedResultsHandling({
       user: req.user,
@@ -400,6 +418,7 @@ export const VerificationModeSearchWeb = async (req, res) => {
       MessageId: result.MessageId,
       research_data: result.research_data,
       status: result.status,
+      direct_answer: result?.direct_answer,
     });
   } catch (error) {
     console.error("Verification search error\n", error);
@@ -475,6 +494,19 @@ async function HandleOrchestratedResultsHandling(data) {
     room_id: null,
   });
 
+  // if there is a direct_answer
+
+  if (OrchesTratedResults?.direct_answer) {
+    return {
+      success: true,
+      status: "complete",
+      research_data: null,
+      MessageId,
+      error: null,
+      queries: [],
+      direct_answer: OrchesTratedResults?.direct_answer,
+    };
+  }
   // ── Total failure — nothing to salvage ──────────────────────────────────
   if (OrchesTratedResults?.error && OrchesTratedResults?.iteration === 0) {
     return {
@@ -484,6 +516,7 @@ async function HandleOrchestratedResultsHandling(data) {
       MessageId,
       error: OrchesTratedResults.error,
       queries: [],
+      direct_answer: null,
     };
   }
 
@@ -501,6 +534,7 @@ async function HandleOrchestratedResultsHandling(data) {
         MessageId,
         error: null,
         queries: OrchesTratedResults?.queries,
+        direct_answer: null,
       };
     }
 
@@ -525,6 +559,7 @@ async function HandleOrchestratedResultsHandling(data) {
       research_data,
       MessageId: OrchesTratedResults?.MessageId || MessageId,
       stored: !stored?.error,
+      direct_answer: null,
     };
   }
 
@@ -553,6 +588,7 @@ async function HandleOrchestratedResultsHandling(data) {
     research_data,
     MessageId: OrchesTratedResults?.MessageId || MessageId,
     stored: !stored?.error,
+    direct_answer: null,
   };
 }
 // final analysis handler when user either wants to synthesize the report or add more instructions
@@ -567,15 +603,12 @@ export const FinalAnalyzer = async (req, res) => {
 
     const {
       instructions,
-      user_choice,
       MessageId,
       userMessageId,
-      report,
       web_search_depth,
+      action_type,
     } = req.body;
     if (
-      !user_choice ||
-      typeof user_choice !== "string" ||
       !MessageId ||
       typeof MessageId !== "string" ||
       !userMessageId ||
@@ -587,14 +620,37 @@ export const FinalAnalyzer = async (req, res) => {
       });
 
     // if there are further instructions for the user
-    const { status, error, plan_type, plan_status, decision_type } =
-      await CheckUserPlanStatus(user.user_id);
+    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
+      user.user_id
+    );
 
     //if the user is not paid or the paid staus is not even available
     if (status === false || error || !plan_type) {
+      notifyMe(
+        `There was an error while checking the payment status and information of user=${req.user.username} in the analyst mode report finalize report handler`,
+        null
+      );
       return res.status(400).send({
         message:
-          "There is something wrong with your account please contact our support at support@antinodeai.space to invoke a problem ticket.",
+          "An error occured while checking your payment status please contact our support at support@antinodeai.space to report this issue",
+      });
+    }
+
+    // free & sprint pass not allowed
+    if (plan_status === "free" || plan_status === "sprint pass") {
+      return res
+        .status(400)
+        .json({ message: "These features are only limited to pro plans" });
+    }
+
+    // validate quota
+    const rateLimitStatus = await ProcessUserQuery(user, "Analyst");
+    if (rateLimitStatus?.status === false) {
+      return res.status(400).send({
+        message:
+          "You have exhausted your monthly quota, please wait till next month or get our premium pass and experience all features without any limits",
+        Answer:
+          "You have exhausted your monthly quota, please wait till next month or get our premium pass and experience all features without any limits",
       });
     }
 
@@ -605,58 +661,19 @@ export const FinalAnalyzer = async (req, res) => {
       .eq("message_id", MessageId)
       .single();
     if (lookupError || !data) {
-      return res
-        .status(400)
-        .json({ message: "There was an error while tracking your request" });
-    }
-
-    // ── Report / flag path ────────────────────────────────────────────────
-    if (report) {
-      const { error: reportError } = await supabase
-        .from("reported_message")
-        .insert({ report_value: report, message_id: MessageId });
-
-      if (reportError) {
-        notifyMe("Error storing research report flag", reportError);
-      }
-
-      return res.status(201).json({
-        message: "Thanks for the report, this helps us improve our services.",
+      notifyMe(
+        "An error occured while looking up for a report for analyst mode (line:667)",
+        lookupError
+      );
+      return res.status(404).json({
+        message:
+          "Unable to locate the research-thread at the moment, please wait while we are trying to fix it",
       });
     }
 
-    /// free and sprint pass users aren't eligible for this
-    if (instructions && decision_type != "finalize") {
-      if (plan_type === "free" || plan_type === "sprint pass") {
-        return res.status(400).json({
-          message:
-            "Planner and Architect members can give further instructions for deeper research.",
-        });
-      }
+    // if the user explicitly asked to finalize the report
 
-      // retry the orchestration for more richer results
-      const newResearchResults = await HandleNewInstructions(instructions, {
-        user: req.user,
-        user_prompt: instructions,
-        plan_type,
-        web_search_depth,
-        MessageId,
-        room_id: null,
-      });
-
-      return res
-        .status(newResearchResults.data.status === "partial" ? 206 : 200)
-        .json({
-          message: "Research done",
-          MessageId: newResearchResults.data.MessageId,
-          research_data: newResearchResults.data.research_data,
-          status: newResearchResults.data.status,
-        });
-    }
-
-    // instruction but with finalize report
-    if (instructions && decision_type === "finalize") {
-      // cache the user message
+    if (action_type && action_type === "finalize") {
       const message = {
         id: userMessageId, //users message Id
         sent_by: "You", //sent by the user
@@ -672,7 +689,7 @@ export const FinalAnalyzer = async (req, res) => {
             "Seems like our AI models are overloaded right now please stand by while we try to fix this problem, you can continue this research from your archive.",
         });
       }
-      const finalReportSynthesizer = await HandleInference(
+      const finalReportSynthesizer = await GenerateResponse(
         `Create a detailed report of this information fetched by you in the previous step of the research \n,the source information also contains the previous original query of the user so also keep that into consideration\n,
         these are new and additional instructions from the user=${instructions}\n,this is the information from sources=${JSON.stringify(
           Information.data
@@ -711,83 +728,175 @@ export const FinalAnalyzer = async (req, res) => {
       await CacheCurrentChat(AiMessage, req.user);
       await StoreQueryAndResponse(
         user.user_id,
-        user_choice,
+        instructions,
         finalReportSynthesizer.result,
         null
       );
 
+      UpdateReportStatus(MessageId);
       return res.status(200).send({
         message: "Report ready",
-        result: finalReportSynthesizer.result,
+        direct_answer: finalReportSynthesizer.result,
         isSynthesized: true,
       });
-    }
-    //  final report path
-    const message = {
-      id: userMessageId, //users message Id
-      sent_by: "You", //sent by the user
-      message: { isComplete: true, content: instructions },
-      sent_at: currentTime,
-    };
-    await CacheCurrentChat(message, req.user);
-
-    const Information = await GetResearchData(MessageId);
-    // create a report
-    if (!Information || Information.error) {
-      return res.status(400).json({
-        message:
-          "Seems like our AI models are overloaded right now please stand by while we try to fix this problem, you can continue this research from your archive.",
-      });
-    }
-    const finalReportSynthesizer = await HandleInference(
-      `Analyze and create a report of this information based of  the sources and the previous instructions and queries used to fetch the results =${JSON.stringify(
-        Information.data
-      )} `,
-      ANALYST_PROMPT
-    );
-
-    if (finalReportSynthesizer?.error || !finalReportSynthesizer?.result) {
-      return res.status(400).json({
-        message:
-          "Our AI models are very overloaded right now please wait a bit before trying again later.",
-      });
-    }
-    const { error: updationError } = await supabase
-      .from("research_data")
-      .update({ isSynthesized: true })
-      .eq("message_id", MessageId); //update the synthesis value
-
-    if (updationError) {
-      notifyMe(
-        "There was an error while trying to update the isSynthesized value for analyst mode",
-        JSON.stringify(updationError)
+    } else if (action_type === "continue") {
+      const newResearchResults = await HandleNewInstructions(
+        instructions ||
+          "No instructions were provided but the user has asked to continue the research",
+        {
+          user: req.user,
+          user_prompt:
+            "No instructions were provided but the user has asked to continue the research",
+          plan_type,
+          web_search_depth,
+          MessageId,
+          room_id: null,
+        }
       );
+
+      return res
+        .status(newResearchResults.data.status === "partial" ? 206 : 200)
+        .json({
+          message: "Research done",
+          MessageId: newResearchResults.data.MessageId,
+          research_data: newResearchResults.data.research_data,
+          status: newResearchResults.data.status,
+        });
+    }
+    // validate the type of instruction
+    const { isHardcoded, isUnique } = CheckInstructionsStatus(instructions);
+
+    // if the instructions are unique
+    if (isUnique === true) {
+      const identified_intent = await FindIntent(instructions); //identify the user intent
+      if (
+        identified_intent.status === false ||
+        !identified_intent?.result?.intent
+      ) {
+        return res.status(400).json({
+          message: "There was an error while trying to identify your intent",
+        });
+      }
+      const intent = identified_intent?.result?.intent;
+
+      if (intent === "not_sure")
+        return res.status(400).json({
+          message:
+            "Could be more specific about what do you want do proceed with next",
+        });
+
+      if (intent === "dig_deeper") {
+        const newResearchResults = await HandleNewInstructions(instructions, {
+          user: req.user,
+          user_prompt: instructions,
+          plan_type,
+          web_search_depth,
+          MessageId,
+          room_id: null,
+        });
+
+        return res
+          .status(newResearchResults.data.status === "partial" ? 206 : 200)
+          .json({
+            message: "Research done",
+            MessageId: newResearchResults.data.MessageId,
+            research_data: newResearchResults.data.research_data,
+            status: newResearchResults.data.status,
+          });
+      } else if (intent === "finalize_report") {
+        const message = {
+          id: userMessageId, //users message Id
+          sent_by: "You", //sent by the user
+          message: { isComplete: true, content: instructions },
+          sent_at: currentTime,
+        };
+        await CacheCurrentChat(message, req.user);
+        const Information = await GetResearchData(MessageId);
+        // create a report
+        if (!Information || Information.error) {
+          return res.status(400).json({
+            message:
+              "Seems like our AI models are overloaded right now please stand by while we try to fix this problem, you can continue this research from your archive.",
+          });
+        }
+        const finalReportSynthesizer = await GenerateResponse(
+          `Create a detailed report of this information fetched by you in the previous step of the research \n,the source information also contains the previous original query of the user so also keep that into consideration\n,
+        these are new and additional instructions from the user=${instructions}\n,this is the information from sources=${JSON.stringify(
+            Information.data
+          )}`,
+          ANALYST_PROMPT
+        );
+
+        if (finalReportSynthesizer?.error || !finalReportSynthesizer?.result) {
+          return res.status(400).json({
+            message:
+              "Our AI models are very overloaded right now please wait a bit before trying again later.",
+          });
+        }
+        const { error: updationError } = await supabase
+          .from("research_data")
+          .update({ isSynthesized: true })
+          .eq("message_id", MessageId); //update the synthesis value
+
+        if (updationError) {
+          notifyMe(
+            "There was an error while trying to update the isSynthesized value for analyst mode",
+            JSON.stringify(updationError)
+          );
+        }
+
+        const AiMessage = {
+          id: MessageId,
+          sent_by: "AntiNode", //sent by the user
+          message: {
+            isComplete: true,
+            content: finalReportSynthesizer.result,
+          },
+          sent_at: currentTime,
+        };
+        // update the cache
+        await CacheCurrentChat(AiMessage, req.user);
+        await StoreQueryAndResponse(
+          user.user_id,
+          instructions,
+          finalReportSynthesizer.result,
+          null
+        );
+        UpdateReportStatus(MessageId); //update the report status
+
+        return res.status(200).send({
+          message: "Report ready",
+          direct_answer: finalReportSynthesizer.result,
+          isSynthesized: true,
+        });
+      }
+    } else if (isHardcoded === true) {
+      const newResearchResults = await HandleNewInstructions(instructions, {
+        user: req.user,
+        user_prompt: instructions,
+        plan_type,
+        web_search_depth,
+        MessageId,
+        room_id: null,
+      });
+
+      return res
+        .status(newResearchResults.data.status === "partial" ? 206 : 200)
+        .json({
+          message: "Research done",
+          MessageId: newResearchResults.data.MessageId,
+          research_data: newResearchResults.data.research_data,
+          status: newResearchResults.data.status,
+        });
     }
 
-    const AiMessage = {
-      id: MessageId,
-      sent_by: "AntiNode", //sent by the user
-      message: {
-        isComplete: true,
-        content: finalReportSynthesizer.result,
-      },
-      sent_at: currentTime,
-    };
-    // update the cache
-    await CacheCurrentChat(AiMessage, req.user);
-    await StoreQueryAndResponse(
-      user.user_id,
-      user_choice,
-      finalReportSynthesizer.result,
-      null
-    );
-
-    return res.status(200).send({
-      message: "Report ready",
-      result: finalReportSynthesizer.result,
-      isSynthesized: true,
-    });
+    return res
+      .status(400)
+      .json({ message: "Something went wrong while processing your request" });
+    // cache the user message
   } catch (error) {
+    console.error("Error in the final analyzer handler \n", error);
+    notifyMe("Analyst mode final analyzer error\n", error);
     return res
       .status(500)
       .json({ message: "Something went wrong while processing your request!" });
@@ -795,7 +904,7 @@ export const FinalAnalyzer = async (req, res) => {
 };
 
 // get researchInformation based on specific messageId
-async function GetResearchData(MessageId) {
+export async function GetResearchData(MessageId) {
   const key = `message:${MessageId}:research_report`; // Using colons is standard Redis convention
 
   try {
@@ -809,8 +918,9 @@ async function GetResearchData(MessageId) {
     // no cache get from db
     const { data, error } = await supabase
       .from("research_data")
-      .select("details,query,isSynthesized")
-      .eq("message_id", MessageId);
+      .select("information,query,isSynthesized,created_at")
+      .eq("message_id", MessageId)
+      .order("created_at", { ascending: true });
 
     if (error) {
       return { error: "No data found in the db", data: [] };
@@ -819,8 +929,11 @@ async function GetResearchData(MessageId) {
     // If data exists in DB but wasn't in Redis, push it to Redis for next time
     if (data && data.length > 0) {
       const stringifiedData = data.map((item) => JSON.stringify(item));
-      await redisClient.rPush(key, stringifiedData);
-      await redisClient.expire(key, 60 * 60 * 3); // for 3 hours
+      await redisClient
+        .multi()
+        .rPush(key, stringifiedData)
+        .expire(key, 60 * 60 * 3) ///for three hours for fresh researches
+        .exec();
     }
 
     return { error: null, data: data };
@@ -834,30 +947,71 @@ async function GetResearchData(MessageId) {
 }
 
 // if we are processed new insructions we do it again but with richer context
-async function HandleNewInstructions(instructions, data) {
+export async function HandleNewInstructions(instructions, data) {
   if (!instructions || typeof instructions !== "string")
     return { error: "Invalid instructions for the llm", data: null };
-
   const { user, user_prompt, plan_type, web_search_depth, MessageId, room_id } =
     data;
-
   const previous_research_data = await GetResearchData(MessageId);
-
-  if (!previous_research_data || previous_research_data?.error) {
-    return {
-      error: "Something went wrong while retrieving the research_archive",
-      data: null,
-    };
+  if (!previous_research_data || previous_research_data.error) {
+    return { error: "Could not retrieve previous research", data: null };
   }
-  const previousQueries = previous_research_data.data[0]?.details?.queries;
-  const previousPrompt = previous_research_data?.data[0]?.query;
-  const urls = previous_research_data?.data[0].details?.sources;
+
+  const sorted_context = {
+    sorted_queries: [],
+    previous_sources: new Set(),
+    search_queries: new Set(),
+  };
+
+  previous_research_data.data.forEach((elem, index) => {
+    // 1. Capture the User Query
+    if (elem?.query) {
+      // IMPORTANT: Clean the query so we don't pass old "new_instructions" metadata back in
+      const cleanQuery = elem.query
+        .split("&all_previous_user_requests=")[0]
+        .replace("new_instructions", "");
+      sorted_context.sorted_queries.push({
+        order: index,
+        query: cleanQuery.trim(),
+      });
+    }
+
+    // 2. Extract from Nested Arrays (details/information)
+    const infoArray = elem?.information || elem?.details;
+    if (Array.isArray(infoArray)) {
+      infoArray.forEach((info) => {
+        (info?.sources || []).forEach((src) =>
+          sorted_context.previous_sources.add(src)
+        );
+        (info?.queries || []).forEach((q) =>
+          sorted_context.search_queries.add(q)
+        );
+      });
+    }
+
+    // 3. Extract from Top-Level (This matches your sample data)
+    (elem?.sources || []).forEach((src) =>
+      sorted_context.previous_sources.add(src)
+    );
+    (elem?.queries || []).forEach((q) => sorted_context.search_queries.add(q));
+  });
+
+  // converting to array
+  const sourcesArray = Array.from(sorted_context.previous_sources);
+  const queriesArray = Array.from(sorted_context.search_queries);
+  const lastQueryObj =
+    sorted_context.sorted_queries[sorted_context.sorted_queries.length - 1] ||
+    null;
 
   const result = await HandleOrchestratedResultsHandling({
     user,
-    question: `new_instructions${instructions}&previous_user_request=${previousPrompt}&previous_search_queries_generated_by_you=${JSON.stringify(
-      previousQueries
-    )}&previous_sources_scraped=${JSON.stringify(urls)}`,
+    question: `new_instructions: ${instructions}${user_prompt}
+  
+  CONTEXT_RESUMPTION:
+  - Previous Requests: ${JSON.stringify(sorted_context.sorted_queries)}
+  - Last Query: ${lastQueryObj?.query || "None"}
+  - Previous Search Queries: ${JSON.stringify(queriesArray)}
+  - Sources Already Explored: ${JSON.stringify(sourcesArray)}`,
     plan_type,
     web_search_depth,
     MessageId,
@@ -879,6 +1033,7 @@ async function HandleNewInstructions(instructions, data) {
       stored: result.stored,
       research_data: result.research_data,
       success: result.success,
+      direct_answer: result.direct_answer,
     },
   };
 }
