@@ -56,6 +56,7 @@ import { ContactUs } from "./pages/ContactUs.tsx";
 import { UnfinishedResearchPage } from "./pages/UnfinishedResearch.tsx";
 import { DriveAuthPage } from '@/components/ConnectorCallback.tsx'
 import PaymentCallback from "./pages/PaymentCallback.tsx";
+import { Analytics } from "@vercel/analytics/react"
 // stripe api
 // const stripePromise = loadStripe(
 //   "pk_test_51BTUDGJAJfZb9HEBwDg86TN1KNprHjkfipXmEDMb0gSCassK5T3ZfxsAbcgKVmAIXF7oZ6ItlZZbXO6idTHE67IM007EwQ4uN3"
@@ -232,6 +233,7 @@ const App = () => {
 
   return (
     <>
+      <Analytics />
       {/* Global Loading Overlay */}
       {/* {userStatus === "pending" && <LoadingIndicator userStatus={userStatus} />} */}
 

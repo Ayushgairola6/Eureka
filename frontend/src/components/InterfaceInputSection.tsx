@@ -6,7 +6,7 @@ import QueryType from "./Query_type.tsx";
 import { v4 as uuid } from "uuid";
 // import axios from "axios";
 import { BiHourglass, BiSend, BiUpload } from "react-icons/bi";
-import { BsMic, BsPlusLg } from "react-icons/bs";
+import { BsMic } from "react-icons/bs";
 import { GoZap } from "react-icons/go";
 import {
   UpdateChats,
@@ -31,7 +31,7 @@ import {
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { SetQueryCount, setVariant } from "../store/AuthSlice.ts";
-import AccessBar from "@/components/AccessBar.tsx";
+// import AccessBar from "@/components/AccessBar.tsx";
 import { useState } from "react";
 import { setCurrentStatus } from "../store/websockteSlice.ts";
 import { currentTime } from "../../utlis/Date.ts";
@@ -153,6 +153,7 @@ const InputSection: React.FC<InputProps> = ({
   //web search handler
   const SearchWeb = async () => {
     try {
+      console.log(Showfeatures)
       const search_depths = ['surface_web', 'deep_web']
       if (!question || question === "") {
         toast.error("Please type a message first");
