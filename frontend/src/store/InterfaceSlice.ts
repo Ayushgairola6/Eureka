@@ -156,68 +156,7 @@ const initialState: InterfaceState = {
   ResearchData: [],
   creatingReport: false,
   fetchingPendingResearch: false,
-  Research_Archive: [
-    {
-      created_at: "9890432",
-      depth: "surface_web",
-      id: 1,
-      information: {
-        details: [
-          {
-            url: "google.com",
-            score: 4,
-            title: "TESTING OUT THE RENDERING AND CONTINUATION",
-            content:
-              "GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH",
-          },
-        ],
-      },
-      query: "HOW TO CONTINUE THE ANITNODE RESEARCH ARCHIVE",
-      sources_count: 10,
-      isSynthesized: false,
-      message_id: "490jjfkd65",
-    },
-    {
-      created_at: "9890432",
-      depth: "surface_web",
-      id: 1,
-      information: {
-        details: [
-          {
-            url: "google.com",
-            score: 4,
-            title: "TESTING OUT THE RENDERING AND CONTINUATION",
-            content:
-              "GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH",
-          },
-        ],
-      },
-      query: "HOW TO CONTINUE THE ANITNODE RESEARCH ARCHIVE",
-      sources_count: 10,
-      isSynthesized: false,
-      message_id: "490jjfkd33",
-    },
-    {
-      created_at: "9890432",
-      depth: "surface_web",
-      id: 1,
-      information: {
-        details: [
-          {
-            url: "google.com",
-            score: 4,
-            title: "TESTING OUT THE RENDERING AND CONTINUATION",
-            content:
-              "GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH, GIBBERISH",
-          },
-        ],
-      },
-      query: "HOW TO CONTINUE THE ANITNODE RESEARCH ARCHIVE",
-      sources_count: 10,
-      isSynthesized: false,
-      message_id: "490jjfkd3",
-    },
-  ],
+  Research_Archive: [],
 };
 
 // Async Thunks

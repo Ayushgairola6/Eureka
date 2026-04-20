@@ -42,7 +42,7 @@ const PlanDetails = [
     duration: 0,
   },
   {
-    id: "pdt_0NbB0WIvUD7WxmAGhvj4d",
+    id: "pdt_0Nd6um7ntMApwZWo3RF03",
     planName: "Architect",
     actual_price: "$20",
     price: "$17",
@@ -77,7 +77,7 @@ const PlanDetails = [
     duration: 30,
   },
   {
-    id: "pdt_0NcYPAXDbJxhN8kKBdulh",
+    id: "pdt_0Nd6umirGKcLGt70teklg",
     planName: "Architect Annual",
     actual_price: "$204",
     price: "$149",
@@ -105,7 +105,7 @@ const PlanDetails = [
     duration: 365,
   },
   {
-    id: "pdt_0NbB0EcssZYI3N8z4gh2K",
+    id: "pdt_0Nd6unrVUY3mDmTxUWJOz",
     planName: "Sprint Pass",
     actual_price: "$20",
     price: "$14",
@@ -136,7 +136,7 @@ const PlanDetails = [
     duration: 7,
   },
   {
-    id: "pdt_0NbB0PaORvBUwALazLDer",
+    id: "pdt_0Nd6unPTACKgEBk1NcduQ",
     planName: "Planners",
     actual_price: "$48",
     price: "$38",

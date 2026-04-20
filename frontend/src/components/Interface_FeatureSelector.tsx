@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any) => {
 
-    const [selected, setSelected] = useState<string>('search');
+    const [selected, setSelected] = useState<string>('Web Search');
     return (<>
         <section className={` flex flex-col space-grotesk dark:bg-neutral-950 bg-white fixed ${showFeatures === true ? "translate-y-118" : "translate-y-400"} z-[10] transition-all duration-500 w-full md:w-3/5 p-1 border rounded-sm`}>
             <section className="flex items-center justify-between px-4">

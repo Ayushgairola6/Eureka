@@ -441,7 +441,7 @@ const InputSection: React.FC<InputProps> = ({
               )}
 
               {/* Features button */}
-              <div className="relative">
+              {/* <div className="relative">
                 <AccessBar
                   Showfeatures={Showfeatures}
                   SetShowFeatures={SetShowFeatures}
@@ -456,7 +456,7 @@ const InputSection: React.FC<InputProps> = ({
                 >
                   <BsPlusLg size={18} />
                 </button>
-              </div>
+              </div> */}
 
               {/* Upload button */}
               <button

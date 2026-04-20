@@ -12,11 +12,15 @@ import { ChevronDown } from "lucide-react";
 import { FinalizePopup } from "./Reject_Popup.tsx";
 import { ResearchDataCenter } from "./ResearchDataRenders.tsx";
 const STEPS = [
-  "Uncovering",
-  "Synthesizing",
-  "Decoding",
-  "Verifying",
-  "Solving",]
+  "Orchestrated",
+  "Transparent",
+  "Steerable",
+  "Traceable",
+  "Delibrate",
+  "Sovereign",
+  "Decomposed",
+  "Intentional",
+];
 type ChatBubbleProps = {
   chatcontainer: React.Ref<HTMLDivElement>;
   isActive: boolean;

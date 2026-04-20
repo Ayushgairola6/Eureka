@@ -7,8 +7,8 @@ import { redisClient } from "../CachingHandler/redisClient.js";
 const DODO_PAYMENTS_API_KEY = process.env.dodo_test_key; //currently using test api key
 // new dodo payment client
 const client = new DodoPayments({
-  bearerToken: DODO_PAYMENTS_API_KEY,
-  environment: "live",
+  bearerToken: process.env.DODO_PAYMENTS_API_KEY,
+  environment: "live_mode",
   webhookKey: process.env.DODO_WEBHOOK_SECRET,
 });
 
@@ -72,6 +72,7 @@ export async function CreateSubscription(req, res) {
       order_id: session.session_id,
     });
   } catch (error) {
+    console.error(error, "error in the subscription creatin handler");
     notifyMe(
       "This is an error in the dodoPayments new subscription creation handler error\n",
       error

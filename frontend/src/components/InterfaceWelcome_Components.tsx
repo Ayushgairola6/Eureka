@@ -169,9 +169,9 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
 
       {/* Core prompt */}
       <div className="flex flex-col gap-4">
-        <h1 className='space-grotesk text-2xl font-semibold'>Hi, I am AntinodeAI a research assistant rather than a basic chatbot.</h1>
+        <h1 className='space-grotesk text-4xl font-semibold'>How can I be useful today?</h1>
         <h1 className="text-xl   leading-tight space-grotesk">
-          What are we{" "}
+          Your ready to go{" "}
           <AnimatePresence mode="wait">
             <motion.span
               key={text}
@@ -184,7 +184,7 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
               {text}
             </motion.span>
           </AnimatePresence>{" "}
-          today?
+          Agent
         </h1>
 
 
@@ -198,7 +198,7 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
             Not sure where to start?
           </h1>
           <span className="text-gray-600 dark:text-gray-400 space-grotesk text-xs">
-            Why not try these-
+            Try these examples-
           </span>
         </section>
 

@@ -10,6 +10,7 @@ import { GoReport } from "react-icons/go";
 import { IoReload } from "react-icons/io5";
 import { MdDoneAll } from "react-icons/md";
 import axios from 'axios'
+// import { Sort } from "@/components/ResearchArchive/sorting";
 const QUICK_TAGS = [
     { label: "go deeper", value: "Go deeper on this topic with more authoritative sources." },
     { label: "find more sources", value: "Cross-verify the key claims with additional independent sources." },
@@ -71,6 +72,10 @@ export function UnfinishedResearchPage() {
             [item_id]: value
         }));
     }
+    const research_history = useMemo(() => {
+        return Research_Archive
+    }, [Research_Archive])
+    // handle sorting
 
 
     // conntinue hte pending research
@@ -91,9 +96,7 @@ export function UnfinishedResearchPage() {
         navigate(`/interface?MessageId=${id}&depth=${search_depth}&action_type=${action_type}&instructions=${instructions[item_id]}`)
     }
 
-    const research_history = useMemo(() => {
-        return Research_Archive
-    }, [Research_Archive])
+
     // discard a resarch
     const handleDiscard = (id: string) => {
         const Source_index = Research_Archive.findIndex((item) => item.message_id === id);
@@ -133,12 +136,19 @@ export function UnfinishedResearchPage() {
         }
     }
     return (<>
-        <section className='p-4 relative'>
-            <h1 className="flex items-center justify-start gap-2 bai-jamjuree-bold text-2xl">
-                <Archive /> Research Archive
-            </h1>
-            <span className='space-grotesk text-xs text-gray-600 dark:text-neutral-500'>Continue your pending research</span>
-            <button onClick={handleRefresh} className='bai-jamjuree-semibold text-xs flex items-center justify-center gap-3 bg-neutral-200 dark:bg-neutral-900 rounded-sm p-2 cursor-pointer'>Refresh <IoReload /></button>
+        <section className='p-4 relative flex items-center justify-between'>
+            <div>
+                <h1 className="flex items-center justify-start gap-2 bai-jamjuree-bold text-2xl">
+                    <Archive /> Research Archive
+                </h1>
+                <span className='space-grotesk text-xs text-gray-600 dark:text-neutral-500'>Continue your pending research</span>
+            </div>
+
+            <div className='space-y-2'>
+                <button onClick={handleRefresh} className='bai-jamjuree-semibold text-xs flex items-center justify-center gap-3 bg-neutral-200 dark:bg-neutral-900 rounded-sm p-2 cursor-pointer'>Refresh <IoReload /></button>
+                {/* <Sort /> */}
+            </div>
+
         </section>
 
 
@@ -234,13 +244,13 @@ export function UnfinishedResearchPage() {
                                             <div className='flex items-center justify-center '>
                                                 <button
                                                     onClick={() => handleDiscard(item.message_id)}
-                                                    className="flex items-center justify-center p-3 border-r border-neutral-200 border-red-800 dark:text-neutral-400 hover:bg-red-500/20 bg-red-500/10 hover:text-red-500 transition-all"
+                                                    className="flex items-center justify-center p-3 border-r  border-red-800 dark:text-neutral-400 hover:bg-red-500/20 bg-red-500/10 hover:text-red-500 transition-all"
                                                 >
                                                     <TbTrash size={14} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleMarkDone(item.message_id)}
-                                                    className="flex items-center justify-center p-3 border-r border-neutral-200 border-sky-800 dark:text-neutral-400
+                                                    className="flex items-center justify-center p-3 border-r border-sky-800 dark:text-neutral-400
                                                     bg-sky-500/10 hover:bg-sky-500/20 hover:text-sky-500 transition-all"
                                                 >
                                                     <MdDoneAll size={14} />
