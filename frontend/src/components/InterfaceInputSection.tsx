@@ -291,10 +291,10 @@ const InputSection: React.FC<InputProps> = ({
         dispatch(setShowOptions(false));
       }
 
-      // if (Querycount > Quota) {
-      //   toast.info("You have reached you quota limit for the month")
-      //   return
-      // }
+      if (Querycount > Quota) {
+        toast.info("You have reached you quota limit for the month")
+        return
+      }
       // ROUTING LOGIC - Clear hierarchy
 
       // 1. Private document query

@@ -101,7 +101,7 @@ export default function Visualizer({ chartData }: any) {
                                 paddingAngle={5}
                                 label
                             >
-                                {pieData.map((entry: any, i: number) => (
+                                {pieData.map((_: any, i: number) => (
                                     <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} stroke="none" />
                                 ))}
                             </Pie>
