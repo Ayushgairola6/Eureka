@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link } from "react-router";
 import React from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -9,15 +9,14 @@ import { DataFlowGrid } from '@/components/DataFlow_grid.tsx'
 import { BsChatDots } from "react-icons/bs";
 import { FaResearchgate, FaWebflow } from "react-icons/fa6";
 import { GiMultipleTargets } from "react-icons/gi";
-type props = {
-  value: string;
-};
+import { LogoRender } from "./LogoRender.tsx";
+
 const ChatroomUrl = import.meta.env.VITE_CHATROOM_URL;
 const webSearchUrl = import.meta.env.VITE_WEBSEARCH_URL;
 const synthesisUrl = import.meta.env.VITE_SYNTHESIS_URL
 const AnalystUrl = import.meta.env.VITE_ANALYST_MODE
 
-const Hero: React.FC<props> = ({ value }) => {
+const Hero: React.FC = () => {
   const services = [
     { id: "04", title: "Analyst Mode", description: "Researching about the effects of quantum computing on encryption standards ", tag: "Control AI Research", video: AnalystUrl, icon: <FaResearchgate />, logs: [">INTENT DECOMPOSITION", ">PROCESS LOGS", ">REASONING", ">READING SOURCES", ">PIT STOP", ">FINALIZING THE REPORT"] },
     {
@@ -54,7 +53,7 @@ const Hero: React.FC<props> = ({ value }) => {
     },
     {
       id: "03",
-      title: "Multi-Source Synthesis.",
+      title: "Synthesis.",
       description: "User asked Agent to cite two different sources and create a detailed plan and strategy to market their product.",
       tag: "Multi source synthesis",
       video: synthesisUrl,
@@ -127,36 +126,21 @@ const Hero: React.FC<props> = ({ value }) => {
       <div className="relative z-1 mx-auto w-full px-2 py-4 flex flex-col items-center gap-16">
         {/* Header Section */}
         <section className="text-center max-w-full flex flex-col items-center gap-2">
-          <h1 className="bai-jamjuree-bold text-4xl lg:text-6xl leading-tight">
-            <motion.span
-              animate={{ width: "auto" }}
-              key={value}
-              transition={{ ease: "linear", duration: 1 }}
-              className="flex items-center justify-center gap-2"
-            >
-              The
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={`value-${value}`}
-                  className="text-transparent bg-clip-text bg-gradient-to-tr from-orange-400 via-red-500 to-pink-400"
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -20, opacity: 0 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  {value}
-                </motion.span>
-              </AnimatePresence>
-            </motion.span>
-            AI agent—customized for you
+          <h1 className="bai-jamjuree-bold text-4xl lg:text-6xl leading-tight mt-10">
+
+            AI does the research. <span
+              className='text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-pink-600'>
+              You make the call
+            </span>
           </h1>
 
-          <h2 className="bai-jamjuree-semibold text-md md:text-xl text-gray-900 dark:text-gray-300">
-            Control and steer research at orchestration layer. Freedom from cognitive overload.
+          <h2 className="space-grotesk text-xs md:text-sm text-gray-900 dark:text-gray-300">
+            Most AI research tools run on autopilot — and you find out something's wrong after it matters.
+            AntiNodeAI pauses at every decision point, hands you verified sources, and waits for your direction.
           </h2>
 
-          <p className='text-sm md:text-md bai-jamjuree-regular dark:text-gray-400 text-gray-700'>
-            "User-directed research, Deep web search, multi-document analysis, and team workspaces in one platform."
+          <p className='text-xs  space-grotesk dark:text-gray-400 text-gray-700'>
+            No hallucinations passed downstream. No black-box decisions. Research you can actually defend.
           </p>
 
           {/* Search Input */}
@@ -195,15 +179,15 @@ const Hero: React.FC<props> = ({ value }) => {
                 }}
                 role="button"
                 to={isLoggedIn === true ? "/interface" : `/Login`}
-                className="px-2 py-1 rounded-sm bg-black text-white dark:bg-white dark:text-black space-grotesk font-semibold uppercase flex items-center gap-2 text-xs md:text-sm"
+                className="px-2 py-1 rounded-sm bg-black text-white dark:bg-white dark:text-black space-grotesk  uppercase flex items-center gap-2 text-xs w-45"
               >
-                Research
+                Start Researching
               </Link>
             </div>
 
           </div>
 
-
+          <span className='text-xs dark:text-gray-300 text-neutral-900 space-grotesk'>Used by analysts, firms, and content teams who can't afford to get it wrong.</span>
         </section>
 
         {/* Demo Section */}
@@ -214,10 +198,12 @@ const Hero: React.FC<props> = ({ value }) => {
             {/* 1. SIDEBAR: The "Page Tree" */}
             <aside className="w-full md:w-64 bg-zinc-50 dark:bg-neutral-900 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 p-6 flex flex-col gap-8 space-grotesk z-10">
               <div className="flex items-center gap-3 px-2">
-                <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 font-bold text-sm">
+                {/* <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 font-bold text-sm">
                   A
-                </div>
-                <span className="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">AntiNode</span>
+                </div> */}
+                <LogoRender />
+
+                {/* <span className="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">AntiNode</span> */}
               </div>
 
               <nav className="flex flex-col gap-1">

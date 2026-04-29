@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { GiArchiveResearch } from "react-icons/gi";
 import { TbExternalLink, TbChevronDown, TbChevronUp } from "react-icons/tb";
-import { useAppSelector } from "../store/hooks";
+import { useAppSelector, useAppDispatch } from "../store/hooks";
+import { HandleVisualizationRequest, toggleInsights, setIsVisualizing } from '../store/visualierSlice.ts'
+import { toast } from 'sonner';
 
+import { Streamdown } from 'streamdown'
 interface ResearchSource {
     title: string;
     content: string;
@@ -109,13 +112,13 @@ function SourceNode({
 
                 {/* Expanded content */}
                 <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${expanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${expanded ? " opacity-100" : "max-h-0 opacity-0"
                         }`}
                 >
                     <div className="px-3 pb-3 border-t border-neutral-800/70">
-                        <p className="space-grotesk text-[12px] leading-relaxed dark:text-neutral-200 text-black pt-3">
+                        <Streamdown className="space-grotesk text-[12px] leading-relaxed dark:text-neutral-200 text-black pt-3">
                             {source.content}
-                        </p>
+                        </Streamdown>
 
                         <div className="flex items-center justify-between mt-3 pt-2 border-t border-neutral-800/50">
                             <span className="space-grotesk text-[9px] text-neutral-600">
@@ -144,7 +147,7 @@ function SourceNode({
 }
 
 // ─── Root node header ─────────────────────────────────────────────────────────
-function RootNode({ status, count }: { status: MessageResearch["status"]; count: number }) {
+function RootNode({ status, count, MessageId }: { status: MessageResearch["status"]; count: number, MessageId: string }) {
     const cfg = {
         complete: { label: "SYNTHESIS READY", dot: "bg-green-400", glow: "shadow-green-400/40" },
         partial: { label: "PARTIAL GRAPH", dot: "bg-amber-400 animate-pulse", glow: "shadow-amber-400/30" },
@@ -152,25 +155,48 @@ function RootNode({ status, count }: { status: MessageResearch["status"]; count:
         failed: { label: "GRAPH FAILED", dot: "bg-red-500", glow: "shadow-red-500/30" },
     }[status];
 
+    const dispatch = useAppDispatch();
+    function Visualize() {
+        if (!MessageId) return;
+        const data = {
+            MessageId
+        }
+        dispatch(toggleInsights(true))
+        dispatch(setIsVisualizing(true))
+
+        dispatch(HandleVisualizationRequest(data)).unwrap().then((res) => {
+            toast.message(res.message);
+        }).catch(error => {
+            toast.error(error);
+        }).finally(() =>
+            dispatch(setIsVisualizing(false))
+
+        )
+    }
+
     return (
-        <div className="flex items-center gap-2.5 mb-1 pl-1">
-            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${cfg?.dot} shadow-lg ${cfg?.glow}`} />
-            <GiArchiveResearch className="dark:text-neutral-400 text-black text-sm" />
-            <span className="bai-jamjuree-semibold text-[11px] dark:text-neutral-400 text-black uppercase tracking-wide">
-                Research Graph
-            </span>
-            <span className="bai-jamjuree-regular text-[9px]  text-black">·</span>
-            <span className="bai-jamjuree-regular text-[9px]  text-black uppercase">
-                {cfg?.label}
-            </span>
-            {count > 0 && (
-                <>
-                    <span className="font-mono text-[9px] text-neutral-700">·</span>
-                    <span className="font-mono text-[9px] text-neutral-700">
-                        {count} node{count !== 1 ? "s" : ""}
-                    </span>
-                </>
-            )}
+        <div className="flex items-center justify-between gap-2.5 mb-1 pl-1">
+            <section className='flex items-normal justify-start gap-2'>
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${cfg?.dot} shadow-lg ${cfg?.glow}`} />
+                <GiArchiveResearch className="dark:text-neutral-400 text-black text-sm" />
+                <span className="bai-jamjuree-semibold text-[11px] dark:text-neutral-400 text-black uppercase tracking-wide">
+                    Research Graph
+                </span>
+                <span className="bai-jamjuree-regular text-[9px]  text-black">·</span>
+                <span className="bai-jamjuree-regular text-[9px]  text-black uppercase">
+                    {cfg?.label}
+                </span>
+                {count > 0 && (
+                    <>
+                        <span className="bai-jamjuree-regular text-[10px] dark:text-neutral-400 text-black">·</span>
+                        <span className="bai-jamjuree-regular text-[10px] dark:text-neutral-400 text-black">
+                            {count} node{count !== 1 ? "s" : ""}
+                        </span>
+                    </>
+                )}
+            </section>
+
+            <button onClick={() => Visualize()} className="dark:bg-white bg-neutral-900 text-white text-xs font-semibold space-grotesk px-2 py-1 dark:text-black rounded-sm">Visualize</button>
         </div>
     );
 }
@@ -195,7 +221,7 @@ export function ResearchDataCenter() {
                         key={data.MessageId}
                         className="mt-5 pl-4 border-l-2 border-dashed border-neutral-800 flex flex-col gap-3"
                     >
-                        <RootNode status={data.status} count={details.length} />
+                        <RootNode status={data.status} count={details.length} MessageId={data.MessageId} />
 
                         <div className="relative pl-2">
                             {hasData ? (
@@ -214,7 +240,7 @@ export function ResearchDataCenter() {
                                     <div className="relative pl-6 mt-1">
                                         <div className="absolute left-0 top-0 w-px h-[14px] dark:bg-neutral-800 bg-gray-50" />
                                         <div className="absolute left-0 top-[13px] w-4 h-px dark:bg-neutral-800 bg-gray-50" />
-                                        <span className="font-mono text-[9px] dark:text-neutral-400 text-black  uppercase">
+                                        <span className="bai-jamjuree-regular text-[9px] dark:text-neutral-400 text-black  uppercase">
                                             └─ graph complete · {details.length} source{details.length !== 1 ? "s" : ""} resolved
                                         </span>
                                     </div>
@@ -229,7 +255,7 @@ export function ResearchDataCenter() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="pl-6 font-mono text-[10px] text-red-500/50 italic py-2">
+                                <div className="pl-6 bai-jamjuree-regular text-[10px] text-red-500/50 italic py-2">
                                     {">> GRAPH ERROR · no sources resolved · 404"}
                                 </div>
                             )}

@@ -151,3 +151,126 @@
 //     });
 //   }
 // };
+
+// older processllm scraper function
+export const ProcessForLLM = async (
+  links,
+  user,
+  userQuery,
+  MessageId,
+  room_id,
+  plan_type
+) => {
+  try {
+    const dataset = [];
+    turndown.remove(["img", "iframe", "script", "style", "noscript"]);
+
+    const validLinks = filterResearchLinks(links);
+
+    const config = new Configuration({
+      persistStorage: false,
+      storageClient: new MemoryStorage({ persistStorage: false }),
+    });
+
+    log.setLevel(log.LEVELS.OFF);
+    const crawler = new CheerioCrawler(
+      {
+        minConcurrency: 20,
+        maxConcurrency: 50,
+        maxRequestRetries: 0,
+        requestHandlerTimeoutSecs: 10,
+        useSessionPool: false,
+        failedRequestHandler: ({ request }) => {},
+        async requestHandler({ request, body, $ }) {
+          if (room_id) {
+            EmitEvent(room_id, "query_status", {
+              MessageId,
+              status: {
+                message: "reading_links",
+                data: [`Reading: ${new URL(request.url).hostname}`],
+              },
+            });
+          } else {
+            EmitEvent(user.user_id, "query_status", {
+              MessageId,
+              status: {
+                message: "reading_links",
+                data: [`Reading: ${new URL(request.url).hostname}`],
+              },
+            });
+          }
+
+          if (body.length < 500) return;
+
+          const { document } = parseHTML(body);
+
+          const reader = new Readability(document);
+          const article = reader.parse();
+
+          if (article && article.content) {
+            const markdown = turndown.turndown(article.content);
+
+            if (markdown.length < 200) return;
+            const wordCount = article?.textContent.split(/\s+/).length;
+            const cleanedMarkdown = markdown
+              .replace(/\[.*?\]\(.*?\)/g, "")
+              .replace(/#{1,6}\s/g, "")
+              .replace(/\n{3,}/g, "\n\n")
+              .trim();
+            let ProcessedPage;
+            try {
+              ProcessedPage =
+                // plan_type === "free"
+                extractHighValueChunks(cleanedMarkdown, userQuery, 5000);
+            } catch (pageerror) {
+              // console.error(pageerror);
+              return;
+            }
+
+            // : await HandleContextFiltering(cleanedMarkdown, userQuery);
+
+            // Guard against null result
+            if (!ProcessedPage || !ProcessedPage?.content) return;
+
+            const object = {
+              title: article.title,
+              url: request?.url,
+              favicon: `https://www.google.com/s2/favicons?domain=${
+                new URL(request.url).hostname
+              }&sz=64`,
+              markdown: ProcessedPage?.content,
+              score: ProcessedPage?.score,
+            };
+
+            if (room_id) {
+              EmitEvent(room_id, "query_status", {
+                MessageId,
+                status: {
+                  message: "Cleaning_Context",
+                  data: [ProcessedPage.content.slice(0, 1000)],
+                },
+              });
+            } else {
+              EmitEvent(user.user_id, "query_status", {
+                MessageId,
+                status: {
+                  message: "Cleaning_Context",
+                  data: [ProcessedPage.content.slice(0, 1000)],
+                },
+              });
+            }
+
+            dataset.push(object);
+          }
+        },
+      },
+      config
+    );
+
+    await crawler.run(validLinks);
+    return dataset;
+  } catch (err) {
+    notifyMe("An error in the process llm handler\n", err);
+    return [];
+  }
+};

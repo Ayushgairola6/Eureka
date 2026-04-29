@@ -1,161 +1,161 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useAppDispatch } from "../store/hooks";
-import {
-  setQuestion,
-  setQueryType,
-  MimicSSE,
-  UpdateChats, updateFavicon
-} from "../store/InterfaceSlice";
-import { ArrowUpRight } from "lucide-react";
-import { AnswerAndData } from "../../utlis/PromptsWithResponse.ts";
-import { setWebStatus } from "../store/websockteSlice";
-import { useEffect, useState } from "react";
-import { v4 as uuid } from "uuid";
-import { currentTime } from "../../utlis/Date.ts";
+// import { useAppDispatch } from "../store/hooks";
+// import {
+//   setQuestion,
+//   setQueryType,
+//   MimicSSE,
+//   UpdateChats, updateFavicon
+// } from "../store/InterfaceSlice";
+// import { ArrowUpRight } from "lucide-react";
+// import { AnswerAndData } from "../../utlis/PromptsWithResponse.ts";
+// import { setWebStatus } from "../store/websockteSlice";
+// import { useEffect, useState } from "react";
+// import { v4 as uuid } from "uuid";
+// import { currentTime } from "../../utlis/Date.ts";
 type WelcomeProps = {
   text: string; // dynamic word for the animated span
   isActive: boolean;
   setIsActive: (v: boolean) => void;
 };
-const Prompts = [
-  { id: 1, prompt: "Recent findings about cancer treatment." },
-  { id: 2, prompt: "How LLM's are affecting the market?" },
-  // { id: 3, prompt: "Why getting a job has become so hard?" },
-];
+// const Prompts = [
+//   { id: 1, prompt: "Recent findings about cancer treatment." },
+//   { id: 2, prompt: "How LLM's are affecting the market?" },
+//   // { id: 3, prompt: "Why getting a job has become so hard?" },
+// ];
 export const AgentWelcome: React.FC<WelcomeProps> = ({
   text,
   isActive,
   setIsActive,
 }) => {
-  const dispatch = useAppDispatch();
+  // const dispatch = useAppDispatch();
 
-  const [choice, setChoice] = useState<number | null>(null);
+  // const [choice, setChoice] = useState<number | null>(null);
 
 
   //imitate a response like flow
-  useEffect(() => {
-    if (!choice) {
-      return;
-    }
+  // useEffect(() => {
+  //   if (!choice) {
+  //     return;
+  //   }
 
-    const chosenPrompt = AnswerAndData.filter((el) => el.id === choice);
-    if (!chosenPrompt) return;
+  //   const chosenPrompt = AnswerAndData.filter((el) => el.id === choice);
+  //   if (!chosenPrompt) return;
 
-    const user_id = uuid();
-    const ai_id = "msg_98765";
+  //   const user_id = uuid();
+  //   const ai_id = "msg_98765";
 
-    dispatch(
-      UpdateChats({
-        id: user_id,
-        sent_at: currentTime,
-        sent_by: "You",
-        message: {
-          isComplete: true,
-          content: chosenPrompt[0].prompt,
-        },
-      })
-    );
+  //   dispatch(
+  //     UpdateChats({
+  //       id: user_id,
+  //       sent_at: currentTime,
+  //       sent_by: "You",
+  //       message: {
+  //         isComplete: true,
+  //         content: chosenPrompt[0].prompt,
+  //       },
+  //     })
+  //   );
 
-    dispatch(
-      UpdateChats({
-        id: ai_id,
-        sent_at: currentTime,
-        sent_by: "AntiNode",
-        message: {
-          isComplete: false,
-          content: "",
-        },
-      })
-    );
+  //   dispatch(
+  //     UpdateChats({
+  //       id: ai_id,
+  //       sent_at: currentTime,
+  //       sent_by: "AntiNode",
+  //       message: {
+  //         isComplete: false,
+  //         content: "",
+  //       },
+  //     })
+  //   );
 
-    let i = 0;
-    const interval = setInterval(() => {
-      dispatch(
-        setWebStatus({
-          MessageId: ai_id,
-          status: {
-            message: chosenPrompt[0].events[i].status.message,
-            data: chosenPrompt[0].events[i].status.data
-          }
-        })
-      );
+  //   let i = 0;
+  //   const interval = setInterval(() => {
+  //     dispatch(
+  //       setWebStatus({
+  //         MessageId: ai_id,
+  //         status: {
+  //           message: chosenPrompt[0].events[i].status.message,
+  //           data: chosenPrompt[0].events[i].status.data
+  //         }
+  //       })
+  //     );
 
-      i++;
+  //     i++;
 
-      if (i === chosenPrompt[0].events.length) {
-        dispatch(
-          MimicSSE({
-            id: ai_id,
-            delta: chosenPrompt[0].markdown,
-          })
-        );
-        if (chosenPrompt[0].id === 1) {
-          dispatch(updateFavicon({
-            MessageId: ai_id, icon: [
-              `https://www.google.com/s2/favicons?domain=https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1673098/full&sz=64`,
-              `"https://pmc.ncbi.nlm.nih.gov/articles/PMC12528169/"`,
-              "https://www.nature.com/articles/s43018-023-00697-7",
-              "https://www.sciencedirect.com/science/article/pii/S1044579X25000379",
-              "https://www.cell.com/cell-stem-cell/fulltext/S1934-5909(25)00265-6",
-              "https://blog.championsoncology.com/blog/a-multiomics-driven-approach-for-advancements-in-pancreatic-cancer",
-              "https://pubmed.ncbi.nlm.nih.gov/41112307/",
-              "https://www.mdpi.com/2306-5354/12/8/849",
-              "https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1600527/full",
-              "https://www.researchgate.net/publication/387352518_Integrating_OMICS-based_platforms_and_analytical_tools_for_diagnosis_and_management_of_pancreatic_cancer_a_review",
-              "https://www.facebook.com/aacr.org/videos/experts-forecast-for-2026-is-about-smart-t-cells-next-gen-vaccines-ai-driven-com/887703310307216/",
-              "https://www.onclive.com/view/artificial-intelligence-based-model-identifies-potential-resistance-drivers-to-car-t-cell-therapy-in-mcl",
-              "https://pmc.ncbi.nlm.nih.gov/articles/PMC12441034/",
-              "https://keck.usc.edu/news/next-generation-car-t-cells-could-expand-solid-cancer-treatment-options/",
-              "https://www.linkedin.com/pulse/china-car-t-cell-therapy-agents-market-analysis-2026-size-r6qhc/",
-              "https://iwcar-t.org/iwcar-t-2024-highlights/",
-              "https://crisprmedicinenews.com/press-release-service/card/car-t-cell-therapy-market-research-2024-2025-size-forecasts-trials-and-trends-approved-car-t-t/",
-              "https://bioinformant.com/product/car-t-report/",
-              "https://www.oncologypipeline.com/apexonco/eha-2025-arcellx-still-hopes-safety-will-trump-efficacy",
-              "https://www.delveinsight.com/blog/car-t-cell-therapies-for-multiple-myeloma",
-              "https://letswinpc.org/research/kras-trial-recruiting-worldwide/",
-              "https://ir.revmed.com/news-releases/news-release-details/revolution-medicines-announces-first-patient-randomized-rasolute",
-              "https://www.onclive.com/view/daraxonrasib-demonstrates-efficacy-potential-to-inhibit-major-ras-on-variants-in-ras-pdac",
+  //     if (i === chosenPrompt[0].events.length) {
+  //       dispatch(
+  //         MimicSSE({
+  //           id: ai_id,
+  //           delta: chosenPrompt[0].markdown,
+  //         })
+  //       );
+  //       if (chosenPrompt[0].id === 1) {
+  //         dispatch(updateFavicon({
+  //           MessageId: ai_id, icon: [
+  //             `https://www.google.com/s2/favicons?domain=https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1673098/full&sz=64`,
+  //             `"https://pmc.ncbi.nlm.nih.gov/articles/PMC12528169/"`,
+  //             "https://www.nature.com/articles/s43018-023-00697-7",
+  //             "https://www.sciencedirect.com/science/article/pii/S1044579X25000379",
+  //             "https://www.cell.com/cell-stem-cell/fulltext/S1934-5909(25)00265-6",
+  //             "https://blog.championsoncology.com/blog/a-multiomics-driven-approach-for-advancements-in-pancreatic-cancer",
+  //             "https://pubmed.ncbi.nlm.nih.gov/41112307/",
+  //             "https://www.mdpi.com/2306-5354/12/8/849",
+  //             "https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1600527/full",
+  //             "https://www.researchgate.net/publication/387352518_Integrating_OMICS-based_platforms_and_analytical_tools_for_diagnosis_and_management_of_pancreatic_cancer_a_review",
+  //             "https://www.facebook.com/aacr.org/videos/experts-forecast-for-2026-is-about-smart-t-cells-next-gen-vaccines-ai-driven-com/887703310307216/",
+  //             "https://www.onclive.com/view/artificial-intelligence-based-model-identifies-potential-resistance-drivers-to-car-t-cell-therapy-in-mcl",
+  //             "https://pmc.ncbi.nlm.nih.gov/articles/PMC12441034/",
+  //             "https://keck.usc.edu/news/next-generation-car-t-cells-could-expand-solid-cancer-treatment-options/",
+  //             "https://www.linkedin.com/pulse/china-car-t-cell-therapy-agents-market-analysis-2026-size-r6qhc/",
+  //             "https://iwcar-t.org/iwcar-t-2024-highlights/",
+  //             "https://crisprmedicinenews.com/press-release-service/card/car-t-cell-therapy-market-research-2024-2025-size-forecasts-trials-and-trends-approved-car-t-t/",
+  //             "https://bioinformant.com/product/car-t-report/",
+  //             "https://www.oncologypipeline.com/apexonco/eha-2025-arcellx-still-hopes-safety-will-trump-efficacy",
+  //             "https://www.delveinsight.com/blog/car-t-cell-therapies-for-multiple-myeloma",
+  //             "https://letswinpc.org/research/kras-trial-recruiting-worldwide/",
+  //             "https://ir.revmed.com/news-releases/news-release-details/revolution-medicines-announces-first-patient-randomized-rasolute",
+  //             "https://www.onclive.com/view/daraxonrasib-demonstrates-efficacy-potential-to-inhibit-major-ras-on-variants-in-ras-pdac",
 
-            ], url: [
-              "https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1673098/full",
-              "https://pmc.ncbi.nlm.nih.gov/articles/PMC12528169/",
-              "https://www.nature.com/articles/s43018-023-00697-7",
-              "https://www.sciencedirect.com/science/article/pii/S1044579X25000379",
-              "https://www.cell.com/cell-stem-cell/fulltext/S1934-5909(25)00265-6",
-              "https://blog.championsoncology.com/blog/a-multiomics-driven-approach-for-advancements-in-pancreatic-cancer",
-              "https://pubmed.ncbi.nlm.nih.gov/41112307/",
-              "https://www.mdpi.com/2306-5354/12/8/849",
-              "https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1600527/full",
-              "https://www.researchgate.net/publication/387352518_Integrating_OMICS-based_platforms_and_analytical_tools_for_diagnosis_and_management_of_pancreatic_cancer_a_review",
-              "https://www.facebook.com/aacr.org/videos/experts-forecast-for-2026-is-about-smart-t-cells-next-gen-vaccines-ai-driven-com/887703310307216/",
-              "https://www.onclive.com/view/artificial-intelligence-based-model-identifies-potential-resistance-drivers-to-car-t-cell-therapy-in-mcl",
-              "https://pmc.ncbi.nlm.nih.gov/articles/PMC12441034/",
-              "https://keck.usc.edu/news/next-generation-car-t-cells-could-expand-solid-cancer-treatment-options/",
-              "https://www.linkedin.com/pulse/china-car-t-cell-therapy-agents-market-analysis-2026-size-r6qhc/",
-              "https://iwcar-t.org/iwcar-t-2024-highlights/",
-              "https://crisprmedicinenews.com/press-release-service/card/car-t-cell-therapy-market-research-2024-2025-size-forecasts-trials-and-trends-approved-car-t-t/",
-              "https://bioinformant.com/product/car-t-report/",
-              "https://www.oncologypipeline.com/apexonco/eha-2025-arcellx-still-hopes-safety-will-trump-efficacy",
-              "https://www.delveinsight.com/blog/car-t-cell-therapies-for-multiple-myeloma",
-              "https://letswinpc.org/research/kras-trial-recruiting-worldwide/",
-              "https://ir.revmed.com/news-releases/news-release-details/revolution-medicines-announces-first-patient-randomized-rasolute",
-              "https://www.onclive.com/view/daraxonrasib-demonstrates-efficacy-potential-to-inhibit-major-ras-on-variants-in-ras-pdac",
-              "https://pmc.ncbi.nlm.nih.gov/articles/PMC12507178/",
-              "https://www.mdpi.com/1424-8247/18/12/1788",
-              "https://www.targetedonc.com/view/daraxonrasib-earns-fda-breakthrough-status-in-pancreatic-cancer",
-              "https://aacrjournals.org/cancerdiscovery/article/15/7/1325/763195/Response-and-Resistance-to-RAS-Inhibition-in",
-              "https://lustgarten.org/from-undruggable-to-unstoppable-the-state-of-kras-drug-development-in-pancreatic-cancer/",
+  //           ], url: [
+  //             "https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1673098/full",
+  //             "https://pmc.ncbi.nlm.nih.gov/articles/PMC12528169/",
+  //             "https://www.nature.com/articles/s43018-023-00697-7",
+  //             "https://www.sciencedirect.com/science/article/pii/S1044579X25000379",
+  //             "https://www.cell.com/cell-stem-cell/fulltext/S1934-5909(25)00265-6",
+  //             "https://blog.championsoncology.com/blog/a-multiomics-driven-approach-for-advancements-in-pancreatic-cancer",
+  //             "https://pubmed.ncbi.nlm.nih.gov/41112307/",
+  //             "https://www.mdpi.com/2306-5354/12/8/849",
+  //             "https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1600527/full",
+  //             "https://www.researchgate.net/publication/387352518_Integrating_OMICS-based_platforms_and_analytical_tools_for_diagnosis_and_management_of_pancreatic_cancer_a_review",
+  //             "https://www.facebook.com/aacr.org/videos/experts-forecast-for-2026-is-about-smart-t-cells-next-gen-vaccines-ai-driven-com/887703310307216/",
+  //             "https://www.onclive.com/view/artificial-intelligence-based-model-identifies-potential-resistance-drivers-to-car-t-cell-therapy-in-mcl",
+  //             "https://pmc.ncbi.nlm.nih.gov/articles/PMC12441034/",
+  //             "https://keck.usc.edu/news/next-generation-car-t-cells-could-expand-solid-cancer-treatment-options/",
+  //             "https://www.linkedin.com/pulse/china-car-t-cell-therapy-agents-market-analysis-2026-size-r6qhc/",
+  //             "https://iwcar-t.org/iwcar-t-2024-highlights/",
+  //             "https://crisprmedicinenews.com/press-release-service/card/car-t-cell-therapy-market-research-2024-2025-size-forecasts-trials-and-trends-approved-car-t-t/",
+  //             "https://bioinformant.com/product/car-t-report/",
+  //             "https://www.oncologypipeline.com/apexonco/eha-2025-arcellx-still-hopes-safety-will-trump-efficacy",
+  //             "https://www.delveinsight.com/blog/car-t-cell-therapies-for-multiple-myeloma",
+  //             "https://letswinpc.org/research/kras-trial-recruiting-worldwide/",
+  //             "https://ir.revmed.com/news-releases/news-release-details/revolution-medicines-announces-first-patient-randomized-rasolute",
+  //             "https://www.onclive.com/view/daraxonrasib-demonstrates-efficacy-potential-to-inhibit-major-ras-on-variants-in-ras-pdac",
+  //             "https://pmc.ncbi.nlm.nih.gov/articles/PMC12507178/",
+  //             "https://www.mdpi.com/1424-8247/18/12/1788",
+  //             "https://www.targetedonc.com/view/daraxonrasib-earns-fda-breakthrough-status-in-pancreatic-cancer",
+  //             "https://aacrjournals.org/cancerdiscovery/article/15/7/1325/763195/Response-and-Resistance-to-RAS-Inhibition-in",
+  //             "https://lustgarten.org/from-undruggable-to-unstoppable-the-state-of-kras-drug-development-in-pancreatic-cancer/",
 
-            ]
-          }))
-        }
+  //           ]
+  //         }))
+  //       }
 
-        clearInterval(interval);
-      }
-    }, 2000);
+  //       clearInterval(interval);
+  //     }
+  //   }, 2000);
 
-    // return () => clearInterval(interval);
-  }, [choice]);
+  //   // return () => clearInterval(interval);
+  // }, [choice]);
 
   return (
     <section
@@ -168,61 +168,34 @@ export const AgentWelcome: React.FC<WelcomeProps> = ({
 
 
       {/* Core prompt */}
-      <div className="flex flex-col gap-4">
-        <h1 className='space-grotesk text-4xl font-semibold'>How can I be useful today?</h1>
-        <h1 className="text-xl   leading-tight space-grotesk">
-          Your ready to go{" "}
-          <AnimatePresence mode="wait">
-            <motion.span
-              key={text}
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -6, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-clip-text text-transparent bg-gradient-to-br from-orange-400 via-red-500 to-pink-400"
-            >
-              {text}
-            </motion.span>
-          </AnimatePresence>{" "}
-          Agent
+      <div className="flex flex-col gap-4 mt-30">
+        <h1 className='space-grotesk text-3xl font-semibold'>You're set up. Pick a mode.</h1>
+        <h1 className="text-md space-grotesk">
+          Every session is logged, sourced, and yours to control.
+          <span>
+            {" "}Your{" "}
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={text}
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -6, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="bg-clip-text text-transparent bg-gradient-to-br from-orange-400 via-red-500 to-pink-400"
+              >
+                {text}
+              </motion.span>
+            </AnimatePresence>{" "}
+            Agent
+          </span>
+
         </h1>
 
 
 
       </div>
 
-      {/* Primary action */}
-      <div className="flex gap-2 w-full flex-col items-normal justify-center ">
-        <section>
-          <h1 className="bai-jamjuree-regular text-sm">
-            Not sure where to start?
-          </h1>
-          <span className="text-gray-600 dark:text-gray-400 space-grotesk text-xs">
-            Try these examples-
-          </span>
-        </section>
 
-        <div className="">
-          {Prompts.map((e, i) => {
-            return (
-              <ul
-                onClick={() => {
-                  dispatch(setQuestion(e.prompt));
-                  dispatch(setQueryType("Web Search"));
-                  setChoice(e.id);
-                  // dispatch(WebSearchHandler(question));
-                }}
-                className="space-grotesk text-xs md:text-sm text-gray-700 dark:text-gray-300 flex items-center justify-start gap-2 cursor-pointer"
-                role="button"
-                key={i}
-              >
-                {e.prompt}
-                <ArrowUpRight size={15} color="green" />
-              </ul>
-            );
-          })}
-        </div>
-      </div>
     </section>
   );
 };

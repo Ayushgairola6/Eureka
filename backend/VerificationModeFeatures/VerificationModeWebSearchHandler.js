@@ -272,7 +272,10 @@ export async function DeepSearchRequest(FormattedQueries, data) {
     );
 
     if (!CleanedWebData || CleanedWebData.length === 0) {
-      return { error: "No links found for your search results", data: null };
+      return {
+        error: "It took too long to process the sources, please try again",
+        data: null,
+      };
     }
 
     const FormattedResearchData = FormattForLLM(CleanedWebData);
@@ -603,8 +606,8 @@ export const FinalAnalyzer = async (req, res) => {
 
     const {
       instructions,
-      MessageId,
-      userMessageId,
+      MessageId, //the uniuqe LLM response Id
+      userMessageId, // the user_mesage-id
       web_search_depth,
       action_type,
     } = req.body;
@@ -637,7 +640,7 @@ export const FinalAnalyzer = async (req, res) => {
     }
 
     // free & sprint pass not allowed
-    if (plan_status === "free" || plan_status === "sprint pass") {
+    if (plan_type === "free" || plan_type === "sprint pass") {
       return res
         .status(400)
         .json({ message: "These features are only limited to pro plans" });
@@ -655,12 +658,12 @@ export const FinalAnalyzer = async (req, res) => {
     }
 
     // check if this has been already synthesized
-    const { data, error: lookupError } = await supabase
+    const { data: lookupdata, error: lookupError } = await supabase
       .from("research_data")
       .select("isSynthesized")
       .eq("message_id", MessageId)
       .single();
-    if (lookupError || !data) {
+    if (lookupError || !lookupdata) {
       notifyMe(
         "An error occured while looking up for a report for analyst mode (line:667)",
         lookupError
@@ -671,6 +674,12 @@ export const FinalAnalyzer = async (req, res) => {
       });
     }
 
+    if (lookupdata?.isSynthesized === true) {
+      return res.status(400).json({
+        message:
+          "This research thread has been already synthesized based on your previous instructions.",
+      });
+    }
     // if the user explicitly asked to finalize the report
 
     if (action_type && action_type === "finalize") {

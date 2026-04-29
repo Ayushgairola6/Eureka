@@ -1,10 +1,11 @@
 import { redisClient } from "../CachingHandler/redisClient.js";
+import { generateChartData } from "../controllers/ModelController.js";
 import { supabase } from "../controllers/supabaseHandler.js";
 import { ProcessUserQuery } from "../controllers/UserCreditLimitController.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 import { HandleNewInstructions } from "./VerificationModeWebSearchHandler.js";
-
+import { GetResearchData } from "./VerificationModeWebSearchHandler.js";
 // first level agent handler
 
 export const GetPendingResearch = async (req, res) => {
@@ -13,50 +14,91 @@ export const GetPendingResearch = async (req, res) => {
     if (!user)
       return res.status(401).json({ message: "Please login to continue" });
 
-    const cacheKey = `user=${user.user_id} research-history`;
-    const cachedResearchHistory = await redisClient.get(cacheKey);
+    const { timestamp } = req.query;
+    const cacheKey = `user=${user.user_id}:research-history`;
 
-    if (cachedResearchHistory) {
-      return res
-        .status(201)
-        .json({ message: "Found", history: JSON.parse(cachedResearchHistory) });
+    // First fetch - get latest 5 records
+    if (!timestamp) {
+      const cachedResearchHistory = await redisClient.get(cacheKey);
+
+      if (cachedResearchHistory) {
+        return res.status(200).json({
+          message: "Found",
+          history: JSON.parse(cachedResearchHistory),
+        });
+      }
+
+      const { data, error } = await supabase
+        .from("research_data")
+        .select("*")
+        .eq("user_id", user.user_id)
+        .eq("isSynthesized", false)
+        .order("created_at", { ascending: false }) // Newest first
+        .limit(5);
+
+      if (error || !data || data.length === 0) {
+        return res.status(404).json({
+          message: "No pending research found.",
+          history: [],
+        });
+      }
+
+      await redisClient.set(cacheKey, JSON.stringify(data), { EX: 3600 }); // 1 hour expiry
+
+      return res.status(200).json({
+        message: "Research found",
+        history: data,
+      });
     }
+
+    // Pagination fetch - get older records
+    const cachedResearchHistory = await redisClient.get(cacheKey);
+    let existingHistory = cachedResearchHistory
+      ? JSON.parse(cachedResearchHistory)
+      : [];
 
     const { data, error } = await supabase
       .from("research_data")
       .select("*")
       .eq("user_id", user.user_id)
-      .eq("isSynthesized", false);
+      .eq("isSynthesized", false)
+      .order("created_at", { ascending: false })
+      .lt("created_at", timestamp) // Older than timestamp
+      .limit(5);
 
-    if (error)
-      return res
-        .status(404)
-        .json({ message: "Unable to find any pending research for you." });
+    if (error) {
+      return res.status(404).json({
+        message: "Unable to fetch more research.",
+        history: existingHistory,
+      });
+    }
 
-    await redisClient
-      .multi()
-      .set(cacheKey, JSON.stringify(data))
-      .exec()
-      .catch((err) =>
-        notifyMe(
-          "There is an error in the get pending research handler for analyst mode",
-          err
-        )
-      );
+    if (!data || data.length === 0) {
+      return res.status(200).json({
+        message: "No more research to load",
+        history: existingHistory,
+        hasMore: false,
+      });
+    }
 
-    return res.status(201).json({
+    // Merge: existing (newer) + new (older)
+    const updatedHistory = [...existingHistory, ...data];
+
+    await redisClient.set(cacheKey, JSON.stringify(updatedHistory), {
+      EX: 3600,
+    });
+
+    return res.status(200).json({
       message: "Research found",
-      history: data,
+      history: updatedHistory,
+      hasMore: data.length === 5, // If we got 5, there might be more
     });
   } catch (error) {
-    notifyMe(
-      `There was an error in the getting pending request research handler for analyst mode`,
-      error
-    );
+    notifyMe(`Error in GetPendingResearch handler for analyst mode`, error);
     console.error(error);
     return res.status(500).json({
-      message:
-        "We are trying to resolve this problem, thanks for your patience.",
+      message: "Server error. Please try again.",
+      history: [],
     });
   }
 };
@@ -176,30 +218,26 @@ export async function RefreshArchive(req, res) {
 
     // clear te cache
     const cacheKey = `user=${user?.user_id} research-history`;
+    // const cacheKey = `user=${user.user_id}:research-history`;
+
     await redisClient.del(cacheKey);
 
     const { data, error } = await supabase
       .from("research_data")
       .select("*")
       .eq("user_id", user.user_id)
-      .eq("isSynthesized", false);
+      .eq("isSynthesized", false)
+      .order("created_at", { ascending: false }) // Newest first
+      .limit(5);
 
-    if (error)
-      return res
-        .status(404)
-        .json({ message: "Unable to find any pending research for you." });
+    if (error || !data || data.length === 0) {
+      return res.status(404).json({
+        message: "No pending research found.",
+        history: [],
+      });
+    }
 
-    // then cache it
-    await redisClient
-      .multi()
-      .set(cacheKey, JSON.stringify(data))
-      .exec()
-      .catch((err) =>
-        notifyMe(
-          "There is an error in the get pending research handler for analyst mode",
-          err
-        )
-      );
+    // await redisClient.set(cacheKey, JSON.stringify(data), { EX: 3600 }); // 1 hour expiry
 
     return res.status(201).json({
       message: "Research found",
@@ -246,4 +284,126 @@ export async function UpdateReportStatus(report_id) {
     .from("research_data")
     .update({ isSynthesized: true })
     .eq("message_id", report_id);
+}
+
+// handle data visualization request
+export async function Visualize(req, res) {
+  try {
+    const user = req.user;
+    if (!user)
+      return res.status(401).json({ message: "Please login to continue" });
+
+    const {
+      status,
+      error: plan_error,
+      plan_type,
+      plan_status,
+    } = await CheckUserPlanStatus(user?.user_id);
+
+    //if the user is not paid or the paid staus is not even available
+    if (status === false || plan_error || !plan_type) {
+      notifyMe(
+        `There was an error while checking the payment status and information of user=${req.user.username} in the analyst mode report finalize report handler`,
+        null
+      );
+      return res.status(400).send({
+        message:
+          "An error occured while checking your payment status please contact our support at support@antinodeai.space to report this issue",
+      });
+    }
+
+    // free & sprint pass not allowed
+    if (plan_type === "free" || plan_type === "sprint pass") {
+      return res
+        .status(400)
+        .json({
+          message:
+            "Visualization is only available for premium plans, upgrade to start visualizing",
+        });
+    }
+    const { MessageId } = req.body;
+
+    if (!MessageId || typeof MessageId !== "string") {
+      return res
+        .status(400)
+        .json({ message: "Invalid or missing MessageId or userQuery" });
+    }
+    const cacheKey = `${MessageId}:issued_visualization_request`;
+    // Check if a visualization request has already been issued for this MessageId
+    const cachedVisualizationRequest = await redisClient.get(cacheKey);
+
+    if (cachedVisualizationRequest) {
+      return res.status(429).json({
+        message:
+          "A visualization request for this research is already being processed. Please wait a moment before trying again.",
+      });
+    }
+    const Information = await GetResearchData(MessageId);
+    // create a report
+    if (!Information || Information.error) {
+      return res.status(400).json({
+        message:
+          "Seems like our AI models are overloaded right now please stand by while we try to fix this problem, you can continue this research from your archive.",
+      });
+    }
+
+    const query =
+      Information.data[0].query ||
+      "There is no user query found for this research, visualize the data as per the best industry data analysis practice the user-prompt is included in the research-data and what the data is about";
+    // console.log(query, "query");
+    const raw_data = Information.data.map((item) =>
+      item.information.details.map(
+        (source) => `source:${source.url}&content:${source.content}`
+      )
+    );
+    // console.log(Information.data[0], "information data");
+    if (raw_data === "no_data") {
+      return res.status(400).json({
+        message:
+          "There is no data found for this research, unable to generate visualization",
+      });
+    }
+
+    // console.log( Information.data, "raw-data");
+
+    const modelResponse = await generateChartData(
+      query ||
+        "There is no user query found for this research, visualize the data as per the best industry data analysis practice the user-prompt is included in the research-data",
+      JSON.stringify(raw_data)
+    );
+    // console.log(modelResponse, "model-response");
+
+    // console.log(modelResponse.datasets, "datasets");
+    // const modelResponse = {
+    //   chart_type: "bar",
+    //   title: "AI Startup Funding by Region (2025)",
+    //   labels: ["Global", "UK"],
+    //   datasets: [
+    //     { label: "Funding Deployed", data: [107000000000, 4500000000] },
+    //   ],
+    //   reasoning:
+    //     "A bar chart is suitable for comparing the total global AI startup funding against the specific funding in the UK, allowing for a clear visual comparison of these two distinct values.",
+    // };
+
+    if (!modelResponse || modelResponse?.chart_type === "none") {
+      return res.status(404).json({ message: "Unable to visualize the data" });
+    }
+
+    // redisClient.set(cacheKey, "true", { EX: 200 }); // Mark as requested for 4 minutes;
+    const results = {
+      title: modelResponse.title || "No title",
+      reasoning: modelResponse.reasoning || "No reasoning provided",
+      chart_type: modelResponse.chart_type || "No chart type provided",
+      labels: modelResponse.labels || [],
+      datasets: modelResponse.datasets || [],
+      MessageId: MessageId,
+    };
+
+    return res.json({ message: "Visualization generated", results });
+  } catch (error) {
+    console.error(`Data visualition error\n`, error);
+    return res
+      .status(500)
+      .json({ message: "Our model failed to visualize this data" });
+  }
 }

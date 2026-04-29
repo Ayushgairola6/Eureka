@@ -1,4 +1,10 @@
-import { CheerioCrawler, MemoryStorage, Configuration, log } from "crawlee";
+import {
+  CheerioCrawler,
+  MemoryStorage,
+  Configuration,
+  log,
+  PlaywrightCrawler,
+} from "crawlee";
 import { Readability } from "@mozilla/readability";
 import { parseHTML } from "linkedom"; // Much lighter than JSDOM
 import TurndownService from "turndown";
@@ -10,11 +16,13 @@ import { GenerateEmbeddings } from "../controllers/ModelController.js";
 import { cosineSimilarity } from "./utils/math.js"; // You'll need a simple math helper
 import { splitTextIntoChunks } from "../controllers/fileControllers.js";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-
+import { ApifyClient } from "apify-client";
 dotenv.config();
 
 const turndown = new TurndownService({ headingStyle: "atx" });
-
+const apify_client = new ApifyClient({
+  token: process.env.APIFY_TOKEN,
+});
 export async function GetDataFromSerper(
   query,
   user,
@@ -105,6 +113,8 @@ export function FilterUrlForExtraction(data, user, MessageId, room_id) {
 }
 
 // scraping the data from web
+// Assuming you have your existing imports for turndown, Readability, parseHTML, etc.
+
 export const ProcessForLLM = async (
   links,
   user,
@@ -114,119 +124,41 @@ export const ProcessForLLM = async (
   plan_type
 ) => {
   try {
-    const dataset = [];
-    turndown.remove(["img", "iframe", "script", "style", "noscript"]);
+    const filteredLinks = filterResearchLinks(links); //clean the links
+    if (
+      !filteredLinks ||
+      !Array.isArray(filteredLinks) ||
+      !userQuery ||
+      typeof userQuery !== "string"
+    ) {
+      return [];
+    }
+    const data = {
+      links: filteredLinks,
+      userQuery: userQuery,
+      userId: user.user_id || room_id,
+      MessageId,
+    };
 
-    const validLinks = filterResearchLinks(links);
-
-    const config = new Configuration({
-      persistStorage: false,
-      storageClient: new MemoryStorage({ persistStorage: false }),
-    });
-
-    log.setLevel(log.LEVELS.OFF);
-    const crawler = new CheerioCrawler(
+    const response = await fetch(
+      "https://ThornsOfSnow-Antinode-web-search.hf.space/api/search",
       {
-        minConcurrency: 20,
-        maxConcurrency: 50,
-        maxRequestRetries: 0,
-        requestHandlerTimeoutSecs: 10,
-        useSessionPool: false,
-        failedRequestHandler: ({ request }) => {},
-        async requestHandler({ request, body, $ }) {
-          if (room_id) {
-            EmitEvent(room_id, "query_status", {
-              MessageId,
-              status: {
-                message: "reading_links",
-                data: [`Reading: ${new URL(request.url).hostname}`],
-              },
-            });
-          } else {
-            EmitEvent(user.user_id, "query_status", {
-              MessageId,
-              status: {
-                message: "reading_links",
-                data: [`Reading: ${new URL(request.url).hostname}`],
-              },
-            });
-          }
-
-          if (body.length < 500) return;
-
-          const { document } = parseHTML(body);
-
-          const reader = new Readability(document);
-          const article = reader.parse();
-
-          if (article && article.content) {
-            const markdown = turndown.turndown(article.content);
-
-            if (markdown.length < 200) return;
-            const wordCount = article?.textContent.split(/\s+/).length;
-            const cleanedMarkdown = markdown
-              .replace(/\[.*?\]\(.*?\)/g, "")
-              .replace(/#{1,6}\s/g, "")
-              .replace(/\n{3,}/g, "\n\n")
-              .trim();
-            let ProcessedPage;
-            try {
-              ProcessedPage =
-                // plan_type === "free"
-                extractHighValueChunks(cleanedMarkdown, userQuery, 5000);
-            } catch (pageerror) {
-              // console.error(pageerror);
-              return;
-            }
-
-            // : await HandleContextFiltering(cleanedMarkdown, userQuery);
-
-            // Guard against null result
-            if (!ProcessedPage || !ProcessedPage?.content) return;
-
-            const object = {
-              title: article.title,
-              url: request?.url,
-              favicon: `https://www.google.com/s2/favicons?domain=${
-                new URL(request.url).hostname
-              }&sz=64`,
-              markdown: ProcessedPage?.content,
-              score: ProcessedPage?.score,
-            };
-
-            if (room_id) {
-              EmitEvent(room_id, "query_status", {
-                MessageId,
-                status: {
-                  message: "Cleaning_Context",
-                  data: [ProcessedPage.content.slice(0, 1000)],
-                },
-              });
-            } else {
-              EmitEvent(user.user_id, "query_status", {
-                MessageId,
-                status: {
-                  message: "Cleaning_Context",
-                  data: [ProcessedPage.content.slice(0, 1000)],
-                },
-              });
-            }
-
-            dataset.push(object);
-          }
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
         },
-      },
-      config
+      }
     );
-
-    await crawler.run(validLinks);
-    return dataset;
+    const result = await response.json();
+    return result;
   } catch (err) {
-    notifyMe("An error in the process llm handler\n", err);
+    console.error(err);
+    // notifyMe("An error in the process llm handler\n", err);
     return [];
   }
 };
-
 //formatting for the llm
 export function FormattForLLM(ScrapedData) {
   if (!ScrapedData || !Array.isArray(ScrapedData) || ScrapedData.length === 0) {
@@ -352,100 +284,122 @@ const filterResearchLinks = (links) => {
   });
 };
 
-function extractHighValueChunks(page, query, maxTokens = 3500) {
-  const queryWords = query
-    ?.toLowerCase()
-    ?.split(/\s+/)
-    ?.filter((w) => w.length > 2);
-
+export function extractHighValueChunks(pageText, userQuery, maxTokens) {
   const estimateTokens = (text) => Math.ceil(text.length / 4);
 
-  // ---------- scoring helpers ----------
+  // 1. Clean the query and remove common words (Stop-words)
+  const stopWords = new Set([
+    "the",
+    "is",
+    "at",
+    "which",
+    "on",
+    "and",
+    "a",
+    "an",
+    "for",
+    "with",
+    "about",
+  ]);
+  const queryWords = userQuery
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stopWords.has(w));
 
-  function scoreChunk(chunk) {
-    const lower = chunk?.toLowerCase();
-    let score = 0;
+  if (queryWords.length === 0) return null;
 
-    // keyword relevance
-    for (const word of queryWords) {
-      if (lower.includes(word)) score += 1;
-    }
-
-    // numeric / factual density
-    if (/\$|%|\b\d{4}\b/.test(chunk)) score += 3;
-
-    // projections / analysis language
-    if (/forecast|projected|estimate|cagr|expected|by \d{4}/i.test(chunk))
-      score += 2;
-
-    // discrepancies / contrast cues
-    if (/however|but|whereas|contrast|although|discrepancy/i.test(chunk))
-      score += 2;
-
-    // source indicators
-    if (/report|study|survey|according to|source/i.test(chunk)) score += 1;
-
-    return score;
-  }
-
-  function scorePage(text) {
-    let score = 0;
-    if (/\$|%|\b\d{4}\b/.test(text)) score += 3;
-    if (/report|study|analysis|data|survey/i.test(text)) score += 2;
-    if (/blog|opinion|thoughts/i.test(text)) score -= 1;
-    return score;
-  }
-
-  // ---------- page scoring ----------
-
-  const pageScore = scorePage(page);
-
-  // Skip low quality pages before even chunking
-  if (pageScore < 0) return null;
-  let tokenBudget = maxTokens;
-
-  // ---------- chunk extraction ----------
-
-  const rawChunks = page
+  // 2. Split page into paragraph chunks safely
+  const rawChunks = pageText
     .split(/\n{2,}/)
     .map((c) => c.trim())
-    .filter((c) => c.length > 80);
+    .filter((c) => c.length > 40); // Ignore tiny fragments
 
-  const scoredChunks = rawChunks
-    .map((chunk, idx) => ({
-      chunk,
-      idx,
-      score: scoreChunk(chunk),
-    }))
-    .filter((c) => c.score > 0)
-    .sort((a, b) => b.score - a.score);
+  // 3. Lightweight Math Scoring (TF-IDF style)
+  function scoreChunk(chunk) {
+    let score = 0;
+    const lowerChunk = chunk.toLowerCase();
 
-  let pageContext = "";
-  let pageTokens = 0;
+    // A. Phrase Match (Huge bonus if the exact query phrase appears)
+    if (lowerChunk.includes(userQuery.toLowerCase())) {
+      score += 10;
+    }
 
-  for (const item of scoredChunks) {
-    // expand with neighbor context (±1)
-    const combined = [
-      rawChunks[item.idx - 1],
-      item.chunk,
-      rawChunks[item.idx + 1],
-    ]
-      .filter(Boolean)
-      .join("\n");
+    // B. Keyword Term Frequency
+    for (const word of queryWords) {
+      // Split chunk into words to avoid partial matches (e.g., "car" matching "careless")
+      const wordsInChunk = lowerChunk.split(/\W+/);
+      const occurrences = wordsInChunk.filter((w) => w === word).length;
 
-    const tokens = estimateTokens(combined);
+      if (occurrences > 0) {
+        // Reward frequency, but use Math.sqrt to prevent keyword stuffing
+        // (e.g., 1 match = 3 pts, 4 matches = 6 pts)
+        score += 3 * Math.sqrt(occurrences);
+      }
+    }
 
-    if (pageTokens + tokens > maxTokens || tokenBudget - tokens < 0) break;
+    // C. Data Density Bonus (Numbers, Dollars, Percentages, Years)
+    if (/\$|%|\b\d{1,3}(,\d{3})+(\.\d+)?\b|\b202[0-9]\b/.test(chunk)) {
+      score += 2;
+    }
 
-    pageContext += combined + "\n\n";
-    pageTokens += tokens;
-    tokenBudget -= tokens;
+    return score;
   }
 
-  if (!pageContext.trim()) return null;
+  // Score all chunks
+  const scoredChunks = rawChunks
+    .map((chunk, idx) => ({ idx, score: scoreChunk(chunk) }))
+    .filter((c) => c.score > 1) // Drop chunks with basically no relevance
+    .sort((a, b) => b.score - a.score); // Sort best to worst
+
+  // 4. Safe Context Extraction (Grabs surrounding paragraphs without duplicating text)
+  const selectedIndices = new Set();
+  let currentTokens = 0;
+
+  for (const item of scoredChunks) {
+    // Grab the high-scoring chunk AND the paragraphs right before and after it
+    const indicesToAdd = [item.idx - 1, item.idx, item.idx + 1].filter(
+      (i) => i >= 0 && i < rawChunks.length && !selectedIndices.has(i)
+    );
+
+    let tokensForThese = 0;
+    for (const i of indicesToAdd) {
+      tokensForThese += estimateTokens(rawChunks[i] + "\n\n");
+    }
+
+    // Stop if we hit our token limit to save money on the LLM side
+    if (currentTokens + tokensForThese > maxTokens) {
+      if (currentTokens >= maxTokens * 0.9) break;
+      continue;
+    }
+
+    // Add them to our final list
+    for (const i of indicesToAdd) {
+      selectedIndices.add(i);
+    }
+    currentTokens += tokensForThese;
+  }
+
+  if (selectedIndices.size === 0) return null;
+
+  // 5. CRITICAL: Sort chronologically so the LLM reads it in the right order
+  const sortedIndices = Array.from(selectedIndices).sort((a, b) => a - b);
+
+  let pageContext = "";
+  let lastIdx = -2;
+
+  // 6. Build the final string
+  for (const idx of sortedIndices) {
+    // Inject a visual break if we skipped paragraphs, letting the LLM know text was omitted
+    if (lastIdx !== -2 && idx - lastIdx > 1) {
+      pageContext += "\n\n[...]\n\n";
+    }
+    pageContext += rawChunks[idx] + "\n";
+    lastIdx = idx;
+  }
 
   return {
-    score: pageScore,
+    score: scoredChunks[0]?.score || 0, // Return highest chunk score as page score
     content: pageContext.trim(),
   };
 }
@@ -570,3 +524,40 @@ const GenerateEmbeddingsRecursive = async (
     BATCH_SIZE
   );
 };
+
+export async function ApifyWebHook(req, res) {
+  try {
+    const { message, link } = req.body;
+
+    // 1. Basic Validation
+    if (!message || !link) {
+      return res
+        .status(400)
+        .json({ error: "Missing message or link in payload" });
+    }
+
+    console.log(`Received webhook: ${message} for ${link}`);
+
+    // 2. Handle specific message types
+    switch (message) {
+      case "LINK_READ":
+        await handleLinkRead(link);
+        break;
+
+      case "PAGE_READ":
+        await handlePageRead(link);
+        break;
+
+      default:
+        console.warn(`Unknown message type received: ${message}`);
+        return res.status(422).json({ error: "Unrecognized message type" });
+    }
+
+    // 3. Respond to the standalone server with success
+    // This prevents the 'res.ok' check in your SendWebhook function from failing
+    return res.status(200).json({ status: "success", received: message });
+  } catch (error) {
+    console.error("Error processing webhook:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+}

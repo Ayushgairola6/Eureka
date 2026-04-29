@@ -56,7 +56,7 @@ export interface MessageResearch {
   timestamp: string;
   status: string;
 }
-interface research_details {
+export interface research_details {
   url: string;
   score: number;
   title: string;
@@ -65,7 +65,7 @@ interface research_details {
 interface Information {
   details: research_details[];
 }
-interface PastResearch {
+export interface PastResearch {
   created_at: string;
   depth: string;
   id: number;
@@ -111,9 +111,11 @@ interface InterfaceState {
   creatingReport: boolean;
   fetchingPendingResearch: boolean;
   Research_Archive: PastResearch[];
+  mode: string;
 }
 
 const initialState: InterfaceState = {
+  mode: "Web Search",
   question: "",
   answer: "",
   loading: false,
@@ -586,13 +588,16 @@ export const RefreshResearchArchive = createAsyncThunk(
 );
 
 // get pending research
-export const getResearchHistory = createAsyncThunk(
+export const getResearchHistory = createAsyncThunk<any, any>(
   "research/pending",
-  async (_, { rejectWithValue }) => {
+  async (timestamp, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BaseApiUrl}/api/fetch-research`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(
+        `${BaseApiUrl}/api/fetch-research?timestamp=${timestamp}`,
+        {
+          withCredentials: true,
+        }
+      );
 
       return response.data;
     } catch (err: any) {
@@ -651,6 +656,9 @@ const interfaceSlice = createSlice({
   name: "interface",
   initialState,
   reducers: {
+    SetMode: (state, action) => {
+      state.mode = action.payload;
+    },
     MimicSSE: (state, action) => {
       const { id, delta } = action.payload;
       const msg = state.Chats.find((data) => data.id === id);
@@ -1016,6 +1024,7 @@ export const {
   UpdateResearchData,
   setCreatingReport,
   emptyArchive,
+  SetMode,
 } = interfaceSlice.actions;
 
 export default interfaceSlice.reducer;

@@ -24,7 +24,7 @@ export async function HandleInference(user_prompt, SYSTEM_PROMPT) {
         { content: SYSTEM_PROMPT, role: "system" },
         { role: "user", content: user_prompt },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       temperature: 0.5,
       stream: false,
       top_p: 1,

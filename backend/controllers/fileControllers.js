@@ -1,6 +1,6 @@
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
-import { FilterIntent } from "./ModelController.js";
+import { FilterIntent, GenerateResponse } from "./ModelController.js";
 import { Pinecone } from "@pinecone-database/pinecone";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
@@ -1310,7 +1310,15 @@ export const PostTypeWebSearch = async (req, res) => {
     await CacheCurrentChat(message, req.user);
     const WebResultPrompt = WEB_SEARCH_DISTRIBUTOR_PROMPT;
 
-    const Answer = await HandleInference(
+    // const Answer = await HandleInference(
+    //   `These are queries by you previously to search the web=${JSON.stringify(
+    //     FormattedQueries
+    //   )}&UserQuery=${question}&chathistory_between you and the user=${JSON.stringify(
+    //     history
+    //   )}`,
+    //   WebResultPrompt
+    // );
+    const Answer = await GenerateResponse(
       `These are queries by you previously to search the web=${JSON.stringify(
         FormattedQueries
       )}&UserQuery=${question}&chathistory_between you and the user=${JSON.stringify(

@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { Pinecone } from "@pinecone-database/pinecone";
 dotenv.config();
@@ -362,4 +362,108 @@ export function FilterIntent(resultstring) {
     });
   }
   return queries;
+}
+
+// data filteration and visualization
+
+export async function generateChartData(userQuery, enrichedContext) {
+  // 1. Define the exact JSON structure your frontend needs
+  const tokenCount = await genAI.models.countTokens({
+    model: "gemini-2.5-flash",
+    contents: enrichedContext,
+  });
+  if (tokenCount.totalTokens > 5000) {
+    return { error: "Data to big" };
+  }
+  // The new SDK accepts the standard JSON Schema format or the new Type enum.
+  const chartSchema = {
+    type: Type.OBJECT, // or just "OBJECT"
+    properties: {
+      chart_type: {
+        type: Type.STRING,
+        description:
+          "The best chart to represent this data. Use 'none' if there is no quantifiable data.",
+        enum: ["bar", "line", "pie", "doughnut", "radar", "scatter", "none"],
+      },
+      title: {
+        type: Type.STRING,
+        description: "A short, descriptive title for the chart.",
+      },
+      reasoning: {
+        type: Type.STRING,
+        description:
+          "Briefly explain why this chart type was chosen for this specific data.",
+      },
+      labels: {
+        type: Type.ARRAY,
+        description:
+          "The X-axis labels (e.g., years, categories, company names).",
+        items: { type: Type.STRING },
+      },
+      datasets: {
+        type: Type.ARRAY,
+        description:
+          "The Y-axis data. Can have multiple datasets for comparison (e.g., Revenue vs Profit).",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            label: {
+              type: Type.STRING,
+              description: "Name of the dataset line/bar",
+            },
+            data: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+          },
+          required: ["label", "data"],
+        },
+      },
+    },
+    required: ["chart_type", "title", "labels", "datasets", "reasoning"],
+  };
+
+  const prompt = `
+    You are a Data Visualization Expert. 
+    A user asked: "${userQuery}"
+    
+    Below is the raw data extracted from web scraping. 
+    Analyze this text, find the relevant quantitative data (numbers, statistics, dates, financials), 
+    and format it into a visualization.
+    
+    Rules:
+    1. If the data describes a trend over time, use a "line" chart.
+    2. If comparing categories, use a "bar" or "pie" chart.
+    3. If there are NO hard numbers or statistics in the text, you MUST set chart_type to "none".
+    4. Ensure the number of items in 'labels' matches the number of items in 'data' arrays perfectly.
+
+    Extracted Context:
+    ---
+    ${enrichedContext}
+    ---
+  `;
+
+  try {
+    // 2. New SDK generateContent syntax
+    const response = await genAI.models.generateContent({
+      model: "gemini-2.5-flash-lite", // The latest fast model recommended for the new SDK
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: chartSchema,
+        temperature: 0.1, // Low temperature for highly analytical/deterministic extraction
+      },
+    });
+
+    // 3. New SDK uses a property getter instead of a function call
+    const chartData = JSON.parse(response.text);
+
+    return chartData;
+  } catch (error) {
+    console.error("Failed to generate chart data from Gemini:", error);
+    // Graceful fallback so your frontend doesn't crash
+    return {
+      chart_type: "none",
+      title: "Error generating chart",
+      labels: [],
+      datasets: [],
+    };
+  }
 }

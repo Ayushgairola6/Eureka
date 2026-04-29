@@ -37,6 +37,7 @@ import { CreatingReport } from "@/components/createReportIndicator.tsx";
 // import { CheckDriveConnectorState } from "../store/ToolsSlice.ts";
 import { InterfaceFeatureSelector } from "@/components/Interface_FeatureSelector.tsx";
 import { useSearchParams } from "react-router";
+import ResearchVisualizer from "./Visualizer/Research_Visualizer.tsx";
 function Interface() {
 
   const dispatch = useAppDispatch();
@@ -176,6 +177,7 @@ function Interface() {
   // }, [isLoggedIn, user])
 
 
+  // continue the pending redirected research
   useEffect(() => {
     const MessageId = searchParams.get("MessageId");
     const depth = searchParams.get("depth");
@@ -299,8 +301,11 @@ function Interface() {
     <>
       {" "}
       <div
+
         className={`w-full  flex items-center justify-between flex-col min-h-[90vh]  dark:bg-black  relative z-[1]  px-4 py-3 `}
       >
+        <ResearchVisualizer />
+
         <InterfaceFeatureSelector showFeatures={showFeatures} setShowFeatures={setShowFeatures} />
 
         <div className={`fixed top-15 right-2 z-[5] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all duration-300 ${isConnected
@@ -375,6 +380,7 @@ function Interface() {
           </div>
         </div>
         {/* chattting seciton */}
+
       </div>
     </>
   );

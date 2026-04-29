@@ -6,7 +6,7 @@ import SocketReducer from "./websockteSlice.ts";
 import PaymentReducer from "./PaymentsSlice.ts";
 import { socketMiddleware } from "./socketMiddleware.ts";
 import ToolsReducer from "./ToolsSlice.ts";
-
+import VisualizerReducer from "./visualierSlice.ts";
 export const store = configureStore({
   reducer: {
     auth: AuthReducer,
@@ -15,6 +15,7 @@ export const store = configureStore({
     socket: SocketReducer,
     tools: ToolsReducer,
     payments: PaymentReducer,
+    visualizer: VisualizerReducer,
   },
   // Optional: Add middleware like this
   middleware: (getDefaultMiddleware) =>

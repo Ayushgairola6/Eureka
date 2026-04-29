@@ -1,15 +1,17 @@
 import { useState, type JSX, useEffect, useRef, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { TbArrowRight, TbTrash, TbBooks, TbSearch, TbQuote, TbChevronUp, TbChevronDown, TbLink } from "react-icons/tb";
+import { TbArrowRight, TbTrash, TbBooks, TbChevronUp, TbChevronDown } from "react-icons/tb";
 import { RiRadarLine } from "react-icons/ri";
 import { toast } from 'sonner';
 import { Archive, Clock } from "lucide-react";
 import { emptyArchive, getResearchHistory, RefreshResearchArchive } from '../store/InterfaceSlice'
 import { GoReport } from "react-icons/go";
-import { IoReload } from "react-icons/io5";
-import { MdDoneAll } from "react-icons/md";
+import { IoAnalytics, IoReload } from "react-icons/io5";
+import { MdDoneAll, MdMore } from "react-icons/md";
 import axios from 'axios'
+import ExpandedReader from "@/components/ResearchArchive/ExpandedReader";
+const BaseApiUrl = import.meta.env.VITE_BACKEND_URL
 // import { Sort } from "@/components/ResearchArchive/sorting";
 const QUICK_TAGS = [
     { label: "go deeper", value: "Go deeper on this topic with more authoritative sources." },
@@ -31,7 +33,8 @@ export function UnfinishedResearchPage() {
             return
         };
 
-        dispatch(getResearchHistory()).unwrap().then((res) => {
+
+        dispatch(getResearchHistory(null)).unwrap().then((res) => {
             if (res?.message) {
                 toast.message(res.message)
             }
@@ -46,7 +49,6 @@ export function UnfinishedResearchPage() {
 
     // 2. State should be an object to handle multiple items independently
     const [instructions, setInstructions] = useState<{ [key: string]: string }>({});
-
     function injectTag(value: string, item_id: number) {
         // Update the state for the specific item
         setInstructions(prev => ({
@@ -106,8 +108,13 @@ export function UnfinishedResearchPage() {
 
     };
 
+    // visualization request
+    function handleVisualize(message_id: string) {
+        if (!message_id) return;
+        navigate(`/interface?MessageId=${message_id}`) //send this to the interface
+    }
 
-
+    // get more pending research
 
     // refresh The archive
     function handleRefresh() {
@@ -126,7 +133,7 @@ export function UnfinishedResearchPage() {
     async function handleMarkDone(id: string) {
         try {
 
-            const response = await axios.put(`BaseApiUrl/api/markdone`, { message_id: id }, {
+            const response = await axios.put(`${BaseApiUrl}/api/markdone`, { message_id: id }, {
                 withCredentials: true
             })
             toast.message(response.data.message);
@@ -134,6 +141,18 @@ export function UnfinishedResearchPage() {
         } catch (err: any) {
             return toast.error(err?.message || err?.response?.data?.message);
         }
+    }
+
+    async function FetchMore() {
+        const timestamp = research_history[research_history.length - 1].created_at;
+        if (!timestamp) return;
+        dispatch(getResearchHistory(timestamp)).unwrap().then((res) => {
+            if (res?.message) {
+                toast.message(res.message)
+            }
+        }).catch(err => toast.error(err)).finally(() => {
+            FetchcountRef.current += 1
+        })
     }
     return (<>
         <section className='p-4 relative flex items-center justify-between'>
@@ -144,10 +163,16 @@ export function UnfinishedResearchPage() {
                 <span className='space-grotesk text-xs text-gray-600 dark:text-neutral-500'>Continue your pending research</span>
             </div>
 
-            <div className='space-y-2'>
-                <button onClick={handleRefresh} className='bai-jamjuree-semibold text-xs flex items-center justify-center gap-3 bg-neutral-200 dark:bg-neutral-900 rounded-sm p-2 cursor-pointer'>Refresh <IoReload /></button>
-                {/* <Sort /> */}
-            </div>
+            <section className='flex items-center justify-center gap-2'>
+
+                <div className='space-y-2'>
+                    <button onClick={handleRefresh} className='bai-jamjuree-semibold text-xs flex items-center justify-center gap-3 bg-neutral-200 dark:bg-neutral-900 rounded-sm p-2 cursor-pointer'>Refresh <IoReload /></button>
+                    {/* <Sort /> */}
+                </div>
+                <button className='bai-jamjuree-semibold text-xs flex items-center justify-center gap-3 bg-neutral-200 dark:bg-neutral-900 rounded-sm p-2 cursor-pointer' onClick={() => FetchMore()}>
+                    Fetch-More<MdMore />
+                </button>
+            </section>
 
         </section>
 
@@ -179,7 +204,7 @@ export function UnfinishedResearchPage() {
 
                                     {/* Body: Query Heading */}
                                     <div className="p-4 flex-grow">
-                                        <h2 className="bai-jamjuree-bold text-base leading-tight mb-4">
+                                        <h2 className="bai-jamjuree-regular text-base leading-tight mb-4 max-h-20 overflow-hidden">
                                             {item.query.split('&')[0].replace('new_instructions', '').trim()}
                                         </h2>
 
@@ -189,7 +214,7 @@ export function UnfinishedResearchPage() {
                                             className="flex items-center justify-between w-full p-2 rounded bg-neutral-50 dark:bg-neutral-800 text-neutral-500 hover:text-blue-500 transition-colors"
                                         >
                                             <span className="space-grotesk text-[10px] font-bold uppercase flex items-center gap-2">
-                                                <TbBooks /> Intelligence Details ({item.sources_count})
+                                                <TbBooks /> Research Details ({item.sources_count})
                                             </span>
                                             {isExpanded ? <TbChevronUp size={16} /> : <TbChevronDown size={16} />}
                                         </button>
@@ -198,8 +223,9 @@ export function UnfinishedResearchPage() {
                                         {isExpanded && (
                                             <div className="mt-2 border border-neutral-200 dark:border-neutral-800 rounded overflow-hidden">
                                                 <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 bg-neutral-50/50 dark:bg-neutral-900/50">
-                                                    {item.information.details.map((source, idx) => (
-                                                        <SourceDetail key={idx} source={source} />
+                                                    {item.information.details.map((source) => (
+                                                        // <SourceDetail key={idx} source={source} />
+                                                        <ExpandedReader source={source} />
                                                     ))}
                                                 </div>
                                             </div>
@@ -244,16 +270,26 @@ export function UnfinishedResearchPage() {
                                             <div className='flex items-center justify-center '>
                                                 <button
                                                     onClick={() => handleDiscard(item.message_id)}
-                                                    className="flex items-center justify-center p-3 border-r  border-red-800 dark:text-neutral-400 hover:bg-red-500/20 bg-red-500/10 hover:text-red-500 transition-all"
+                                                    className="   flex items-center justify-center p-3 border-r  border-red-800 dark:text-neutral-400 hover:bg-red-500/20 bg-red-500/10 hover:text-red-500 transition-all"
                                                 >
+
                                                     <TbTrash size={14} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleMarkDone(item.message_id)}
-                                                    className="flex items-center justify-center p-3 border-r border-sky-800 dark:text-neutral-400
+                                                    className=" flex items-center justify-center p-3 border-r border-sky-800 dark:text-neutral-400
                                                     bg-sky-500/10 hover:bg-sky-500/20 hover:text-sky-500 transition-all"
                                                 >
+
                                                     <MdDoneAll size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleVisualize(item.message_id)}
+                                                    className=" flex items-center justify-center p-3 border-r border-purple-800 dark:text-neutral-400
+                                                    bg-purple-500/10 hover:bg-purple-500/20 hover:text-purple-500 transition-all"
+                                                >
+
+                                                    <IoAnalytics size={14} />
                                                 </button>
                                             </div>
 
@@ -286,58 +322,58 @@ export function UnfinishedResearchPage() {
     </>);
 }
 
-function SourceDetail({ source }: { source: any }) {
-    const [isOpen, setIsOpen] = useState(false);
+// function SourceDetail({ source }: any) {
+//     const [isOpen, setIsOpen] = useState(false);
 
-    return (
-        <div className="border-b border-neutral-200 dark:border-neutral-800 last:border-0">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors"
-            >
-                <div className="flex flex-col items-start text-left max-w-[90%]">
-                    <span className="bai-jamjuree-bold text-xs truncate w-full">{source.title}</span>
-                    <span className="space-grotesk text-[10px] text-blue-500 truncate w-full flex items-center gap-1">
-                        <TbLink size={10} /> {source.url}
-                    </span>
-                </div>
-                {isOpen ? <TbChevronUp size={14} /> : <TbChevronDown size={14} />}
-            </button>
+//     return (
+//         <div className="border-b border-neutral-200 dark:border-neutral-800 last:border-0">
+//             <button
+//                 onClick={() => setIsOpen(!isOpen)}
+//                 className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors"
+//             >
+//                 <div className="flex flex-col items-start text-left max-w-[90%]">
+//                     <span className="bai-jamjuree-bold text-xs truncate w-full">{source.title}</span>
+//                     <span className="space-grotesk text-[10px] text-blue-500 truncate w-full flex items-center gap-1">
+//                         <TbLink size={10} /> {source.url}
+//                     </span>
+//                 </div>
+//                 {isOpen ? <TbChevronUp size={14} /> : <TbChevronDown size={14} />}
+//             </button>
 
-            {isOpen && (
-                <div className="px-3 pb-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                    {/* Raw Content Block */}
-                    <div className="bg-neutral-50 dark:bg-neutral-950 p-2 rounded border border-neutral-100 dark:border-neutral-800">
-                        <div className="flex items-center gap-1 mb-1 text-neutral-400">
-                            <TbQuote size={12} />
-                            <span className="text-[10px] uppercase font-bold space-grotesk">Extracted Content</span>
-                        </div>
-                        <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400 italic">
-                            "{source.content}"
-                        </p>
-                    </div>
+//             {isOpen && (
+//                 <div className="px-3 pb-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+//                     {/* Raw Content Block */}
+//                     <div className="bg-neutral-50 dark:bg-neutral-950 p-2 rounded border border-neutral-100 dark:border-neutral-800">
+//                         <div className="flex items-center gap-1 mb-1 text-neutral-400">
+//                             <TbQuote size={12} />
+//                             <span className="text-[10px] uppercase font-bold space-grotesk">Extracted Content</span>
+//                         </div>
+//                         <Streamdown className="text-[11px] space-grotesk leading-relaxed text-neutral-600 dark:text-neutral-400 italic">
+//                             {`"${source.content}"`}
+//                         </Streamdown>
+//                     </div>
 
-                    {/* Queries that returned this result */}
-                    {source.queries && (
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-neutral-400">
-                                <TbSearch size={12} />
-                                <span className="text-[10px] uppercase font-bold space-grotesk">Source Queries</span>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                                {source.queries.map((q: string, i: number) => (
-                                    <span key={i} className="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
-                                        {q}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
+//                     {/* Queries that returned this result */}
+//                     {source.queries && (
+//                         <div className="space-y-1">
+//                             <div className="flex items-center gap-1 text-neutral-400">
+//                                 <TbSearch size={12} />
+//                                 <span className="text-[10px] uppercase font-bold space-grotesk">Source Queries</span>
+//                             </div>
+//                             <div className="flex flex-wrap gap-1">
+//                                 {source.queries.map((q: string, i: number) => (
+//                                     <span key={i} className="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+//                                         {q}
+//                                     </span>
+//                                 ))}
+//                             </div>
+//                         </div>
+//                     )}
+//                 </div>
+//             )}
+//         </div>
+//     );
+// }
 
 function EmptyState(): JSX.Element {
     return (<>

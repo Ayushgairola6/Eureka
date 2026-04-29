@@ -17,7 +17,6 @@
   "dependencies": {
     "@getbrevo/brevo": "^3.0.1",
     "@google/genai": "^1.50.1",
-    "@huggingface/transformers": "^3.8.1",
     "@langchain/community": "^0.3.46",
     "@langchain/core": "^1.1.0",
     "@langchain/textsplitters": "^1.0.1",
@@ -26,6 +25,7 @@
     "@pinecone-database/pinecone": "^6.1.1",
     "@supabase/supabase-js": "^2.50.2",
     "@tavily/core": "^0.5.11",
+    "apify-client": "^2.23.0",
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",

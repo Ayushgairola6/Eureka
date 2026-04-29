@@ -36,7 +36,7 @@ const LandingPage = () => {
   }, []);
   return (
     <>
-      <Hero value={value} />
+      <Hero />
       <Why />
       <Features />
       <Pricing />

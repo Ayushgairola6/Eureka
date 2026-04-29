@@ -1,25 +1,25 @@
-import { CheckCheck, ChevronDown } from "lucide-react";
+import { CheckCheck, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react"
-import { setIsVerificationMode, setQueryType, setSearchDepth, setSelectedDoc, setShowOptions } from "../store/InterfaceSlice";
+import { SetMode, setSearchDepth, setSelectedDoc, setShowOptions } from "../store/InterfaceSlice";
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any) => {
 
     const [selected, setSelected] = useState<string>('Web Search');
     return (<>
-        <section className={` flex flex-col space-grotesk dark:bg-neutral-950 bg-white fixed ${showFeatures === true ? "translate-y-118" : "translate-y-400"} z-[10] transition-all duration-500 w-full md:w-3/5 p-1 border rounded-sm`}>
-            <section className="flex items-center justify-between px-4">
+        <section className={` flex flex-col space-grotesk dark:bg-neutral-950 bg-white fixed bottom-0 left-0 ${showFeatures === true ? "translate-x-0" : "-translate-x-400"}  z-[10] transition-all duration-500 w-full md:w-3/5 p-1 border rounded-sm`}>
+            <section className="flex items-center justify-between px-4 ">
                 <h2 className="space-grotesk text-md border-b text-black dark:text-white mb-2">Features with dedicated scope</h2>
-                <button onClick={() => setShowFeatures(false)} className='dark:bg-neutral-900 p-2 bg-white text-black dark:text-white rounded-md'><ChevronDown size={13} /></button>
+                <button onClick={() => setShowFeatures(false)} className={`dark:bg-neutral-900 p-2 bg-white text-black dark:text-white rounded-md  transition-all duration-300 ${showFeatures === true ? "-rotate-180" : "-rotate-180"}`}> <ChevronRight size={17} /> </button>
             </section>
-            <div className={`h-fit   left-0  p-2  w-full  mx-auto  `}>
+            <div className={`h-fit   left-0  p-2  w-full    `}>
 
 
                 <ul className='flex items-center justify-between px-2 py-1 '>
                     <section className='flex flex-col'>
                         <label className='text-sm' htmlFor="">Basic Search</label>
                         <span className='font-sans text-[11px] text-gray-500'>
-                            Perform basic web search
+                            Perform basic low depth web-search
                         </span>
                     </section>
 
@@ -28,9 +28,9 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
                 </ul>
                 <ul className='flex items-center justify-between px-2 py-1 '>
                     <section className='flex flex-col'>
-                        <label className='text-sm' htmlFor="">Deep Search</label>
+                        <label className='text-sm' htmlFor="">Turbo Search</label>
                         <span className='font-sans text-[11px] text-gray-500'>
-                            Get results from vast sources
+                            Get results from vast and variety of sources
                         </span>
                     </section>
 
@@ -69,41 +69,39 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
 
 function ToggleButton(value: string, selected: string, setSelected: any) {
 
-    const { selectedDoc, shwoOptions, isVerificatioMode } = useAppSelector(s => s.interface)
+    const { selectedDoc, shwoOptions } = useAppSelector(s => s.interface)
     useEffect(() => {
         if (!selected) return;
 
-        if (selected === 'Web Search' || selected === 'Analyst' || selected === 'deep_web') {
-            dispatch(setQueryType("Web Search"))
-            dispatch(setSearchDepth("surface_web"));
+        // Reset doc selection for all modes
+        if (selectedDoc) dispatch(setSelectedDoc(""));
 
-            if (selectedDoc) dispatch(setSelectedDoc(""));
+        // Reset options menu if open
+        if (shwoOptions === true) dispatch(setShowOptions(false));
+
+        switch (selected) {
+            case 'Web Search':
+                dispatch(SetMode("Web Search"));
+                dispatch(setSearchDepth("surface_web"));
+
+                break;
+
+            case 'deep_web':
+                dispatch(SetMode
+                    ("Web Search"));
+                dispatch(setSearchDepth("deep_web"));
+                break;
+
+            case 'Analyst':
+                dispatch(SetMode("Analyst"));
+                dispatch(setSearchDepth("surface_web"));
+                break;
+
+            case 'Synthesis':
+                dispatch(SetMode("Synthesis"));
+                break;
         }
-        // if deep search request 
-        else if (selected === 'deep_web') {
-            dispatch(setSearchDepth("deep_web"));
-            if (isVerificatioMode === true) dispatch(setIsVerificationMode())
-
-        }
-
-        if (selected === "Synthesis") {
-            dispatch(setQueryType("Synthesis"));
-            if (selectedDoc) dispatch(setSelectedDoc(""));
-            if (shwoOptions === true) dispatch(setShowOptions(!shwoOptions));
-            if (isVerificatioMode === true) dispatch(setIsVerificationMode())
-
-        }
-
-
-        else if (selected === 'Analyst') {
-            dispatch(setQueryType("Web Search"))
-            dispatch(setIsVerificationMode())
-
-        }
-
-
-
-    }, [selected])
+    }, [selected]);
 
 
     const dispatch = useAppDispatch();
