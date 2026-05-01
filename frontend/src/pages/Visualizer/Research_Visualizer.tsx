@@ -15,7 +15,9 @@ export const ResearchVisualizer = () => {
     useEffect(() => {
         if (isLoggedIn === false || !user) return;
         const MessageId = searchParams.get("MessageId");
+        const isVisualizationRequest = searchParams.get("visulization_request")
 
+        if (isVisualizationRequest !== true) return;
         if (!MessageId) return;
 
         const data = {

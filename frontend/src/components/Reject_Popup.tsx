@@ -112,7 +112,7 @@ export const FinalizePopup = ({ message }: any) => {
                 }
 
                 // else if the finalized research was created
-                dispatch(MimicSSE({ id: message.id, delta: res.result }));
+                dispatch(MimicSSE({ id: message.id, delta: res.direct_answer }));
                 dispatch(setCurrentStatus("Analyzing.."));
                 dispatch(ShowVerificationPopup(res?.MessageId)) //remove the id from popup handler cause we do not need it anymore
 

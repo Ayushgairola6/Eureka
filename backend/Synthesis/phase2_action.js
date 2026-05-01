@@ -194,7 +194,7 @@ export async function GetChatsForContext(user, plan_type) {
   const cachekey = `user_id=${user.user_id}_time=${new Date().toDateString()}`;
   const pastConversation = await redisClient.exists(cachekey);
 
-  const limit = plan_type !== "free" ? 10 : 5;
+  const limit = plan_type !== "free" ? 10 : 2;
   if (pastConversation) {
     const Chats = await redisClient.lRange(cachekey, 0, limit);
     const parsedChats = Chats.map((jsonString) => {

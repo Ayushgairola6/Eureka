@@ -405,11 +405,17 @@ const InputSection: React.FC<InputProps> = ({
               text-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {loading === false ? (
-              question === "" ? <BsMic size={18} /> : <BiSend size={18} />
+              <BiSend size={18} />
             ) : (
               <BiHourglass className="animate-spin" size={18} />
             )}
           </button>
+          {question.trim() === '' && loading === false && <button
+            className={`shrink-0 p-2 rounded-lg transition-colors duration-150
+              ${loading ? "bg-sky-600 " : "bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-gray-200"}
+              text-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed`}>
+            <BsMic size={18} />
+          </button>}
         </div>
         {/* <section className="pt-3  flex items-center justify-center gap-2">
           <ul className='bai-jamjuree-semibold text-xs'>Analyst Mode</ul>

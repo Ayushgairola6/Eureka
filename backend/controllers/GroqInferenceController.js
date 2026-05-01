@@ -24,13 +24,39 @@ export async function HandleInference(user_prompt, SYSTEM_PROMPT) {
         { content: SYSTEM_PROMPT, role: "system" },
         { role: "user", content: user_prompt },
       ],
-      model: "openai/gpt-oss-120b",
+      model: "llama-3.1-8b-instant",
       temperature: 0.5,
       stream: false,
       top_p: 1,
+      response_format: {
+        type: "json_object",
+        // json_schema: {
+        //   name: "Intent_agent",
+        //   strict: false, // Recommended for guaranteed adherence
+        //   schema: {
+        //     type: "object",
+        //     properties: {
+        //       queries: { type: "array", items: { type: "string" } },
+        //       direct_answer: { type: "string" },
+        //     },
+        //     required: ["queries", "direct_answer"],
+        //     additionalProperties: false,
+        //   },
+        // },
+      },
     });
-    if (response && response?.choices[0]?.message?.content) {
-      return { error: null, result: response.choices[0].message.content };
+    if (!response || !response.choices || response.choices.length === 0) {
+      return {
+        error: "Our LLM's are overloaded please wait a bit and try again",
+        result: null,
+      };
+    }
+
+    const data = JSON.parse(response?.choices[0].message.content || "{}");
+
+    // if there are queries or a direct_answer
+    if (data.direct_answer || data.queries) {
+      return { error: null, result: data };
     }
     return {
       error: "Our LLM's are overloaded please wait a bit and try again",
@@ -117,7 +143,7 @@ export async function FindIntent(instructions) {
       { content: Intent_identifier_prompt, role: "system" },
       { role: "user", content: instructions },
     ],
-    model: "openai/gpt-oss-120b",
+    model: "llama-3.1-8b-instant",
     temperature: 0.5,
     stream: false,
     top_p: 1,

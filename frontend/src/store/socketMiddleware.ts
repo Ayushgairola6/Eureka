@@ -40,6 +40,7 @@ const setupSocketListeners = (dispatch: any) => {
 
   //the web search event
   socket.on("query_status", (data) => {
+    console.log("web-search-status", data);
     dispatch(setWebStatus(data));
   });
 

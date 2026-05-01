@@ -313,14 +313,14 @@ export async function Visualize(req, res) {
     }
 
     // free & sprint pass not allowed
-    if (plan_type === "free" || plan_type === "sprint pass") {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Visualization is only available for premium plans, upgrade to start visualizing",
-        });
-    }
+    // if (plan_type === "free" || plan_type === "sprint pass") {
+    //   return res
+    //     .status(400)
+    //     .json({
+    //       message:
+    //         "Visualization is only available for premium plans, upgrade to start visualizing",
+    //     });
+    // }
     const { MessageId } = req.body;
 
     if (!MessageId || typeof MessageId !== "string") {
@@ -351,13 +351,19 @@ export async function Visualize(req, res) {
       Information.data[0].query ||
       "There is no user query found for this research, visualize the data as per the best industry data analysis practice the user-prompt is included in the research-data and what the data is about";
     // console.log(query, "query");
-    const raw_data = Information.data.map((item) =>
-      item.information.details.map(
-        (source) => `source:${source.url}&content:${source.content}`
-      )
-    );
-    // console.log(Information.data[0], "information data");
-    if (raw_data === "no_data") {
+    const raw_data =
+      Information.data.map((item) =>
+        item.information?.details.map(
+          (source) => `source:${source.url}&content:${source.content}`
+        )
+      ) ||
+      Information.data.map((item) => {
+        `search-queries=${item.queries.flat()}&data=${item.details}`;
+      });
+
+    // console.log(Information.data, "Information");
+
+    if (!raw_data || raw_data === "no_data" || raw_data.length === 0) {
       return res.status(400).json({
         message:
           "There is no data found for this research, unable to generate visualization",
@@ -371,19 +377,7 @@ export async function Visualize(req, res) {
         "There is no user query found for this research, visualize the data as per the best industry data analysis practice the user-prompt is included in the research-data",
       JSON.stringify(raw_data)
     );
-    // console.log(modelResponse, "model-response");
-
-    // console.log(modelResponse.datasets, "datasets");
-    // const modelResponse = {
-    //   chart_type: "bar",
-    //   title: "AI Startup Funding by Region (2025)",
-    //   labels: ["Global", "UK"],
-    //   datasets: [
-    //     { label: "Funding Deployed", data: [107000000000, 4500000000] },
-    //   ],
-    //   reasoning:
-    //     "A bar chart is suitable for comparing the total global AI startup funding against the specific funding in the UK, allowing for a clear visual comparison of these two distinct values.",
-    // };
+    console.log(modelResponse, "model-response");
 
     if (!modelResponse || modelResponse?.chart_type === "none") {
       return res.status(404).json({ message: "Unable to visualize the data" });

@@ -27,10 +27,21 @@ VerificationModeRouter.post(
   .post("/source/read/apify", (req, res) => {
     const { message, link, user_id, MessageId } = req.body;
 
+    const event =
+      message === "LINK_READ"
+        ? "reading_links"
+        : message === "PAGE_READ"
+        ? "Cleaning_Context"
+        : message === "SCRAPE_COMPLETE"
+        ? "Done_Scraping"
+        : message === "ERROR_OCCURRED"
+        ? "Unable_to_read_link"
+        : "Unknown_Event";
+
     EmitEvent(user_id, "query_status", {
       MessageId,
       status: {
-        message: message,
+        message: event,
         data: [`Reading: ${link}`],
       },
     });

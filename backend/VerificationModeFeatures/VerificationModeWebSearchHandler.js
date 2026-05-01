@@ -25,7 +25,10 @@ import {
 } from "../OnlineSearchHandler/WebCrawler.js";
 import { ANALYST_PROMPT, VerificationModePrompt } from "../Prompts/Prompts.js";
 import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
-import { CheckInstructionsStatus } from "./VerificationModeFeatures.js";
+import {
+  CheckInstructionsStatus,
+  UpdateReportStatus,
+} from "./VerificationModeFeatures.js";
 
 // helper function to extract necessary fields from the model response
 
@@ -270,7 +273,6 @@ export async function DeepSearchRequest(FormattedQueries, data) {
       room_id,
       plan_type
     );
-
     if (!CleanedWebData || CleanedWebData.length === 0) {
       return {
         error: "It took too long to process the sources, please try again",
@@ -439,6 +441,7 @@ async function StoreResearchData(research_data, data) {
     if (!research_data || !MessageId)
       return { error: "Invalid or missing parmaters." };
     const key = `message:${MessageId}:research_report`;
+
     try {
       const cacheExpiryTime = 60 * 60 * 1; //store for 3 hours
       await redisClient
@@ -640,11 +643,11 @@ export const FinalAnalyzer = async (req, res) => {
     }
 
     // free & sprint pass not allowed
-    if (plan_type === "free" || plan_type === "sprint pass") {
-      return res
-        .status(400)
-        .json({ message: "These features are only limited to pro plans" });
-    }
+    // if (plan_type === "free" || plan_type === "sprint pass") {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "These features are only limited to pro plans" });
+    // }
 
     // validate quota
     const rateLimitStatus = await ProcessUserQuery(user, "Analyst");
@@ -663,15 +666,11 @@ export const FinalAnalyzer = async (req, res) => {
       .select("isSynthesized")
       .eq("message_id", MessageId)
       .single();
-    if (lookupError || !lookupdata) {
+    if (lookupError) {
       notifyMe(
-        "An error occured while looking up for a report for analyst mode (line:667)",
+        "An error occured while looking up for a report for analyst mode isSYnthesized status in finalanalyzer (line:667)",
         lookupError
       );
-      return res.status(404).json({
-        message:
-          "Unable to locate the research-thread at the moment, please wait while we are trying to fix it",
-      });
     }
 
     if (lookupdata?.isSynthesized === true) {
@@ -778,15 +777,15 @@ export const FinalAnalyzer = async (req, res) => {
     // if the instructions are unique
     if (isUnique === true) {
       const identified_intent = await FindIntent(instructions); //identify the user intent
-      if (
-        identified_intent.status === false ||
-        !identified_intent?.result?.intent
-      ) {
-        return res.status(400).json({
-          message: "There was an error while trying to identify your intent",
-        });
-      }
-      const intent = identified_intent?.result?.intent;
+      // if (
+      //   identified_intent.status === false ||
+      //   !identified_intent?.result?.intent
+      // ) {
+      //   return res.status(400).json({
+      //     message: "There was an error while trying to identify your intent",
+      //   });
+      // }
+      const intent = identified_intent?.result?.intent || "finalize_report";
 
       if (intent === "not_sure")
         return res.status(400).json({

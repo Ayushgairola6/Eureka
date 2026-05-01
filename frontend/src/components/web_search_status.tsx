@@ -19,7 +19,9 @@ import {
   LucideMonitor,
   LucideCalculator
 } from "lucide-react";
+import { FcGlobe } from "react-icons/fc";
 import { useAppSelector } from "../store/hooks";
+import { BiError } from "react-icons/bi";
 
 type WebSearchStatusProps = {
   chat: any;
@@ -305,6 +307,27 @@ const STATUS_HANDLERS: Record<string, any> = {
       </div>
     )
   },
+  'Done_Scraping': {
+    icon: FcGlobe,
+    title: "Done reading source",
+    color: "text-sky-600",
+    render: (data: any) => {
+      <div className='space-grotesk text-xs '>
+        Finished Reading: {data}
+      </div>
+    }
+  },
+  'Unable_to_read_link': {
+    icon: BiError,
+    title: "Could not read the source",
+    color: "text-red-400",
+    render: (data: any) => {
+      <div className='space-grotesk text-xs '>
+        Unable to the read the source {data}
+      </div>
+    }
+  },
+
   "new_thread": {
     icon: BrainCircuit,
     title: "Thread Initialization",

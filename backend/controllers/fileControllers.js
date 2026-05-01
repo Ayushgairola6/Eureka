@@ -1049,9 +1049,19 @@ export const fetchSearchResults = async (
 };
 
 // handle intentIdentification and formatting
-export async function HandleIntentIdentification(question, plan_type) {
+export async function HandleIntentIdentification(question, plan_type, user) {
+  let history = [];
+  const pastConversation = await GetChatsForContext(user, plan_type);
+  if (!pastConversation || pastConversation.length === 0) {
+    history.push(`Failed to get session chat history`);
+  } else {
+    history = [...pastConversation];
+  }
+
   const IdentifiedIntent = await HandleInference(
-    `user_prompt${question}&plan_type=${plan_type}`,
+    `user_prompt${question}&plan_type=${plan_type}&previous_chats=${JSON.stringify(
+      history
+    )}`,
     IntentIdentifier
   );
 
@@ -1060,17 +1070,37 @@ export async function HandleIntentIdentification(question, plan_type) {
     IdentifiedIntent?.error ||
     !IdentifiedIntent?.result
   ) {
-    return { error: "Failed to generate a response", data: null };
+    return {
+      error: "Failed to generate a response",
+      data: null,
+      direct_answer: null,
+    };
   }
 
+  // if there is a direct answer
+  if (IdentifiedIntent.result?.direct_answer) {
+    return {
+      error: null,
+      FormattedIntent: null,
+      direct_answer: IdentifiedIntent.result.direct_answer,
+    };
+  }
   // format the model response into valid queries
-  const FormattedIntent = FilterIntent(IdentifiedIntent?.result);
-  // console.log("FormattedIntent\n", FormattedIntent);
-  if (FormattedIntent?.length === 0) {
-    return { error: "Failed to generate a response", data: null };
+  // const FormattedIntent = FilterIntent(IdentifiedIntent?.result);
+  const FormattedIntent = Array.isArray(IdentifiedIntent.result?.queries)
+    ? IdentifiedIntent.result?.queries
+    : typeof IdentifiedIntent.result.queries === "string"
+    ? [IdentifiedIntent.result.queries]
+    : []; //validating and formatting the query
+  if (!FormattedIntent || FormattedIntent?.length === 0) {
+    return {
+      error: "Failed to generate a response",
+      data: null,
+      direct_answer: null,
+    };
   }
 
-  return { error: null, data: FormattedIntent };
+  return { error: null, data: FormattedIntent, direct_answer: null };
 }
 
 // web research handler
@@ -1139,7 +1169,11 @@ export const PostTypeWebSearch = async (req, res) => {
     let WebResults;
 
     // no matter the search type send the user prompt to llm for better search query
-    const Intent = await HandleIntentIdentification(question, plan_type);
+    const Intent = await HandleIntentIdentification(
+      question,
+      plan_type,
+      req.user
+    );
 
     if (!Intent || Intent.error || !Intent.data) {
       return res.status(400).json({
@@ -1147,6 +1181,45 @@ export const PostTypeWebSearch = async (req, res) => {
           "Our AI models are overloaded right now please wait a bit and try again later.",
       });
     }
+
+    // if there is a direct_answer from the llm
+    if (Intent.data.direct_answer) {
+      const Answer = Intent.data.direct_answer;
+      const AiMessage = {
+        id: MessageId,
+        sent_by: "AntiNode",
+        message: {
+          isComplete: true,
+          content: Answer,
+        },
+        sent_at: currentTime,
+      };
+      // update the cache
+      await CacheCurrentChat(AiMessage, req.user);
+
+      // store in the db
+      const StoreChats = await StoreQueryAndResponse(user_id, question, Answer);
+      if (StoreChats.error) {
+        await notifyMe(
+          `Error while storing response history ${StoreChats.error}`
+        );
+      }
+
+      // find the update the chats
+      const FormattedFavicon = {
+        MessageId,
+        icon: [],
+        url: [], //favicon array from the web search
+      };
+
+      // send the final response to the user
+      return res.send({
+        Answer: Answer,
+        message: "Results found",
+        favicon: FormattedFavicon,
+      });
+    }
+
     const FormattedQueries = Intent?.data.length > 0 ? Intent.data : [];
 
     if (FormattedQueries.length === 0) {
@@ -1228,15 +1301,15 @@ export const PostTypeWebSearch = async (req, res) => {
         plan_type
       );
 
-      if (!CleanedWebData || CleanedWebData.length === 0) {
-        return res.status(400).send({
-          message:
-            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-        });
-      }
+      // if (!CleanedWebData || CleanedWebData.length === 0) {
+      //   return res.status(400).send({
+      //     message:
+      //       "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+      //   });
+      // }
 
       // we put the results in the webResults array
-      WebResults = FormattForLLM(CleanedWebData);
+      WebResults = FormattForLLM(CleanedWebData || []);
     }
     // if user is on surface web so we keep it simple
     else {
@@ -1265,32 +1338,18 @@ export const PostTypeWebSearch = async (req, res) => {
         plan_type
       );
 
-      if (CleanedWebData.length === 0) {
-        console.error("Error in llm processing handler");
-        notifyMe("Error in llm processing handler");
-        return res.status(400).send({
-          message:
-            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-        });
-      }
+      // if (CleanedWebData.length === 0) {
+      //   console.error("Error in llm processing handler");
+      //   notifyMe("Error in llm processing handler");
+      //   return res.status(400).send({
+      //     message:
+      //       "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+      //   });
+      // }
       // give it to the model
-      WebResults = FormattForLLM(CleanedWebData);
+      WebResults = FormattForLLM(CleanedWebData || []);
     }
 
-    // get necessary links from serper
-
-    if (
-      !WebResults ||
-      WebResults?.error ||
-      WebResults?.FinalContent?.length === 0
-    ) {
-      console.error("no web results found", WebResults?.error);
-      notifyMe("No web results found", WebResults?.error);
-      return res.status(400).send({
-        message:
-          "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-      });
-    }
     // extract chat history for a bit of memory from past
     let history = [];
     const pastConversation = await GetChatsForContext(req.user);
@@ -1310,20 +1369,16 @@ export const PostTypeWebSearch = async (req, res) => {
     await CacheCurrentChat(message, req.user);
     const WebResultPrompt = WEB_SEARCH_DISTRIBUTOR_PROMPT;
 
-    // const Answer = await HandleInference(
-    //   `These are queries by you previously to search the web=${JSON.stringify(
-    //     FormattedQueries
-    //   )}&UserQuery=${question}&chathistory_between you and the user=${JSON.stringify(
-    //     history
-    //   )}`,
-    //   WebResultPrompt
-    // );
     const Answer = await GenerateResponse(
       `These are queries by you previously to search the web=${JSON.stringify(
         FormattedQueries
       )}&UserQuery=${question}&chathistory_between you and the user=${JSON.stringify(
         history
-      )}`,
+      )}&search_results=${
+        !WebResults.FinalContent || WebResults.error
+          ? "We either got blocked while trying to read the sources or were not able to read any source due to some other reasons ,make sure to mention this to the user"
+          : JSON.stringify(WebResults.FinalContent)
+      }`,
       WebResultPrompt
     );
     if (Answer?.error) {
@@ -1382,6 +1437,7 @@ export const PostTypeWebSearch = async (req, res) => {
     });
   }
 };
+
 // extract text from the chunks based on the chunk Ids
 export async function getAllDocumentTextsForSummary(docId, totalChunks) {
   // console.log(docId, username, title, totalChunks)

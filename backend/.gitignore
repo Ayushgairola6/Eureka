@@ -8,3 +8,4 @@ coverage
 # PaymentHandler/
 # routers/PaymentsRouter.js
 VerificationModeFeatures/VerificationOrchestrator.js
+rejectedApproaches.js

@@ -96,7 +96,9 @@ export const VisualizerSlice = createSlice({
         state.isVisualizing = true;
       })
       .addCase(HandleVisualizationRequest.fulfilled, (state, action) => {
-        state.VisualizationData.push(action.payload.results);
+        console.log("Visualization data received:", action.payload);
+        if (!action.payload?.results) return;
+        state.VisualizationData.push(action.payload?.results);
         state.isVisualizing = false;
       })
       .addCase(HandleVisualizationRequest.rejected, (state) => {

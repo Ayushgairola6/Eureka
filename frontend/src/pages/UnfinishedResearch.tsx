@@ -111,7 +111,7 @@ export function UnfinishedResearchPage() {
     // visualization request
     function handleVisualize(message_id: string) {
         if (!message_id) return;
-        navigate(`/interface?MessageId=${message_id}`) //send this to the interface
+        navigate(`/interface?MessageId=${message_id}?visulization_request=${true}`) //send this to the interface
     }
 
     // get more pending research
