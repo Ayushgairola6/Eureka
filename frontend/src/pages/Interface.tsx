@@ -184,7 +184,7 @@ function Interface() {
     const action_type = searchParams.get("action_type");
     const instructions = searchParams.get("instructions")
 
-    if (!MessageId || !depth) {
+    if (!MessageId || !depth || !action_type) {
       return;
     };
     const user_id = uuid()

@@ -115,8 +115,15 @@ export async function IdentifyRequestInputs(req, res) {
     });
   }
 
-  const limit = plan_type === "free" ? 2 : plan_type === "sprint pass" ? 3 : 5;
+  if (plan_type === "free" || plan_type === "sprint pass") {
+    return res.status(400).send({
+      message:
+        "Your current plan does not support synthesis features, please upgrade to use this feature",
+    });
+  }
+  // const limit = plan_type === "free" ? 2 : plan_type === "sprint pass" ? 3 : 5;
 
+  const limit = 3;
   if (selectedDocuments && selectedDocuments?.length > limit) {
     return res.status(400).json({
       message: `You can select up to ${DOC_LIMITS[plan_type]} documents at once on your current plan. Upgrade to Pro for higher limits.`,

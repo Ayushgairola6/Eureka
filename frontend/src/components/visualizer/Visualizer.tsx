@@ -9,13 +9,16 @@ import {
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4'];
 
 export default function Visualizer({ chartData }: any) {
+    const labels = chartData?.labels || chartData?.data?.labels;
+    const datasets = chartData?.data?.datasets || chartData?.datasets
     // 1. Memoize transformation to optimize performance
     const data = useMemo(() => {
-        if (!chartData?.labels || !chartData?.datasets) return [];
 
-        return chartData.labels.map((label: any, i: string | number) => {
+        if (!labels || !datasets) return [];
+
+        return labels.map((label: any, i: string | number) => {
             const point: Record<string, any> = { name: label };
-            chartData.datasets.forEach((ds: { label: string | number; data: { [x: string]: number; }; }) => {
+            datasets.forEach((ds: { label: string | number; data: { [x: string]: number; }; }) => {
                 // Safety check: ensure data exists at index i
                 point[ds.label] = ds.data[i] ?? 0;
             });
@@ -23,7 +26,7 @@ export default function Visualizer({ chartData }: any) {
         });
     }, [chartData]);
 
-    if (!chartData || chartData.chart_type === 'none') {
+    if (!chartData || chartData.chart_type === 'none' || chartData?.data.chart_type === 'none') {
         return (
             <div className="p-12 text-center border-2 border-dashed border-gray-200 dark:border-neutral-800 rounded-xl">
                 <p className="text-gray-500">No quantifiable data available for this section.</p>
@@ -49,13 +52,13 @@ export default function Visualizer({ chartData }: any) {
             <Legend key="legend" verticalAlign="top" height={36} />
         ];
 
-        switch (chartData.chart_type) {
+        switch (chartData.chart_type || chartData?.data?.chart_type) {
             case 'bar':
                 return (
                     <ResponsiveContainer {...commonProps}>
                         <BarChart data={data}>
                             {commonElements}
-                            {chartData.datasets.map((ds: any, i: number) => (
+                            {datasets.map((ds: any, i: number) => (
                                 <Bar key={ds.label} dataKey={ds.label} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
                             ))}
                         </BarChart>
@@ -67,7 +70,7 @@ export default function Visualizer({ chartData }: any) {
                     <ResponsiveContainer {...commonProps}>
                         <LineChart data={data}>
                             {commonElements}
-                            {chartData.datasets.map((ds: any, i: number) => (
+                            {datasets.map((ds: any, i: number) => (
                                 <Line
                                     key={ds.label}
                                     type="monotone"
@@ -84,9 +87,9 @@ export default function Visualizer({ chartData }: any) {
 
             case 'pie':
             case 'doughnut':
-                const pieData = chartData.labels.map((label: any, i: string | number) => ({
+                const pieData = labels.map((label: any, i: string | number) => ({
                     name: label,
-                    value: chartData.datasets[0]?.data[i] || 0
+                    value: datasets[0]?.data[i] || 0
                 }));
                 return (
                     <ResponsiveContainer {...commonProps}>
@@ -95,7 +98,7 @@ export default function Visualizer({ chartData }: any) {
                                 data={pieData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={chartData.chart_type === 'doughnut' ? 70 : 0}
+                                innerRadius={chartData.chart_type === 'doughnut' || chartData?.data.chart_type ? 70 : 0}
                                 outerRadius={100}
                                 dataKey="value"
                                 paddingAngle={5}
@@ -119,7 +122,7 @@ export default function Visualizer({ chartData }: any) {
                             <PolarAngleAxis dataKey="name" />
                             <PolarRadiusAxis />
                             <Tooltip />
-                            {chartData.datasets.map((ds: any, i: number) => {
+                            {datasets.map((ds: any, i: number) => {
                                 const label = ds.label != null ? String(ds.label) : `dataset-${i}`;
 
                                 return (
@@ -138,16 +141,16 @@ export default function Visualizer({ chartData }: any) {
                 );
 
             default:
-                return <div className="p-8 text-center text-orange-500">Unsupported chart type: {chartData.chart_type}</div>;
+                return <div className="p-8 text-center text-orange-500">Unsupported chart type: {chartData.chart_type || chartData?.data.chart_type}</div>;
         }
     };
 
     return (
         <div className="w-full bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-800 p-6 transition-all">
             <div className="mb-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{chartData.title}</h3>
-                {chartData.reasoning && (
-                    <p className="text-xs text-gray-500 dark:text-neutral-400 mt-2 italic">{chartData.reasoning}</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{chartData.title || chartData?.data.title}</h3>
+                {chartData.reasoning || chartData?.data?.reasoning && (
+                    <p className="text-xs text-green-500  mt-2 space-grotesk">{chartData.reasoning || chartData?.data?.reasoning}</p>
                 )}
             </div>
             <div className="h-[400px] w-full">

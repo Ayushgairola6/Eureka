@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router";
 import { IoHomeOutline } from "react-icons/io5";
 import { IoChatboxEllipsesOutline } from "react-icons/io5";
-import { MdDashboard, MdFeedback, MdLogin } from "react-icons/md";
+import { MdDashboard, MdFeedback, MdLogin, MdArchive } from "react-icons/md";
 import { FaRegRegistered } from "react-icons/fa";
 import { MdKey } from "react-icons/md";
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LogoRender } from "./LogoRender.tsx";
 import { FiX } from "react-icons/fi";
 import { setCurrTab } from '../store/AuthSlice.ts'
-import { ArchiveX } from "lucide-react";
+import { PiShippingContainerFill } from "react-icons/pi";
 // import { ConnectDriveButton } from "./ToolConnector.tsx";
 type SidebarProps = {
   isVisble: boolean;
@@ -61,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
       tab: "Workspace",
       show: true,
     },
-    { path: '/user/research-archive', icon: ArchiveX, label: "Research Archive", tab: "Research Archive", show: isLoggedIn === true && user?.email !== "" },
+
     {
       path: "/Register",
       icon: FaRegRegistered,
@@ -83,6 +83,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
       label: "Control Center",
       tab: "Control Center",
       show: isLoggedIn === true || user?.email !== "",
+    },
+    {
+      path: "/user/research-archive",
+      icon: MdArchive,
+      label: "Research Archive",
+      tab: "Research Archive",
+      show: isLoggedIn === true && user,
+    },
+    {
+      path: "/research/artifacts",
+      icon: PiShippingContainerFill,
+      label: "Artifacts",
+      tab: "Artifacts",
+      show: isLoggedIn === true && user,
     },
     {
       path: "/Feedback",

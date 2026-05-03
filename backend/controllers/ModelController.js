@@ -372,7 +372,7 @@ export async function generateChartData(userQuery, enrichedContext) {
     model: "gemini-2.5-flash",
     contents: enrichedContext,
   });
-  if (tokenCount.totalTokens > 5000) {
+  if (tokenCount.totalTokens > 90000) {
     return { error: "Data to big" };
   }
   // The new SDK accepts the standard JSON Schema format or the new Type enum.
@@ -460,10 +460,7 @@ export async function generateChartData(userQuery, enrichedContext) {
     console.error("Failed to generate chart data from Gemini:", error);
     // Graceful fallback so your frontend doesn't crash
     return {
-      chart_type: "none",
-      title: "Error generating chart",
-      labels: [],
-      datasets: [],
+      error: "Failed to generate chart data from Gemini",
     };
   }
 }

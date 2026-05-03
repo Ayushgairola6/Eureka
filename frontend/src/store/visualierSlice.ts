@@ -14,13 +14,18 @@ interface VisualState {
   VisualizationData: visualizer[];
   isVisualizing: boolean;
   showInsights: boolean;
+  artifacts: any[];
+  fetching_artifacts: boolean;
 }
 // sends a request for visualization
 const intialState: VisualState = {
   VisualizationData: [],
   isVisualizing: false,
   showInsights: false,
+  artifacts: [],
+  fetching_artifacts: false,
 };
+
 export const HandleVisualizationRequest = createAsyncThunk<any, any>(
   "data/visualize",
   async (data, { rejectWithValue }) => {
@@ -78,6 +83,68 @@ export const HandleVisualizationRequest = createAsyncThunk<any, any>(
     }
   }
 );
+
+export const FetchArtifacts = createAsyncThunk(
+  "data/fetchArtifacts",
+  async (timestamp, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${BaseApiUrl}/api/artifacts?timestamp=${timestamp}`,
+        {
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (err: any) {
+      if (err.response && err.response.data) {
+        const { message, error, action } = err.response.data;
+        const serverMessage = message || error;
+        const status = err.response.status;
+
+        // rate limit — specific message regardless of server response
+        if (status === 429) {
+          return rejectWithValue(
+            "You've hit the rate limit. Please wait a moment."
+          );
+        }
+
+        // session expired — trigger logout
+        if (status === 401) {
+          return rejectWithValue("Session_Expired: Please log in again.");
+        }
+
+        // server knows what happened — trust its message
+        if (serverMessage) {
+          return rejectWithValue(
+            action
+              ? { message: serverMessage, action } // pass action through for Drive UI
+              : serverMessage
+          );
+        }
+
+        // server returned error status but no message
+        if (status >= 500) {
+          return rejectWithValue(
+            "AntiNode servers encountered an error. Please try again."
+          );
+        }
+      }
+
+      // no response at all — network issue
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
+      }
+
+      // something else entirely
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
+    }
+  }
+);
+
 export const VisualizerSlice = createSlice({
   name: "visualizer",
   initialState: intialState,
@@ -103,6 +170,20 @@ export const VisualizerSlice = createSlice({
       })
       .addCase(HandleVisualizationRequest.rejected, (state) => {
         state.isVisualizing = false;
+      })
+
+      // artifacts fetchign
+
+      .addCase(FetchArtifacts.pending, (state) => {
+        state.fetching_artifacts = true;
+      })
+      .addCase(FetchArtifacts.fulfilled, (state, action) => {
+        state.fetching_artifacts = false;
+
+        state.artifacts = [state.artifacts, ...action.payload.artifacts].flat();
+      })
+      .addCase(FetchArtifacts.rejected, (state) => {
+        state.fetching_artifacts = false;
       });
   },
 });

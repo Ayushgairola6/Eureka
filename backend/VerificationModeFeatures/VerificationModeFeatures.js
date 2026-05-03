@@ -277,15 +277,33 @@ export async function MarkResearchDone(req, res) {
 
 //update report status
 export async function UpdateReportStatus(report_id) {
-  if (!report_id || typeof report_id !== "string")
-    return { status: false, error: "Invalid or missing report_id" };
+  try {
+    if (!report_id || typeof report_id !== "string")
+      return { status: false, error: "Invalid or missing report_id" };
 
-  supabase
-    .from("research_data")
-    .update({ isSynthesized: true })
-    .eq("message_id", report_id);
+    const { error } = supabase
+      .from("research_data")
+      .update({ isSynthesized: true })
+      .eq("message_id", report_id);
+
+    if (error) {
+      notifyMe(
+        `Error while updating the report status for report_id=${report_id} in the UpdateReportStatus function`,
+        error
+      );
+      return {
+        status: false,
+        error: "Unable to update the report status at the moment",
+      };
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Unable to mark this thread as done." });
+  }
 }
 
+const processing = new Set(); /// a set to keep track of currently processing MessageIds to prevent concurrent processing
 // handle data visualization request
 export async function Visualize(req, res) {
   try {
@@ -313,14 +331,12 @@ export async function Visualize(req, res) {
     }
 
     // free & sprint pass not allowed
-    // if (plan_type === "free" || plan_type === "sprint pass") {
-    //   return res
-    //     .status(400)
-    //     .json({
-    //       message:
-    //         "Visualization is only available for premium plans, upgrade to start visualizing",
-    //     });
-    // }
+    if (plan_type === "free" || plan_type === "sprint pass") {
+      return res.status(400).json({
+        message:
+          "Visualization is only available for premium plans, upgrade to start visualizing",
+      });
+    }
     const { MessageId } = req.body;
 
     if (!MessageId || typeof MessageId !== "string") {
@@ -328,16 +344,16 @@ export async function Visualize(req, res) {
         .status(400)
         .json({ message: "Invalid or missing MessageId or userQuery" });
     }
-    const cacheKey = `${MessageId}:issued_visualization_request`;
-    // Check if a visualization request has already been issued for this MessageId
-    const cachedVisualizationRequest = await redisClient.get(cacheKey);
 
-    if (cachedVisualizationRequest) {
+    // request lock key
+    if (processing.has(MessageId)) {
       return res.status(429).json({
         message:
-          "A visualization request for this research is already being processed. Please wait a moment before trying again.",
+          "A visualization request for this research is already being processed.",
       });
     }
+    processing.add(MessageId);
+
     const Information = await GetResearchData(MessageId);
     // create a report
     if (!Information || Information.error) {
@@ -347,43 +363,53 @@ export async function Visualize(req, res) {
       });
     }
 
-    const query =
-      Information.data[0].query ||
-      "There is no user query found for this research, visualize the data as per the best industry data analysis practice the user-prompt is included in the research-data and what the data is about";
+    const og_query =
+      Information.data[0]?.query ||
+      "No user query found; please create the most insightful chart based on the data.";
+
+    const allQueries = Information.data.flatMap((item) => {
+      // Try information.queries first (database), then item.queries (cache), else empty
+      const queries = item.information?.queries || item.queries || [];
+      return queries;
+    });
+    const searchQueriesStr = allQueries.length
+      ? `Search queries used: ${allQueries.join("; ")}`
+      : "";
     // console.log(query, "query");
-    const raw_data =
-      Information.data.map((item) =>
-        item.information?.details.map(
-          (source) => `source:${source.url}&content:${source.content}`
-        )
-      ) ||
-      Information.data.map((item) => {
-        `search-queries=${item.queries.flat()}&data=${item.details}`;
-      });
+    const raw_data = Information.data
+      .flatMap((item) => {
+        // details could be directly on item (cache) or inside information (database)
+        const details = item.details || item.information?.details || [];
+        return details.map((source) => {
+          const snippet =
+            source.content.length > 3000
+              ? source.content.slice(0, 3000) + "… [truncated]"
+              : source.content;
+          return `Source: ${source.url}\nContent: ${snippet}`;
+        });
+      })
+      .join("\n---\n");
 
-    // console.log(Information.data, "Information");
-
-    if (!raw_data || raw_data === "no_data" || raw_data.length === 0) {
+    if (!raw_data || raw_data.length === 0) {
       return res.status(400).json({
         message:
           "There is no data found for this research, unable to generate visualization",
       });
     }
 
-    // console.log( Information.data, "raw-data");
-
     const modelResponse = await generateChartData(
-      query ||
-        "There is no user query found for this research, visualize the data as per the best industry data analysis practice the user-prompt is included in the research-data",
+      `original_first_query:${og_query}&further_research_queries:${searchQueriesStr}`,
       JSON.stringify(raw_data)
     );
-    console.log(modelResponse, "model-response");
 
-    if (!modelResponse || modelResponse?.chart_type === "none") {
+    if (
+      !modelResponse ||
+      modelResponse?.error ||
+      modelResponse?.chart_type === "none"
+    ) {
       return res.status(404).json({ message: "Unable to visualize the data" });
     }
 
-    // redisClient.set(cacheKey, "true", { EX: 200 }); // Mark as requested for 4 minutes;
     const results = {
       title: modelResponse.title || "No title",
       reasoning: modelResponse.reasoning || "No reasoning provided",
@@ -393,11 +419,80 @@ export async function Visualize(req, res) {
       MessageId: MessageId,
     };
 
+    const { error } = await supabase.from("artifacts").insert({
+      user_id: user.user_id,
+      message_id: MessageId,
+      name: `Research_visualization`,
+      data: results,
+    });
+
+    if (error) {
+      notifyMe("Data visualization error\n", error);
+    }
+
     return res.json({ message: "Visualization generated", results });
   } catch (error) {
     console.error(`Data visualition error\n`, error);
     return res
       .status(500)
       .json({ message: "Our model failed to visualize this data" });
+  } finally {
+    processing.delete(MessageId); // always release
   }
+}
+
+// fetch artifacts
+export async function GetArtifacts(req, res) {
+  // complee this function by fetching the data from artifacts table supabase with a limit and pagination using created_at
+  const user = req.user;
+  if (!user)
+    return res.status(401).json({ message: "Please login to continue" });
+
+  const { timestamp, request_type } = req.query;
+  const cacheKey = `user=${user.user_id}:artifacts`;
+
+  if (request_type === "refresh") {
+    const data = await redisClient.get(cacheKey);
+    if (data) {
+      return res.status(200).json({
+        message: "Artifacts found",
+        artifacts: JSON.parse(data),
+        hasMore: JSON.parse(data).length === 5,
+      });
+    }
+  }
+  let query;
+  if (timestamp) {
+    query = supabase
+      .from("artifacts")
+      .select("*")
+      .eq("user_id", user.user_id)
+      .order("created_at", { ascending: false })
+      .lt("created_at", timestamp) // Older than timestamp
+      .limit(5);
+
+    const old_data = await redisClient.get(cacheKey);
+    const parsed = JSON.parse(old_data) || [];
+    const merged = [...parsed, ...(query.data || [])];
+    await redisClient.set(cacheKey, JSON.stringify(merged), { EX: 3600 });
+  }
+  query = supabase
+    .from("artifacts")
+    .select("*")
+    .eq("user_id", user.user_id)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  const { data, error } = await query;
+  if (!data || data.length === 0 || error) {
+    console.error("Error fetching artifacts:", error);
+    return res.status(404).json({ message: "Unable to find any artifacts " });
+  }
+
+  await redisClient.set(cacheKey, JSON.stringify(data), { EX: 3600 }); // cache for 1 hour
+  return res.status(200).json({
+    message: "Artifacts found",
+    artifacts: data,
+    hasMore: data.length === 5,
+  });
 }

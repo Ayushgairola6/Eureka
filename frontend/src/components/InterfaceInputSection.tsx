@@ -66,11 +66,11 @@ const InputSection: React.FC<InputProps> = ({
     SynthesisDocuments, search_depth, mode
   } = useAppSelector((state) => state.interface);
   const navigate = useNavigate();
-  const { user, isLoggedIn, Querycount } = useAppSelector((state) => state.auth);
+  const { user, isLoggedIn } = useAppSelector((state) => state.auth);
 
   const [Showfeatures, SetShowFeatures] = useState(false);
 
-  const Quota = user?.IsPremiumUser === false ? 5 : Infinity
+  // const Quota = user?.IsPremiumUser === false ? 5 : Infinity
   // handles user message Insert with placeholder message insert
   function handleUUidCreationAndMessageInsert() {
     const user_id = uuid();
@@ -291,10 +291,10 @@ const InputSection: React.FC<InputProps> = ({
         dispatch(setShowOptions(false));
       }
 
-      if (Querycount > Quota) {
-        toast.info("You have reached you quota limit for the month")
-        return
-      }
+      // if (Querycount > Quota) {
+      //   toast.info("You have reached you quota limit for the month")
+      //   return
+      // }
       // ROUTING LOGIC - Clear hierarchy
 
       // 1. Private document query

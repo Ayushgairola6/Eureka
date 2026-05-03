@@ -56,6 +56,7 @@ import { ContactUs } from "./pages/ContactUs.tsx";
 import { UnfinishedResearchPage } from "./pages/UnfinishedResearch.tsx";
 import { DriveAuthPage } from '@/components/ConnectorCallback.tsx'
 import PaymentCallback from "./pages/PaymentCallback.tsx";
+import Artifacts from './pages/Artifacts.tsx';
 import { Analytics } from "@vercel/analytics/react"
 // stripe api
 // const stripePromise = loadStripe(
@@ -256,6 +257,7 @@ const App = () => {
             />
             <Route element={<DriveAuthPage />} path='/client/Drive_Auth' />
             <Route element={<PaymentCallback />} path='/checkout' />
+            <Route element={<Artifacts />} path="research/artifacts" />
             <Route element={<LandingPage />} path="/"></Route>
             <Route element={<EmailVerification />} path="/user/verify-email" />
             <Route element={<Interface />} path="/Interface"></Route>

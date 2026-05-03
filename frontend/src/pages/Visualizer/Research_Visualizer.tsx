@@ -2,7 +2,8 @@ import Visualizer from "@/components/visualizer/Visualizer";
 import { useAppSelector, useAppDispatch } from '../../store/hooks.tsx';
 import { Loader2, BarChart3 } from 'lucide-react'; // Example icons
 import { BiCollapse } from "react-icons/bi";
-import { HandleVisualizationRequest, toggleInsights, setIsVisualizing } from '../../store/visualierSlice.ts'
+import { HandleVisualizationRequest, toggleInsights, setIsVisualizing } from '../../store/visualierSlice.ts';
+import { setCurrTab } from '../../store/AuthSlice.ts'
 import { useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from 'sonner'
@@ -13,11 +14,17 @@ export const ResearchVisualizer = () => {
     const dispatch = useAppDispatch();
     const [searchParams] = useSearchParams();
     useEffect(() => {
+        setCurrTab('Console')
         if (isLoggedIn === false || !user) return;
+        if (isVisualizing === true) {
+            toast.message("A visualization reques it currently being processed");
+            return;
+        }
         const MessageId = searchParams.get("MessageId");
-        const isVisualizationRequest = searchParams.get("visulization_request")
+        const visulization_request = searchParams.get("visulization_request")
 
-        if (isVisualizationRequest !== true) return;
+        // console.log(visulization_request, MessageId)
+        if (!visulization_request) return; // if the request is not for visualization
         if (!MessageId) return;
 
         const data = {

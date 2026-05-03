@@ -10,6 +10,7 @@ import {
   ResumePendingThread,
   MarkResearchDone,
   Visualize,
+  GetArtifacts,
 } from "../VerificationModeFeatures/VerificationModeFeatures.js";
 import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
 export const VerificationModeRouter = express.Router();
@@ -48,4 +49,5 @@ VerificationModeRouter.post(
 
     return res.status(200).json({ ok: true });
   })
-  .post("/visualizer", VerifyToken, Visualize);
+  .post("/visualizer", VerifyToken, Visualize)
+  .get("/artifacts", VerifyToken, GetArtifacts);

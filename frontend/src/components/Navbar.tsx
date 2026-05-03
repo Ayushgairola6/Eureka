@@ -40,6 +40,7 @@ const Navbar = () => {
     { label: "Workspace", to: "/user/rooms", tab: "Workspace", requiresAuth: true },
     { label: "Archives", to: "/user/misallaneous-chats", tab: "Archives", requiresAuth: true },
     { label: "Support", to: "/Feedback", tab: "Support" },
+    { label: "Artifacts", to: "/research/artifacts", tab: "Artifacts" }
 
   ];
 

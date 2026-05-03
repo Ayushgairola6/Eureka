@@ -396,12 +396,12 @@ export const VerificationModeSearchWeb = async (req, res) => {
       });
     }
     // free users not allowed
-    // if (plan_type === "free" || plan_type === "sprint pass") {
-    //   return res.status(403).json({
-    //     message:
-    //       "This plan does not include analyst mode, if you want to try it please considering upgrading your plan.",
-    //   });
-    // }
+    if (plan_type === "free" || plan_type === "sprint pass") {
+      return res.status(403).json({
+        message:
+          "This plan does not include analyst mode, if you want to try it please considering upgrading your plan.",
+      });
+    }
     // orchestrate results
     const result = await HandleOrchestratedResultsHandling({
       user: req.user,
@@ -643,11 +643,11 @@ export const FinalAnalyzer = async (req, res) => {
     }
 
     // free & sprint pass not allowed
-    // if (plan_type === "free" || plan_type === "sprint pass") {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "These features are only limited to pro plans" });
-    // }
+    if (plan_type === "free" || plan_type === "sprint pass") {
+      return res
+        .status(400)
+        .json({ message: "These features are only limited to pro plans" });
+    }
 
     // validate quota
     const rateLimitStatus = await ProcessUserQuery(user, "Analyst");
@@ -777,14 +777,16 @@ export const FinalAnalyzer = async (req, res) => {
     // if the instructions are unique
     if (isUnique === true) {
       const identified_intent = await FindIntent(instructions); //identify the user intent
-      // if (
-      //   identified_intent.status === false ||
-      //   !identified_intent?.result?.intent
-      // ) {
-      //   return res.status(400).json({
-      //     message: "There was an error while trying to identify your intent",
-      //   });
-      // }
+      if (
+        !identified_intent ||
+        identified_intent.status === false ||
+        !identified_intent?.result?.intent
+      ) {
+        return res.status(400).json({
+          message:
+            "Our AI models are overloaded right now so it was not able to deduce your intent, please try again later.",
+        });
+      }
       const intent = identified_intent?.result?.intent || "finalize_report";
 
       if (intent === "not_sure")
