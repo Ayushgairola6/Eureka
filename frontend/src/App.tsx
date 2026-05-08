@@ -25,6 +25,7 @@ const ChatRoom = lazy(() => import("./pages/chatRoom.tsx"));
 const EmailVerification = lazy(() => import("./pages/EmailVerification.tsx"));
 const OtherChats = lazy(() => import("./pages/OtherChats.tsx"));
 const Tutorial = lazy(() => import("./pages/Tutorial.tsx"))
+const Pricing = lazy(() => import("@/components/Pricing.tsx"))
 import { LogoRender } from '@/components/LogoRender.tsx'
 import { connectSocket, disconnectSocket } from "./store/websockteSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.tsx";
@@ -263,6 +264,7 @@ const App = () => {
             <Route element={<Interface />} path="/Interface"></Route>
             <Route element={<UserChatRooms />} path="/user/rooms" />
             <Route element={<UnfinishedResearchPage />} path='/user/research-archive' />
+            <Route element={<Pricing />} path='/Pricing' />
             <Route element={<Login />} path="/Login" />
             <Route element={<Register />} path="/Register" />
             <Route element={<Feedback />} path="/Feedback" />

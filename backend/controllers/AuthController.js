@@ -822,6 +822,7 @@ export const GetUserQuestionAskedCount = async (user_id) => {
     .eq("user_id", user_id)
     .eq("Month-Year", currentMonthKey)
     .maybeSingle(); // Better than .single() for new users
+
   return { count: data?.question_asked_count || 0, error: null };
 };
 
@@ -877,7 +878,6 @@ export const GetUserAccountDetails = async (req, res) => {
     if (!user_id) return res.status(401).json({ message: "Unauthorized" });
 
     const cacheKey = `user:${user_id}:dashboard`;
-
     // 1. Check Cache
     const cachedData = await redisClient.hGetAll(cacheKey);
     if (cachedData && cachedData.userdata) {

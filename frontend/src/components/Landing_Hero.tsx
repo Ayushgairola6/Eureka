@@ -179,16 +179,18 @@ const Hero: React.FC = () => {
                 }}
                 role="button"
                 to={isLoggedIn === true ? "/interface" : `/Login`}
-                className="px-2 py-1 rounded-sm bg-black text-white dark:bg-white dark:text-black space-grotesk  uppercase flex items-center gap-2 text-xs w-45"
+                className="px-2 py-1 rounded-sm bg-black text-white dark:bg-white dark:text-black space-grotesk  uppercase flex items-center gap-2 text-xs w-42"
               >
                 Start Researching
               </Link>
             </div>
 
+
           </div>
 
           <span className='text-xs dark:text-gray-300 text-neutral-900 space-grotesk'>Used by analysts, firms, and content teams who can't afford to get it wrong.</span>
         </section>
+
 
         {/* Demo Section */}
         <div className='relative z-10 w-full max-w-6xl'>

@@ -1,6 +1,6 @@
 
 const featuresList = [
-  { id: "Shards", icon: <BsCurrencyExchange />, featureName: "Shards", description: "We track every user's quota with shards each mode has different shard value to track AntiNode's performance.", howToUse: ['Choose any mode and simply ask anything the shard value will deduct automatically.', 'You can keep track of your leftover quota from the Control Center by clicking the Username icon on top right or via the navigation links.', 'Each mode costs different amount of shards, basic web search and document based chat modes cost 1 shard but advanced modes like summarization, Synthesis and deep-web search cost 5 shards/query because of their compute cost.'] },
+  { id: "Queries", icon: <BsCurrencyExchange />, featureName: "Queries", description: "We track every user's quota with Queries each mode has different shard value to track AntiNode's performance.", howToUse: ['Choose any mode and simply ask anything the shard value will deduct automatically.', 'You can keep track of your leftover quota from the Control Center by clicking the Username icon on top right or via the navigation links.', 'Each mode costs different amount of Queries, basic web search and document based chat modes cost 1 shard but advanced modes like summarization, Synthesis and deep-web search cost 5 Queries/query because of their compute cost.'] },
   {
     id: "upload",
     icon: <FileUp />,
@@ -91,7 +91,7 @@ import { BsCurrencyExchange } from "react-icons/bs";
 
 const Tutorial = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeId, setActiveId] = useState("Shards");
+  const [activeId, setActiveId] = useState("Queries");
 
   const filteredFeatures = featuresList.filter(
     (f) =>

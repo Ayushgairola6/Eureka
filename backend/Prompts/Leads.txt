@@ -1,0 +1,24 @@
+1. Evercore:Marc Harris
+ Template -
+
+ Subject: An on-prem, zero-hallucination research pipeline — aligned with Evercore's "Clients First" integrity
+
+Hello Mr. Harris,
+
+I understand your team produces research for institutional investors where a single incorrect fact can damage trust. I've built AntinodeAI, a research pipeline purpose-built for firms that can't afford even one hallucination.
+
+It's different from any AI tool you've seen:
+
+No generative AI in retrieval: It never invents facts. It scrapes, embeds, and re-ranks raw source text — and returns clean, unaltered Markdown.
+
+Runs entirely on your own servers: No data ever leaves Evercore's infrastructure. Zero external API calls. Can be fully air-gapped.
+
+Immutable live log via webhooks: You see every step — every URL attempted, every chunk kept or discarded, every filter decision — timestamped and exportable for audit or compliance.
+
+Steered research, not black-box AI: Analysts direct the depth, filter out noise, and verify raw data before anything is used.
+
+I know your primary focus is ISI equity research, but I suspect your M&A and restructuring advisory colleagues face similar challenges. My ask is simple: I've recorded a 3-minute screen capture of the tool performing a due diligence research task on a public company, complete with the live audit trail. May I send you the link? I'm looking for honest feedback from a research leader, not a sales meeting.
+
+Best Regards,
+Ayush
+Founder, AntinodeAI

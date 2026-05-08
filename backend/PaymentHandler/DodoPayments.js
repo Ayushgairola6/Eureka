@@ -21,8 +21,8 @@ export async function CreateSubscription(req, res) {
 
     const plans = [
       { name: "sprint pass", amount: 1400 },
-      { name: "architect", amount: 1700 },
-      { name: "architect annual", amount: 14900 },
+      { name: "Professional", amount: 7900 },
+      { name: "Professional Annual", amount: 69900 },
       { name: "planners", amount: 3800 }, //in cents
     ];
     const { amount, product_id, duration } = req.body;

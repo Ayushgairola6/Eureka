@@ -1,65 +1,76 @@
 const AntiNodeFeatures = [
+
+  { id: "feat-0", title: "Controlled research environment", subtitle: "Steer and control your Deep-AI-Research", description: "Analyst mode allows you to control AI at the orchestration level so that you get to choose everything and AI does the work.", icon: <PiControlDuotone size={16} />, img: "/Analyst.png" },
   {
     id: "feat-1",
     title: "Autonomus deep Web Search",
-    subtitle: "Beyond Surface Results",
+    subtitle: "Ask one question and let AI do the work.",
     description:
       "AI does the work for you by analyzing your statement, breaking it down and initiating parallel web searchs to make sure you always get a vast and quality  information not just SEO facts.",
     icon: <Globe size={16} />,
     img: "/Process logs2.png",
   },
-  { id: "feat-0", title: "Controlled research environment", subtitle: "Control what you research and consume", description: "With Analyst mode you can now not only control sources but also verify them before beforehand, then go deeper, or finalize or if the AI hallucinated then report it. Everything at your fingertips, no more blackboxes, but you and your research.", icon: <PiControlDuotone size={16} />, img: "/AnalystMode.png" },
   {
     id: "feat-2",
     title: "Real-Time Collaboration",
     subtitle: "Research Together",
     description:
-      "Create shared workspaces where teams research/disuss simultaneously. Live updates, shared context, unified insights, prvate yet global documents. Stop sending links back and forth.",
+      "Create shared workspaces where teams research/disuss simultaneously. Live updates, shared context, unified insights, private yet global documents. Stop sending links back and forth.",
     icon: <Users size={16} />,
     img: "/AntiNode_rooms.png",
   },
   {
     id: "feat-3",
-    title: "Multi-Source Synthesis",
+    title: "Advanced Synthesis",
     subtitle: "Connect Everything",
     description:
-      "Cross-reference private documents with web data in one query. Synthesize multiple sources, resolve conflicts, cite everything create reports or analyze mutliple data source at once.",
+      'Analyze your resports, cross reference them, get deep-insights, compare against web and just "ASK"',
     icon: <GitBranch size={16} />,
     img: "/Synthesis1.png",
   },
+  // {
+  //   id: "feat-4",
+  //   title: "Verified Results",
+  //   subtitle: "Self-Correcting AI",
+  //   description:
+  //     "AI verifies its own claims before showing results. Confidence scoring on every statement. Flags uncertainties automatically, tries to catch descrepancies and source validation.",
+  //   icon: <ShieldCheck size={16} />,
+  //   img: "/Source.png",
+  // },
   {
     id: "feat-4",
-    title: "Verified Results",
-    subtitle: "Self-Correcting AI",
-    description:
-      "AI verifies its own claims before showing results. Confidence scoring on every statement. Flags uncertainties automatically, tries to catch descrepancies and source validation.",
-    icon: <ShieldCheck size={16} />,
-    img: "/Source.png",
+    title: "Data Visualization",
+    subtitle: "Don't just read but visualize your research data using our advanced AI powered charts",
+    description: "Use Visualization to get deeper insights out of your research. Our advaned AI system detects and cleans the data for you so that you only see numbers that matter. ",
+    icon: <IoBarChartSharp />,
+    img: "/Visualization.png"
   },
   {
     id: "feat-5",
     title: "Private Knowledge",
     subtitle: "Your Data, Your Control",
     description:
-      "Upload documents securely to the cloud. Toggle privacy with one click. Your research stays private, AI remembers your context and data never used for training without your permission.",
+      "Upload reports/documents securely to the cloud. Toggle privacy with one click. Your research stays private, AI remembers your context and data never used for training without your permission.",
     icon: <Database size={16} />,
     img: "/Privacy.png",
   },
-  {
-    id: "feat-6",
-    title: "Public contributions",
-    subtitle: "More control over misinformation",
-    description:
-      "Upload documents to share your knowledge with others. You can help in building a seperate space for everyone just like stack-overflow but with AI",
-    icon: <Database size={16} />,
-    img: "/Public.png",
-  },
+  // {
+  //   id: "feat-6",
+  //   title: "Public contributions",
+  //   subtitle: "More control over misinformation",
+  //   description:
+  //     "Upload documents to share your knowledge with others. You can help in building a seperate space for everyone just like stack-overflow but with AI",
+  //   icon: <Database size={16} />,
+  //   img: "/Public.png",
+  // },
 ];
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BsArrowUpRight } from "react-icons/bs";
-import { Database, GitBranch, Globe, ShieldCheck, Users } from "lucide-react";
+import { Database, GitBranch, Globe, Users } from "lucide-react";
+import { IoBarChartSharp } from 'react-icons/io5';
+
 import { PiControlDuotone } from "react-icons/pi";
 
 export const Features = () => {

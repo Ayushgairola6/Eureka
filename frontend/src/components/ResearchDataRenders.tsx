@@ -3,6 +3,7 @@ import { GiArchiveResearch } from "react-icons/gi";
 import { TbExternalLink, TbChevronDown, TbChevronUp } from "react-icons/tb";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import { HandleVisualizationRequest, toggleInsights, setIsVisualizing } from '../store/visualierSlice.ts'
+import { IoBarChartSharp } from 'react-icons/io5';
 import { toast } from 'sonner';
 
 import { Streamdown } from 'streamdown'
@@ -196,7 +197,7 @@ function RootNode({ status, count, MessageId }: { status: MessageResearch["statu
                 )}
             </section>
 
-            <button onClick={() => Visualize()} className="dark:bg-white bg-neutral-900 text-white text-xs font-semibold space-grotesk px-2 py-1 dark:text-black rounded-sm">Visualize</button>
+            <button onClick={() => Visualize()} className="dark:bg-white bg-neutral-900 text-white text-xs font-semibold space-grotesk px-2 py-1 dark:text-black rounded-sm flex items-center justify-center gap-2">Visualize <IoBarChartSharp /></button>
         </div>
     );
 }

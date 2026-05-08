@@ -1,9 +1,11 @@
-import { CheckCheck, ChevronRight } from "lucide-react";
+import { CheckCheck, ChevronRight, LockIcon } from "lucide-react";
 import { useEffect, useState } from "react"
 import { SetMode, setSearchDepth, setSelectedDoc, setShowOptions } from "../store/InterfaceSlice";
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { toast } from "sonner";
 
 export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any) => {
+    const { user } = useAppSelector(s => s.auth);
 
     const [selected, setSelected] = useState<string>('Web Search');
     return (<>
@@ -23,7 +25,7 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
                         </span>
                     </section>
 
-                    {ToggleButton('Web Search', selected, setSelected)}
+                    {ToggleButton('Web Search', selected, setSelected, user)}
 
                 </ul>
                 <ul className='flex items-center justify-between px-2 py-1 '>
@@ -34,7 +36,10 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
                         </span>
                     </section>
 
-                    {ToggleButton('deep_web', selected, setSelected)}
+                    <div className='flex items-center justify-center gap-2'>
+                        {ToggleButton('deep_web', selected, setSelected, user)}{user?.IsPremiumUser === false && <LockIcon size={14} />}
+
+                    </div>
 
                 </ul>
                 <ul className='flex items-center justify-between px-2 py-1'>
@@ -44,9 +49,10 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
                             Fully controlled agentic research
                         </span>
                     </section>
+                    <div className='flex items-center justify-center gap-2'>
 
-                    {ToggleButton('Analyst', selected, setSelected)}
-
+                        {ToggleButton('Analyst', selected, setSelected, user)}{user?.IsPremiumUser === false && <LockIcon size={14} />}
+                    </div >
                 </ul>
                 <ul className='flex items-center justify-between px-2 py-1'>
                     <section className='flex flex-col'>
@@ -55,9 +61,10 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
                             Agentic document and research reasoning
                         </span>
                     </section>
+                    <div className='flex items-center justify-center gap-2'>
 
-                    {ToggleButton('Synthesis', selected, setSelected)}
-
+                        {ToggleButton('Synthesis', selected, setSelected, user)}{user?.IsPremiumUser === false && <LockIcon size={14} />}
+                    </div >
                 </ul>
 
 
@@ -67,11 +74,14 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
     </>)
 }
 
-function ToggleButton(value: string, selected: string, setSelected: any) {
+function ToggleButton(value: string, selected: string, setSelected: any, user: any) {
 
     const { selectedDoc, shwoOptions } = useAppSelector(s => s.interface)
+
     useEffect(() => {
         if (!selected) return;
+
+
 
         // Reset doc selection for all modes
         if (selectedDoc) dispatch(setSelectedDoc(""));
@@ -106,7 +116,13 @@ function ToggleButton(value: string, selected: string, setSelected: any) {
 
     const dispatch = useAppDispatch();
     return (<>
-        <div onClick={() => setSelected(value)} className={`border h-5 w-10 rounded-xl relative cursor-pointer   ${value === selected ? "bg-green-600/10 border-green-500" : "dark:bg-neutral-900 bg-gray-100 border-gray-500 "}`}>
+        <div onClick={() => {
+            if (user?.IsPremiumUser === false && (value === 'deep_web' || value === "Analyst" || value === 'Synthesis')) {
+                toast.info("Upgrade your plan to access these features")
+                return;
+            }
+            setSelected(value)
+        }} className={`border h-5 w-10 rounded-xl relative cursor-pointer   ${value === selected ? "bg-green-600/10 border-green-500" : "dark:bg-neutral-900 bg-gray-100 border-gray-500 "}`}>
             <ul role='button'
                 onClick={() => {
                     // if the mode is web-search

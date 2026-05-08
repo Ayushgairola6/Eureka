@@ -3,33 +3,53 @@ import { Users, ShieldCheck, Target } from "lucide-react";
 const aboutAntiNode = [
   {
     id: "about-1",
-    title: "Research Together",
-    subtitle: "Real-Time Collaboration",
+    title: "Steered Research",
+    subtitle: "Supervise AI for your research requirements",
     description:
-      "Stop sending links back and forth. Create shared workspaces where your team researches together in real-time. No more email chains or scattered findings.",
-    icon: <Users />,
-    img: "/Rooms.png",
-    badge: "The Problem",
-  },
-  {
-    id: "about-2",
-    title: "Transparent Verification",
-    subtitle: "See The Sources & Logs",
-    description:
-      "Every claim is sourced. Every reasoning step is visible. Cross-reference everything yourself. No black boxes, no hidden hallucinations and red-flag false sources.",
-    icon: <ShieldCheck />,
-    img: "/Process logs2.png",
-    badge: "Our Solution",
+      "Letting AI do your work means leaving gap for errors, missing or made up numbers, facts and unknown decisions. Control AI, take decisions yourself but without missing out on the raw speed of Artificial Intelligence.",
+    icon: <PiControlDuotone />,
+    img: "/Analyst.png",
+    badge: "Superior Intelligence",
   },
   {
     id: "about-3",
+    title: "Auditable logs & transparency",
+    subtitle: "Watch and supervise every decision",
+    description:
+      "Keep an eye on AI and it's decisions. What sources it visited, What data it searched for? What tools it used? What data it read? What data it fabricated with live auditable logs.",
+    icon: <ShieldCheck />,
+    img: "/Process logs2.png",
+    badge: "Keep An Eye",
+  },
+  {
+    id: "about-2",
+    title: "Collaborative Research",
+    subtitle: "Real-Time Collaboration",
+    description:
+      "Create workspaces to enable collaborative AI-research. Instead of sharing links back and forth prompt-together, reason-together and question-together.",
+    icon: <Users />,
+    img: "/Rooms.png",
+    badge: "Collaboration",
+  },
+  // {
+  //   id: "about-4",
+  //   title: "Transparent Verification",
+  //   subtitle: "See The Sources & Logs",
+  //   description:
+  //     "Track every AI-decisions, reasoning behind that decision, tool-calls, context used, all auditable with live process logs.",
+  //   icon: <ShieldCheck />,
+  //   img: "/Process logs2.png",
+  //   badge: "Transparency & Trust",
+  // },
+  {
+    id: "about-4",
     title: "Built for Accuracy & Performance",
     subtitle: "Self-Correcting Agentic system",
     description:
-      "Agents verify their own claims before showing results. Deep web access finds sources others miss. You control the process, AI handles the work.",
+      "Unlike other platforms that user LLMs to filter out data we use different approach which keeps our data quality original, non hallucinated and authentic with less room for fake & fabricated data",
     icon: <Target />,
-    img: "/AnalystMode.png",
-    badge: "How It Works",
+    img: "/Process logs2.png",
+    badge: "Data Authenticity",
   },
 ];
 
@@ -37,6 +57,7 @@ const aboutAntiNode = [
 import { motion, useScroll, useSpring } from "framer-motion";
 import { useRef } from "react";
 import { BsArrowUpRight } from "react-icons/bs";
+import { PiControlDuotone } from "react-icons/pi";
 
 const Why = () => {
   const containerRef = useRef(null);

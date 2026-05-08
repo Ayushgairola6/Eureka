@@ -25,6 +25,7 @@ const Navbar = () => {
     { label: "Overview", to: "/", tab: "Overview" },
     { label: "Console", to: "/Interface", tab: "Console" },
     { label: "Documentation", to: "/userManual/AntiNode/Know-How", tab: "Documentation" },
+    { label: "Premium", to: "/Pricing", tab: "Prcing" },
     // only show dashboard when logged in
     {
       label: "Control Center",

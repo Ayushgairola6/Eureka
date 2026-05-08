@@ -1,7 +1,7 @@
 import React from "react";
 // const Testimonials = React.lazy(() => import("@/components/Testimonials"));
 const Why = React.lazy(() => import("./Why.tsx"));
-const Pricing = React.lazy(() => import("@/components/Pricing"));
+// const Pricing = React.lazy(() => import("@/components/Pricing"));
 const Footer = React.lazy(() => import("@/components/Footer.tsx"));
 // import Marquee from "@/components/marquee";
 import Hero from "@/components/Landing_Hero.tsx";
@@ -39,7 +39,7 @@ const LandingPage = () => {
       <Hero />
       <Why />
       <Features />
-      <Pricing />
+      {/* <Pricing /> */}
 
       {/* <Testimonials /> */}
 
@@ -98,14 +98,14 @@ const LandingPage = () => {
               <div className="absolute inset-0 bg-orange-500/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
 
               <span className="relative z-10 flex items-center gap-2">
-                Start Building <Zap size={16} fill="currentColor" />
+                Start Researching <Zap size={16} fill="currentColor" />
               </span>
             </Link>
 
             <button className="group px-8 py-4 rounded-sm border border-neutral-200 dark:border-neutral-800 hover:border-orange-500/50 transition-all flex items-center gap-2 text-neutral-500 hover:text-black dark:hover:text-white">
-              <a href="#pricing" className="space-grotesk text-xs uppercase font-bold tracking-widest flex items-center gap-2">
-                View Plans <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </a>
+              <Link to="/Pricing" className="space-grotesk text-xs uppercase font-bold tracking-widest flex items-center gap-2">
+                Premium <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
             </button>
           </div>
 

@@ -1350,6 +1350,11 @@ export const PostTypeWebSearch = async (req, res) => {
       WebResults = FormattForLLM(CleanedWebData || []);
     }
 
+    if (!WebResults || WebResults.error || !WebResults.FinalContent) {
+      return res
+        .status(400)
+        .json({ message: "Something went wrong while searching the web" });
+    }
     // extract chat history for a bit of memory from past
     let history = [];
     const pastConversation = await GetChatsForContext(req.user);

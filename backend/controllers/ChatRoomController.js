@@ -54,6 +54,7 @@ import {
   HandleDocumentMetadataGathering,
   SynthsisOrchrestrator,
 } from "../Synthesis/PreprocessingHandler.js";
+import { GetRoomChatsForContext } from "../ChatRoomHelpers/ChatRoomUtils.js";
 // string type validator
 const IsAString = (value) => {
   try {
@@ -535,13 +536,13 @@ export const checkRoomMemberLimit = async (room_id) => {
     return { error: "Internal server error" };
   }
 };
-//Get room chat history
+//Get room chat history for dashboard
 
 export const GetRoomChatHistory = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
+    const user = req.user;
 
-    if (!user_id)
+    if (!user)
       return res.status(400).send({ message: "Please login to continue" });
     const room_id = req.params.room_id;
     if (!room_id) return res.status(400).send({ message: "Invalid room id" });
@@ -1104,17 +1105,92 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
     let WebResults; //stores the values of deep web results based on the quermode
 
     // no matter the search type send the user prompt to llm for better search query
-    const Intent = await HandleIntentIdentification(question, plan_type);
+    const Intent = await HandleIntentIdentification(query, plan_type, req.user);
 
     if (!Intent || Intent.error || !Intent.data) {
+      if (io) {
+        io.to(room_id).emit("recieved_message", {
+          message_id: MessageId,
+          sent_by: null,
+          message:
+            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+          room_id: room_id,
+          users: { username: "AntiNode" },
+          sent_at: currentTime || new Date().toISOString(),
+        });
+      }
       return res.status(400).json({
         message:
           "Our AI models are overloaded right now please wait a bit and try again later.",
       });
     }
+    // if there is a direct_answer from the llm
+    if (Intent.data.direct_answer) {
+      const Answer = Intent.data.direct_answer;
+      const AiMessage = {
+        id: MessageId,
+        sent_by: "AntiNode",
+        message: {
+          isComplete: true,
+          content: Answer,
+        },
+        sent_at: currentTime,
+      };
+      if (io) {
+        io.to(room_id).emit("recieved_message", {
+          message_id: MessageId,
+          sent_by: null,
+          message: Answer,
+          room_id: room_id,
+          users: { username: "AntiNode" },
+          sent_at: currentTime,
+        });
+      }
+
+      // update the cache
+      try {
+        await supabase.from("room-chat-history").insert({
+          sent_by: null,
+          message: Answer,
+          room_id: room_id,
+          message_id: MessageId,
+          sent_at: currentTime,
+        });
+      } catch (e) {
+        notifyMe(`Failed to store direct answer in room history`, e);
+      }
+
+      // Update room cache
+      UpdateTheRoomChatCache(room_id, Answer, currentTime, null, {
+        username: "AntiNode",
+      });
+
+      // send the final response to the user
+      return res.send({
+        Answer: Answer,
+        message: "Results found",
+        favicon: {
+          MessageId,
+          icon: [],
+          url: [], //favicon array from the web search
+        },
+      });
+    }
+
     const FormattedQueries = Intent?.data.length > 0 ? Intent.data : [];
 
     if (FormattedQueries.length === 0) {
+      if (io) {
+        io.to(room_id).emit("recieved_message", {
+          message_id: MessageId,
+          sent_by: null,
+          message:
+            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+          room_id: room_id,
+          users: { username: "AntiNode" },
+          sent_at: currentTime || new Date().toISOString(),
+        });
+      }
       return res.status(400).json({
         message:
           "Model failed to search for any information because it is overloaded right now",
@@ -1155,25 +1231,27 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
         MessageId,
         plan_type
       );
-      // const FinalLinksToScrape = [
-      //   "https://news.ycombinator.com",
-      //   "https://techcrunch.com",
-      //   "https://arxiv.org/abs/2301.00001",
-      // ];
 
       if (FinalLinksToScrape?.length === 0) {
+        if (io) {
+          io.to(room_id).emit("recieved_message", {
+            message_id: MessageId,
+            sent_by: null,
+            message:
+              "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+            room_id: room_id,
+            users: { username: "AntiNode" },
+            sent_at: currentTime || new Date().toISOString(),
+          });
+        }
         return res.status(400).send({
           message:
             "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
         });
       }
 
-      // parse the results and extract organic results and convert it into an array of link(string)
-      // const LinksToFetch = [
-      //   "https://news.ycombinator.com",
-      //   "https://techcrunch.com",
-      //   "https://arxiv.org/abs/2301.00001",
-      // ];
+      let LinksToFetch = [];
+
       // handle each source links extraction
       FinalLinksToScrape.forEach((li) => {
         if (li) {
@@ -1186,6 +1264,17 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       const FlatLinks = LinksToFetch.flat();
 
       if (FlatLinks.length === 0) {
+        if (io) {
+          io.to(room_id).emit("recieved_message", {
+            message_id: MessageId,
+            sent_by: null,
+            message:
+              "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+            room_id: room_id,
+            users: { username: "AntiNode" },
+            sent_at: currentTime || new Date().toISOString(),
+          });
+        }
         return res.status(400).send({
           message:
             "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
@@ -1202,15 +1291,7 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
         plan_type
       );
 
-      if (!CleanedWebData || CleanedWebData.length === 0) {
-        return res.status(400).send({
-          message:
-            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-        });
-      }
-
-      // we put the results in the webResults array
-      WebResults = FormattForLLM(CleanedWebData);
+      WebResults = FormattForLLM(CleanedWebData || []);
     }
     // if user is on surface web so we keep it simple
     else {
@@ -1223,37 +1304,35 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       );
 
       if (!response || LinksToFetch?.length === 0) {
+        if (io) {
+          io.to(room_id).emit("recieved_message", {
+            message_id: MessageId,
+            sent_by: null,
+            message:
+              "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
+            room_id: room_id,
+            users: { username: "AntiNode" },
+            sent_at: currentTime || new Date().toISOString(),
+          });
+        }
         return res.status(400).send({
           message:
             "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
         });
       }
 
-      // const LinksToFetch = [
-      //   "https://news.ycombinator.com",
-      //   "https://techcrunch.com",
-      //   "https://arxiv.org/abs/2301.00001",
-      // ];
       // scrape and optimize the context for the llm
       const CleanedWebData = await ProcessForLLM(
         LinksToFetch,
         req.user,
-        question,
+        query,
         MessageId,
         room_id,
         plan_type
       );
 
-      if (CleanedWebData.length === 0) {
-        console.error("Error in llm processing handler");
-        notifyMe("Error in llm processing handler");
-        return res.status(400).send({
-          message:
-            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-        });
-      }
       // give it to the model
-      WebResults = FormattForLLM(CleanedWebData);
+      WebResults = FormattForLLM(CleanedWebData || []);
     }
 
     if (
@@ -1261,30 +1340,47 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       WebResults?.error ||
       WebResults?.FinalContent?.length === 0
     ) {
+      if (io) {
+        io.to(room_id).emit("recieved_message", {
+          message_id: MessageId,
+          sent_by: null,
+          message: "An error occured while searching the web for your request",
+          room_id: room_id,
+          users: { username: "AntiNode" },
+          sent_at: currentTime || new Date().toISOString(),
+        });
+      }
       return res
         .status(400)
         .send({ message: "An error occured while processing your request" });
     }
 
-    let AnswerToQuestion = await HandleInference(
-      `user_prompt=${query}&web_results=${JSON.stringify(
-        WebResults.FinalContent
-      )}`,
+    let history = [];
+    const pastMessages = await GetRoomChatsForContext({ room_id, plan_type }); // implement if needed
+    if (!pastMessages || pastMessages.length === 0) {
+      history.push("No previous conversation available");
+    } else {
+      history = pastMessages;
+    }
+
+    const Answer = await GenerateResponse(
+      `These are queries by you previously to search the web=${JSON.stringify(
+        FormattedQueries
+      )}&UserQuery=${query}&chathistory_between you and the user=${JSON.stringify(
+        history
+      )}&search_results=${
+        !WebResults.FinalContent || WebResults.error
+          ? "We either got blocked while trying to read the sources or were not able to read any source due to some other reasons ,make sure to mention this to the user"
+          : JSON.stringify(WebResults.FinalContent)
+      }`,
       WEB_SEARCH_DISTRIBUTOR_PROMPT
     );
-    if (!AnswerToQuestion?.result || AnswerToQuestion.error) {
-      // AnswerToQuestion = FormatForHumanFallback(webResults.response).text;
-      return res.status(400).send({
-        message:
-          "There are many users using our service right now, that is why I am having issues while processing your request right now. I want apologize for the inconvenience. If this issue presists you can contact the support team. ",
-      });
-    }
     // emitting the response throughout the room
     if (io) {
       io.to(room_id).emit("recieved_message", {
         message_id: MessageId,
         sent_by: null,
-        message: AnswerToQuestion?.result,
+        message: Answer,
         room_id: room_id,
         users: { username: "AntiNode" },
         sent_at: currentTime || new Date().toISOString(),
@@ -1294,7 +1390,7 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
     try {
       supabase.from("room-chat-history").insert({
         sent_by: null,
-        message: AnswerToQuestion?.result,
+        message: Answer,
         room_id: room_id,
         message_id: MessageId,
         sent_at: currentTime || new Date().toISOString(),
@@ -1309,7 +1405,7 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
     // update the cache for AntiNode
     UpdateTheRoomChatCache(
       room_id,
-      AnswerToQuestion.result,
+      Answer,
       currentTime || new Date().toISOString,
       null,
       { username: "AntiNode" }
@@ -1319,7 +1415,7 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
       favicon: WebResults.favicons || [],
     };
     return res.send({
-      answer: AnswerToQuestion.result,
+      answer: Answer,
       favicon: FormattedFavIcon,
     });
   } catch (error) {

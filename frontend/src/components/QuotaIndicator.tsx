@@ -23,7 +23,7 @@ export function QuotaIndicator() {
                 {Querycount >= Quota
                     ? 'Quota exhausted — resets soon. You will be notified via app and email.'
                     : (<>
-                        <GiDiamonds />Shards remaining → {Math.max(Quota - Querycount, 0)}
+                        <GiDiamonds />Queries remaining → {Math.max(Quota - Querycount, 0)}
                     </>)
                 }
             </span>

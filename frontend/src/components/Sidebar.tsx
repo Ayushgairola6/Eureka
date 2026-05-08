@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router";
 import { IoHomeOutline } from "react-icons/io5";
 import { IoChatboxEllipsesOutline } from "react-icons/io5";
-import { MdDashboard, MdFeedback, MdLogin, MdArchive } from "react-icons/md";
+import { MdDashboard, MdFeedback, MdLogin, MdArchive, MdWorkspacePremium } from "react-icons/md";
 import { FaRegRegistered } from "react-icons/fa";
 import { MdKey } from "react-icons/md";
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
@@ -46,7 +46,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisble, setIsVisible }) => {
       label: "Console",
       tab: "Console",
       show: true,
+
     },
+    { label: "Premium", path: "/Pricing", tab: "Prcing", show: true, icon: MdWorkspacePremium },
     {
       path: "/user/misallaneous-chats",
       icon: BsChatSquare,

@@ -69,7 +69,7 @@ const QuestionAskedChart = () => {
               ></div>
             </div>
             <p className="text-[10px] text-gray-400">
-              {Querycount} / {limit} Shards used
+              {Querycount} / {limit} Queries used
             </p>
           </div>
           <div></div>
