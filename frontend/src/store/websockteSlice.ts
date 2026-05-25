@@ -78,38 +78,7 @@ const initialState: chatStates = {
   favicon: [],
   currentStatus: "Analyzing",
   fetchingMoreChats: false,
-  web_search_status: [
-    // {
-    //   MessageId: "12345",
-    //   status: [
-    //     {
-    //       message: "reading_links",
-    //       data: [
-    //         "https://youtube.com",
-    //         "https://pornhub.com",
-    //         "https://brazzers.com",
-    //         "https://blacked.com",
-    //         "https://cum4k.com",
-    //       ],
-    //     },
-    //     {
-    //       message: "Understanding_Intent",
-    //       data: [
-    //         "I am now trying to understand the intent behind my boss'es request to gather the best porn from the depths of the web",
-    //       ],
-    //     },
-    //     {
-    //       message: "Crawling_deep_web",
-    //       data: [
-    //         "I am now crawling deep web to search for best porn playlist for my boss.",
-    //       ],
-    //     },
-    //     { message: "fetching_url", data: ["https://xvideos.com"] },
-    //     { message: "fetching_url", data: ["https://KinComiX.com"] },
-    //     { message: "fetching_url", data: ["https://sexKomix.com"] },
-    //   ],
-    // },
-  ],
+  web_search_status: [],
   showProcess: null,
 };
 export const GetChatRoomHistory = createAsyncThunk(

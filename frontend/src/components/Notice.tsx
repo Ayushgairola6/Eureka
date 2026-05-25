@@ -23,7 +23,7 @@ export const Notice = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
               </span>
-              Experimental Tier
+              Beta
             </span>
             <button
               onClick={() => {
@@ -53,11 +53,9 @@ export const Notice = () => {
           </div>
 
           <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed mt-1">
-            We are currently non-profitable. Our LLM providers may use data for
-            training.
+
             <strong className="text-zinc-800 dark:text-zinc-200">
-              {" "}
-              Avoid sensitive Information & Documents.
+              We are currently pre-revenue so some usage issues may be noticeable/
             </strong>
           </p>
         </div>

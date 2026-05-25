@@ -134,20 +134,20 @@ export const ProcessForLLM = async (
       return [];
     }
     const data = {
-      links: filteredLinks,
-      userQuery: userQuery,
-      userId: user.user_id || room_id,
-      MessageId,
+      source: filteredLinks,
+      prompt: userQuery,
+      user_id: user.user_id || room_id,
+      message_id: MessageId,
     };
 
+    // our own scraping api
     const response = await fetch(
-      "https://ThornsOfSnow-Antinode-web-search.hf.space/api/search",
+      "https://tectonic-67-surfer.hf.space/api/search",
       {
         method: "POST",
         body: JSON.stringify(data),
         headers: {
           "Content-type": "application/json",
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
         },
       }
     );
@@ -472,9 +472,9 @@ const HandleContextFiltering = async (CurrentContext, userQuery) => {
         chunk,
         score: allEmbeddings[i]
           ? cosineSimilarity(
-              UserPromptEmbeddings?.[0]?.values,
-              allEmbeddings?.[i].values
-            )
+            UserPromptEmbeddings?.[0]?.values,
+            allEmbeddings?.[i].values
+          )
           : 0,
       }))
       .filter((c) => c.score > 0.65)

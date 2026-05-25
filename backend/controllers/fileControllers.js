@@ -195,8 +195,8 @@ export const FileUploadHandle = async (req, res) => {
       plan_type === "free"
         ? parseInt(process.env.CLOUD_UPLOAD_BATCH_SIZE_FREE)
         : plan_type === "sprint"
-        ? parseInt(process.env.CLOUD_UPLOAD_BATCH_SIZE_SPRINT_PASS)
-        : parseInt(process.env.CLOUD_UPLOAD_BATCH_SIZE_OTHERS);
+          ? parseInt(process.env.CLOUD_UPLOAD_BATCH_SIZE_SPRINT_PASS)
+          : parseInt(process.env.CLOUD_UPLOAD_BATCH_SIZE_OTHERS);
     // loop to start pushing chunks into the db
     for (let i = 0; i < textChunks.length; i++) {
       // Generate a unique ID for each chunk
@@ -788,8 +788,7 @@ export const GetPrivateDocResultss = async (req, res) => {
       typeof query_type !== "string"
     ) {
       await notifyMe(
-        `Error while asking question from private doc by user=${
-          req.user.username
+        `Error while asking question from private doc by user=${req.user.username
         } the req.body is like this = ${JSON.stringify(req.body)}`,
         "sometgin broke the functionality"
       );
@@ -832,8 +831,8 @@ export const GetPrivateDocResultss = async (req, res) => {
       query_type === "QNA"
         ? KNOWLEDGE_DISTRIBUTOR_PROMPT
         : query_type === "Summary"
-        ? SUMMARIZATION_ANALYST_PROMPT
-        : WEB_SEARCH_DISTRIBUTOR_PROMPT;
+          ? SUMMARIZATION_ANALYST_PROMPT
+          : WEB_SEARCH_DISTRIBUTOR_PROMPT;
 
     EmitEvent(user.user_id, "query_status", {
       MessageId,
@@ -922,15 +921,13 @@ export const GetPrivateDocResultss = async (req, res) => {
               status: {
                 message: `Reading docs`,
                 data: [
-                  `<>score=${
-                    rest._score
+                  `<>score=${rest._score
                   }<> Context===>${rest?.fields?.text.slice(0, 200)}`,
                 ],
               },
             });
-            return `ArrayBasedrank=${index + 1}&relevancy_score=${
-              rest._score
-            }&actual_content${rest.fields.text}`;
+            return `ArrayBasedrank=${index + 1}&relevancy_score=${rest._score
+              }&actual_content${rest.fields.text}`;
           }
         })
         .filter(Boolean);
@@ -963,10 +960,9 @@ export const GetPrivateDocResultss = async (req, res) => {
     // geenrating the response based on the found context
     const AnswerToUsersQuestion = await HandleInference(
       ` user_prompt${question}
-      context=${
-        FormattedContextString
-          ? FormattedContextString
-          : "No relevant results were found in the database"
+      context=${FormattedContextString
+        ? FormattedContextString
+        : "No relevant results were found in the database"
       }`,
       SYSTEM_PROMPT
     );
@@ -1090,8 +1086,8 @@ export async function HandleIntentIdentification(question, plan_type, user) {
   const FormattedIntent = Array.isArray(IdentifiedIntent.result?.queries)
     ? IdentifiedIntent.result?.queries
     : typeof IdentifiedIntent.result.queries === "string"
-    ? [IdentifiedIntent.result.queries]
-    : []; //validating and formatting the query
+      ? [IdentifiedIntent.result.queries]
+      : []; //validating and formatting the query
   if (!FormattedIntent || FormattedIntent?.length === 0) {
     return {
       error: "Failed to generate a response",
@@ -1107,342 +1103,135 @@ export async function HandleIntentIdentification(question, plan_type, user) {
 export const PostTypeWebSearch = async (req, res) => {
   try {
     const user_id = req.user.user_id;
-    if (!user_id)
-      return res.status(401).send({ message: "Please login to continue" });
+    if (!user_id) return res.status(401).send({ message: "Please login to continue" });
 
     const { question, MessageId, userMessageId, web_search_depth } = req.body;
-    if (
-      !question ||
-      typeof question !== "string" ||
-      !MessageId ||
-      typeof MessageId !== "string" ||
-      !userMessageId ||
-      typeof userMessageId !== "string" ||
-      !web_search_depth ||
-      typeof web_search_depth !== "string"
-    )
-      return res.status(404).send({
-        message:
-          "Some parameters are missing,this is a server side issue please wait till we resolve this problem.",
-      });
-
-    // check user plan status
-    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
-      user_id
-    );
-
-    //if the user is not paid or the paid staus is not even available
-    if (status === false || error || !plan_type) {
-      return res.status(400).send({
-        message:
-          "There is something wrong with your account please contact our support at support@antinodeai.space to invoke a problem ticket.",
-      });
+    if (!question || !MessageId || !userMessageId || !web_search_depth) {
+      return res.status(400).send({ message: "Missing required parameters." });
     }
 
-    // if the user is on free plan and is asking for deep_web_search
-    if (
-      plan_type === "free" &&
-      plan_status === "active" &&
-      web_search_depth === "deep_web"
-    ) {
-      return res.status(400).send({
-        message:
-          "This feature is only available for pro members ,if you want to surf the deep web get our premium subscriptio to enjoy research with deep web results.",
-      });
+    // 1. Plan & quota
+    const { plan_type } = await CheckUserPlanStatus(user_id);
+    if (!plan_type) {
+      return res.status(400).send({ message: "Account issue, contact support." });
     }
-    //to store the queries generated by the llm
-
-    // check the quota status of the user
-    const UpdateState = await ProcessUserQuery(req.user, "web_search");
-
-    // if user has reached the
-    if (UpdateState?.status === false) {
-      return res.status(400).send({
-        Answer:
-          "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research",
-        message:
-          "You have exhausted your monthly quota please wait till next month or get our premium pass to enjoy unlimited research",
-        favicons: { MessageId, icon: [] },
-      });
+    if (plan_type === "free" && web_search_depth === "deep_web") {
+      return res.status(400).send({ message: "Deep web search requires a pro plan." });
+    }
+    const quota = await ProcessUserQuery(req.user, "web_search");
+    if (!quota?.status) {
+      return res.status(400).send({ message: "Monthly quota exhausted." });
     }
 
-    let WebResults;
-
-    // no matter the search type send the user prompt to llm for better search query
-    const Intent = await HandleIntentIdentification(
-      question,
-      plan_type,
-      req.user
-    );
-
-    if (!Intent || Intent.error || !Intent.data) {
-      return res.status(400).json({
-        message:
-          "Our AI models are overloaded right now please wait a bit and try again later.",
-      });
+    // 2. Generate search queries from user's question
+    const intent = await HandleIntentIdentification(question, plan_type, req.user);
+    if (!intent || intent.error) {
+      return res.status(400).json({ message: "AI models overloaded, try again." });
     }
 
-    // if there is a direct_answer from the llm
-    if (Intent.data.direct_answer) {
-      const Answer = Intent.data.direct_answer;
-      const AiMessage = {
+    // 2a. Direct answer branch (e.g., simple fact)
+    if (intent.direct_answer) {
+      const answer = intent.direct_answer;
+      const aiMsg = {
         id: MessageId,
         sent_by: "AntiNode",
-        message: {
-          isComplete: true,
-          content: Answer,
-        },
+        message: { isComplete: true, content: answer },
         sent_at: currentTime,
       };
-      // update the cache
-      await CacheCurrentChat(AiMessage, req.user);
-
-      // store in the db
-      const StoreChats = await StoreQueryAndResponse(user_id, question, Answer);
-      if (StoreChats.error) {
-        await notifyMe(
-          `Error while storing response history ${StoreChats.error}`
-        );
-      }
-
-      // find the update the chats
-      const FormattedFavicon = {
-        MessageId,
-        icon: [],
-        url: [], //favicon array from the web search
-      };
-
-      // send the final response to the user
+      await CacheCurrentChat(aiMsg, req.user);
+      await StoreQueryAndResponse(user_id, question, answer);
       return res.send({
-        Answer: Answer,
+        Answer: answer,
         message: "Results found",
-        favicon: FormattedFavicon,
+        favicon: { MessageId, icon: [], url: [] },
       });
     }
 
-    const FormattedQueries = Intent?.data.length > 0 ? Intent.data : [];
-
-    if (FormattedQueries.length === 0) {
-      return res.status(400).json({
-        message:
-          "Model failed to search for any information because it is overloaded right now",
-      });
+    const queries = intent.data || [];
+    if (queries.length === 0) {
+      return res.status(400).json({ message: "Could not generate search queries." });
     }
-    // send the event about he query to the user
+
+    // 3. Execute web search
     EmitEvent(user_id, "query_status", {
       MessageId,
-      status: {
-        message: `Searching for`,
-        data: [
-          `Crawling deep web for following queries ,${JSON.stringify(
-            FormattedQueries
-          )}`,
-        ],
-      },
+      status: { message: "Searching for", data: queries },
     });
-    //if the user is paid and is asking for deep_search we process further
-    if (
-      plan_status &&
-      plan_status === "active" &&
-      web_search_depth &&
-      web_search_depth === "deep_web"
-    ) {
-      EmitEvent(user_id, "query_status", {
-        MessageId,
-        status: {
-          message: `Understanding_Intent`,
-          data: [`I am now Breaking down ${req.user.username}'s intent`],
-        },
-      });
 
-      // send queries to the crawler to scrape
-      const FinalLinksToScrape = await HandleDeepWebResearch(
-        FormattedQueries,
-        req.user,
-        null,
-        MessageId,
-        plan_type
-      );
-
-      if (FinalLinksToScrape?.length === 0) {
-        return res.status(400).send({
-          message:
-            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-        });
-      }
-
-      // parse the results and extract organic results and convert it into an array of link(string)
-      let LinksToFetch = [];
-      // handle each source links extraction
-      FinalLinksToScrape.forEach((li) => {
-        if (li) {
-          const data = FilterUrlForExtraction(li, req.user);
-          LinksToFetch.push(data);
-        }
-      });
-
-      // as the results array will be nested we flat it
-      const FlatLinks = LinksToFetch.flat();
-
-      if (FlatLinks.length === 0) {
-        return res.status(400).send({
-          message:
-            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-        });
-      }
-
-      // web send the links to the crawler to scrape and process
-      const CleanedWebData = await ProcessForLLM(
-        FlatLinks,
-        req.user,
-        question,
-        MessageId,
-        null,
-        plan_type
-      );
-
-      // if (!CleanedWebData || CleanedWebData.length === 0) {
-      //   return res.status(400).send({
-      //     message:
-      //       "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-      //   });
-      // }
-
-      // we put the results in the webResults array
-      WebResults = FormattForLLM(CleanedWebData || []);
-    }
-    // if user is on surface web so we keep it simple
-    else {
-      // send the query direct to serper.dev
-      const { response, links: LinksToFetch } = await fetchSearchResults(
-        plan_type,
-        FormattedQueries?.join(","),
-        req.user,
-        MessageId
-      );
-
-      if (!response || LinksToFetch?.length === 0) {
-        return res.status(400).send({
-          message:
-            "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-        });
-      }
-
-      // scrape and optimize the context for the llm
-      const CleanedWebData = await ProcessForLLM(
-        LinksToFetch,
-        req.user,
-        question,
-        MessageId,
-        null,
-        plan_type
-      );
-
-      // if (CleanedWebData.length === 0) {
-      //   console.error("Error in llm processing handler");
-      //   notifyMe("Error in llm processing handler");
-      //   return res.status(400).send({
-      //     message:
-      //       "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-      //   });
-      // }
-      // give it to the model
-      WebResults = FormattForLLM(CleanedWebData || []);
+    const { response, links: LinksToFetch } = await fetchSearchResults(
+      plan_type,
+      queries.join(","),
+      req.user,
+      MessageId
+    );
+    if (!response || LinksToFetch.length === 0) {
+      return res.status(400).send({ message: "Web search failed, try again." });
     }
 
-    if (!WebResults || WebResults.error || !WebResults.FinalContent) {
-      return res
-        .status(400)
-        .json({ message: "Something went wrong while searching the web" });
-    }
-    // extract chat history for a bit of memory from past
-    let history = [];
-    const pastConversation = await GetChatsForContext(req.user);
-    if (!pastConversation || pastConversation.length === 0) {
-      history.push(`Failed to get session chat history`);
-    } else {
-      history = [...pastConversation];
+    // 4. Scrape & process – the depth logic in one clear line
+    const linksToProcess =
+      web_search_depth === "deep_web" ? LinksToFetch : LinksToFetch.slice(0, 4);
+
+    const cleanedData = await ProcessForLLM(
+      linksToProcess,
+      req.user,
+      question,
+      MessageId,
+      null,
+      plan_type
+    );
+    if (cleanedData.length === 0) {
+      return res.status(400).send({ message: "AI models overloaded, try again." });
     }
 
-    const message = {
-      id: userMessageId, //users message Id
+    const webResults = FormattForLLM(cleanedData);
+    if (!webResults || webResults.error || !webResults.FinalContent) {
+      return res.status(400).json({ message: "Error processing search results." });
+    }
+
+    // 5. Build final answer with conversation context
+    const history = await GetChatsForContext(req.user);
+    const past = history?.length ? history : ["Failed to get session history"];
+
+    const userMsg = {
+      id: userMessageId,
       sent_by: "You",
       message: { isComplete: true, content: question },
       sent_at: currentTime,
     };
-    // update the cache
-    await CacheCurrentChat(message, req.user);
-    const WebResultPrompt = WEB_SEARCH_DISTRIBUTOR_PROMPT;
+    await CacheCurrentChat(userMsg, req.user);
 
-    const Answer = await GenerateResponse(
-      `These are queries by you previously to search the web=${JSON.stringify(
-        FormattedQueries
-      )}&UserQuery=${question}&chathistory_between you and the user=${JSON.stringify(
-        history
-      )}&search_results=${
-        !WebResults.FinalContent || WebResults.error
-          ? "We either got blocked while trying to read the sources or were not able to read any source due to some other reasons ,make sure to mention this to the user"
-          : JSON.stringify(WebResults.FinalContent)
-      }`,
-      WebResultPrompt
-    );
-    if (Answer?.error) {
-      return res.status(400).send({
-        message:
-          "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-      });
+    const prompt = `These are queries by you previously to search the web=${JSON.stringify(queries)}&UserQuery=${question}&chathistory_between you and the user=${JSON.stringify(past)}&search_results=${JSON.stringify(webResults.FinalContent)}`;
+
+    const answer = await GenerateResponse(prompt, WEB_SEARCH_DISTRIBUTOR_PROMPT);
+    if (answer?.error) {
+      return res.status(400).send({ message: "AI models overloaded, try again." });
     }
 
-    const AiMessage = {
+    const aiMsg = {
       id: MessageId,
-      sent_by: "AntiNode", //sent by the user
-      message: {
-        isComplete: true,
-        content: Answer?.result,
-      },
+      sent_by: "AntiNode",
+      message: { isComplete: true, content: answer.result },
       sent_at: currentTime,
     };
-    // update the cache
-    await CacheCurrentChat(AiMessage, req.user);
+    await CacheCurrentChat(aiMsg, req.user);
+    await StoreQueryAndResponse(user_id, question, answer.result);
 
-    // store in the db
-    const StoreChats = await StoreQueryAndResponse(
-      user_id,
-      question,
-      Answer?.result
-    );
-    if (StoreChats.error) {
-      await notifyMe(
-        `Error while storing response history ${StoreChats.error}`
-      );
-    }
-
-    // find the update the chats
-    const FormattedFavicon = {
-      MessageId,
-      icon: WebResults.favicons,
-      url: WebResults.urls, //favicon array from the web search
-    };
-
-    // send the final response to the user
     return res.send({
-      Answer: Answer?.result,
+      Answer: answer.result,
       message: "Results found",
-      favicon: FormattedFavicon,
+      favicon: {
+        MessageId,
+        icon: webResults.favicons,
+        url: webResults.urls,
+      },
     });
   } catch (err) {
-    notifyMe(
-      "An error occured in the postTypewebsearch controller function filecontroller.js line 1204",
-      err
-    );
     console.error(err);
-    return res.status(500).send({
-      message:
-        "Looks like our models are overloaded right now please wait before trying again, thanks for your patience",
-    });
+    notifyMe("Web search error", err);
+    return res.status(500).send({ message: "Internal error, please try later." });
   }
 };
-
 // extract text from the chunks based on the chunk Ids
 export async function getAllDocumentTextsForSummary(docId, totalChunks) {
   // console.log(docId, username, title, totalChunks)

@@ -59,7 +59,7 @@ export const VerifySSETokens = (req, res, next) => {
       req.user = decoded;
 
       next();
-    } catch (sseerrro) {
+    } catch (sse_error) {
       res.write(`event:Error while verifying your details\n`);
       res.end();
     }

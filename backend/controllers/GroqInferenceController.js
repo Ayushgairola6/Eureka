@@ -29,20 +29,7 @@ export async function HandleInference(user_prompt, SYSTEM_PROMPT) {
       stream: false,
       top_p: 1,
       response_format: {
-        type: "json_object",
-        // json_schema: {
-        //   name: "Intent_agent",
-        //   strict: false, // Recommended for guaranteed adherence
-        //   schema: {
-        //     type: "object",
-        //     properties: {
-        //       queries: { type: "array", items: { type: "string" } },
-        //       direct_answer: { type: "string" },
-        //     },
-        //     required: ["queries", "direct_answer"],
-        //     additionalProperties: false,
-        //   },
-        // },
+        type: "json_object"
       },
     });
     if (!response || !response.choices || response.choices.length === 0) {
@@ -95,7 +82,7 @@ export async function StructuredOutPutInferenceHandler(
         { role: "user", content: user_prompt },
       ],
       model: "openai/gpt-oss-120b",
-      temperature: 0.5,
+      temperature: 0.1,
       stream: false,
       top_p: 1,
       response_format: {

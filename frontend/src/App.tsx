@@ -26,7 +26,6 @@ const EmailVerification = lazy(() => import("./pages/EmailVerification.tsx"));
 const OtherChats = lazy(() => import("./pages/OtherChats.tsx"));
 const Tutorial = lazy(() => import("./pages/Tutorial.tsx"))
 const Pricing = lazy(() => import("@/components/Pricing.tsx"))
-import { LogoRender } from '@/components/LogoRender.tsx'
 import { connectSocket, disconnectSocket } from "./store/websockteSlice.ts";
 import { useAppDispatch, useAppSelector } from "./store/hooks.tsx";
 import {
@@ -59,6 +58,7 @@ import { DriveAuthPage } from '@/components/ConnectorCallback.tsx'
 import PaymentCallback from "./pages/PaymentCallback.tsx";
 import Artifacts from './pages/Artifacts.tsx';
 import { Analytics } from "@vercel/analytics/react"
+import LoadingScreen from "./components/LoadingScreen.tsx";
 // stripe api
 // const stripePromise = loadStripe(
 //   "pk_test_51BTUDGJAJfZb9HEBwDg86TN1KNprHjkfipXmEDMb0gSCassK5T3ZfxsAbcgKVmAIXF7oZ6ItlZZbXO6idTHE67IM007EwQ4uN3"
@@ -242,9 +242,7 @@ const App = () => {
       {/* main routers */}
       <Suspense
         fallback={
-          <div className='h-screen text-[2rem] space-grotesk bg-black flex items-center justify-center '>
-            <LogoRender />
-          </div>
+          <LoadingScreen />
         }
       >
         <Router>

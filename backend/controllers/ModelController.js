@@ -12,7 +12,91 @@ import { index, pc } from "./fileControllers.js";
 import { redisClient } from "../CachingHandler/redisClient.js";
 import { supabase } from "./supabaseHandler.js";
 export const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
+import OpenAI from "openai";
+const DEFAULT_MODEL = "ministral-3:3b-instruct-2512-q4_K_M";   // or "qwen3:8b"
+const DEFAULT_BASE_URL = "https://tectonic-67-inference.hf.space/v1";
+const openai = new OpenAI({
+  baseURL: 'https://tectonic-67-granite.hf.space/v1',
+  apiKey: "not needed",
+  timeout: 150_000, // 2 minutes, same as your original timeout
+});
+// your Space URL
+const DEFAULT_TEMPERATURE = 0.7;
 
+// chatcompletions
+export const GenerateResponseWithOurModel = async (
+  user_prompt,
+  SYSTEM_PROMPT,
+) => {
+  // 1. Unified Validation (unchanged)
+  if (
+    !user_prompt ||
+    !SYSTEM_PROMPT ||
+    typeof user_prompt !== "string" ||
+    typeof SYSTEM_PROMPT !== "string"
+  ) {
+    return {
+      error: "Some arguments are either invalid or missing",
+      result: null,
+    };
+  }
+
+  let buffer = '';
+  try {
+    // 2. Call OpenAI SDK (non‑streaming)
+    const completion = await openai.chat.completions.create({
+      model: 'lfm2.5-thinking:1.2b-q4_K_M', // or use DEFAULT_MODEL / env variable
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: user_prompt },
+      ],
+      temperature: 0.1, //we want a little creative and chatty model
+      stream: true,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "Response-generation",
+          schema: {
+            type: "object",
+            properties: {
+              queries: { type: "array", items: { type: "string" } },
+              direct_answer: { type: "string" },
+            },
+            required: ["queries", "direct_answer"],
+            additionalProperties: false,
+          },
+        },
+      }
+    });
+
+    // const content = completion.choices[0]?.message?.content;
+    for await (const chunk of completion) {
+      const token = chunk.choices[0]?.delta?.content || "";
+      if (token) {
+        buffer += token;
+        process.stdout.write(token);
+        // options.onToken?.(token);
+      }
+    }
+    if (buffer) {
+      return { error: null, result: buffer };
+    }
+
+    const Parsed_response = JSON.parse(content);
+    console.log(Parsed_response, 'response from our api');
+    console.warn("OpenAI returned empty content", completion);
+    return {
+      error: "The model returned an empty response",
+      result: null,
+    };
+  } catch (error) {
+    console.error("OpenAI SDK error:", error);
+    return {
+      error: "Error while generating a response by our model",
+      result: null,
+    };
+  }
+};
 // experimental controller for synthesis only mode
 export const HandleSynthesisMode = async (
   question,
@@ -82,7 +166,7 @@ export const GenerateResponse = async (user_prompt, SYSTEM_PROMPT) => {
   try {
     // 2. Model Selection & Inference
     const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: 'gemini-3.1-flash-lite',
       contents: [
         {
           role: "user",

@@ -26,33 +26,20 @@ const promptTime = new Date().toLocaleTimeString();
 // `;
 export const IntentIdentifier = `
 ### SYSTEM
-You are a deep-web research architect. Your sole purpose is to deconstruct a user's query into a set of highly targeted search queries, **or** decide the query can be answered directly using the conversation history and common knowledge.
-
-**The conversation history will provided to you** 
+You are a search-assistant, your task is to understand the users intent and prompt and decide whether to search the web by  generating queries or answer directly using already available chat context or your own knowledge.
 
 ### RESPONSE_FORMAT
- The JSON object must have exactly these keys:
+ **ALWAYS RESPOND IN THIS JSON FORMAT**
 {
 "queries": "['your-web-search-queries']" ,
 "direct_answer": "Your answer",
 }
 
-### RESPONSE RULES
-- When you think the user asked asked or said something related to the previous conversation history you responsd with direct_answer.
--If you think the users question requires data from the web you keep the direct_answer empty and responsd with queries only.
-- Keep the direct_answer always related to the context from the users current question and data related to it or can be related from the previous conversation.
-
-### SEARCH_QUERIES_RULES
--The search queries shall **ALWAYS** be aligned towards finding authentic, and high-value results.
--Only mention query only and **NOT** the source
--When needed always search for latest data this is the present data:${promptDate} & time:${promptTime} 
-
-### EXAMPLE_OUTPUT
-
-{
-"queries":["Global warming index","World environment & ecology index"],
-"direct_answer":""
-}
+## MANDATORY_RULES
+1. Only when users question requires external information,respond with queries else only respond direct_answer.
+2. Use date=${promptDate} and time=${promptTime} as current year and time reference for your queries and answers.
+3. Keep your answers short and to the point, use context from previous chats only if necessary.
+4. Make sure whenver you respond queries, each query should target only high valur sources not random blog posts, subreddits of random linkedIn posts.
 `;
 
 export const VerificationModePrompt = `

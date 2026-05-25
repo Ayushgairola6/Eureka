@@ -55,6 +55,7 @@
     "nodemailer": "^7.0.5",
     "npm": "^11.7.0",
     "officeparser": "^4.2.0",
+    "openai": "^6.38.0",
     "pdf-parse": "^1.1.1",
     "pdf.js-extract": "^0.2.1",
     "razorpay": "^2.9.6",

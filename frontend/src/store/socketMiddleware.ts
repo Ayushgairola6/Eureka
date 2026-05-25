@@ -17,7 +17,11 @@ import {
   SetCookies,
 } from "./AuthSlice.ts";
 import { store } from "./reduxstore.ts";
-import { ResponseLikeStatus, setUploadStatus } from "./InterfaceSlice.ts";
+import {
+  // MimicSSE,
+  ResponseLikeStatus,
+  setUploadStatus,
+} from "./InterfaceSlice.ts";
 const ServerUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 // import { data } from 'react-router';
@@ -66,6 +70,10 @@ const setupSocketListeners = (dispatch: any) => {
       dispatch(RoomNotification(data));
     }
   });
+
+  // socket.on("token_incoming", (data) => {
+  //   dispatch(MimicSSE(data));
+  // });
 
   socket.on("NewFileForRoom", (fileFromServer) => {
     dispatch(SetChatRoomFile(fileFromServer));
