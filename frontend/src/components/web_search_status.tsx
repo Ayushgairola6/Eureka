@@ -144,7 +144,9 @@ const STATUS_HANDLERS: Record<string, any> = {
               <div key={idx} className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
                 <ArrowRight size={12} className="text-blue-400" />
                 <span className="text-sm break-all font-mono">
-                  {typeof link === 'string' ? link : link?.url}
+                  {typeof link === 'string' ? link.split(",").map((item: any) => {
+                    return <ul className='p-2 border rounded-sm'>{item}</ul>
+                  }) : link?.url}
                 </span>
               </div>
             ))}

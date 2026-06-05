@@ -72,6 +72,7 @@ const PrivateDocuments: React.FC<PrivateDocProps> = ({
     return docs;
   }, [User?.Contributions_user_id_fkey, searchQuery, sortBy]);
 
+  // document selection handling
   const handleDocumentSelect = (doc: any) => {
     if (queryType === "Synthesis") {
       dispatch(SetSynthesisDocuments(doc.document_id));

@@ -37,14 +37,13 @@ import {
   GetDataFromSerper,
   ProcessForLLM,
 } from "../OnlineSearchHandler/WebCrawler.js";
-import { HandleDeepWebResearch } from "./FeaturesController.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 import {
   FormalSerpAPIresults,
   GetDataFromSerpApi,
 } from "../OnlineSearchHandler/serpapi_handler.js";
-import { ExecuteTools, WebSerchAgentLoop } from "./WebSearchOrchrestration.js";
-import { HandleInference } from "./GroqInferenceController.js";
+// import { ExecuteTools, WebSerchAgentLoop } from "./WebSearchOrchrestration.js";
+import { HandleInference, StructuredResponseGenerator } from "./GroqInferenceController.js";
 export const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
@@ -1054,17 +1053,19 @@ export async function HandleIntentIdentification(question, plan_type, user) {
     history = [...pastConversation];
   }
 
-  const IdentifiedIntent = await HandleInference(
-    `user_prompt${question}&plan_type=${plan_type}&previous_chats=${JSON.stringify(
-      history
-    )}`,
-    IntentIdentifier
-  );
+  // const IdentifiedIntent = await HandleInference(
+  //   `user_prompt${question}&plan_type=${plan_type}&previous_chats=${JSON.stringify(
+  //     history
+  //   )}`,
+  //   IntentIdentifier
+  // );
+  const user_prompt = [
+    { role: "user", content: question }, { role: "user", content: `conversation_history=${JSON.stringify(history)}` }
+  ]
+  const { error, result } = await StructuredResponseGenerator(JSON.stringify(user_prompt), IntentIdentifier)
 
   if (
-    !IdentifiedIntent ||
-    IdentifiedIntent?.error ||
-    !IdentifiedIntent?.result
+    error || !result
   ) {
     return {
       error: "Failed to generate a response",
@@ -1073,30 +1074,8 @@ export async function HandleIntentIdentification(question, plan_type, user) {
     };
   }
 
-  // if there is a direct answer
-  if (IdentifiedIntent.result?.direct_answer) {
-    return {
-      error: null,
-      FormattedIntent: null,
-      direct_answer: IdentifiedIntent.result.direct_answer,
-    };
-  }
-  // format the model response into valid queries
-  // const FormattedIntent = FilterIntent(IdentifiedIntent?.result);
-  const FormattedIntent = Array.isArray(IdentifiedIntent.result?.queries)
-    ? IdentifiedIntent.result?.queries
-    : typeof IdentifiedIntent.result.queries === "string"
-      ? [IdentifiedIntent.result.queries]
-      : []; //validating and formatting the query
-  if (!FormattedIntent || FormattedIntent?.length === 0) {
-    return {
-      error: "Failed to generate a response",
-      data: null,
-      direct_answer: null,
-    };
-  }
 
-  return { error: null, data: FormattedIntent, direct_answer: null };
+  return { error: null, data: result?.queries || null, direct_answer: result.direct_answer || null };
 }
 
 // web research handler
@@ -1126,6 +1105,7 @@ export const PostTypeWebSearch = async (req, res) => {
     // 2. Generate search queries from user's question
     const intent = await HandleIntentIdentification(question, plan_type, req.user);
     if (!intent || intent.error) {
+      console.log(intent.error)
       return res.status(400).json({ message: "AI models overloaded, try again." });
     }
 

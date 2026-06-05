@@ -19,7 +19,7 @@ import {
   VerifySSETokens,
 } from "../Middlewares/StreamingMiddleware.js";
 import { WebSearchHandle } from "../OnlineSearchHandler/WebSearchHandler.js";
-import { IdentifyRequestInputs } from "../Synthesis/Identifier.js";
+import { SynthesisResponse } from "../Synthesis/Identifier.js";
 import { HandleUserSessionHistory } from "../controllers/FeaturesController.js";
 import { GlobalRequestRateLimit } from "../controllers/UserCreditLimitController.js";
 Router.post(
@@ -76,7 +76,7 @@ Router.post(
     "/method/synthesis",
     GlobalRequestRateLimit,
     VerifyToken,
-    IdentifyRequestInputs
+    SynthesisResponse
   )
   .post(
     "/user/session-history/",

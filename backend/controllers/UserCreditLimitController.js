@@ -70,7 +70,7 @@ export const ProcessUserQuery = async (user, queryType) => {
       };
     }
 
-    return { status: true };
+    return { status: true, message: "Within limits" };
   } catch (error) {
     await notifyMe("Rate Limit Error", error);
     return { status: true, message: "System bypass" };

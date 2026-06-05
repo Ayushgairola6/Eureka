@@ -1,214 +1,94 @@
-import { domainToASCII } from "url";
 import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
 import {
-  ProcessDocumentInfoGathering,
-  ProcessKnowledgeBaseContextGathering,
-  RetrieveInformatioByName,
+    ExtractChatsSummary,
+    ProcessDocumentInfoGathering,
+    ProcessKnowledgeBaseContextGathering,
+    RetrieveInformatioByName,
 } from "./helper_functions.js";
 import { extractUUID } from "./phase2_action.js";
 import { ToolRegistry } from "./tools.js";
 
-//extract the document information if the user has asked for it based on Id
-export async function GetDocumentInfo(
-  phase1_Context,
-  selectedDocuments,
-  user,
-  MessageId
-) {
-  const needs_doc_info = phase1_Context.filter(
-    (li) => li.function_name === "GetDoc_info"
-  );
+export async function GetDocumentInfo(phase1_Context, selectedDocuments, user, MessageId) {
+    const needs_doc_info = phase1_Context.filter((li) => li.function_name === "GetDoc_info");
+    const docToolConfig = ToolRegistry["GetDoc_info"];
 
-  //get the conif object of the function from toolRegistery
-  const docToolConfig = ToolRegistry["GetDoc_info"];
+    if (!needs_doc_info.length && !selectedDocuments?.length) return [];
 
-  //if there is need to look for docment information
-  if (needs_doc_info?.length > 0 || selectedDocuments?.length > 0) {
-    const uniqueDocsMap = new Map(); //map to store only unique values
+    const uniqueDocsMap = new Map();
 
     for (const item of needs_doc_info) {
-      const docId = item.arguments.doc_id; //from arguments only pick those who have a uuid
-      const cleanId = extractUUID(docId); //clean the docuement_ID
-      if (cleanId) {
-        uniqueDocsMap.set(cleanId, item);
-      }
+        const cleanId = extractUUID(item.arguments.doc_id);
+        if (cleanId) uniqueDocsMap.set(cleanId, item);
     }
 
-    //extract document_ids from the manually selected document_id's
-    for (const docId of selectedDocuments) {
-      if (!uniqueDocsMap.has(docId)) {
-        uniqueDocsMap.set(docId, {
-          function_name: "GetDoc_info",
-          arguments: { doc_id: docId, query: "AUTO" },
-          config: docToolConfig,
-        });
-      }
+    for (const docId of selectedDocuments || []) {
+        if (!uniqueDocsMap.has(docId)) {
+            uniqueDocsMap.set(docId, {
+                function_name: "GetDoc_info",
+                arguments: { doc_id: docId, query: "AUTO" },
+                config: docToolConfig,
+            });
+        }
     }
 
-    // --- 4. Finalize and Process ---
-    const FinalizedDocuments = Array.from(uniqueDocsMap.values());
+    const docdata = await ProcessDocumentInfoGathering(Array.from(uniqueDocsMap.values()), user);
 
-    //send it to the helper function
-
-    const docdata = await ProcessDocumentInfoGathering(
-      FinalizedDocuments,
-      user
-    );
-
-    // --- 5. Update Global Context ---
     if (docdata.length > 0) {
-      EmitEvent(user.user_id, "query_status", {
-        MessageId,
-        status: {
-          message: "Gathered DocumentInformation",
-          data: [`Gathering document information ${JSON.stringify(docdata)}`],
-        },
-      });
-
-      return docdata; //an array of information
+        EmitEvent(user.user_id, "query_status", {
+            MessageId,
+            status: { message: "Gathered DocumentInformation", data: ["Gathering document information"] },
+        });
+        return docdata;
     }
-  }
-  return [];
+    return [];
 }
 
-export async function GetDocumentInfoFromName(
-  phase1_Context,
-  user,
-  documentsToNeglect,
-  MessageId // Default to empty array
-) {
-  // 1. Identify "searchByName" requests
-  const nameRequests = phase1_Context.filter(
-    (li) => li.function_name === "searchByName"
-  );
+export async function GetDocumentInfoFromName(phase1_Context, user, documentsToNeglect, MessageId) {
+    const nameRequests = phase1_Context.filter((li) => li.function_name === "searchByName");
+    if (!nameRequests.length) return [];
 
-  //if there are no values
-  if (!nameRequests || nameRequests.length === 0) {
-    return [];
-  }
+    const rawResults = await RetrieveInformatioByName(nameRequests, user);
+    if (!rawResults?.length) return [];
 
-  // OR handles the filtering internally.
-  const rawResults = await RetrieveInformatioByName(nameRequests, user);
-
-  // 4. Critical Step: Deduplication
-
-  //store only valid non duplicate documents
-  if (rawResults && rawResults.length > 0) {
     EmitEvent(user.user_id, "query_status", {
-      MessageId,
-      status: {
-        message: "found-documents-by-name",
-        data: [`Found ${rawResults.length} documents by name`],
-      },
+        MessageId,
+        status: { message: "found-documents-by-name", data: [`Found ${rawResults.length} documents by name`] },
     });
 
-    const FinalArray = [];
-    for (const docs of rawResults) {
-      const docData = docs?.data; // ← extract data first
-      if (!docData) continue;
-      // if this is a different document
-      if (!documentsToNeglect.includes(docs.doc_id)) {
-        FinalArray.push({
-          doc_id: docData.document_id, // ← was docs.document_id
-          result: {
-            feedback: docData.feedback, // ← was docs.feedback
-            metadata: docData.metadata, // ← was docs.metadata
-          },
-        });
-      }
-    }
-
-    return FinalArray;
-  }
-
-  return [];
+    return rawResults
+        .filter((docs) => docs?.data && !documentsToNeglect.includes(docs.data.document_id))
+        .map((docs) => ({
+            doc_id: docs.data.document_id,
+            result: {
+                feedback: docs.data.feedback,
+                metadata: docs.data.metadata,
+            },
+        }));
 }
-//extract information from the public knowledge base with same metadata as the documents selected
-export async function GetKnowledgebaseInfo(
-  phase1_Context,
-  GlobalContextObject,
-  user,
-  MessageId
-) {
-  const needs_to_search_knowledgebase = phase1_Context.filter(
-    (li) => li.function_name === "search_knowledge"
-  );
 
-  //if there are
-  if (needs_to_search_knowledgebase.length > 0) {
+export async function GetKnowledgebaseInfo(phase1_Context, GlobalContextObject, user, MessageId) {
+    const needs_kb = phase1_Context.filter((li) => li.function_name === "search_knowledge");
+    if (!needs_kb.length) return [];
+
     const PublicKnowledge = await ProcessKnowledgeBaseContextGathering(
-      needs_to_search_knowledgebase,
-      user,
-      GlobalContextObject.AlldocumentInformation
+        needs_kb,
+        user,
+        GlobalContextObject.AlldocumentInformation
     );
 
-    if (PublicKnowledge && PublicKnowledge.length > 0) {
-      EmitEvent(user.user_id, "query_status", {
-        MessageId,
-        status: {
-          message: `Reading public knowledgebase`,
-          data: [
-            `Reading public knowledgebase:${PublicKnowledge[0]?.text?.slice(
-              0,
-              50
-            )}`,
-          ],
-        },
-      });
-
-      return PublicKnowledge; //array of object shape information
+    if (PublicKnowledge?.length > 0) {
+        EmitEvent(user.user_id, "query_status", {
+            MessageId,
+            status: { message: "Reading public knowledgebase", data: ["Reading public knowledgebase"] },
+        });
+        return PublicKnowledge;
     }
-  }
-  return [];
+    return [];
 }
 
-//if the model wants to check something in the summary history for informatin
-export async function Check_ChatRoomSummary(
-  phase2_Action,
-  room_id,
-  user_query
-) {
-  //if the request is for a room chatHistory retrieval
-  const checkchatSummmary = phase2_Action.filter(
-    (li) => li.func_name === "Search_InRoomChat"
-  );
-
-  if (checkchatSummmary.length > 0) {
-    const Summary = await ExtractChatsSummary(
-      checkchatSummmary,
-      room_id,
-      user_query
-    );
-
-    if (Summary) {
-      return Summary;
-    }
-  }
-  return [];
-}
-
-// function to filter out duplicate documents_based on ids
-function FilterIds(GetDoc_info, SelectedDocuments) {
-  //if there is need to look for idocment information
-  const uniqueDocsMap = new Map();
-
-  if (GetDoc_info.length > 0 || SelectedDocuments.length > 0) {
-    for (const item of GetDoc_info) {
-      const docId = item.arguments.doc_id; //from arguments only pick those who have a uuid
-      const cleanId = extractUUID(docId); //clean the docuement_ID
-      if (cleanId) {
-        uniqueDocsMap.set(docId, docId);
-      }
-    }
-
-    //extract document_ids from the manually selected document_id's
-    for (const docId of SelectedDocuments) {
-      if (!uniqueDocsMap.has(docId)) {
-        uniqueDocsMap.set(docId, docId);
-      }
-    }
-  }
-
-  const FinalizedDocuments = Array.from(uniqueDocsMap.values());
-  return FinalizedDocuments;
+export async function Check_ChatRoomSummary(phase2_Action, room_id, user_query) {
+    const checkchatSummary = phase2_Action.filter((li) => li.func_name === "Search_InRoomChat");
+    if (!checkchatSummary.length) return [];
+    const Summary = await ExtractChatsSummary(checkchatSummary, room_id, user_query);
+    return Summary || [];
 }

@@ -1,6 +1,6 @@
 import { CheckCheck, ChevronRight, LockIcon } from "lucide-react";
 import { useEffect, useState } from "react"
-import { SetMode, setSearchDepth, setSelectedDoc, setShowOptions } from "../store/InterfaceSlice";
+import { SetMode, setQueryType, setSearchDepth, setSelectedDoc, setShowOptions } from "../store/InterfaceSlice";
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { toast } from "sonner";
 
@@ -93,6 +93,7 @@ function ToggleButton(value: string, selected: string, setSelected: any, user: a
             case 'Web Search':
                 dispatch(SetMode("Web Search"));
                 dispatch(setSearchDepth("surface_web"));
+                dispatch(setQueryType("Web Search"))
 
                 break;
 
@@ -100,15 +101,20 @@ function ToggleButton(value: string, selected: string, setSelected: any, user: a
                 dispatch(SetMode
                     ("Web Search"));
                 dispatch(setSearchDepth("deep_web"));
+                dispatch(setQueryType("Web Search"))
+
                 break;
 
             case 'Analyst':
                 dispatch(SetMode("Analyst"));
                 dispatch(setSearchDepth("surface_web"));
+                dispatch(setQueryType("Analyst"))
+
                 break;
 
             case 'Synthesis':
                 dispatch(SetMode("Synthesis"));
+                dispatch(setQueryType("Synthesis"))
                 break;
         }
     }, [selected]);
@@ -117,7 +123,7 @@ function ToggleButton(value: string, selected: string, setSelected: any, user: a
     const dispatch = useAppDispatch();
     return (<>
         <div onClick={() => {
-            if (user?.IsPremiumUser === false && (value === 'deep_web' || value === "Analyst" || value === 'Synthesis')) {
+            if (user?.IsPremiumUser === false && (value === 'deep_web' || value === "Synthesis" || value === "Analyst")) {
                 toast.info("Upgrade your plan to access these features")
                 return;
             }

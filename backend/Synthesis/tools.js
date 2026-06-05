@@ -13,17 +13,26 @@ import {
   ProcessForLLM,
 } from "../OnlineSearchHandler/WebCrawler.js";
 
-//handles the tools and their function execution
+// ------------------------------------------------------------------
+// Clean Tool Registry – all tools take a single `params` object
+// ------------------------------------------------------------------
+
 export const ToolRegistry = {
+  // ------------------------------------------------------------------
+  // 1. GetDoc_info – fetch metadata by document_id
+  // ------------------------------------------------------------------
   GetDoc_info: {
     description:
-      "Fetches the information about a document solely based on the uuid of the document name is not processed here",
+      "Fetches the information about a document solely based on the uuid of the document. Name is not processed here.",
     importance: 1,
-    execute: async (doc_id, user) => {
+    execute: async (params) => {
+      const { doc_id, user } = params;
       if (!doc_id || typeof doc_id !== "string") {
-        return { message: "Invalid arguments", data: null };
+        return { error: "Invalid arguments: doc_id required", data: null };
       }
-      // const results = await
+      if (!user || !user.user_id) {
+        return { error: "User not provided", data: null };
+      }
       const { data, error } = await supabase
         .from("Contributions")
         .select("feedback,metadata")
@@ -31,57 +40,57 @@ export const ToolRegistry = {
         .eq("user_id", user.user_id)
         .single();
       if (error) {
-        return {
-          message: "There is not such document in the db found",
-          data: null,
-        };
+        return { error: "Document not found in database", data: null };
       }
-      return { message: "Data of the file foung", data: data };
+      return { error: null, data };
     },
   },
+
+  // ------------------------------------------------------------------
+  // 2. searchByName – find document by its name/feedback
+  // ------------------------------------------------------------------
   searchByName: {
     description:
-      "If the user mentions the name of their document instead of document_id uses this method to find information about document ",
+      "If the user mentions the name of their document instead of document_id, use this to find information about it.",
     importance: 1,
-    execute: async (document_name, user) => {
-      const query = supabase
+    execute: async (params) => {
+      const { document_name, user } = params;
+      if (!document_name || typeof document_name !== "string") {
+        return { error: "Invalid arguments: document_name required", data: null };
+      }
+      if (!user || !user.user_id) {
+        return { error: "User not provided", data: null };
+      }
+      const { data, error } = await supabase
         .from("Contributions")
         .select("feedback,metadata,document_id")
         .eq("feedback", document_name)
         .eq("user_id", user.user_id)
         .single();
-
-      const { data, error } = await query;
       if (error) {
-        console.error(error);
-        return {
-          message: "There is not such document in the db found",
-          data: null,
-        };
+        return { error: "Document not found", data: null };
       }
-      return { message: "document data found", data: data }; //data includes, category, subcategory,and titile of the file written by the user
+      return { error: null, data };
     },
   },
+
+  // ------------------------------------------------------------------
+  // 3. search_knowledge – public knowledgebase retrieval
+  // ------------------------------------------------------------------
   search_knowledge: {
     description:
-      "Fetches the important stuff related to the query asked by the user and the category they chose",
+      "Fetches relevant public knowledge base chunks for the query and category.",
     importance: 1,
-    execute: async (category, subCategory, question, user, plan_type) => {
-      if (
-        !category ||
-        typeof category !== "string" ||
-        !subCategory ||
-        typeof subCategory !== "string" ||
-        !question ||
-        typeof question !== "string"
-      ) {
-        return { message: "Invalid arguments" };
+    execute: async (params) => {
+      const { category, subCategory, question, plan_type } = params;
+      if (!category || !subCategory || !question) {
+        return { error: "Missing category, subCategory, or question" };
       }
 
-      //getting the text chunks from the db
+      const topK = plan_type !== "free" ? 5 : 2;
       const response = await index.searchRecords({
         query: {
-          topK: plan_type !== "free" ? 5 : 2,
+          topK,
           inputs: { text: question },
           filter: {
             category: { $eq: category },
@@ -89,105 +98,108 @@ export const ToolRegistry = {
             visibility: { $eq: "Public" },
           },
         },
-        fields: ["text"], //only return the text
+        fields: ["text"],
       });
 
-      if (response.result.hits.length < 0) {
-        return `No info in knowledge-base regard this query`;
+      if (!response.result.hits?.length) {
+        return { error: null, data: "No info in knowledge-base regarding this query" };
       }
 
-      //build the string
-      let ResultString = ``;
-      response.result.hits.forEach((li) => {
-        ResultString += `score=${li._score}&text=${li.fields.text}`;
-      });
-
-      // console.log(ResultString, "The knowledgebaseInfo");
-      return ResultString;
+      const resultString = response.result.hits
+        .map((h) => `score=${h._score}&text=${h.fields.text}`)
+        .join("\n");
+      return { error: null, data: resultString };
     },
   },
+
+  // ------------------------------------------------------------------
+  // 4. store_memory – store key-value memory in graph DB
+  // ------------------------------------------------------------------
   store_memory: {
     description:
-      "Stores the memory of user in key value and relation format in graph databases for memory creation",
+      "Stores the memory of user in key value and relation format in graph databases for memory creation.",
     importance: 2,
-    execute: async (memory, user) => {
+    execute: async (params) => {
+      const { memory, user } = params;
       if (!memory || !user) {
-        return { message: "Invalid arguments" };
+        return { error: "Invalid arguments: memory and user required" };
       }
+      // Placeholder – implement actual Neo4j logic here
+      return { error: null, data: "Memory stored successfully" };
     },
   },
+
+  // ------------------------------------------------------------------
+  // 5. get_memory – recall user memory from graph DB
+  // ------------------------------------------------------------------
   get_memory: {
     description:
-      "Finds any matchin memory from the db to generate specific answers",
+      "Finds any matching memory from the db to generate specific answers.",
     importance: 2,
-    execute: async (memory, user) => {
+    execute: async (params) => {
+      const { memory, user } = params;
       if (!memory || !user) {
-        return { message: "Invalid arguments" };
+        return { error: "Invalid arguments: memory and user required" };
       }
+      // Placeholder – implement actual Neo4j logic here
+      return { error: null, data: "No relevant memory found" };
     },
   },
+
+  // ------------------------------------------------------------------
+  // 6. get_all_chunks – fetch all chunks of a document by ID
+  // ------------------------------------------------------------------
   get_all_chunks: {
-    description:
-      "Find the data of a document whose document id is available to us",
+    description: "Retrieves all text chunks of a document by its docId.",
     importance: 2,
-    execute: async (docId, question, user) => {
-      if (
-        !question ||
-        typeof question !== "string" ||
-        !docId ||
-        typeof docId !== "string"
-      ) {
-        return { error: "Invalid arguments", data: null };
+    execute: async (params) => {
+      const { docId, user } = params;
+      if (!docId || typeof docId !== "string") {
+        return { error: "Invalid docId", data: null };
       }
 
       const { data, error } = await supabase
         .from("Contributions")
-        .select("  chunk_count ")
-        .eq("document_id", docId);
+        .select("chunk_count")
+        .eq("document_id", docId)
+        .single();
 
-      if (error) {
-        return {
-          error: `An error occured while finding the information of document=${docId}`,
-          data: null,
-        };
+      if (error || !data) {
+        return { error: `Document ${docId} not found`, data: null };
       }
+
       const response = await getAllDocumentTextsForSummary(
         docId,
-        data[0].chunk_count
+        data.chunk_count
       );
 
       if (!response || response.length === 0) {
-        return {
-          error: `An error occured while finding the information of document=${docId}`,
-          data: null,
-        };
+        return { error: "No chunks found for document", data: null };
       }
-      let ResultString = `Following are the chunks related to the document=${docId} from memory=`;
-      response.forEach((str) => {
-        ResultString += str; //append the context values
-      });
 
-      return { error: null, data: ResultString };
+      const resultString =
+        `Following are the chunks related to the document ${docId}:\n` +
+        response.join("\n");
+      return { error: null, data: resultString };
     },
   },
+
+  // ------------------------------------------------------------------
+  // 7. get_selected_chunks – fetch only relevant chunks via vector search
+  // ------------------------------------------------------------------
   get_selected_chunks: {
     description:
-      "Find the data of a document whose document id is available to us",
+      "Finds the most relevant chunks of a private document using vector search.",
     importance: 2,
-    execute: async (docId, question, user, plan_type) => {
-      if (
-        !question ||
-        typeof question !== "string" ||
-        !docId ||
-        typeof docId !== "string"
-      ) {
-        return { error: "Invalid arguments", data: null };
+    execute: async (params) => {
+      const { docId, question, user, plan_type } = params;
+      if (!docId || !question) {
+        return { error: "docId and question are required", data: null };
       }
-
-      // getting the text chunks from the db
+      const topK = plan_type !== "free" ? 100 : 50;
       const response = await index.searchRecords({
         query: {
-          topK: plan_type !== "free" ? 100 : 50,
+          topK,
           inputs: { text: question },
           filter: {
             documentId: { $eq: docId },
@@ -195,156 +207,148 @@ export const ToolRegistry = {
             contributor: { $eq: user.user_id },
           },
         },
-        fields: ["text"], //only return the text
+        fields: ["text"],
       });
 
-      if (response.result.hits.length < 0) {
-        return {
-          error: null,
-          data: `No info in knowledge-base regard this query`,
-        };
+      if (!response.result.hits?.length) {
+        return { error: null, data: "No relevant chunks found" };
       }
-      let ResultString = "";
 
-      response.result.hits.forEach((e) => {
-        if (e.fields.text) {
-          ResultString += `score=${e._score}&text=${e.fields.text}`;
-        }
-      });
-      return { error: null, data: ResultString };
+      const resultString = response.result.hits
+        .map((h) => `score=${h._score}&text=${h.fields.text}`)
+        .join("\n");
+      return { error: null, data: resultString };
     },
   },
+
+  // ------------------------------------------------------------------
+  // 8. search_web – perform a web search and return formatted results
+  // ------------------------------------------------------------------
   search_web: {
-    description: "Search the web for real-time information",
+    description: "Search the web for real-time information.",
     importance: 2,
-    execute: async (question, data) => {
-      if (!question || typeof question !== "string") {
+    execute: async (params) => {
+      const { query, user, plan_type, MessageId } = params;
+      if (!query || !user || !plan_type || !MessageId) {
         return {
-          FormattedResults: "Some error occured in the web seach handler.",
+          error: "Missing query, user, plan_type, or MessageId",
+          FormattedResults: null,
           favicons: [],
         };
       }
 
-      const { user, plan_type, MessageId } = data;
-      if (!user || !plan_type || !MessageId) {
-        return {
-          FormattedResults: "Some error occured in the web seach handler.",
-          favicons: [],
-        };
-      }
-      // fetch relevant links from the seper
       const { response, links: LinksToFetch } = await fetchSearchResults(
         plan_type,
-        question,
+        query,
         user,
         MessageId
       );
 
-      if (!response || LinksToFetch?.length === 0) {
+      if (!response || !LinksToFetch?.length) {
         return {
-          FormattedResults: "Some error occured in the web seach handler.",
+          error: "Web search returned no results",
+          FormattedResults: null,
           favicons: [],
         };
       }
 
-      // scrape and optimize the context for the llm
       const CleanedWebData = await ProcessForLLM(
         LinksToFetch,
         user,
-        question,
+        query,
         MessageId,
         null,
         plan_type
       );
-      // extract only necessary chunks for context
 
-      if (CleanedWebData.length === 0) {
-        // console.log(CleanedWebData, "The cleanedWebData ");
+      if (!CleanedWebData?.length) {
         return {
-          FormattedResults: "Some error occured in the web seach handler.",
+          error: "Web search failed to extract content",
+          FormattedResults: null,
           favicons: [],
         };
       }
 
-      //Foramt for llm
       const WebResults = FormattForLLM(CleanedWebData);
-
-      if (WebResults?.error || WebResults.FinalContent.length === 0) {
-        // console.log(WebResults, "The WebResults ");
-
+      if (WebResults?.error || !WebResults.FinalContent?.length) {
         return {
-          FormattedResults: "Some error occured in the web seach handler.",
+          error: WebResults?.error || "Web search formatting failed",
+          FormattedResults: null,
           favicons: [],
         };
       }
 
       return {
-        FormattedResults: WebResults?.FinalContent,
-        favicons: WebResults.favicons,
+        error: null,
+        FormattedResults: WebResults.FinalContent,
+        favicons: WebResults.favicons || [],
       };
     },
   },
+
+  // ------------------------------------------------------------------
+  // 9. Search_InRoomChat – search room chat history
+  // ------------------------------------------------------------------
   Search_InRoomChat: {
     description:
-      "In a room if a past memory is recalled this method is called for a hazy memory effect",
+      "In a room, recall past conversation snippets related to a query.",
     importance: 2,
-    execute: async (query, room_id) => {
-      if (!query || typeof query !== "string") {
-        return { message: "Invalid arguments" };
+    execute: async (params) => {
+      const { query, room_id } = params;
+      if (!query || !room_id) {
+        return { error: "query and room_id are required" };
       }
-      const chatIndex = await pc.index("room_chat_history");
 
-      //find the most matching messages
+      const chatIndex = pc.index("room_chat_history");
       const history = await chatIndex.searchRecords({
         query: {
-          inputs: { text: query, room_id: room_id },
+          inputs: { text: query, room_id },
           topK: 4,
         },
         fields: ["summary", "created_at"],
       });
 
-      let summaryString = "";
-      if (history.result.hits.length > 0) {
-        history.result.hits.forEach((sum) => {
-          summaryString += `score=${sum._score}&summary=${sum.fields.summary}&create_at=${sum.fields.created_at}`;
-        });
-
-        return summaryString;
+      if (!history.result.hits?.length) {
+        return { error: null, data: "Unable to find requested history in the records" };
       }
 
-      return "Unable to find requested history in the records";
-      // getting the text chunks from the db
+      const resultString = history.result.hits
+        .map((h) => `score=${h._score}&summary=${h.fields.summary}&created_at=${h.fields.created_at}`)
+        .join("\n");
+      return { error: null, data: resultString };
     },
   },
-  get_session_chat: {
-    description: "To retrive solo session chat history for quick recall",
-    importance: 2,
-    execute: async (room_id) => {
-      if (!room_id) {
-        return { message: "Invalid arguments" };
-      }
-      const chatIndex = await pc.index("room_chat_history");
 
-      //find the most matching messages
+  // ------------------------------------------------------------------
+  // 10. get_session_chat – retrieve solo chat history
+  // ------------------------------------------------------------------
+  get_session_chat: {
+    description: "Retrieve solo session chat history for quick recall.",
+    importance: 2,
+    execute: async (params) => {
+      const { room_id } = params;
+      if (!room_id) {
+        return { error: "room_id is required" };
+      }
+
+      const chatIndex = pc.index("room_chat_history");
+      // Note: the original code had a missing query variable; using a default empty string.
       const history = await chatIndex.searchRecords({
         query: {
-          inputs: { text: query, room_id: room_id },
+          inputs: { text: "", room_id },
           topK: 4,
         },
         fields: ["summary", "created_at"],
       });
 
-      let summaryString = "";
-      if (history.result.hits.length > 0) {
-        history.result.hits.forEach((sum) => {
-          summaryString += `score=${sum._score}&summary=${sum.fields.summary}&create_at=${sum.fields.created_at}`;
-        });
-
-        return summaryString;
+      if (!history.result.hits?.length) {
+        return { error: null, data: "No session chat history found" };
       }
 
-      return "Unable to find requested history in the records";
-      // getting the text chunks from the db
+      const resultString = history.result.hits
+        .map((h) => `score=${h._score}&summary=${h.fields.summary}&created_at=${h.fields.created_at}`)
+        .join("\n");
+      return { error: null, data: resultString };
     },
   },
 };

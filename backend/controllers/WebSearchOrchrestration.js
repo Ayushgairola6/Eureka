@@ -143,13 +143,8 @@ export const ExecuteTools = async (toolsRequired, context) => {
   if (!user) {
     return { error: "Context is missing data", message: null, results: [] };
   }
-  const ParsedResults = safeJsonParse(modelResponse);
 
-  console.log(
-    "The models parsed and plain response\n",
-    modelResponse,
-    ParsedResults
-  );
+
   if (!ParsedResults) {
     return { error: "Context is missing data", message: null, results: [] };
   }
@@ -289,8 +284,7 @@ async function OrchrestrateTools(toolsArray, data) {
           .eq("user_id", user.user_id)
           .catch((error) => {
             console.error(
-              `Search failed for ${
-                (request?.memory_type, request?.memory_value)
+              `Search failed for ${(request?.memory_type, request?.memory_value)
               }:`,
               error
             );

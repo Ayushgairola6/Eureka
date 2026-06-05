@@ -23,6 +23,27 @@ const turndown = new TurndownService({ headingStyle: "atx" });
 const apify_client = new ApifyClient({
   token: process.env.APIFY_TOKEN,
 });
+
+
+export async function SerpWeb(query) {
+  try {
+    const response = await fetch(
+      "https://web-search-ty0g.onrender.com/search",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ q: query, format: "json" }).toString(),
+        signal: AbortSignal.timeout(1800_000),
+      }
+    );
+    const data = await response.json();
+    const urls = data.results.map((item) => item.url);
+    return { err: null, results: urls.length > 5 ? urls.slice(4) : urls }
+  } catch (err) {
+    return { err: err, results: null }
+  }
+}
+
 export async function GetDataFromSerper(
   query,
   user,
@@ -34,27 +55,26 @@ export async function GetDataFromSerper(
     return { error: "Query parameter is required and cannot be empty" };
   }
   // as the function returns an array of queries join them
-  const cleanedQuery = cleanAndSplitQueries(query)?.join("; ");
+  const cleanedQuery = cleanAndSplitQueries(query)?.join(";");
+  const reciever = user.user_id || room_id
   // if the query is from a room_send the event to the whole room
-  if (room_id) {
-    EmitEvent(room_id, "query_status", {
-      MessageId,
-      status: {
-        message: "fetching_url",
-        data: [`Searching for ${cleanedQuery}`],
-      },
-    });
+  EmitEvent(reciever, "query_status", {
+    MessageId,
+    status: {
+      message: "fetching_url",
+      data: [`Searching for ${cleanedQuery}`],
+    },
+  });
+
+  const { err, results } = await SerpWeb(query);
+
+  if (!err && results && results?.length > 0) {
+    return results;
   } else {
-    // else send it the solo user
-    EmitEvent(user.user_id, "query_status", {
-      MessageId,
-      status: {
-        message: "fetching_url",
-        data: [`Searching for ${cleanedQuery}`],
-      },
-    });
+    console.error(err, 'our serp api failed to yield results')
   }
 
+  // serp with serper api
   try {
     const response = await axios.post(
       "https://google.serper.dev/search",
@@ -89,25 +109,16 @@ export function FilterUrlForExtraction(data, user, MessageId, room_id) {
       }
     });
   }
+  const reciever = user.user_id || room_id
 
-  // if a room request send the event to the room else send it  to the user
-  if (room_id) {
-    EmitEvent(room_id, "query_status", {
-      MessageId,
-      status: {
-        message: "processing_links",
-        data: LinksToProcess,
-      },
-    });
-  } else {
-    EmitEvent(user.user_id, "query_status", {
-      MessageId,
-      status: {
-        message: "processing_links",
-        data: LinksToProcess,
-      },
-    });
-  }
+  EmitEvent(reciever, "query_status", {
+    MessageId,
+    status: {
+      message: "processing_links",
+      data: LinksToProcess,
+    },
+  });
+
 
   return LinksToProcess;
 }

@@ -2,19 +2,11 @@ import { redisClient } from "../CachingHandler/redisClient.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 
 import {
-  CHAT_ROOM_WEB_SEARCH_PROMPT,
-  CHATROOM_IDENTIFIER_PROMPT,
-  CHATROOM_SYNTHESIS_PROMPT,
-  IDENTIFIER_PROMPT,
-  IntentIdentifier,
-  KNOWLEDGE_DISTRIBUTOR_PROMPT,
   WEB_SEARCH_DISTRIBUTOR_PROMPT,
 } from "../Prompts/Prompts.js";
-import {
-  CentralFunctionProcessor,
-  ExeCuteContextEngines,
-  ValidateDocumentLimit,
-} from "../Synthesis/Identifier.js";
+// import {
+// ValidateDocumentLimit,
+// } from "../Synthesis/Identifier.js";
 import {
   EmitEvent,
   getIo,
@@ -26,33 +18,26 @@ import {
   index,
 } from "./fileControllers.js";
 import {
-  FindIntent,
   GenerateResponse,
-  HandleSummarizationOfChats,
-  IdentifyUserRequest,
-  SynthesisResponseGenerator,
 } from "./ModelController.js";
 import { supabase } from "./supabaseHandler.js";
 import { v4 as uuidv4 } from "uuid";
 import { ProcessUserQuery } from "./UserCreditLimitController.js";
-import { cp } from "fs";
 import {
-  FormatSessionHistory,
   HandleDeepWebResearch,
 } from "./FeaturesController.js";
 import {
   FilterUrlForExtraction,
   FormattForLLM,
-  GetDataFromSerper,
   ProcessForLLM,
 } from "../OnlineSearchHandler/WebCrawler.js";
-import { HandlePreProcessFunctions } from "../Synthesis/helper_functions.js";
+// import { HandlePreProcessFunctions } from "../Synthesis/helper_functions.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 import * as crypto from "node:crypto";
 import { HandleInference } from "./GroqInferenceController.js";
 import {
   HandleDocumentMetadataGathering,
-  SynthsisOrchrestrator,
+  // SynthsisOrchrestrator,
 } from "../Synthesis/PreprocessingHandler.js";
 import { GetRoomChatsForContext } from "../ChatRoomHelpers/ChatRoomUtils.js";
 // string type validator
@@ -946,9 +931,8 @@ export const QueryDocWithAntiNodeInChatRoom = async (req, res) => {
         io.to(room_id).emit("recieved_message", {
           message_id: MessageId,
           sent_by: null,
-          message: `${
-            req.user.username || "User"
-          } needs to have an active subscription in order to be able to use AntiNode AI in a chat room.`,
+          message: `${req.user.username || "User"
+            } needs to have an active subscription in order to be able to use AntiNode AI in a chat room.`,
           room_id: room_id,
           users: { username: "AntiNode" },
           sent_at: currentTime || new Date().toISOString(),
@@ -1368,10 +1352,9 @@ export const QueryWebInAntiNodeChatRoom = async (req, res) => {
         FormattedQueries
       )}&UserQuery=${query}&chathistory_between you and the user=${JSON.stringify(
         history
-      )}&search_results=${
-        !WebResults.FinalContent || WebResults.error
-          ? "We either got blocked while trying to read the sources or were not able to read any source due to some other reasons ,make sure to mention this to the user"
-          : JSON.stringify(WebResults.FinalContent)
+      )}&search_results=${!WebResults.FinalContent || WebResults.error
+        ? "We either got blocked while trying to read the sources or were not able to read any source due to some other reasons ,make sure to mention this to the user"
+        : JSON.stringify(WebResults.FinalContent)
       }`,
       WEB_SEARCH_DISTRIBUTOR_PROMPT
     );
