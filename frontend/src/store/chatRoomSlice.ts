@@ -43,6 +43,7 @@ interface metadata {
   subcategory: string;
 }
 interface Misallaneouschats {
+  id: number;
   created_at: string;
   question: string;
   AI_response: string;
@@ -231,6 +232,35 @@ export const GetSynthesizedResult = createAsyncThunk<any, any>(
   }
 );
 
+// delete a chat history
+export const DeleteChat = createAsyncThunk<any, any>(
+  "delete/chat",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await axios.delete(`${BaseApiUrl}/api/chat-delete`, {
+        data,
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (err: any) {
+      if (err.response && err.response.data) {
+        const serverMessage =
+          err.response.data.message || err.response.data.error;
+        if (serverMessage) return rejectWithValue(serverMessage);
+      }
+
+      if (err.request) {
+        return rejectWithValue(
+          "Connection_Lost: Unable to reach AntiNode servers."
+        );
+      }
+
+      return rejectWithValue(
+        err.message || "An unexpected system fault occurred."
+      );
+    }
+  }
+);
 const ChatSlice = createSlice({
   name: "chat",
   initialState,
@@ -299,12 +329,18 @@ const ChatSlice = createSlice({
       //getting misallaneous chat histor
       .addCase(GetMisallaneousChatHistory.fulfilled, (state, action) => {
         state.gettingChats = false;
-        const { data, nextCursor } = action.payload;
+        const { data } = action.payload; // no more nextCursor from server
+
         if (data?.length > 0) {
+          // Append older messages at the end (newest first → they're older, so at the tail)
           state.Misallaneouschats = [...state.Misallaneouschats, ...data];
-        }
-        if (nextCursor) {
-          state.cursor = nextCursor;
+
+          // Set cursor to the oldest message just fetched (last item in data)
+          const oldest = data[data.length - 1];
+          state.cursor = oldest.created_at;
+        } else {
+          // No more data → cursor becomes null to stop further requests
+          state.cursor = null;
         }
       })
       .addCase(GetMisallaneousChatHistory.rejected, (state, _action) => {
@@ -323,6 +359,17 @@ const ChatSlice = createSlice({
       .addCase(GetSynthesizedResult.fulfilled, (state, _action) => {
         state.isSynthesizing = false;
         // state.
+      })
+
+      .addCase(DeleteChat.fulfilled, (state, action) => {
+        // The ID you passed when dispatching DeleteChat({ message_id })
+        const id = action.payload.message_id;
+        if (!id) return;
+
+        // Remove the chat from the array (filter is safer than splice)
+        state.Misallaneouschats = state.Misallaneouschats.filter(
+          (item) => item?.id !== id
+        );
       });
   },
 });

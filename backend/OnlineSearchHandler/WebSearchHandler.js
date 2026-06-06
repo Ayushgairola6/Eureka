@@ -5,18 +5,19 @@ import fs from "fs/promises"; // Use fs/promises for async/await
 import path from "path";
 import { GenerateResponse } from "../controllers/ModelController.js";
 import // splitMarkdown,
-// splitMarkdownByHeadings,
-"../FilerParsers/FilerParser.js";
+  // splitMarkdownByHeadings,
+  "../FilerParsers/FilerParser.js";
 import { StoreQueryAndResponse } from "../controllers/fileControllers.js";
 import { chunkMarkdown, formatSSEChunk } from "../FilerParsers/FilerParser.js";
 const tvly = tavily({ apiKey: process.env.TAVILY_WEB_SEARCH_API_KEY });
 
-export const SearchQueryResults = async (query, user) => {
+export const SearchQueryResults = async (query, plan_type) => {
   try {
     if (!query || typeof query !== "string") {
       return { error: "Invalid query type" };
     }
 
+    const isPaid = plan_type === 'free' ? false : true;
     const response = await tvly.search(query, {
       searchDepth: !Paid ? "advanced" : "basic",
       maxTokens: !Paid ? 20 : 5,
@@ -107,9 +108,8 @@ export const SearchQueriesResults = async (queries, user, plan_type) => {
           const title = r.title || "No Title";
           const url = r.url || "No URL";
           const snippet = r.content ? String(r.content).slice(0, 300) : "";
-          part += `${
-            i + 1
-          }. ${title}\n   Link: ${url}\n   Excerpt: ${snippet}\n`;
+          part += `${i + 1
+            }. ${title}\n   Link: ${url}\n   Excerpt: ${snippet}\n`;
         });
       } else {
         part += `No detailed sources found.\n`;

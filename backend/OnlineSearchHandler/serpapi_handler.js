@@ -38,7 +38,7 @@ export const GetDataFromSerpApi = async (
       q: query,
       google_domain: "google.com",
       hl: "en",
-      num: plan_type === "free" ? 2 : plan_type === "sprint pass" ? 5 : 10,
+      num: 4,
     });
 
     return response;

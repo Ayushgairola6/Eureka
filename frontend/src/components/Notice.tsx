@@ -55,7 +55,7 @@ export const Notice = () => {
           <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed mt-1">
 
             <strong className="text-zinc-800 dark:text-zinc-200">
-              We are currently pre-revenue so some usage issues may be noticeable/
+              This is the version 1.0.1 so some performance issues may be noticeable
             </strong>
           </p>
         </div>

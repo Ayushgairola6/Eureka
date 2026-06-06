@@ -1,11 +1,11 @@
-import { CheckCheck, ChevronRight, LockIcon } from "lucide-react";
+import { CheckCheck, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react"
 import { SetMode, setQueryType, setSearchDepth, setSelectedDoc, setShowOptions } from "../store/InterfaceSlice";
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { toast } from "sonner";
+// import { toast } from "sonner";
 
 export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any) => {
-    const { user } = useAppSelector(s => s.auth);
+    // const { user } = useAppSelector(s => s.auth);
 
     const [selected, setSelected] = useState<string>('Web Search');
     return (<>
@@ -25,7 +25,7 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
                         </span>
                     </section>
 
-                    {ToggleButton('Web Search', selected, setSelected, user)}
+                    {ToggleButton('Web Search', selected, setSelected)}
 
                 </ul>
                 <ul className='flex items-center justify-between px-2 py-1 '>
@@ -37,7 +37,8 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
                     </section>
 
                     <div className='flex items-center justify-center gap-2'>
-                        {ToggleButton('deep_web', selected, setSelected, user)}{user?.IsPremiumUser === false && <LockIcon size={14} />}
+                        {ToggleButton('deep_web', selected, setSelected)}
+                        {/* {user?.IsPremiumUser === false && <LockIcon size={14} />} */}
 
                     </div>
 
@@ -51,7 +52,8 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
                     </section>
                     <div className='flex items-center justify-center gap-2'>
 
-                        {ToggleButton('Analyst', selected, setSelected, user)}{user?.IsPremiumUser === false && <LockIcon size={14} />}
+                        {ToggleButton('Analyst', selected, setSelected)}
+                        {/* {user?.IsPremiumUser === false && <LockIcon size={14} />} */}
                     </div >
                 </ul>
                 <ul className='flex items-center justify-between px-2 py-1'>
@@ -63,7 +65,8 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
                     </section>
                     <div className='flex items-center justify-center gap-2'>
 
-                        {ToggleButton('Synthesis', selected, setSelected, user)}{user?.IsPremiumUser === false && <LockIcon size={14} />}
+                        {ToggleButton('Synthesis', selected, setSelected)}
+                        {/* {user?.IsPremiumUser === false && <LockIcon size={14} />} */}
                     </div >
                 </ul>
 
@@ -74,7 +77,7 @@ export const InterfaceFeatureSelector = ({ showFeatures, setShowFeatures }: any)
     </>)
 }
 
-function ToggleButton(value: string, selected: string, setSelected: any, user: any) {
+function ToggleButton(value: string, selected: string, setSelected: any) {
 
     const { selectedDoc, shwoOptions } = useAppSelector(s => s.interface)
 
@@ -123,10 +126,10 @@ function ToggleButton(value: string, selected: string, setSelected: any, user: a
     const dispatch = useAppDispatch();
     return (<>
         <div onClick={() => {
-            if (user?.IsPremiumUser === false && (value === 'deep_web' || value === "Synthesis" || value === "Analyst")) {
-                toast.info("Upgrade your plan to access these features")
-                return;
-            }
+            // if (user?.IsPremiumUser === false && (value === 'deep_web' || value === "Synthesis" || value === "Analyst")) {
+            //     toast.info("Upgrade your plan to access these features")
+            //     return;
+            // }
             setSelected(value)
         }} className={`border h-5 w-10 rounded-xl relative cursor-pointer   ${value === selected ? "bg-green-600/10 border-green-500" : "dark:bg-neutral-900 bg-gray-100 border-gray-500 "}`}>
             <ul role='button'

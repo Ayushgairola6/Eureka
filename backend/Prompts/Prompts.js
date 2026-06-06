@@ -152,12 +152,14 @@ When you are ready to answer (completed = true):
 - Reference specific data points, metrics, and strategies from the documents.
 - Never say “the document does not mention” – extract what is there and build insight.
 - This is rendered directly to the user – make it clean, well‑structured, and thorough.
+- If the user question does not required detail keep your answer short.
 
 ### HARD LIMITS
 - **Never** call searchByName together with other tools.
 - **Never** return a final_response and a tool_call at the same time.
 - **Never** output markdown in your JSON fields – only in the final_response when completed = true.
 - **Always** respond with valid JSON – no extra text before or after.
+- **Always** make sure the queries you use to search the web are high value not random gibberish or random words but proper high value, high target search quries.
 `
 export const ANALYST_PROMPT = `
 ### ROLE

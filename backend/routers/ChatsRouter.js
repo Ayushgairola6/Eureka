@@ -9,6 +9,7 @@ import {
   QueryWebInAntiNodeChatRoom,
   GetSyntheSizedResults,
   FetchMoreMessages,
+  DeleteChat,
 } from "../controllers/ChatRoomController.js";
 import { GlobalRequestRateLimit } from "../controllers/UserCreditLimitController.js";
 import { VerifyToken } from "../Middlewares/AuthMiddleware.js";
@@ -47,4 +48,5 @@ ChatsRouter.post("/user/request/create-room", VerifyToken, CreateChatRooms)
     VerifyToken,
     GetSyntheSizedResults
   )
-  .post("/room/history/chats", VerifyToken, FetchMoreMessages);
+  .post("/room/history/chats", VerifyToken, FetchMoreMessages)
+  .delete("/chat-delete", VerifyToken, DeleteChat)

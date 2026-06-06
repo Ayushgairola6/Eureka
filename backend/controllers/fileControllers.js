@@ -36,6 +36,7 @@ import {
   FormattForLLM,
   GetDataFromSerper,
   ProcessForLLM,
+  SerpWeb,
 } from "../OnlineSearchHandler/WebCrawler.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 import {
@@ -1028,19 +1029,21 @@ export const fetchSearchResults = async (
   user,
   MessageId
 ) => {
-  if (plan_type === "free") {
-    const response = await GetDataFromSerpApi(
-      question,
-      user,
-      null,
-      MessageId,
-      plan_type
-    );
 
-    return { response, links: FormalSerpAPIresults(response) };
+  const { err, results } = await SerpWeb(question);
+
+  if (!err && results?.length > 0) {
+    return { response: results, links: results }
   }
-  const response = await GetDataFromSerper(question, user);
-  return { response, links: FilterUrlForExtraction(response, user) };
+  const response = await GetDataFromSerpApi(
+    question,
+    user,
+    null,
+    MessageId,
+    plan_type
+  );
+
+  return { response, links: FormalSerpAPIresults(response) };
 };
 
 // handle intentIdentification and formatting
@@ -1138,19 +1141,19 @@ export const PostTypeWebSearch = async (req, res) => {
       status: { message: "Searching for", data: queries },
     });
 
-    const { response, links: LinksToFetch } = await fetchSearchResults(
+    const { links: LinksToFetch } = await fetchSearchResults(
       plan_type,
       queries.join(","),
       req.user,
       MessageId
     );
-    if (!response || LinksToFetch.length === 0) {
+    if (LinksToFetch.length === 0) {
       return res.status(400).send({ message: "Web search failed, try again." });
     }
 
     // 4. Scrape & process – the depth logic in one clear line
     const linksToProcess =
-      web_search_depth === "deep_web" ? LinksToFetch : LinksToFetch.slice(0, 4);
+      web_search_depth === "deep_web" ? LinksToFetch : LinksToFetch.slice(0, 2);
 
     const cleanedData = await ProcessForLLM(
       linksToProcess,
@@ -1165,6 +1168,7 @@ export const PostTypeWebSearch = async (req, res) => {
     }
 
     const webResults = FormattForLLM(cleanedData);
+    console.log(webResults)
     if (!webResults || webResults.error || !webResults.FinalContent) {
       return res.status(400).json({ message: "Error processing search results." });
     }

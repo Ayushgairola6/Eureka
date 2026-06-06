@@ -38,7 +38,7 @@ export async function SerpWeb(query) {
     );
     const data = await response.json();
     const urls = data.results.map((item) => item.url);
-    return { err: null, results: urls.length > 5 ? urls.slice(4) : urls }
+    return { err: null, results: urls }
   } catch (err) {
     return { err: err, results: null }
   }
@@ -153,13 +153,15 @@ export const ProcessForLLM = async (
 
     // our own scraping api
     const response = await fetch(
-      "https://tectonic-67-surfer.hf.space/api/search",
+      "https://antinode-scraper.onrender.com/api/search",
       {
         method: "POST",
         body: JSON.stringify(data),
         headers: {
           "Content-type": "application/json",
         },
+        signal: AbortSignal.timeout(1000_000)
+
       }
     );
     const result = await response.json();

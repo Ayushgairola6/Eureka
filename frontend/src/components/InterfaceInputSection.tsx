@@ -240,7 +240,6 @@ const InputSection: React.FC<InputProps> = ({
       return;
     }
     const { AiId, user_id } = handleUUidCreationAndMessageInsert()
-    console.log(SynthesisDocuments)
 
     // dispatch the main function
     dispatch(

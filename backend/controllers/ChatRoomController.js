@@ -782,36 +782,28 @@ export const GetDocumentChatHistory = async (req, res) => {
 export const GetMisallaneousChatHistory = async (req, res) => {
   try {
     const user = req.user;
+    if (!user) return res.status(401).json({ message: "Please login" });
     const user_id = user.user_id;
-    const cursor = req.query.cursor; // Expecting ISO date string or null
 
-    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
-      user_id
-    );
+    const cursor = req.query.cursor; // ISO date string or null / undefined / "null"
 
-    if (status === false || error || !plan_type) {
-      return res.status(400).send({ message: "Something went wrong" });
-    }
-    // Validate User
-    if (!user_id) {
-      return res.status(401).send({ message: "Please login to continue" });
+    // Check user plan (still useful for limiting)
+    const { status, error, plan_type } = await CheckUserPlanStatus(user_id);
+    if (!status || error || !plan_type) {
+      return res.status(400).json({ message: "Plan check failed" });
     }
 
-    // Only use cache for the FIRST page (no cursor).
     const key = `history:v1:${user_id}:miscellaneous`;
-
-    if (!cursor) {
+    // redisClient.del(key)
+    // ---------- First page cache (only when no cursor) ----------
+    if (!cursor || cursor === "null" || cursor === "undefined") {
       const exists = await redisClient.exists(key);
       if (exists) {
-        const limit =
-          plan_type === "free" ? 5 : plan_type === "sprint pass" ? 10 : 30;
-        // Fetch requested amount from cache
+        const limit = plan_type === "free" ? 5 : plan_type === "sprint pass" ? 10 : 30;
         const cachedChats = await redisClient.lRange(key, 0, limit - 1);
 
         if (cachedChats.length > 0) {
           const parsedChats = [];
-
-          // Safe parsing loop
           for (const jsonString of cachedChats) {
             try {
               parsedChats.push(JSON.parse(jsonString));
@@ -820,32 +812,27 @@ export const GetMisallaneousChatHistory = async (req, res) => {
               break;
             }
           }
-
           if (parsedChats.length > 0) {
-            const nextCursor =
-              parsedChats[parsedChats.length - 1]?.created_at || null;
-
-            return res.status(200).send({
-              message: "History found (Cache)",
+            return res.status(200).json({
+              message: "History found (cache)",
               data: parsedChats,
-              nextCursor,
             });
           }
         }
       }
     }
 
-    const limit = 5; // Define your limit per page
+    const limit = 5; // Adjust page size as needed
 
     let query = supabase
       .from("Conversation_History")
-      .select("created_at, question, AI_response, metadata")
+      .select("id,created_at, question, AI_response, metadata")
       .eq("user_id", user_id)
       .is("document_id", null)
-      .order("created_at", { ascending: false }) // Newest first
+      .order("created_at", { ascending: false }) // newest first
       .limit(limit);
 
-    // Apply cursor (Load older messages)
+    // Cursor → fetch older than this timestamp
     if (cursor && cursor !== "null" && cursor !== "undefined") {
       query = query.lt("created_at", cursor);
     }
@@ -853,44 +840,35 @@ export const GetMisallaneousChatHistory = async (req, res) => {
     const { data, error: dbError } = await query;
 
     if (dbError) {
-      return res.status(500).send({
-        message: "Something went wrong while fetching your chat history",
+      return res.status(500).json({
+        message: "Failed to fetch chat history",
       });
     }
 
-    // Handle Empty State
     if (!data || data.length === 0) {
-      return res.status(200).send({
+      return res.status(200).json({
         message: "No more chats",
         data: [],
-        nextCursor: null,
       });
     }
 
-    if (!cursor) {
-      // Serialize
+    // Cache first page only (no cursor)
+    if (!cursor || cursor === "null" || cursor === "undefined") {
       const serialized = data.map((msg) => JSON.stringify(msg));
-
-      // This prevents appending duplicates if the user refreshes the page
       const multi = redisClient.multi();
       multi.del(key);
-      multi.rPush(key, serialized); // Store Newest First (Matches DB order)
-      multi.expire(key, 60 * 60 * 24); // Expire in 24 hours
+      multi.rPush(key, serialized);       // newest first
+      multi.expire(key, 60 * 60 * 24);    // 24h
       await multi.exec();
     }
 
-    // Calculate next cursor safely
-    const nextCursor =
-      data.length === limit ? data[data.length - 1].created_at : null;
-
-    return res.status(200).send({
+    return res.status(200).json({
       message: "Chats found",
-      data: data,
-      nextCursor,
+      data,                                // no nextCursor
     });
   } catch (err) {
-    // await notifyMe(...) // specific error handling
-    return res.status(500).send({ message: "Something went wrong!" });
+    console.error(err);
+    return res.status(500).json({ message: "Something went wrong" });
   }
 };
 
@@ -1644,3 +1622,47 @@ async function ExtractChatHistory(room_id, user, plan_type) {
     return data;
   }
 }
+
+
+// delete  a message
+export const DeleteChat = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: "Please login to continue" });
+
+    const { message_id } = req.body;
+    if (!message_id || typeof message_id !== "number") {
+      return res.status(400).json({ message: "Invalid message ID" });
+    }
+
+    // 1. Verify the message belongs to this user before touching it
+    const { data: existing, error: fetchError } = await supabase
+      .from("Conversation_History")
+      .select("id, user_id")
+      .eq("id", message_id)
+      .eq("user_id", user.user_id)
+      .single();
+
+    if (fetchError || !existing) {
+      return res.status(404).json({ message: "Message not found or access denied" });
+    }
+
+    // 2. Soft‑delete: set 'deleted' flag and clear any personal identifiers if needed
+    const { error: updateError } = await supabase
+      .from("Conversation_History")
+      .update({ user_id: null })
+      .eq("id", message_id)
+      .eq("user_id", user.user_id);
+
+    if (updateError) {
+      return res.status(500).json({ message: "Failed to delete the message" });
+    }
+
+
+
+    return res.status(200).json({ message: "Message deleted successfully", message_id });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

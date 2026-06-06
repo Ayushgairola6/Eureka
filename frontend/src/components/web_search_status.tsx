@@ -14,482 +14,404 @@ import {
   ChevronUp,
   Activity,
   CheckCircle2,
-  ArrowRight,
-  SubscriptIcon,
-  LucideMonitor,
-  LucideCalculator
+  // ArrowRight,
+  Monitor,
+  Calculator,
+  AlertCircle,
+  Cpu,
+  Zap,
+  BookOpen,
+  // MemoryStick,
+  RefreshCw,
+  // ClipboardCheck,
+  CreditCard,
 } from "lucide-react";
-import { FcGlobe } from "react-icons/fc";
 import { useAppSelector } from "../store/hooks";
-import { BiError } from "react-icons/bi";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type WebSearchStatusProps = {
   chat: any;
   lastMessageId?: string | number;
 };
 
-// --- Helper: Domain Favicon & Name (AntiNode Style) ---
-const LinkChip = ({ url }: { url: string }) => {
-
-  const domain = url?.split(":")[1]?.trim();
-  try {
-    return (
-      <a
-        href={domain}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-2.5 py-1 rounded-sm hover:border-neutral-400 dark:hover:border-neutral-600 transition-all group max-w-full"
-      >
-        <div className="w-6 h-6  rounded-xs overflow-hidden flex items-center justify-center border border-neutral-100 dark:border-neutral-800">
-          <img
-            className="h-full w-full  group-hover:opacity-100 transition-opacity"
-            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
-            alt=""
-          />
-        </div>
-        <span className="text-xs space-grotesk text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-neutral-200 truncate">
-          {domain}
-        </span>
-      </a>
-    );
-  } catch (e) {
-    return (
-      <span className="inline-flex items-center px-2 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs font-mono text-neutral-500 break-all">
-        {url}
-      </span>
-    );
-  }
+type StepConfig = {
+  icon: React.ElementType;
+  label: string;
+  accent: string; // single tailwind color token e.g. "sky"
 };
 
+// ─── LinkChip ─────────────────────────────────────────────────────────────────
 
-const STATUS_HANDLERS: Record<string, any> = {
-  "reading_links": {
-    icon: BrainCircuit,
-    title: "Consuming Content",
-    color: "text-purple-600 dark:text-purple-400",
-    render: (data: any) => {
-      const links = Array.isArray(data) ? data : [data];
-      return (
-        <div className="flex flex-col gap-2 mt-2 w-full">
-          <span className="text-xs font-bold text-purple-500 uppercase tracking-widest space-grotesk">
-            INGESTING SOURCE
-          </span>
-          <div className="flex flex-wrap gap-2">
-            <LinkChip url={typeof links[0] === 'string' ? links[0] : "One invalid source"} />
-          </div>
-        </div>
-      );
-    },
-  },
-  "Understanding_Intent": {
-    icon: BrainCircuit,
-    title: "Deconstructing Intent",
-    color: "text-fuchsia-600 dark:text-fuchsia-400",
-    render: (data: any) => (
-      <div className="mt-1 p-3 bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/50 rounded-md">
-        <span className="text-xs font-bold text-fuchsia-500 uppercase tracking-wide block mb-1 space-grotesk">Core Objective</span>
-        <p className="text-sm text-neutral-700 dark:text-neutral-300 bai-jamjuree-regular leading-relaxed">
-          {Array.isArray(data) ? data : data}
-        </p>
+const LinkChip = ({ url }: { url: string }) => {
+  let domain = "";
+  try {
+    // Handle both "https://domain.com" and "URL: https://domain.com" formats
+    const cleaned = url?.includes("://") ? url.trim() : url?.split(":").slice(1).join(":").trim();
+    domain = new URL(cleaned).hostname;
+  } catch {
+    domain = url?.trim() || "";
+  }
+
+  if (!domain) return null;
+
+  return (
+    <a
+      href={`https://${domain}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 transition-colors group max-w-xs"
+    >
+      <img
+        className="w-3.5 h-3.5 rounded-xs flex-shrink-0"
+        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
+        alt=""
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+      <span className="text-[11px] space-grotesk text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 truncate">
+        {domain}
+      </span>
+    </a>
+  );
+};
+
+// ─── Step config map ──────────────────────────────────────────────────────────
+// Each entry defines the icon, human label, and one accent color.
+// Rendering logic is separate and unified — no per-handler wildly different markup.
+
+const STEP_CONFIG: Record<string, StepConfig> = {
+  "reading_links": { icon: BookOpen, label: "Reading Source", accent: "purple" },
+  "Understanding_Intent": { icon: BrainCircuit, label: "Understanding Intent", accent: "fuchsia" },
+  "Crawling_deep_web": { icon: Globe, label: "Deep Web Crawl", accent: "indigo" },
+  "processing_links": { icon: Search, label: "Source Verification", accent: "emerald" },
+  "fetching_url": { icon: Loader2, label: "Fetching URL", accent: "blue" },
+  "Understanding Request": { icon: BrainCircuit, label: "Analysing Request", accent: "rose" },
+  "Creating functions": { icon: Code2, label: "Generating Tools", accent: "amber" },
+  "Creating phases": { icon: Workflow, label: "Building Execution Plan", accent: "indigo" },
+  "Searching web": { icon: Globe, label: "Web Search", accent: "sky" },
+  "Reading docs": { icon: FileText, label: "Reading Document", accent: "emerald" },
+  "Scanning memories": { icon: ScanSearch, label: "Memory Scan", accent: "rose" },
+  "found-documents-by-name": { icon: Files, label: "Document Retrieved", accent: "teal" },
+  "Reading public knowledgebase": { icon: Database, label: "Knowledge Base Query", accent: "blue" },
+  "Gathered DocumentInformation": { icon: CheckCircle2, label: "Context Ready", accent: "green" },
+  "Metadata_analysis": { icon: Activity, label: "Metadata Analysis", accent: "pink" },
+  "Cleaning_Context": { icon: RefreshCw, label: "Cleaning Context", accent: "blue" },
+  "Done_Scraping": { icon: CheckCircle2, label: "Source Read", accent: "sky" },
+  "Unable_to_read_link": { icon: AlertCircle, label: "Could Not Read Source", accent: "red" },
+  "new_thread": { icon: Cpu, label: "Thread Initialized", accent: "cyan" },
+  "Found_Chunk_Count": { icon: Calculator, label: "Vectors Quantified", accent: "cyan" },
+  "Searching_Records": { icon: BrainCircuit, label: "Index Lookup", accent: "violet" },
+  "Checking_Quota": { icon: Monitor, label: "Checking Usage", accent: "amber" },
+  "Checking_Plan": { icon: CreditCard, label: "Verifying Plan", accent: "teal" },
+};
+
+const FALLBACK_CONFIG: StepConfig = {
+  icon: Zap,
+  label: "",
+  accent: "neutral",
+};
+
+// ─── Accent helpers ───────────────────────────────────────────────────────────
+
+const accentIcon: Record<string, string> = {
+  purple: "text-purple-500", fuchsia: "text-fuchsia-500", indigo: "text-indigo-500",
+  emerald: "text-emerald-500", blue: "text-blue-500", rose: "text-rose-500",
+  amber: "text-amber-500", sky: "text-sky-500", teal: "text-teal-500",
+  green: "text-green-500", pink: "text-pink-500", cyan: "text-cyan-500",
+  violet: "text-violet-500", red: "text-red-500", neutral: "text-neutral-400",
+};
+
+const accentBg: Record<string, string> = {
+  purple: "bg-purple-50 dark:bg-purple-950/20 border-purple-100 dark:border-purple-900/30",
+  fuchsia: "bg-fuchsia-50 dark:bg-fuchsia-950/20 border-fuchsia-100 dark:border-fuchsia-900/30",
+  indigo: "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/30",
+  emerald: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30",
+  blue: "bg-blue-50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/30",
+  rose: "bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/30",
+  amber: "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/30",
+  sky: "bg-sky-50 dark:bg-sky-950/20 border-sky-100 dark:border-sky-900/30",
+  teal: "bg-teal-50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/30",
+  green: "bg-green-50 dark:bg-green-950/20 border-green-100 dark:border-green-900/30",
+  pink: "bg-pink-50 dark:bg-pink-950/20 border-pink-100 dark:border-pink-900/30",
+  cyan: "bg-cyan-50 dark:bg-cyan-950/20 border-cyan-100 dark:border-cyan-900/30",
+  violet: "bg-violet-50 dark:bg-violet-950/20 border-violet-100 dark:border-violet-900/30",
+  red: "bg-red-50 dark:bg-red-950/20 border-red-100 dark:border-red-900/30",
+  neutral: "bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800",
+};
+
+const accentDot: Record<string, string> = {
+  purple: "bg-purple-500", fuchsia: "bg-fuchsia-500", indigo: "bg-indigo-500",
+  emerald: "bg-emerald-500", blue: "bg-blue-500", rose: "bg-rose-500",
+  amber: "bg-amber-500", sky: "bg-sky-500", teal: "bg-teal-500",
+  green: "bg-green-500", pink: "bg-pink-500", cyan: "bg-cyan-500",
+  violet: "bg-violet-500", red: "bg-red-500", neutral: "bg-neutral-400",
+};
+
+// ─── Unified step data renderer ───────────────────────────────────────────────
+
+const StepData = ({ message, data, accent }: { message: string; data: any; accent: string }) => {
+  const bg = accentBg[accent] || accentBg.neutral;
+  const dot = accentDot[accent] || accentDot.neutral;
+  const iconText = accentIcon[accent] || accentIcon.neutral;
+
+  // Normalise data to a display string
+  const toString = (d: any): string => {
+    if (!d && d !== 0) return "";
+    if (typeof d === "string") return d;
+    if (Array.isArray(d)) return d.map(toString).filter(Boolean).join(", ");
+    return String(d);
+  };
+
+  // ── URL-type handlers (show LinkChips) ──
+  if (["reading_links", "Crawling_deep_web"].includes(message)) {
+    const urls = Array.isArray(data) ? data : [data];
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-1.5">
+        {urls.map((u: string, i: number) => <LinkChip key={i} url={u} />)}
       </div>
-    ),
-  },
-  "Crawling_deep_web": {
-    icon: Globe,
-    title: "Deep Web Traversal",
-    color: "text-indigo-600 dark:text-indigo-400",
-    render: (data: any) => (
-      <div className="mt-2 flex flex-col gap-2">
-        <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider space-grotesk">Targeting Node</span>
-        <div className="pl-3 border-l-2 border-indigo-200 dark:border-indigo-800">
-          <LinkChip url={Array.isArray(data) ? data[0] : data} />
-        </div>
-      </div>
-    ),
-  },
-  "processing_links": {
-    icon: Search,
-    title: "Source Verification",
-    color: "text-emerald-600 dark:text-emerald-400",
-    render: (data: any) => {
-      const links = Array.isArray(data) ? data : [];
-      return (
-        <div className="flex flex-col gap-2 mt-2 w-full">
-          <span className="text-xs text-neutral-400 uppercase tracking-widest font-semibold space-grotesk">
-            {links.length} Valid Sources Found
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {links.map((link: string, i: number) => (
-              <LinkChip key={i} url={link} />
-            ))}
-          </div>
-        </div>
-      );
-    },
-  },
-  "fetching_url": {
-    icon: Loader2,
-    title: "Data Extraction",
-    color: "text-blue-600 dark:text-blue-400",
-    render: (data: any) => {
-      const links = Array.isArray(data) ? data : [];
-      return (
-        <div className="mt-2 w-full">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-xs text-blue-500 font-bold uppercase tracking-wider space-grotesk">Active Stream</span>
-          </div>
-          <div className="flex flex-col gap-2 pl-4 border-l-2 border-blue-100 dark:border-blue-900/30">
-            {links.map((link, idx) => (
-              <div key={idx} className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-                <ArrowRight size={12} className="text-blue-400" />
-                <span className="text-sm break-all font-mono">
-                  {typeof link === 'string' ? link.split(",").map((item: any) => {
-                    return <ul className='p-2 border rounded-sm'>{item}</ul>
-                  }) : link?.url}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    },
-  },
-  "Understanding Request": {
-    icon: BrainCircuit,
-    title: "Strategic Analysis",
-    color: "text-rose-600 dark:text-rose-400",
-    render: (data: any) => (
-      <div className="mt-2 flex items-start gap-3 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-100 dark:border-neutral-800">
-        <Activity className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-bold text-rose-500 uppercase tracking-wide space-grotesk">Orchestrator</span>
-          <p className="text-sm text-neutral-700 dark:text-neutral-300 bai-jamjuree-regular leading-relaxed">
-            {data}
-          </p>
-        </div>
-      </div>
-    ),
-  },
-  "Creating functions": {
-    icon: Code2,
-    title: "Generating Logic Functions",
-    color: "text-amber-600 dark:text-amber-400",
-    render: (data: any) => {
-      let funcCount = 0;
-      try {
-        const parsed = JSON.parse(Array.isArray(data) ? data[0] : data);
-        funcCount = Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length;
-      } catch { funcCount = 1; }
-      return (
-        <div className="mt-2 flex items-center gap-3">
-          <span className="flex items-center justify-center h-8 w-8 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold rounded-md border border-amber-200 dark:border-amber-800 space-grotesk">
-            {funcCount}
-          </span>
-          <div className="flex flex-col">
-            <span className="text-xs text-neutral-400 uppercase tracking-wider font-bold">Tools Mapped</span>
-            <span className="text-sm text-neutral-700 dark:text-neutral-300 font-mono break-all">{String(data).slice(0, 100)}...</span>
-          </div>
-        </div>
-      );
-    },
-  },
-  "Creating phases": {
-    icon: Workflow,
-    title: "Execution Plan",
-    color: "text-indigo-600 dark:text-indigo-400",
-    render: (data: any) => (
-      <div className="mt-2 w-full">
-        <div className="relative w-full h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden mb-2">
-          <div className="absolute inset-0 bg-indigo-500 animate-[shimmer_2s_infinite] bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-[length:20px_20px]" />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 bai-jamjuree-regular">{data}</p>
-        </div>
-      </div>
-    ),
-  },
-  "Searching web": {
-    icon: Globe,
-    title: "Global Query Execution",
-    color: "text-sky-600 dark:text-sky-400",
-    render: (data: any) => {
-      const text = (Array.isArray(data) ? data[0] : data) || "";
-      const query = text.replace(/Searced web for|"/g, "");
-      return (
-        <div className="mt-2 flex items-start gap-3 bg-sky-50 dark:bg-sky-900/10 p-3 rounded-md border border-sky-100 dark:border-sky-900/20">
-          <Search className="w-4 h-4 text-sky-500 mt-1 shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider space-grotesk">Query</span>
-            <span className="text-base font-medium text-sky-900 dark:text-sky-200 bai-jamjuree-regular leading-snug">
-              "{query}"
+    );
+  }
+
+  if (message === "processing_links" || message === "fetching_url") {
+    const urls = Array.isArray(data) ? data : [data];
+    return (
+      <div className="mt-1.5 space-y-1">
+        {message === "fetching_url" && (
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className={`w-1.5 h-1.5 rounded-full ${dot} animate-pulse`} />
+            <span className={`text-[10px] uppercase tracking-widest font-semibold ${iconText} space-grotesk`}>
+              Active Stream
             </span>
           </div>
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          {urls.map((u: string, i: number) => {
+            // fetching_url sometimes sends comma-separated strings
+            const parts = typeof u === "string" ? u.split(",") : [u];
+            return parts.map((p: string, j: number) => <LinkChip key={`${i}-${j}`} url={p.trim()} />);
+          })}
         </div>
-      );
-    },
-  },
-  "Reading docs": {
-    icon: FileText,
-    title: "Contextual Extraction",
-    color: "text-emerald-600 dark:text-emerald-500",
-    render: (data: any) => (
-      <div className="mt-2 pl-4 border-l-2 border-emerald-200 dark:border-emerald-800">
-        <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest space-grotesk block mb-1">Analyzing</span>
-        <p className="text-xs text-neutral-600 dark:text-neutral-400 bai-jamjuree-regular leading-relaxed">{data}</p>
+        {message === "processing_links" && (
+          <p className={`text-[10px] ${iconText} space-grotesk mt-1`}>
+            {urls.length} source{urls.length !== 1 ? "s" : ""} verified
+          </p>
+        )}
       </div>
-    ),
-  },
-  "Scanning memories": {
-    icon: ScanSearch,
-    title: "Long-term Recall",
-    color: "text-rose-600 dark:text-rose-400",
-    render: (data: any) => (
-      <div className="mt-2 flex gap-3 items-center p-2 rounded-md bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20">
-        <div className="flex space-x-1">
-          {[0, 150, 300].map(d => <div key={d} className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
-        </div>
-        <span className="text-xs text-neutral-700 dark:text-neutral-300 font-medium space-grotesk">{data}</span>
-      </div>
-    ),
-  },
-  "found-documents-by-name": {
-    icon: Files,
-    title: "Document Retrieval",
-    color: "text-teal-600 dark:text-teal-400",
-    render: (data: any) => (
-      <div className="mt-2 flex items-center gap-2 bg-teal-50 dark:bg-teal-950/20 p-2 rounded border border-teal-100 dark:border-teal-900/30">
-        <span className="text-xs font-bold text-teal-600 dark:text-teal-300 bg-teal-100 dark:bg-teal-900/40 px-2 py-1 rounded border border-teal-200 dark:border-teal-800 space-grotesk">INTERNAL DOCS</span>
-        <span className="text-sm text-neutral-700 dark:text-neutral-300 font-mono truncate">{data}</span>
-      </div>
-    ),
-  },
-  "Reading public knowledgebase": {
-    icon: Database,
-    title: "Knowledge Base Query",
-    color: "text-blue-600 dark:text-blue-500",
-    render: (data: any) => (
-      <div className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 bai-jamjuree-regular bg-neutral-50 dark:bg-neutral-800/50 p-2 rounded border-l-4 border-blue-400">
-        <span className="text-xs font-bold text-blue-500 uppercase tracking-wide block">System Query</span>
-        <span className="font-semibold text-neutral-800 dark:text-neutral-200 space-grotesk">{data}</span>
-      </div>
-    ),
-  },
-  "Gathered DocumentInformation": {
-    icon: CheckCircle2,
-    title: "Context Synthesis Complete",
-    color: "text-green-600 dark:text-green-500",
-    render: () => (
-      <div className="mt-1 flex items-center gap-2">
-        <div className="h-2 w-2 rounded-full bg-green-500" />
-        <span className="text-sm text-green-700 dark:text-green-400 font-medium space-grotesk">Ready to generate response.</span>
-      </div>
-    )
-  },
-  "Metadata_analysis": {
-    icon: Activity,
-    title: "Metadata Analysis",
-    color: "text-pink-600 dark:text-pink-500",
-    render: (data: any) => (
-      <div className="mt-2 flex items-center gap-2">
-        <Activity size={14} className="text-pink-500" />
-        <span className="text-sm text-neutral-600 dark:text-neutral-400 font-mono">Processing tags: <span className="text-pink-600 dark:text-pink-400 font-bold">{data}</span></span>
-      </div>
-    )
-  },
-  "Cleaning_Context": {
-    icon: Loader2,
-    title: "Refining Data Context",
-    color: "text-blue-500",
-    render: (data: any) => (
-      <div className="mt-2 pl-3 border-l border-dashed border-blue-300 dark:border-blue-700">
-        <span className="text-xs text-neutral-400 uppercase tracking-wider">Sanitization</span>
-        <span className="mt-1 block text-sm text-neutral-600 dark:text-neutral-300 italic font-mono">{data}</span>
-      </div>
-    )
-  },
-  'Done_Scraping': {
-    icon: FcGlobe,
-    title: "Done reading source",
-    color: "text-sky-600",
-    render: (data: any) => {
-      <div className='space-grotesk text-xs '>
-        Finished Reading: {data}
-      </div>
-    }
-  },
-  'Unable_to_read_link': {
-    icon: BiError,
-    title: "Could not read the source",
-    color: "text-red-400",
-    render: (data: any) => {
-      <div className='space-grotesk text-xs '>
-        Unable to the read the source {data}
-      </div>
-    }
-  },
-
-  "new_thread": {
-    icon: BrainCircuit,
-    title: "Thread Initialization",
-    color: "text-cyan-500",
-    render: (data: any) => (
-      <div className="mt-2 flex items-center justify-between bg-neutral-50 dark:bg-neutral-900 p-2 rounded border border-neutral-200 dark:border-neutral-700 flex-wrap">
-        <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 space-grotesk ">THREAD ID</span>
-        <span className="text-xs font-mono text-neutral-500">{data}</span>
-      </div>
-    )
-  },
-  "Found_Chunk_Count": {
-    icon: LucideCalculator,
-    title: "Vector Quantization",
-    color: "text-cyan-600 dark:text-cyan-400",
-    render: (data: any) => (
-      <div className="mt-2 flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30">
-          <span className="text-xs font-bold text-cyan-700 dark:text-cyan-300 font-mono">N</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-xs text-neutral-400 uppercase tracking-wider font-semibold space-grotesk">Vectors Identified</span>
-          <span className="text-sm text-neutral-700 dark:text-neutral-300 font-mono">
-            {data} <span className="text-neutral-400 text-xs">chunks</span>
-          </span>
-        </div>
-      </div>
-    )
-  },
-  "Searching_Records": {
-    icon: BrainCircuit,
-    title: "Index Lookup",
-    color: "text-violet-600 dark:text-violet-400",
-    render: (data: any) => (
-      <div className="mt-2 flex flex-col gap-1 pl-3 border-l-2 border-violet-200 dark:border-violet-800">
-        <span className="text-xs font-bold text-violet-500 uppercase tracking-widest space-grotesk">Querying DB</span>
-        <span className="text-sm text-neutral-600 dark:text-neutral-400 font-mono break-all">{data}</span>
-      </div>
-    )
-  },
-  "Checking_Quota": {
-    icon: LucideMonitor,
-    title: "Usage & Limits",
-    color: "text-amber-600 dark:text-amber-500",
-    render: (data: any) => (
-      <div className="mt-2 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-100 dark:border-amber-900/30">
-        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-        <span className="text-sm font-medium text-amber-900 dark:text-amber-200 space-grotesk">
-          Validating Request: {data}
-        </span>
-      </div>
-    )
-  },
-  "Checking_Plan": {
-    icon: SubscriptIcon,
-    title: "Entitlement Verification",
-    color: "text-teal-600 dark:text-teal-400",
-    render: (data: any) => (
-      <div className="mt-2 flex items-center justify-between w-full">
-        <span className="text-sm text-neutral-600 dark:text-neutral-400 bai-jamjuree-regular">Plan Status:</span>
-        <span className="text-xs font-bold px-2 py-1 bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 rounded uppercase tracking-wide">
-          {data}
-        </span>
-      </div>
-    )
+    );
   }
+
+  // ── Search query ──
+  if (message === "Searching web") {
+    const raw = toString(data);
+    const query = raw.replace(/Searched web for|"/g, "").trim();
+    return (
+      <div className={`mt-1.5 flex items-start gap-2 px-3 py-2 rounded-lg border ${bg}`}>
+        <Search className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${iconText}`} />
+        <span className="text-sm text-neutral-800 dark:text-neutral-200 bai-jamjuree-regular leading-snug">
+          "{query}"
+        </span>
+      </div>
+    );
+  }
+
+  // ── Tool / function count ──
+  if (message === "Creating functions") {
+    let funcCount = 1;
+    try {
+      const parsed = JSON.parse(Array.isArray(data) ? data[0] : data);
+      funcCount = Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length;
+    } catch { /* keep 1 */ }
+    return (
+      <div className="flex items-center gap-2 mt-1.5">
+        <span className={`px-2 py-0.5 rounded-md text-xs font-bold space-grotesk ${iconText} ${bg} border`}>
+          {funcCount} tools
+        </span>
+        <span className="text-[11px] text-neutral-400 space-grotesk">mapped to agent</span>
+      </div>
+    );
+  }
+
+  // ── Vector count ──
+  if (message === "Found_Chunk_Count") {
+    return (
+      <div className="flex items-center gap-2 mt-1.5">
+        <span className={`px-2 py-0.5 rounded-md text-xs font-bold font-mono ${iconText} ${bg} border`}>
+          {toString(data)}
+        </span>
+        <span className="text-[11px] text-neutral-400 space-grotesk">vectors identified</span>
+      </div>
+    );
+  }
+
+  // ── Thread ID ──
+  if (message === "new_thread") {
+    return (
+      <div className="flex items-center gap-2 mt-1.5">
+        <span className="text-[10px] text-neutral-400 space-grotesk uppercase tracking-wider">ID</span>
+        <code className="text-[11px] font-mono text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
+          {toString(data)}
+        </code>
+      </div>
+    );
+  }
+
+  // ── Plan check ──
+  if (message === "Checking_Plan") {
+    return (
+      <div className="flex items-center gap-2 mt-1.5">
+        <span className="text-[11px] text-neutral-500 dark:text-neutral-400">Status</span>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${iconText} ${bg} border`}>
+          {toString(data)}
+        </span>
+      </div>
+    );
+  }
+
+  // ── Success / complete — no data body needed ──
+  if (message === "Gathered DocumentInformation") {
+    return (
+      <div className="flex items-center gap-1.5 mt-1">
+        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+        <span className="text-xs text-green-600 dark:text-green-400 space-grotesk">Ready to generate response</span>
+      </div>
+    );
+  }
+
+  // ── Error state ──
+  if (message === "Unable_to_read_link") {
+    const text = toString(data);
+    return (
+      <div className={`mt-1.5 flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${bg}`}>
+        <AlertCircle className={`w-3.5 h-3.5 flex-shrink-0 ${iconText}`} />
+        <span className="text-xs text-neutral-600 dark:text-neutral-400 space-grotesk truncate">{text}</span>
+      </div>
+    );
+  }
+
+  // ── Generic text fallback ──
+  const text = toString(data);
+  if (!text) return null;
+
+  return (
+    <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 bai-jamjuree-regular leading-relaxed">
+      {text.length > 180 ? text.slice(0, 180) + "…" : text}
+    </p>
+  );
 };
+
+// ─── Main component ────────────────────────────────────────────────────────────
 
 const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }) => {
   const { web_search_status, showProcess } = useAppSelector((s) => s.socket || {});
   const [isOpen, setIsOpen] = useState(true);
-  // Logic to determine if this component should even show
-  const isActive = (!lastMessageId) || (chat?.id || chat?.message_id) === lastMessageId;
+
+  const isActive = !lastMessageId || (chat?.id || chat?.message_id) === lastMessageId;
   if (!isActive) return null;
 
-  const isProcessActive = showProcess?.status === false && showProcess.message_id !== (chat?.id || chat?.message_id);
+  const isDone = showProcess?.status === false &&
+    showProcess.message_id !== (chat?.id || chat?.message_id);
 
-  const currentMessageStatus = web_search_status.find(
-    e => String(e.MessageId) === String(chat.id || chat.message_id)
+  const currentMessageStatus = web_search_status?.find(
+    (e: any) => String(e.MessageId) === String(chat?.id || chat?.message_id)
   );
 
+  if (!currentMessageStatus) return null;
+
+  const steps = currentMessageStatus.status || [];
+  const lastStep = steps[steps.length - 1];
+
+  // Normalise key (handles "Searching web for X" → "Searching web")
+  const normaliseKey = (msg: string) => {
+    if (!msg) return msg;
+    if (msg.startsWith("Searching web")) return "Searching web";
+    return msg;
+  };
+
+  const getConfig = (msg: string): StepConfig & { resolvedLabel: string } => {
+    const key = normaliseKey(msg);
+    const cfg = STEP_CONFIG[key] || FALLBACK_CONFIG;
+    return { ...cfg, resolvedLabel: cfg.label || msg };
+  };
+
+  const lastConfig = getConfig(lastStep?.message || "");
+
   return (
-    <div className={`my-6 w-full rounded-md overflow-hidden transition-all duration-300 border
-      ${isProcessActive
-        ? "border-neutral-200 dark:border-neutral-800 opacity-70 bg-neutral-50/50 dark:bg-black"
-        : "border-neutral-300 dark:border-neutral-700 shadow-sm bg-white dark:bg-neutral-950"
+    <div className={`my-4 w-full rounded-xl border overflow-hidden transition-opacity duration-300 ${isDone
+      ? "border-neutral-200 dark:border-neutral-800 opacity-60"
+      : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950"
       }`}>
 
-      {/* --- Transparency Header (Technical) --- */}
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between px-4 py-3 cursor-pointer bg-neutral-50 dark:bg-neutral-900/80 border-b border-neutral-200 dark:border-neutral-800 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800"
+      {/* ── Header ── */}
+      <button
+        onClick={() => setIsOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors border-b border-neutral-200 dark:border-neutral-800"
       >
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-2.5 w-2.5">
-            {!isProcessActive && (
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <div className="flex items-center gap-2.5">
+          {/* live/done dot */}
+          <span className="relative flex h-2 w-2 flex-shrink-0">
+            {!isDone && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
             )}
-            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${!isProcessActive ? "bg-green-500" : "bg-neutral-400"}`}></span>
-          </div>
+            <span className={`relative inline-flex rounded-full h-2 w-2 ${!isDone ? "bg-emerald-500" : "bg-neutral-400"}`} />
+          </span>
 
-          <span className="text-xs  text-neutral-700 dark:text-neutral-200 uppercase  space-grotesk">
-            {currentMessageStatus?.status[currentMessageStatus.status.length - 1].message || "PROCESS_LOGS"} <span className="text-neutral-400 space-grotesk font-normal ml-2">steps- {currentMessageStatus?.status.length}</span>
+          <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-200 space-grotesk truncate max-w-[220px]">
+            {lastConfig.resolvedLabel || "Process Logs"}
+          </span>
+
+          <span className="text-[10px] text-neutral-400 dark:text-neutral-600 space-grotesk">
+            {steps.length} step{steps.length !== 1 ? "s" : ""}
           </span>
         </div>
-        <button className="text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
-          {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
-      </div>
 
-      {/* --- Full Transparency Log --- */}
-      <div className={`transition-all duration-500 ease-in-out bg-white dark:bg-neutral-950 ${isOpen ? "h-auto opacity-100" : "max-h-0 opacity-0"}`}>
-        <div className="flex flex-col gap-0 p-4">
-          {currentMessageStatus && currentMessageStatus?.status.length > 0 &&
-            currentMessageStatus.status.map((status, index) => {
-              const isLast = index === currentMessageStatus.status.length - 1;;
+        <span className="text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+          {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </span>
+      </button>
 
-              // Normalize key for lookup
-              let configKey = status?.message;
-              if (configKey && configKey.includes("Searching web")) configKey = "Searching web";
+      {/* ── Log feed ── */}
+      {isOpen && (
+        <div className="px-4 py-3 space-y-0 bg-white dark:bg-neutral-950">
+          {steps.map((status: any, index: number) => {
+            const isLast = index === steps.length - 1;
+            const cfg = getConfig(status?.message || "");
+            const Icon = cfg.icon;
+            const iconColor = accentIcon[cfg.accent] || accentIcon.neutral;
 
-              const config = STATUS_HANDLERS[configKey] || {
-                icon: Activity,
-                title: status?.message,
-                color: "text-neutral-500",
-                render: (d: any) => <span className="text-sm text-black dark:text-white space-grotesk">{String(d)}</span>
-              };
+            return (
+              <div key={index} className="flex gap-3 relative pb-5 last:pb-0">
+                {/* connector line */}
+                {!isLast && (
+                  <div className="absolute left-[13px] top-7 bottom-0 w-px bg-neutral-100 dark:bg-neutral-800" />
+                )}
 
-              const Icon = config.icon;
-
-              return (
-                <div key={index} className="flex gap-4 relative pb-8 last:pb-0 group">
-                  {/* Timeline Connector (Technical Line) */}
-                  {!isLast && (
-                    <div className="absolute left-[15px] top-8 bottom-0 w-px bg-neutral-200 dark:bg-neutral-800 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-700 transition-colors" />
-                  )}
-
-                  {/* Icon Node */}
-                  <div className={`relative shrink-0 h-8 w-8 rounded-md flex items-center justify-center border transition-all duration-300
-                    ${isLast
-                      ? "bg-white dark:bg-neutral-900 border-neutral-400 dark:border-neutral-500 shadow-md ring-2 ring-neutral-100 dark:ring-neutral-800"
-                      : "bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100"
-                    }`}>
-                    <Icon size={14} className={config.color} />
-                  </div>
-
-                  {/* Step Content */}
-                  <div className={`flex flex-col min-w-0 w-full pt-1 ${!isLast ? "opacity-70 group-hover:opacity-100 transition-opacity" : "opacity-100"}`}>
-                    <span className="text-sm font-bold text-black dark:text-white space-grotesk leading-none mb-1 space-grotesk tracking-wide">
-                      {config.title}
-                    </span>
-                    <div className="w-full">
-                      {config.render(status.data)}
-                    </div>
-                  </div>
+                {/* icon node */}
+                <div className={`relative flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isLast
+                  ? "bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 shadow-sm"
+                  : "bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 opacity-50"
+                  }`}>
+                  <Icon
+                    size={13}
+                    className={`${iconColor} ${isLast && cfg.icon === Loader2 ? "animate-spin" : ""}`}
+                  />
                 </div>
-              );
-            })}
+
+                {/* content */}
+                <div className={`flex-1 min-w-0 pt-0.5 transition-opacity ${!isLast ? "opacity-50" : "opacity-100"}`}>
+                  <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 space-grotesk leading-none">
+                    {cfg.resolvedLabel || status?.message}
+                  </span>
+                  <StepData
+                    message={normaliseKey(status?.message || "")}
+                    data={status?.data}
+                    accent={cfg.accent}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 };
