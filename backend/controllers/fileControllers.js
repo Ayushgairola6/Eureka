@@ -1168,7 +1168,7 @@ export const PostTypeWebSearch = async (req, res) => {
     }
 
     const webResults = FormattForLLM(cleanedData);
-    console.log(webResults)
+    // console.log(webResults)
     if (!webResults || webResults.error || !webResults.FinalContent) {
       return res.status(400).json({ message: "Error processing search results." });
     }
