@@ -271,42 +271,55 @@ export async function StructuredOutPutInferenceHandler(
     };
   }
   try {
-    const response = await groq.chat.completions.create({
-      messages: [
-        { content: SYSTEM_PROMPT, role: "system" },
-        { role: "user", content: user_prompt },
-      ],
-      model: "openai/gpt-oss-120b",
-      temperature: 0.1,
-      stream: false,
-      top_p: 1,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "analyst_mode",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              confidence_score: { type: "number" },
-              thought: { type: "string" },
-              queries: { type: "array", items: { type: "string" } },
-              direct_answer: { type: "string" },
+
+    const response = await fetch(`${process.env.BASE_INFERENCE_URL}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "Authorization": `Bearer ${process.env.NVIDIA_KEY}`, },
+      body: JSON.stringify({
+        model: 'stepfun-ai/step-3.7-flash',
+        messages: [
+          { role: "user", content: user_prompt },
+          { role: "system", content: SYSTEM_PROMPT }
+        ],
+        stream: false,
+        temperature: 0.2,
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "analyst_mode",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                confidence_score: { type: "number" },
+                thought: { type: "string" },
+                queries: { type: "array", items: { type: "string" } },
+                direct_answer: { type: "string" },
+              },
+              required: ["confidence_score", "thought"],
+              additionalProperties: false,
             },
-            required: ["confidence_score", "thought"],
-            additionalProperties: false,
           },
-        },
-      },
+        }
+      })
     });
-    const data = JSON.parse(response?.choices[0].message.content || "{}");
-    if (data) {
-      return { error: null, result: data };
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return { error: new Error(`HTTP ${response.status}: ${errorText}`), result: null };
+    }
+
+    const results = await response.json();
+    const content = results?.choices?.[0]?.message?.content;
+    // const data = JSON.parse(response?.choices[0].message.content || "{}");
+    if (content) {
+      return { error: null, result: JSON.parse(content) };
     }
     return {
       error: "Our LLM's are overloaded please wait a bit and try again",
       result: null,
     };
+
   } catch (error) {
     console.error("Structured inference error\n", error);
     return {

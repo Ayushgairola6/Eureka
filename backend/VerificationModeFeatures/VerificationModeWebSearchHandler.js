@@ -19,6 +19,7 @@ import { ProcessUserQuery } from "../controllers/UserCreditLimitController.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 import {
+  DeepScraper,
   FilterUrlForExtraction,
   FormattForLLM,
   ProcessForLLM,
@@ -98,7 +99,7 @@ async function WebSearchOrchestrator(
       room_id,
     } = data;
 
-    const iterationLimit = web_search_depth === "deep_web" ? 5 : 2;
+    const iterationLimit = web_search_depth === "deep_web" ? 8 : 6;
 
     if (iteration >= iterationLimit) {
       return {
@@ -113,14 +114,14 @@ async function WebSearchOrchestrator(
 
     // Build a lean prompt — only pass previous queries+urls, not raw content
     const contextString = FormatContextForLLM(iterationContext);
-    const llmPrompt = `user_request=${user_prompt}&plan_type=${plan_type}${
-      contextString ? `&${contextString}` : ""
-    }`;
+    const llmPrompt = `user_request=${user_prompt}&plan_type=${plan_type}${contextString ? `&${contextString}` : ""
+      }`;
 
     const IdentifiedRequests = await StructuredOutPutInferenceHandler(
       llmPrompt,
       VerificationModePrompt
     );
+    console.log(IdentifiedRequests, 'modelresponse\n')
 
     if (
       !IdentifiedRequests ||
@@ -182,6 +183,7 @@ async function WebSearchOrchestrator(
           room_id,
         });
 
+      console.log(results, 'the web-search results')
       if (results && !results.error && results.data) {
         return {
           error: null,
@@ -321,8 +323,12 @@ async function SurfaceWebSearchRequst(FormattedQueries, data) {
         data: null,
       };
     }
+    EmitEvent(user?.user_id, "processing_links", {
+      MessageId,
+      status: { message: "I am gonna read these sources", data: LinksToFetch },
+    });
     const CleanedWebData = await ProcessForLLM(
-      LinksToFetch,
+      LinksToFetch.slice(4),
       user,
       question,
       MessageId,
@@ -333,6 +339,8 @@ async function SurfaceWebSearchRequst(FormattedQueries, data) {
     if (CleanedWebData.length === 0) {
       return { error: "The processedInformation was not enough", data: null };
     }
+
+    // const CleanedWebData = await DeepScraper({ source: LinksToFetch, prompt: question, user_id: user?.user_id, message_id: MessageId, webhook_url: ' https://c37c-2401-4900-5a31-94c8-a5b4-7d57-66ea-c6ad.ngrok-free.app/api/scraper-events' })
 
     const FormattedResearchData = FormattForLLM(CleanedWebData);
 
@@ -396,12 +404,12 @@ export const VerificationModeSearchWeb = async (req, res) => {
       });
     }
     // free users not allowed
-    if (plan_type === "free" || plan_type === "sprint pass") {
-      return res.status(403).json({
-        message:
-          "This plan does not include analyst mode, if you want to try it please considering upgrading your plan.",
-      });
-    }
+    // if (plan_type === "free" || plan_type === "sprint pass") {
+    //   return res.status(403).json({
+    //     message:
+    //       "This plan does not include analyst mode, if you want to try it please considering upgrading your plan.",
+    //   });
+    // }
     // orchestrate results
     const result = await HandleOrchestratedResultsHandling({
       user: req.user,
@@ -643,11 +651,11 @@ export const FinalAnalyzer = async (req, res) => {
     }
 
     // free & sprint pass not allowed
-    if (plan_type === "free" || plan_type === "sprint pass") {
-      return res
-        .status(400)
-        .json({ message: "These features are only limited to pro plans" });
-    }
+    // if (plan_type === "free" || plan_type === "sprint pass") {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "These features are only limited to pro plans" });
+    // }
 
     // validate quota
     const rateLimitStatus = await ProcessUserQuery(user, "Analyst");
@@ -680,7 +688,7 @@ export const FinalAnalyzer = async (req, res) => {
       });
     }
     // if the user explicitly asked to finalize the report
-
+    console.log("action-type", action_type)
     if (action_type && action_type === "finalize") {
       const message = {
         id: userMessageId, //users message Id
@@ -699,7 +707,8 @@ export const FinalAnalyzer = async (req, res) => {
       }
       const finalReportSynthesizer = await GenerateResponse(
         `Create a detailed report of this information fetched by you in the previous step of the research \n,the source information also contains the previous original query of the user so also keep that into consideration\n,
-        these are new and additional instructions from the user=${instructions}\n,this is the information from sources=${JSON.stringify(
+        these are new and additional instructions from the ##user=${instructions}\n,
+        this is the information from ## sources=${JSON.stringify(
           Information.data
         )}`,
         ANALYST_PROMPT
@@ -750,7 +759,7 @@ export const FinalAnalyzer = async (req, res) => {
     } else if (action_type === "continue") {
       const newResearchResults = await HandleNewInstructions(
         instructions ||
-          "No instructions were provided but the user has asked to continue the research",
+        "No instructions were provided but the user has asked to continue the research",
         {
           user: req.user,
           user_prompt:
@@ -774,6 +783,7 @@ export const FinalAnalyzer = async (req, res) => {
     // validate the type of instruction
     const { isHardcoded, isUnique } = CheckInstructionsStatus(instructions);
 
+    console.log(isHardcoded, isUnique, 'intent recogniztion')
     // if the instructions are unique
     if (isUnique === true) {
       const identified_intent = await FindIntent(instructions); //identify the user intent

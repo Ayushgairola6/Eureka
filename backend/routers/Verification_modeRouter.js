@@ -25,19 +25,18 @@ VerificationModeRouter.post(
   .post("/research-continue", VerifyToken, ResumePendingThread)
   .get("/refresh-archive", VerifyToken, RefreshArchive)
   .put("/markdone", VerifyToken, MarkResearchDone)
-  .post("/source/read/apify", (req, res) => {
+  .post("/scraper-events", (req, res) => {
     const { message, link, user_id, MessageId } = req.body;
-
+    // console.log(req.body);
     const event =
       message === "LINK_READ"
         ? "reading_links"
         : message === "PAGE_READ"
-        ? "Cleaning_Context"
-        : message === "SCRAPE_COMPLETE"
-        ? "Done_Scraping"
-        : message === "ERROR_OCCURRED"
-        ? "Unable_to_read_link"
-        : "Unknown_Event";
+          ? "Cleaning_Context"
+          : message === "SCRAPE_COMPLETE"
+            ? "Done_Scraping"
+            : message === "ERROR_OCCURRED"
+              ? "Unable_to_read_link" : message === 'GENERATED_EMBEDDINGS' ? "Generating_embeddings" : message === 'DIVING_DEEP' ? "Reading_dynamically" : "Unknown_Event";
 
     EmitEvent(user_id, "query_status", {
       MessageId,

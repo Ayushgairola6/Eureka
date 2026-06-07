@@ -1155,6 +1155,11 @@ export const PostTypeWebSearch = async (req, res) => {
     const linksToProcess =
       web_search_depth === "deep_web" ? LinksToFetch : LinksToFetch.slice(0, 2);
 
+    EmitEvent(user_id, "processing_links", {
+      MessageId,
+      status: { message: "I am gonna read these sources", data: linksToProcess },
+    });
+
     const cleanedData = await ProcessForLLM(
       linksToProcess,
       req.user,

@@ -19,10 +19,10 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { ApifyClient } from "apify-client";
 dotenv.config();
 
-const turndown = new TurndownService({ headingStyle: "atx" });
-const apify_client = new ApifyClient({
-  token: process.env.APIFY_TOKEN,
-});
+// const turndown = new TurndownService({ headingStyle: "atx" });
+// const apify_client = new ApifyClient({
+//   token: process.env.APIFY_TOKEN,
+// });
 
 
 export async function SerpWeb(query) {
@@ -149,6 +149,7 @@ export const ProcessForLLM = async (
       prompt: userQuery,
       user_id: user.user_id || room_id,
       message_id: MessageId,
+      webhook_url: " https://api.antinodeai.space/api/scraper-events"
     };
 
     // our own scraping api
@@ -160,7 +161,7 @@ export const ProcessForLLM = async (
         headers: {
           "Content-type": "application/json",
         },
-        signal: AbortSignal.timeout(1000_000)
+        signal: AbortSignal.timeout(2000_000)
 
       }
     );
@@ -169,7 +170,7 @@ export const ProcessForLLM = async (
   } catch (err) {
     console.error(err);
     // notifyMe("An error in the process llm handler\n", err);
-    return [];
+    return `These were the web-search results` + JSON.stringify(err);
   }
 };
 //formatting for the llm
@@ -573,4 +574,32 @@ export async function ApifyWebHook(req, res) {
     console.error("Error processing webhook:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
+}
+
+export const client = new ApifyClient({
+  token: process.env.APIFY_TOKEN,
+});
+
+export async function DeepScraper(data) {
+  const { source,
+    prompt,
+    user_id,
+    message_id,
+    webhook_url
+  } = data;
+  if (!prompt || !source || !user_id || !message_id || !webhook_url) return;
+
+  try {
+    // Use the actor name directly
+    const run = await client.actor("ayush_gairola_01/my-actor").call(data);
+
+    // Fetch results from the dataset
+    const { items } = await client.dataset(run.defaultDatasetId).listItems();
+
+    console.log(items, "scraped results");
+    return items;
+  } catch (err) {
+    return `WEb-scraping tool error:` + JSON.stringify(err);
+  }
+
 }

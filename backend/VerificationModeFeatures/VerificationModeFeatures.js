@@ -135,11 +135,11 @@ export const ResumePendingThread = async (req, res) => {
       });
     }
     // validate payment status
-    if (plan_status === "free" || plan_status === "sprint pass") {
-      return res
-        .status(400)
-        .json({ message: "These features are only limited to pro plans" });
-    }
+    // if (plan_status === "free" || plan_status === "sprint pass") {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "These features are only limited to pro plans" });
+    // }
 
     // validate quota
     const rateLimitStatus = await ProcessUserQuery(user, "Analyst");

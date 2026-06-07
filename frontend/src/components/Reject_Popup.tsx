@@ -99,6 +99,7 @@ export const FinalizePopup = ({ message }: any) => {
                 MessageId: message.id,
                 userMessageId: user_id,
                 web_search_depth: search_depth,
+                action_type: "finalize"
             }
 
 
