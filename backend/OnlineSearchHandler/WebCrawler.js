@@ -131,7 +131,7 @@ export const ProcessForLLM = async (
       prompt: userQuery,
       user_id: user.user_id || room_id,
       message_id: MessageId,
-      webhook_url: "https://1a61-2401-4900-5c21-81b2-567-91cd-ded-514a.ngrok-free.app/api/scraper-events"
+      webhook_url: "https://api.antinodeai.space/api/scraper-events"
     };
 
     // our own scraping api
@@ -142,7 +142,6 @@ export const ProcessForLLM = async (
         body: JSON.stringify(data),
         headers: {
           "Content-type": "application/json",
-          'Authorization': `Bearer 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`
         },
         signal: AbortSignal.timeout(98500_000)
 
