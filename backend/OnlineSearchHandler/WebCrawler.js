@@ -1,28 +1,10 @@
-import {
-  CheerioCrawler,
-  MemoryStorage,
-  Configuration,
-  log,
-  PlaywrightCrawler,
-} from "crawlee";
-import { Readability } from "@mozilla/readability";
-import { parseHTML } from "linkedom"; // Much lighter than JSDOM
-import TurndownService from "turndown";
 import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
 import axios from "axios";
 import dotenv from "dotenv";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { GenerateEmbeddings } from "../controllers/ModelController.js";
-import { cosineSimilarity } from "./utils/math.js"; // You'll need a simple math helper
-import { splitTextIntoChunks } from "../controllers/fileControllers.js";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { ApifyClient } from "apify-client";
 dotenv.config();
-
-// const turndown = new TurndownService({ headingStyle: "atx" });
-// const apify_client = new ApifyClient({
-//   token: process.env.APIFY_TOKEN,
-// });
 
 
 export async function SerpWeb(query) {
@@ -135,37 +117,40 @@ export const ProcessForLLM = async (
   plan_type
 ) => {
   try {
-    const filteredLinks = filterResearchLinks(links); //clean the links
-    if (
-      !filteredLinks ||
-      !Array.isArray(filteredLinks) ||
-      !userQuery ||
-      typeof userQuery !== "string"
-    ) {
-      return [];
-    }
+    // const filteredLinks = filterResearchLinks(links); //clean the links
+    // if (
+    //   !filteredLinks ||
+    //   !Array.isArray(filteredLinks) ||
+    //   !userQuery ||
+    //   typeof userQuery !== "string"
+    // ) {
+    //   return [];
+    // } //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
     const data = {
-      source: filteredLinks,
+      source: links,
       prompt: userQuery,
       user_id: user.user_id || room_id,
       message_id: MessageId,
-      webhook_url: " https://api.antinodeai.space/api/scraper-events"
+      webhook_url: "https://1a61-2401-4900-5c21-81b2-567-91cd-ded-514a.ngrok-free.app/api/scraper-events"
     };
 
     // our own scraping api
-    const response = await fetch(
-      "https://antinode-scraper.onrender.com/api/search",
+    // "https://antinode-scraper.onrender.com/api/search",
+    const response = await fetch('https://blaze-fire-surfer.hf.space/api/search',
       {
         method: "POST",
         body: JSON.stringify(data),
         headers: {
           "Content-type": "application/json",
+          'Authorization': `Bearer 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`
         },
-        signal: AbortSignal.timeout(2000_000)
+        signal: AbortSignal.timeout(98500_000)
 
       }
     );
     const result = await response.json();
+    console.log(result)
+
     return result;
   } catch (err) {
     console.error(err);
@@ -212,91 +197,91 @@ export function FormattForLLM(ScrapedData) {
 }
 
 // filtering out the links for research and deep we search
-const filterResearchLinks = (links) => {
-  // 1. Extensions we Explicitly WANT (The "Gold" List)
-  const researchExtensions = new Set([
-    ".pdf",
-    ".doc",
-    ".docx",
-    ".rtf",
-    ".txt", // Documents
-    ".csv",
-    ".xls",
-    ".xlsx",
-    ".json", // Datasets
-    ".ppt",
-    ".pptx", // Presentations
-  ]);
+// const filterResearchLinks = (links) => {
+//   // 1. Extensions we Explicitly WANT (The "Gold" List)
+//   const researchExtensions = new Set([
+//     ".pdf",
+//     ".doc",
+//     ".docx",
+//     ".rtf",
+//     ".txt", // Documents
+//     ".csv",
+//     ".xls",
+//     ".xlsx",
+//     ".json", // Datasets
+//     ".ppt",
+//     ".pptx", // Presentations
+//   ]);
 
-  // 2. Extensions we definitely HATE (Media/Executables)
-  const junkExtensions = new Set([
-    ".jpg",
-    ".png",
-    ".gif",
-    ".mp4",
-    ".mp3", // Media
-    ".exe",
-    ".dmg",
-    ".iso",
-    ".zip",
-    ".tar", // Binaries (Keep zips only if you want bulk data)
-  ]);
+//   // 2. Extensions we definitely HATE (Media/Executables)
+//   const junkExtensions = new Set([
+//     ".jpg",
+//     ".png",
+//     ".gif",
+//     ".mp4",
+//     ".mp3", // Media
+//     ".exe",
+//     ".dmg",
+//     ".iso",
+//     ".zip",
+//     ".tar", // Binaries (Keep zips only if you want bulk data)
+//   ]);
 
-  return links.filter((link) => {
-    try {
-      const parsedUrl = new URL(link);
+//   return links.filter((link) => {
+//     try {
+//       const parsedUrl = new URL(link);
 
-      // Rule 1: Protocol - Allow HTTP/HTTPS.
-      // Note: If you want FTP, you need a different crawler class than CheerioCrawler!
-      if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-        return false;
-      }
+//       // Rule 1: Protocol - Allow HTTP/HTTPS.
+//       // Note: If you want FTP, you need a different crawler class than CheerioCrawler!
+//       if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+//         return false;
+//       }
 
-      // Rule 2: The "Localhost" Guard (Security)
-      if (
-        parsedUrl.hostname.includes("localhost") ||
-        parsedUrl.hostname === "127.0.0.1"
-      ) {
-        return false;
-      }
+//       // Rule 2: The "Localhost" Guard (Security)
+//       if (
+//         parsedUrl.hostname.includes("localhost") ||
+//         parsedUrl.hostname === "127.0.0.1"
+//       ) {
+//         return false;
+//       }
 
-      const pathname = parsedUrl.pathname.toLowerCase();
-      const extension = pathname.substring(pathname.lastIndexOf("."));
+//       const pathname = parsedUrl.pathname.toLowerCase();
+//       const extension = pathname.substring(pathname.lastIndexOf("."));
 
-      // Rule 3: If it's explicitly junk, toss it.
-      if (junkExtensions.has(extension)) {
-        return false;
-      }
+//       // Rule 3: If it's explicitly junk, toss it.
+//       if (junkExtensions.has(extension)) {
+//         return false;
+//       }
 
-      // Rule 4: The "Deep Web" Nuance
-      // If the URL has NO extension (e.g. /view/1234), keep it!
-      // It might be a dynamic endpoint serving a PDF.
-      if (!extension || extension.length > 5) {
-        return true;
-      }
+//       // Rule 4: The "Deep Web" Nuance
+//       // If the URL has NO extension (e.g. /view/1234), keep it!
+//       // It might be a dynamic endpoint serving a PDF.
+//       if (!extension || extension.length > 5) {
+//         return true;
+//       }
 
-      // Rule 5: If it has an extension, is it in our "Gold" list?
-      // Or is it a standard web page (.html, .php, .asp)?
-      const isWebPage = [
-        ".html",
-        ".htm",
-        ".php",
-        ".asp",
-        ".aspx",
-        ".jsp",
-      ].includes(extension);
+//       // Rule 5: If it has an extension, is it in our "Gold" list?
+//       // Or is it a standard web page (.html, .php, .asp)?
+//       const isWebPage = [
+//         ".html",
+//         ".htm",
+//         ".php",
+//         ".asp",
+//         ".aspx",
+//         ".jsp",
+//       ].includes(extension);
 
-      if (researchExtensions.has(extension) || isWebPage) {
-        return true;
-      }
+//       if (researchExtensions.has(extension) || isWebPage) {
+//         return true;
+//       }
 
-      // Default: If we aren't sure, keep it (safer for deep scraping)
-      return true;
-    } catch (err) {
-      return false;
-    }
-  });
-};
+//       // Default: If we aren't sure, keep it (safer for deep scraping)
+//       return true;
+//     } catch (err) {
+//       return false;
+//     }
+//   });
+// };
 
 export function extractHighValueChunks(pageText, userQuery, maxTokens) {
   const estimateTokens = (text) => Math.ceil(text.length / 4);
@@ -431,79 +416,7 @@ const cleanAndSplitQueries = (llmResponse) => {
     .filter((query) => query.length > 3); // Ignore empty/useless strings
 };
 
-// extracts relevant information from scraped search results for better context matching
 
-const HandleContextFiltering = async (CurrentContext, userQuery) => {
-  try {
-    const { content, title, url } = CurrentContext;
-
-    if (!content || !title || !url) {
-      return { error: "Missing required fields", content: null };
-    }
-
-    const webContentSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 4000,
-      chunkOverlap: 100,
-      separators: ["\n\n", "\n", ". ", " "],
-    });
-
-    const chunks = await webContentSplitter.splitText(content); //create chunks large ones
-    // const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)); //a slight delay for controller rate limits
-    if (chunks.length === 0) {
-      return { content: null, score: 0 };
-    }
-
-    let UserPromptEmbeddings = await GenerateEmbeddings(
-      userQuery,
-      "SEMANTIC_SIMILARITY"
-    );
-    // if first try fails wait a bit and try again
-    if (!UserPromptEmbeddings || UserPromptEmbeddings?.error) {
-      await new Promise((res) => setTimeout(res, 700));
-
-      try {
-        UserPromptEmbeddings = await GenerateEmbeddings(
-          userQuery,
-          "SEMANTIC_SIMILARITY"
-        );
-      } catch (retryError) {
-        return { content: null, score: 0 };
-      }
-    }
-    const batchSize = 30;
-    const results = [];
-    const allEmbeddings = await GenerateEmbeddingsRecursive(
-      chunks,
-      "RETRIEVAL_DOCUMENT",
-      0,
-      results,
-      batchSize
-    );
-
-    // Score inline, no recursion needed here
-    const scoredChunks = chunks
-      .map((chunk, i) => ({
-        chunk,
-        score: allEmbeddings[i]
-          ? cosineSimilarity(
-            UserPromptEmbeddings?.[0]?.values,
-            allEmbeddings?.[i].values
-          )
-          : 0,
-      }))
-      .filter((c) => c.score > 0.65)
-      .sort((a, b) => b.score - a.score);
-
-    const finalMarkdown = scoredChunks
-      .map((s) => `[Source: ${title}](${url})\n${s.chunk}`)
-      .join("\n\n---\n\n");
-    return { content: finalMarkdown, score: scoredChunks[0]?.score || 0 };
-  } catch (err) {
-    console.error("Context filtering error:", err);
-    notifyMe("Context filtering error", err);
-    return { content: null, score: 0 };
-  }
-};
 
 //a tick based embedding function that asks for new embeddings only when previous one finishes recursively
 const GenerateEmbeddingsRecursive = async (
@@ -576,6 +489,7 @@ export async function ApifyWebHook(req, res) {
   }
 }
 
+// new apify client
 export const client = new ApifyClient({
   token: process.env.APIFY_TOKEN,
 });
@@ -591,9 +505,10 @@ export async function DeepScraper(data) {
 
   try {
     // Use the actor name directly
-    const run = await client.actor("ayush_gairola_01/my-actor").call(data);
+    const run = await client.actor("ayush_gairola_01/antinode-scraper").run(data);
 
-    // Fetch results from the dataset
+    // Fetch results from the datasetc
+    console.log(containerUrl, 'the apify server available at');
     const { items } = await client.dataset(run.defaultDatasetId).listItems();
 
     console.log(items, "scraped results");
@@ -601,5 +516,12 @@ export async function DeepScraper(data) {
   } catch (err) {
     return `WEb-scraping tool error:` + JSON.stringify(err);
   }
+
+}
+
+
+export function SearchDecider(query, plan, MessageId, user, depth) {
+
+
 
 }

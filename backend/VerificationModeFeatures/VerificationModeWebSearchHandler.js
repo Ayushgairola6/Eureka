@@ -12,6 +12,7 @@ import {
   FindIntent,
   HandleInference,
   StructuredOutPutInferenceHandler,
+  Summarize,
 } from "../controllers/GroqInferenceController.js";
 import { GenerateResponse } from "../controllers/ModelController.js";
 import { supabase } from "../controllers/supabaseHandler.js";
@@ -68,26 +69,50 @@ function ExtractFields(response, data) {
 }
 // recursive web search orchestration
 // Lightweight context tracker — only queries + URLs, no raw content
-function BuildIterationContext(previousContext, newQueries, newUrls) {
+function BuildIterationContext(previousContext, newQueries, newSummaries = [], raw_content) {
   return {
-    queries: [...(previousContext?.queries || []), ...newQueries],
-    urls: [...(previousContext?.urls || []), ...newUrls],
+    queries: [...(previousContext.queries || []), ...newQueries],
+    urls: [...(previousContext.urls || [])],  // keep existing URLs
+    summaries: [...(previousContext.summaries || []), ...newSummaries],
+    raw_content: [...(previousContext.raw_content || []), ...raw_content || []]
   };
 }
 
 // Formats context into a compact LLM-safe string (minimal tokens)
-function FormatContextForLLM(iterationContext) {
-  if (!iterationContext?.queries?.length) return "";
-  return `previous_queries=${JSON.stringify(
-    iterationContext.queries
-  )}&scraped_urls=${JSON.stringify(iterationContext.urls)}`;
+function FormatContextForLLM(context) {
+  let result = "";
+  if (context.queries?.length) {
+    result += `previous_queries=${context.queries.join(",")}&`;
+  }
+  if (context.summaries?.length) {
+    result += `previous_findings=${context.summaries.map(s => s.content_summary).join(" | ")}&`;
+  }
+  return result.slice(0, -1); // remove trailing &
 }
 
+// mergse raw results
+function mergeRawResults(rawResultsArray) {
+  const allUrls = new Set();
+  const allFavicons = new Set();
+  const allFinalContent = [];
+
+  for (const raw of rawResultsArray) {
+    if (raw?.urls) raw.urls.forEach(u => allUrls.add(u));
+    if (raw?.favicons) raw.favicons.forEach(f => allFavicons.add(f));
+    if (raw?.FinalContent) allFinalContent.push(...raw.FinalContent);
+  }
+
+  return {
+    urls: Array.from(allUrls),
+    favicons: Array.from(allFavicons),
+    FinalContent: allFinalContent
+  };
+}
 // recursive orchestrator
 async function WebSearchOrchestrator(
   iteration = 0,
   data,
-  iterationContext = { queries: [], urls: [] }
+  iterationContext = { queries: [], urls: [], raw_content: [] }
 ) {
   try {
     const {
@@ -99,12 +124,17 @@ async function WebSearchOrchestrator(
       room_id,
     } = data;
 
-    const iterationLimit = web_search_depth === "deep_web" ? 8 : 6;
+    const iterationLimit = web_search_depth === "deep_web" ? 8 : 4;
 
     if (iteration >= iterationLimit) {
+      let mergeResults;
+
+      if (iterationContext.raw_content && iterationContext.raw_content.length > 0) {
+        mergeResults = mergeRawResults(iterationContext.raw_content);
+      }
       return {
-        error: "Iteration limit reached without sufficient results",
-        data: null,
+        error: mergeResults ? null : "Iteration limit reached without gathering any important data",
+        data: mergeResults,
         MessageId,
         iteration,
         queries: iterationContext?.queries,
@@ -114,14 +144,12 @@ async function WebSearchOrchestrator(
 
     // Build a lean prompt — only pass previous queries+urls, not raw content
     const contextString = FormatContextForLLM(iterationContext);
-    const llmPrompt = `user_request=${user_prompt}&plan_type=${plan_type}${contextString ? `&${contextString}` : ""
-      }`;
+    const llmPrompt = `**user_request**:${user_prompt} **context**:${contextString}&iteration_count=${iteration}_max_iteration_limits=${4}`;
 
     const IdentifiedRequests = await StructuredOutPutInferenceHandler(
       llmPrompt,
       VerificationModePrompt
     );
-    console.log(IdentifiedRequests, 'modelresponse\n')
 
     if (
       !IdentifiedRequests ||
@@ -155,35 +183,24 @@ async function WebSearchOrchestrator(
     }
 
     // if the answer was simple
-    if (extractedInformation?.direct_answer)
-      return {
-        error: null,
-        data: null,
-        MessageId,
-        iteration,
-        direct_answer: extractedInformation.direct_answer,
-      };
-
+    if (extractedInformation?.direct_answer) return {
+      error: null,
+      data: null,
+      MessageId,
+      iteration,
+      direct_answer: extractedInformation.direct_answer,
+    };
+    // console.log(extractedInformation)
     // High confidence — fetch results and return immediately if they exist
-    if (extractedInformation?.score >= 0.5) {
-      const results =
-        // // web_search_depth === "deep_web "?
-        // await DeepSearchRequest(extractedInformation.queries, {
-        //   user,
-        //   user_prompt,
-        //   MessageId,
-        //   room_id,
-        //   plan_type,
-        // });
-        await SurfaceWebSearchRequst(extractedInformation.queries, {
-          user,
-          plan_type,
-          MessageId,
-          user_prompt,
-          room_id,
-        });
+    if (extractedInformation?.score >= 0.5 || extractedInformation.queries?.length > 0) {
+      const results = await SurfaceWebSearchRequst(extractedInformation.queries, {
+        user,
+        plan_type,
+        MessageId,
+        user_prompt,
+        room_id,
+      });
 
-      console.log(results, 'the web-search results')
       if (results && !results.error && results.data) {
         return {
           error: null,
@@ -198,7 +215,8 @@ async function WebSearchOrchestrator(
       const updatedContext = BuildIterationContext(
         iterationContext,
         extractedInformation.queries,
-        results?.data?.data?.urls || []
+        results.summaries || [],//the search summary
+        results.data
       );
 
       return WebSearchOrchestrator(iteration + 1, data, updatedContext);
@@ -208,7 +226,8 @@ async function WebSearchOrchestrator(
     const updatedContext = BuildIterationContext(
       iterationContext,
       extractedInformation.queries,
-      [] // no URLs since we didn't search yet
+      []
+      , []
     );
 
     return WebSearchOrchestrator(iteration + 1, data, updatedContext);
@@ -298,6 +317,8 @@ export async function DeepSearchRequest(FormattedQueries, data) {
 async function SurfaceWebSearchRequst(FormattedQueries, data) {
   try {
     const { user, plan_type, MessageId, user_prompt: question, room_id } = data;
+
+
     const { response, links: LinksToFetch } = await fetchSearchResults(
       plan_type,
       FormattedQueries?.join(","),
@@ -305,17 +326,22 @@ async function SurfaceWebSearchRequst(FormattedQueries, data) {
       MessageId
     );
 
+    // console.log(LinksToFetch, LinksToFetch.slice(0, 4))
     // `user_id` is not defined; use the object passed in
     EmitEvent(user.user_id, "query_status", {
       MessageId,
       status: {
         message: `Searching for`,
         data: [
-          `Looking in the web for following queries ,${JSON.stringify(
+          `Searching the web for following queries ,${JSON.stringify(
             FormattedQueries?.flat()
           )}`,
         ],
       },
+    });
+    EmitEvent(user?.user_id, "processing_links", {
+      MessageId,
+      status: { message: "I am gonna read these sources", data: LinksToFetch },
     });
     if (!response || LinksToFetch?.length === 0) {
       return {
@@ -323,32 +349,39 @@ async function SurfaceWebSearchRequst(FormattedQueries, data) {
         data: null,
       };
     }
-    EmitEvent(user?.user_id, "processing_links", {
-      MessageId,
-      status: { message: "I am gonna read these sources", data: LinksToFetch },
-    });
+
     const CleanedWebData = await ProcessForLLM(
-      LinksToFetch.slice(4),
+      LinksToFetch.slice(0, 5),
       user,
       question,
       MessageId,
       room_id,
       plan_type
     );
-
+    console.log(CleanedWebData, 'cleaned-web-data')
     if (CleanedWebData.length === 0) {
       return { error: "The processedInformation was not enough", data: null };
     }
 
-    // const CleanedWebData = await DeepScraper({ source: LinksToFetch, prompt: question, user_id: user?.user_id, message_id: MessageId, webhook_url: ' https://c37c-2401-4900-5a31-94c8-a5b4-7d57-66ea-c6ad.ngrok-free.app/api/scraper-events' })
+
 
     const FormattedResearchData = FormattForLLM(CleanedWebData);
-
+    console.log(FormattedResearchData, 'formattedReseachdata')
     if (FormattedResearchData.error) {
       return { error: "The processedInformation was not enough", data: null };
     }
 
-    return { error: null, data: FormattedResearchData };
+    const summaries = [];
+    for (const item of FormattedResearchData.FinalContent) {
+      if (item.content) {
+        const current_summary = await Summarize(item?.markdown);
+        summaries.push({
+          source: item.url, content_summary: current_summary
+        })
+      }
+    }
+    console.log(summaries, 'summaries');
+    return { error: null, data: FormattedResearchData, summaries: summaries };
   } catch (error) {
     return { error, data: null };
   }

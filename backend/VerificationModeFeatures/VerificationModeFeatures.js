@@ -437,6 +437,8 @@ export async function Visualize(req, res) {
       .status(500)
       .json({ message: "Our model failed to visualize this data" });
   } finally {
+    const { MessageId } = req.body;
+
     processing.delete(MessageId); // always release
   }
 }

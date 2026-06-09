@@ -188,7 +188,7 @@ const Hero: React.FC = () => {
 
           </div>
 
-          <span className='text-xs dark:text-gray-300 text-neutral-900 space-grotesk'>Used by analysts, firms, and content teams who can't afford to get it wrong.</span>
+          <span className='text-xs dark:text-gray-300 text-neutral-900 space-grotesk'>Built for analysts, firms, and content teams who can't afford to get it wrong.</span>
         </section>
 
 

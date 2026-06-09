@@ -45,6 +45,7 @@ import {
 } from "../OnlineSearchHandler/serpapi_handler.js";
 // import { ExecuteTools, WebSerchAgentLoop } from "./WebSearchOrchrestration.js";
 import { HandleInference, StructuredResponseGenerator } from "./GroqInferenceController.js";
+import { SearchQueryResults } from "../OnlineSearchHandler/WebSearchHandler.js";
 export const pc = new Pinecone({
   apiKey: process.env.PINECONE_DB_API_KEY,
 });
@@ -1097,9 +1098,9 @@ export const PostTypeWebSearch = async (req, res) => {
     if (!plan_type) {
       return res.status(400).send({ message: "Account issue, contact support." });
     }
-    if (plan_type === "free" && web_search_depth === "deep_web") {
-      return res.status(400).send({ message: "Deep web search requires a pro plan." });
-    }
+    // if (plan_type === "free" && web_search_depth === "deep_web") {
+    //   return res.status(400).send({ message: "Deep web search requires a pro plan." });
+    // }
     const quota = await ProcessUserQuery(req.user, "web_search");
     if (!quota?.status) {
       return res.status(400).send({ message: "Monthly quota exhausted." });
@@ -1141,43 +1142,54 @@ export const PostTypeWebSearch = async (req, res) => {
       status: { message: "Searching for", data: queries },
     });
 
-    const { links: LinksToFetch } = await fetchSearchResults(
-      plan_type,
-      queries.join(","),
-      req.user,
-      MessageId
-    );
-    if (LinksToFetch.length === 0) {
-      return res.status(400).send({ message: "Web search failed, try again." });
+    let webResults;
+    // if the searc depth is deep user our pipeline else use tavily
+    if (web_search_depth === 'deep_web') {
+      const { links: LinksToFetch } = await fetchSearchResults(
+        plan_type,
+        queries.join(","),
+        req.user,
+        MessageId
+      );
+      if (LinksToFetch.length === 0) {
+        return res.status(400).send({ message: "Web search failed, try again." });
+      }
+
+      // 4. Scrape & process – the depth logic in one clear line
+      const linksToProcess = LinksToFetch.slice(0, 6);
+
+      EmitEvent(user_id, "processing_links", {
+        MessageId,
+        status: { message: "I am gonna read these sources", data: linksToProcess },
+      });
+
+      const cleanedData = await ProcessForLLM(
+        linksToProcess,
+        req.user,
+        question,
+        MessageId,
+        null,
+        plan_type
+      );
+      if (cleanedData.length === 0) {
+        // return res.status(400).send({ message: "AI models overloaded, try again." });
+        notifyMe("The web search pipeline returned nothing during deep-research", JSON.stringify(cleanedData))
+        webResults = "The web-search tool returned no results maybe the tool failed due to some issue"
+      } else {
+        webResults = FormattForLLM(cleanedData);
+
+      }
+
+      // console.log(webResults)
+
+
+    }
+    else {
+      webResults = await SearchQueryResults(question, plan_type);
     }
 
-    // 4. Scrape & process – the depth logic in one clear line
-    const linksToProcess =
-      web_search_depth === "deep_web" ? LinksToFetch : LinksToFetch.slice(0, 2);
 
-    EmitEvent(user_id, "processing_links", {
-      MessageId,
-      status: { message: "I am gonna read these sources", data: linksToProcess },
-    });
-
-    const cleanedData = await ProcessForLLM(
-      linksToProcess,
-      req.user,
-      question,
-      MessageId,
-      null,
-      plan_type
-    );
-    if (cleanedData.length === 0) {
-      return res.status(400).send({ message: "AI models overloaded, try again." });
-    }
-
-    const webResults = FormattForLLM(cleanedData);
-    // console.log(webResults)
-    if (!webResults || webResults.error || !webResults.FinalContent) {
-      return res.status(400).json({ message: "Error processing search results." });
-    }
-
+    console.log(webResults)
     // 5. Build final answer with conversation context
     const history = await GetChatsForContext(req.user);
     const past = history?.length ? history : ["Failed to get session history"];
@@ -1190,7 +1202,7 @@ export const PostTypeWebSearch = async (req, res) => {
     };
     await CacheCurrentChat(userMsg, req.user);
 
-    const prompt = `These are queries by you previously to search the web=${JSON.stringify(queries)}&UserQuery=${question}&chathistory_between you and the user=${JSON.stringify(past)}&search_results=${JSON.stringify(webResults.FinalContent)}`;
+    const prompt = `These are queries by you previously to search the web=${JSON.stringify(queries)}&UserQuery=${question}&chathistory_between you and the user=${JSON.stringify(past)}&search_results from the web-search tool=${JSON.stringify(webResults.FinalContent || webResults?.response || webResults)}`;
 
     const answer = await GenerateResponse(prompt, WEB_SEARCH_DISTRIBUTOR_PROMPT);
     if (answer?.error) {
@@ -1211,8 +1223,8 @@ export const PostTypeWebSearch = async (req, res) => {
       message: "Results found",
       favicon: {
         MessageId,
-        icon: webResults.favicons,
-        url: webResults.urls,
+        icon: webResults.favicons || webResults.favicon,
+        url: webResults.urls || [],
       },
     });
   } catch (err) {

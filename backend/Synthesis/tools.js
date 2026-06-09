@@ -12,10 +12,7 @@ import {
   GetDataFromSerper,
   ProcessForLLM,
 } from "../OnlineSearchHandler/WebCrawler.js";
-
-// ------------------------------------------------------------------
-// Clean Tool Registry – all tools take a single `params` object
-// ------------------------------------------------------------------
+import { SearchQueryResults } from '../OnlineSearchHandler/WebSearchHandler.js'
 
 export const ToolRegistry = {
   // ------------------------------------------------------------------
@@ -82,12 +79,12 @@ export const ToolRegistry = {
       "Fetches relevant public knowledge base chunks for the query and category.",
     importance: 1,
     execute: async (params) => {
-      const { category, subCategory, question, plan_type } = params;
+      const { category, subCategory, question, plan } = params;
       if (!category || !subCategory || !question) {
         return { error: "Missing category, subCategory, or question" };
       }
 
-      const topK = plan_type !== "free" ? 5 : 2;
+      const topK = plan !== "free" ? 5 : 2;
       const response = await index.searchRecords({
         query: {
           topK,
@@ -192,11 +189,11 @@ export const ToolRegistry = {
       "Finds the most relevant chunks of a private document using vector search.",
     importance: 2,
     execute: async (params) => {
-      const { docId, question, user, plan_type } = params;
+      const { docId, question, user, plan } = params;
       if (!docId || !question) {
         return { error: "docId and question are required", data: null };
       }
-      const topK = plan_type !== "free" ? 100 : 50;
+      const topK = plan !== "free" ? 100 : 50;
       const response = await index.searchRecords({
         query: {
           topK,
@@ -228,8 +225,8 @@ export const ToolRegistry = {
     description: "Search the web for real-time information.",
     importance: 2,
     execute: async (params) => {
-      const { query, user, plan_type, MessageId } = params;
-      if (!query || !user || !plan_type || !MessageId) {
+      const { query, user, plan, MessageId } = params;
+      if (!query || !user || !plan || !MessageId) {
         return {
           error: "Missing query, user, plan_type, or MessageId",
           FormattedResults: null,
@@ -237,52 +234,60 @@ export const ToolRegistry = {
         };
       }
 
-      const { response, links: LinksToFetch } = await fetchSearchResults(
-        plan_type,
-        query,
-        user,
-        MessageId
-      );
+      // const { response, links: LinksToFetch } = await fetchSearchResults(
+      //   plan,
+      //   query,
+      //   user,
+      //   MessageId
+      // );
 
-      if (!response || !LinksToFetch?.length) {
+      // if (!response || !LinksToFetch?.length) {
+      //   return {
+      //     error: "Web search returned no results",
+      //     FormattedResults: null,
+      //     favicons: [],
+      //   };
+      // }
+
+      // const CleanedWebData = await ProcessForLLM(
+      //   LinksToFetch.slice(0, 2),
+      //   user,
+      //   query,
+      //   MessageId,
+      //   null,
+      //   plan
+      // );
+
+      // if (!CleanedWebData?.length) {
+      //   return {
+      //     error: "Web search failed to extract content",
+      //     FormattedResults: null,
+      //     favicons: [],
+      //   };
+      // }
+
+      // const WebResults = FormattForLLM(CleanedWebData);
+      // if (WebResults?.error || !WebResults.FinalContent?.length) {
+      //   return {
+      //     error: WebResults?.error || "Web search formatting failed",
+      //     FormattedResults: null,
+      //     favicons: [],
+      //   };
+      // }
+      try {
+        const { response, favicon } = await SearchQueryResults(query, plan);
+
         return {
-          error: "Web search returned no results",
-          FormattedResults: null,
-          favicons: [],
+          error: null,
+          FormattedResults: response,
+          favicons: favicon || [],
         };
+      } catch (error) {
+        return {
+          error: error, FormattedResults: null, favicons: []
+        }
       }
 
-      const CleanedWebData = await ProcessForLLM(
-        LinksToFetch,
-        user,
-        query,
-        MessageId,
-        null,
-        plan_type
-      );
-
-      if (!CleanedWebData?.length) {
-        return {
-          error: "Web search failed to extract content",
-          FormattedResults: null,
-          favicons: [],
-        };
-      }
-
-      const WebResults = FormattForLLM(CleanedWebData);
-      if (WebResults?.error || !WebResults.FinalContent?.length) {
-        return {
-          error: WebResults?.error || "Web search formatting failed",
-          FormattedResults: null,
-          favicons: [],
-        };
-      }
-
-      return {
-        error: null,
-        FormattedResults: WebResults.FinalContent,
-        favicons: WebResults.favicons || [],
-      };
     },
   },
 

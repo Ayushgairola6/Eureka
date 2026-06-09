@@ -19,13 +19,13 @@ export const SearchQueryResults = async (query, plan_type) => {
 
     const isPaid = plan_type === 'free' ? false : true;
     const response = await tvly.search(query, {
-      searchDepth: !Paid ? "advanced" : "basic",
-      maxTokens: !Paid ? 20 : 5,
-      includeAnswer: !Paid ? "advanced" : "basic",
+      searchDepth: isPaid === true ? "advanced" : "basic",
+      maxTokens: isPaid === true ? 20 : 5,
+      includeAnswer: isPaid === true ? "advanced" : "basic",
       includeFavicon: true,
-      chunksPerSource: !Paid ? 5 : 1,
-      maxResults: !Paid ? 14 : 5,
-      include_images: !Paid ? true : false,
+      chunksPerSource: isPaid === true ? 5 : 1,
+      maxResults: isPaid === true ? 14 : 4,
+      include_images: isPaid === true ? true : false,
     });
     if (!response) {
       return { error: "Unable to find results online" };

@@ -64,8 +64,6 @@ export const SynthesisResponse = async (req, res) => {
     // Build the static prompt – same shape as your original
     const staticPrompt = `
 User Query: ${question}
-plan:${plan_type}
-user:${user}
 Selected Documents: ${JSON.stringify(selectedDocuments)}
 Document Metadata: ${JSON.stringify(metadata)}
 Chat_history:${JSON.stringify(chats)}
@@ -190,7 +188,7 @@ async function SynthesisOrchestrator(data, iteration) {
     });
 
     // Execute tool
-    const execResult = await ExectueTools(parsed.tool_name, parsed.parameters);
+    const execResult = await ExectueTools(parsed.tool_name, parsed.parameters, user, plan, MessageId);
 
     // Build a string representation for the LLM's next call
     const toolResultString = JSON.stringify(execResult);
@@ -302,14 +300,14 @@ export function ParseResults(response, user_id, MessageId) {
 // ---------------------------------------------------------------
 // Tool executor (fixed)
 // ---------------------------------------------------------------
-async function ExectueTools(tool_name, parameters) {
+async function ExectueTools(tool_name, parameters, user, plan, MessageId) {
   const tool = ToolRegistry[tool_name];
   if (!tool) {
     return { error: `Unknown tool: ${tool_name}`, result: null };
   }
 
   try {
-    const result = await tool.execute(parameters);
+    const result = await tool.execute({ ...parameters, user, plan, MessageId });
     // Normalise output – some tools return { error, data }, some { FormattedResults, favicons }
     if (result && typeof result === "object") {
       if (result.error) {
