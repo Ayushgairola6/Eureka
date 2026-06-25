@@ -25,7 +25,7 @@ import {
   ProcessSynthesis,
   ShowVerificationPopup,
   VerificationModeWebSearch,
-  UpdateResearchData,
+  // UpdateResearchData,
   setCreatingReport,
 
 } from "../store/InterfaceSlice.ts";
@@ -214,17 +214,17 @@ const InputSection: React.FC<InputProps> = ({
     dispatch(VerificationModeWebSearch(information)).unwrap().then((res) => {
       if (res?.message) {
         toast.message(res.message)
-        if (res?.direct_answer) {
-          dispatch(MimicSSE({ id: AiId, delta: res?.direct_answer }));
-        }
-        dispatch(UpdateResearchData(res));
+        // if (res?.direct_answer) {
+        //   dispatch(MimicSSE({ id: AiId, delta: res?.direct_answer }));
+        // }
+        // dispatch(UpdateResearchData(res));
         dispatch(ShowVerificationPopup(res?.MessageId))
         dispatch(SetQueryCount('analyst'));
 
       }
     }).catch(err => {
       toast.error(err)
-      dispatch(MimicSSE({ id: AiId, delta: err }));
+      // dispatch(MimicSSE({ id: AiId, delta: err }));
 
     }).finally(() => {
       dispatch(setCreatingReport());

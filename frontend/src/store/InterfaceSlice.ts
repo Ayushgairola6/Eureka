@@ -44,10 +44,32 @@ export interface ResearchSource {
 }
 
 // the payload sent by the server
+// export interface ResearchData {
+//   sources: string[];
+//   favicons: string[];
+//   details: ResearchSource[];
+// }
+export interface ResearchDetailMeta {
+  childPages: number; // nested pages discovered from this source
+  childDocuments: number; // PDFs / docs found from this source
+  imagesAnalyzed: number; // images vision-analyzed on this source
+}
+
+export interface ResearchDetail {
+  title: string;
+  content: string; // full hierarchical markdown block (source + children)
+  url: string;
+  score: number | string;
+  type: "webpage" | "document";
+  meta: ResearchDetailMeta;
+}
+
 export interface ResearchData {
-  sources: string[];
+  sources: string[]; // all URLs (root + children flattened)
   favicons: string[];
-  details: ResearchSource[];
+  details: ResearchDetail[] | null;
+  queries: string[];
+  isSynthesized: boolean;
 }
 
 export interface MessageResearch {
@@ -759,20 +781,10 @@ const interfaceSlice = createSlice({
       }>
     ) => {
       if (!action.payload) return;
-
-      // const { MessageId, research_data, status = "complete" } = action.payload;
-
       const { MessageId, research_data, status } = action.payload;
       if (!MessageId || !research_data) return;
-
-      // destructure the array to validate it has actual content
       const { details } = research_data;
-
-      // let the sources and favicons existence slide in
       if (!details) return;
-
-      // if already exists
-      // the array can have mulitple research sets for single query
       state.ResearchData.push({
         MessageId: MessageId,
         research_data: research_data,
@@ -780,6 +792,7 @@ const interfaceSlice = createSlice({
         status: status ?? "complete",
       });
     },
+
     emptyArchive: (state) => {
       state.Research_Archive = [];
     },

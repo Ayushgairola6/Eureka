@@ -102,21 +102,7 @@ export function FormatSessionHistory(ChatsArray) {
   if (CheckPresenceAndArrayValidity(ChatsArray) === false) {
     return { error: "The array is empty!" };
   }
-  // the one qna flow object
-  // const objectFormat = {
-  //   created_at: "2025-11-22T16:37:46.254668+00:00",
-  //   id: 144,
-  //   user_id: "38f4a59b-ab88-48f6-a928-2c9e987c49e3",
-  //   question:
-  //     "what kind of language is python and how is different than other languages",
-  //   AI_response:
-  //     "Understood. I will act as a knowledge distributor, analyzing the provided context and delivering accurate information based on it. I will adhere to the specified response format rules: using visual aids when appropriate, avoiding excessive emoji use, and maintaining a professional tone. I am ready to receive the context and begin.\n",
-  // };
-  // the client side message object format
-  // id: string;
-  // sent_by: string;
-  // message: messageInt;
-  // sent_at: string;
+
   const NewArray = [];
   ChatsArray.forEach((obj) => {
     // format created_at into "day month year"
@@ -164,14 +150,14 @@ export async function HandleDeepWebResearch(
     const sanitizedQuery = query.trim();
     if (!sanitizedQuery) continue;
 
-    const data = await GetDataFromSerpApi(
+    const { err, response } = await GetDataFromSerpApi(
       sanitizedQuery,
       user,
       room_id,
       MessageId,
       plan_type
     );
-    if (data) {
+    if (response) {
       const extractedUrls = FormalSerpAPIresults(data); //extract the urls from serp results
       results.push(extractedUrls.flat());
     }
@@ -189,9 +175,8 @@ export const FetchChatHistory = async (req, res) => {
       return res.status(401).send({ message: "Please login to continue" });
     }
     const user = req.user;
-    const ConversationCacheKey = `user_id=${
-      user.user_id
-    }_time=${new Date().toDateString()}`;
+    const ConversationCacheKey = `user_id=${user.user_id
+      }_time=${new Date().toDateString()}`;
     const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
       user.user_id
     );

@@ -9,19 +9,22 @@ dotenv.config();
 
 export async function SerpWeb(query) {
   try {
+    console.log("Request received at our serp endpoint")
     const response = await fetch(
       "https://web-search-ty0g.onrender.com/search",
       {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ q: query, format: "json" }).toString(),
-        signal: AbortSignal.timeout(1800_000),
+        signal: AbortSignal.timeout(200_000),
       }
     );
     const data = await response.json();
     const urls = data.results.map((item) => item.url);
     return { err: null, results: urls }
   } catch (err) {
+    notifyMe("Our serp api endpoint failed", err);
+    console.error("Our serp endpoint error", err)
     return { err: err, results: null }
   }
 }
@@ -114,86 +117,139 @@ export const ProcessForLLM = async (
   userQuery,
   MessageId,
   room_id,
-  plan_type
+  plan_type, thread_id
 ) => {
   try {
-    // const filteredLinks = filterResearchLinks(links); //clean the links
-    // if (
-    //   !filteredLinks ||
-    //   !Array.isArray(filteredLinks) ||
-    //   !userQuery ||
-    //   typeof userQuery !== "string"
-    // ) {
-    //   return [];
-    // } //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
+
     const data = {
       source: links,
       prompt: userQuery,
       user_id: user.user_id || room_id,
       message_id: MessageId,
-      webhook_url: "https://api.antinodeai.space/api/scraper-events"
+      webhook_url: "https://api.antinodeai.space/api/scraper-events", thread_id: thread_id, research_url: "https://api.antinodeai.space/api/research-results"
     };
 
     // our own scraping api
     // "https://antinode-scraper.onrender.com/api/search",
-    const response = await fetch('https://blaze-fire-surfer.hf.space/api/search',
+    await fetch('https://blaze-fire-surfer.hf.space/api/search',
       {
         method: "POST",
         body: JSON.stringify(data),
         headers: {
           "Content-type": "application/json",
         },
-        signal: AbortSignal.timeout(98500_000)
+
 
       }
     );
-    const result = await response.json();
-    console.log(result)
+    // console.log(result)
 
-    return result;
+    return { error: null, data: "Research has started" }
+    // return result;
   } catch (err) {
-    console.error(err);
+    return { error: err, data: null }
     // notifyMe("An error in the process llm handler\n", err);
-    return `These were the web-search results` + JSON.stringify(err);
+    // return `These were the web-search results` + JSON.stringify(err);
   }
 };
 //formatting for the llm
-export function FormattForLLM(ScrapedData) {
-  if (!ScrapedData || !Array.isArray(ScrapedData) || ScrapedData.length === 0) {
-    return { error: "The scraped data array empty or not valid" };
+export function FormattForLLM(sources) {
+  if (!sources || !Array.isArray(sources) || sources.length === 0) {
+    return { error: "Scraped data is empty or invalid" };
   }
 
   const FinalContent = [];
   const favicons = [];
   const urls = [];
-  // process the results
-  ScrapedData.forEach((object) => {
-    if (object && object?.markdown) {
-      const data = {
-        title: object?.title,
-        content: object.markdown,
-        url: object?.url,
-        score: object?.score || "Unknown",
-      };
 
-      // push the llm object
-      FinalContent.push(data);
-      // add the favicon
-      if (object?.favicon) {
-        favicons.push(object.favicon);
+  // Helper to format images consistently
+  function formatImages(images, showThumbnails = true) {
+    if (!images || images.length === 0) return "";
+
+    let block = "\n\n### 📸 Analyzed Images:\n";
+
+    images.forEach((img, i) => {
+      if (showThumbnails) {
+        // ✅ Render actual image + analysis
+        block += `\n**[Image ${i + 1}]**\n`;
+        block += `![Image ${i + 1}](${img.url})\n`;  // ← This renders the image!
+        block += `\n${img.analysis}\n`;
+      } else {
+        // ✅ Text-only for LLM context (no images)
+        block += `\n**[Image ${i + 1}]**\n`;
+        block += `URL: ${img.url}\n`;
+        block += `${img.analysis}\n`;
       }
-      if (object?.url) {
-        urls.push(object.url);
+    });
+
+    return block;
+  }
+
+  for (const source of sources) {
+    if (!source?.markdown) continue;
+
+    // ── Root source block ──────────────────────────────────────
+    let block = `## Source_Title: ${source.title}\nURL: ${source.url}\n\n## MAIN_CONTENT:\n${source.markdown}`;
+
+    // ✅ FIX 1: Include root-level images (was commented out)
+    if (source.images?.length) {
+      block += formatImages(source.images);
+    }
+
+    // ── Child documents ────────────────────────────────────────
+    if (source.children?.documents?.length) {
+      block += "\n\n### 📄 Documents found in this source:\n";
+      for (const doc of source.children.documents) {
+        if (!doc.markdown) continue;
+        block += `\n#### Document: ${doc.title}\nURL: ${doc.url}\n\n${doc.markdown}\n`;
+
+        // ✅ FIX 2: Include document images
+        if (doc.images?.length) {
+          block += formatImages(doc.images);
+        }
+
+        urls.push(doc.url);
       }
     }
-  });
 
-  return {
-    favicons,
-    FinalContent,
-    urls,
-  };
+    // ── Child pages ────────────────────────────────────────────
+    if (source.children?.pages?.length) {
+      block += "\n\n### 🔗 Related pages from this source:\n";
+      for (const page of source.children.pages) {
+        if (!page.markdown) continue;
+        block += `\n#### Page: ${page.title}\nURL: ${page.url}\n\n${page.markdown}\n`;
+
+        // ✅ FIX 3: Consistent image formatting
+        if (page.images?.length) {
+          block += formatImages(page.images);
+        }
+
+        urls.push(page.url);
+      }
+    }
+
+    // ── Push assembled block ───────────────────────────────────
+    FinalContent.push({
+      title: source.title,
+      content: block,
+      url: source.url,
+      score: source.score || "unknown",
+      type: source.type || "webpage",
+      meta: {
+        childPages: source.children?.pages?.length || 0,
+        childDocuments: source.children?.documents?.length || 0,
+        imagesAnalyzed: source.images?.length || 0,
+      },
+      images: source.images || [] // Keep structured images for frontend
+    });
+
+    if (source.favicon) favicons.push(source.favicon);
+    urls.push(source.url);
+  }
+
+  return { favicons, FinalContent, urls };
 }
+
 
 // filtering out the links for research and deep we search
 // const filterResearchLinks = (links) => {

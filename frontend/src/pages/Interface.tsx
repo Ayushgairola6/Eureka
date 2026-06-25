@@ -30,7 +30,6 @@ import PrivateDocuments from "@/components/PrivateDocuments.tsx";
 import PublicQueryOptions from "@/components/PublicQueryOptions.tsx";
 import { Notice } from "@/components/Notice.tsx";
 import { v4 as uuid } from 'uuid'
-import { CiStreamOff, CiStreamOn } from "react-icons/ci";
 // import { QuotaIndicator } from "@/components/QuotaIndicator.tsx";
 import { CreatingReport } from "@/components/createReportIndicator.tsx";
 // import { ConnectDriveButton } from "@/components/ToolConnector.tsx"
@@ -38,6 +37,7 @@ import { CreatingReport } from "@/components/createReportIndicator.tsx";
 import { InterfaceFeatureSelector } from "@/components/Interface_FeatureSelector.tsx";
 import { useSearchParams } from "react-router";
 import ResearchVisualizer from "./Visualizer/Research_Visualizer.tsx";
+import LiveTailIndicator from "@/components/popups/live_tail_indicator.tsx";
 function Interface() {
 
   const dispatch = useAppDispatch();
@@ -48,7 +48,6 @@ function Interface() {
   const { isLoggedIn } = useAppSelector((state) => state.auth);
   const { question, category, visibility, subCategory, Chats, selectedDoc, search_depth, queryType, creatingReport } =
     useAppSelector((state) => state.interface);
-  const { isConnected } = useAppSelector(s => s.socket) //socket conection state (boolean)
   const textareaRef = useRef<HTMLInputElement>(null);
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
@@ -308,29 +307,7 @@ function Interface() {
 
         <InterfaceFeatureSelector showFeatures={showFeatures} setShowFeatures={setShowFeatures} />
 
-        <div className={`fixed top-15 right-2 z-[5] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all duration-300 ${isConnected
-          ? "border-green-500/30 bg-green-500/6"
-          : "border-red-500/30 bg-red-500/6"
-          }`}>
-          {isConnected ? (
-            <>
-              <span className="relative flex w-[7px] h-[7px]">
-                <span className="absolute inset-0 rounded-full bg-green-500 opacity-40 animate-ping" />
-                <span className="relative w-[7px] h-[7px] rounded-full bg-green-500 block" />
-              </span>
-              <span className="flex items-center justify-center gap-2 space-grotesk text-[10px] font-semibold text-green-500 tracking-widest">
-                LIVE TAIL <CiStreamOn />
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="w-[7px] h-[7px] rounded-full bg-red-500 opacity-70 block" />
-              <span className="flex items-center justify-center gap-2 space-grotesk text-[10px] font-semibold text-red-500 tracking-widest">
-                NO TAIL <CiStreamOff />
-              </span>
-            </>
-          )}
-        </div>
+        <LiveTailIndicator />
         <Notice />
         {creatingReport === true && <CreatingReport />}
 

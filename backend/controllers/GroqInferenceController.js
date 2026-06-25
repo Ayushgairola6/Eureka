@@ -294,6 +294,7 @@ export async function StructuredOutPutInferenceHandler(
                 confidence_score: { type: "number" },
                 thought: { type: "string" },
                 queries: { type: "array", items: { type: "string" } },
+                dorking_queries: { type: "array", items: { type: "string" } },
                 direct_answer: { type: "string" },
               },
               required: ["confidence_score", "thought"],
@@ -374,35 +375,40 @@ export async function FindIntent(instructions) {
 
 
 export const Summarize = async (context) => {
+
   const token = process.env.HF_ACCESS_TOKEN; // Read from environment
   const model = `qwen2.5:3b-instruct-q4_K_M`;
+  try {
+    const response = await fetch(
+      "https://i-feel-eureka-Inference.hf.space/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // <-- Add this line
+        },
+        body: JSON.stringify({
+          model: "bcluzel/LFM2.5-1.2B-Instruct:Q4_K_M",
+          messages: [
+            { role: "system", content: SUMMARIZER },
+            { role: "user", content: context },
+          ],
+          temperature: 0.1,
+          topK: 50,
+          repetition_penalty: 1.05,
+        }),
+        signal: AbortSignal.timeout(200_000), // 2 minutes
+      }
+    );
 
-  const response = await fetch(
-    "https://i-feel-eureka-Inference.hf.space/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // <-- Add this line
-      },
-      body: JSON.stringify({
-        model: "LiquidAI/lfm2.5-350m:q4_k_m",
-        messages: [
-          { role: "system", content: SUMMARIZER },
-          { role: "user", content: context },
-        ],
-        temperature: 0.1,
-        topK: 50,
-        repetition_penalty: 1.05,
-      }),
-      signal: AbortSignal.timeout(200_000),
+    const data = await response.json();
+    if (!response.ok) {
+      console.error("API Error:", response.status, data);
+      return `The overview generating agent did not generate the summary of this document`
     }
-  );
-
-  const data = await response.json();
-  if (!response.ok) {
-    console.error("API Error:", response.status, data);
-    throw new Error(`API request failed: ${response.status}`);
+    return data?.choices?.[0]?.message?.content;
+  } catch (err) {
+    return `The overview generating agent did not generate the summary of this document and failed with this eror:` + JSON.stringify(err)
   }
-  return data?.choices?.[0]?.message?.content;
+
 };

@@ -111,9 +111,8 @@ export const UpdateTheNotificationCache = async (
 // caching the current chats of the user for few hours
 export const CacheCurrentChat = async (message, user) => {
   const ChatArray = []; //array to store the chat history
-  const ConversationCacheKey = `user_id=${
-    user.user_id
-  }_time=${new Date().toDateString()}`;
+  const ConversationCacheKey = `user_id=${user.user_id
+    }_time=${new Date().toDateString()}`;
 
   const exists = await redisClient.exists(ConversationCacheKey);
   if (exists) {

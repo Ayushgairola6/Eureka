@@ -11,6 +11,7 @@ import { AgentWelcome } from "./InterfaceWelcome_Components.tsx";
 import { ChevronDown } from "lucide-react";
 import { FinalizePopup } from "./Reject_Popup.tsx";
 import { ResearchDataCenter } from "./ResearchDataRenders.tsx";
+import { IoEyeSharp } from "react-icons/io5";
 const STEPS = [
   "Orchestrated",
   "Transparent",
@@ -150,10 +151,10 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                         }
                       }}><ChevronDown size={15} /></button>}
                     </ul>
-                    <span className="text-[10px] font-mono font-bold dark:text-gray-300 text-gray-700 uppercase tracking-widest">
-                      {chat.sent_by === "You" ? ">> ORIGIN_USER" : ">> ANTINODE_RESPONSE"}
+                    <span className="text-[10px] bai-jamjuree-semibold">
+                      {chat.sent_by === "You" ? <ul className='dark:bg-white bg-black rounded-full p-1  dark:text-black tex-white'>You</ul> : <ul className='bg-sky-500 rounded-full p-1 text-white'><IoEyeSharp /></ul>}
                     </span>
-                    <div className={`h-[1px] w-4 ${chat.sent_by === "You" ? "bg-orange-600" : "bg-sky-600"}`} />
+                    {/* <div className={`h-[1px] w-4 ${chat.sent_by === "You" ? "bg-orange-600" : "bg-sky-600"}`} /> */}
                   </div>
                   <div
                     className={`relative transition-all duration-500 ease-in-out border shadow-sm

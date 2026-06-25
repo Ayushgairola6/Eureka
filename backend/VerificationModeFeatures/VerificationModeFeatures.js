@@ -7,7 +7,120 @@ import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
 import { HandleNewInstructions } from "./VerificationModeWebSearchHandler.js";
 import { GetResearchData } from "./VerificationModeWebSearchHandler.js";
 // first level agent handler
+//compression and decompression logic starts here
+import { promisify } from 'util';
+import zlib from 'zlib';
+const deflate = promisify(zlib.deflate);
+const inflate = promisify(zlib.inflate);
 
+// Helper to read compressed cache
+async function getCompressedCache(key) {
+  const compressed = await redisClient?.withCommandOptions({ returnBuffers: true }).get(key)
+  if (!compressed) return null;
+  const json = (await inflate(compressed)).toString();
+  return JSON.parse(json);
+}
+
+// Helper to write compressed cache
+async function setCompressedCache(key, value, ttl = 3600) {
+  const json = JSON.stringify(value);
+  const compressed = await deflate(json);
+  await redisClient.set(key, compressed, 'EX', ttl);
+}
+
+// get pending research
+// export const GetPendingResearch = async (req, res) => {
+//   try {
+//     const user = req.user;
+//     if (!user)
+//       return res.status(401).json({ message: "Please login to continue" });
+
+//     const { timestamp } = req.query;
+//     const cacheKey = `user=${user.user_id}:research-history`;
+
+//     // First fetch - get latest 5 records
+//     if (!timestamp) {
+//       const cachedResearchHistory = await getCompressedCache(cacheKey)
+
+//       if (cachedResearchHistory) {
+//         return res.status(200).json({
+//           message: "Found",
+//           history: JSON.parse(cachedResearchHistory),
+//         });
+//       }
+
+//       const { data, error } = await supabase
+//         .from("research_data")
+//         .select("*")
+//         .eq("user_id", user.user_id)
+//         .eq("isSynthesized", false)
+//         .order("created_at", { ascending: false }) // Newest first
+//         .limit(5);
+
+//       if (error || !data || data.length === 0) {
+//         return res.status(404).json({
+//           message: "No pending research found.",
+//           history: [],
+//         });
+//       }
+
+//       await setCompressedCache(cacheKey, data, 3600) // 1 hour expiry
+
+//       return res.status(200).json({
+//         message: "Research found",
+//         history: data,
+//       });
+//     }
+
+//     // Pagination fetch - get older records
+//     const cachedResearchHistory = await redisClient.get(cacheKey);
+//     let existingHistory = cachedResearchHistory
+//       ? JSON.parse(cachedResearchHistory)
+//       : [];
+
+//     const { data, error } = await supabase
+//       .from("research_data")
+//       .select("*")
+//       .eq("user_id", user.user_id)
+//       .eq("isSynthesized", false)
+//       .order("created_at", { ascending: false })
+//       .lt("created_at", timestamp) // Older than timestamp
+//       .limit(5);
+
+//     if (error) {
+//       return res.status(404).json({
+//         message: "Unable to fetch more research.",
+//         history: existingHistory,
+//       });
+//     }
+
+//     if (!data || data.length === 0) {
+//       return res.status(200).json({
+//         message: "No more research to load",
+//         history: existingHistory,
+//         hasMore: false,
+//       });
+//     }
+
+//     // Merge: existing (newer) + new (older)
+//     const updatedHistory = [...existingHistory, ...data];
+
+//     await setCompressedCache(cacheKey, updatedHistory, 3600)
+
+//     return res.status(200).json({
+//       message: "Research found",
+//       history: updatedHistory,
+//       hasMore: data.length === 5, // If we got 5, there might be more
+//     });
+//   } catch (error) {
+//     notifyMe(`Error in GetPendingResearch handler for analyst mode`, error);
+//     console.error(error);
+//     return res.status(500).json({
+//       message: "Server error. Please try again.",
+//       history: [],
+//     });
+//   }
+// };
 export const GetPendingResearch = async (req, res) => {
   try {
     const user = req.user;
@@ -17,15 +130,10 @@ export const GetPendingResearch = async (req, res) => {
     const { timestamp } = req.query;
     const cacheKey = `user=${user.user_id}:research-history`;
 
-    // First fetch - get latest 5 records
     if (!timestamp) {
-      const cachedResearchHistory = await redisClient.get(cacheKey);
-
-      if (cachedResearchHistory) {
-        return res.status(200).json({
-          message: "Found",
-          history: JSON.parse(cachedResearchHistory),
-        });
+      const cached = await getCompressedCache(cacheKey);
+      if (cached) {
+        return res.status(200).json({ message: "Found", history: cached });
       }
 
       const { data, error } = await supabase
@@ -33,29 +141,19 @@ export const GetPendingResearch = async (req, res) => {
         .select("*")
         .eq("user_id", user.user_id)
         .eq("isSynthesized", false)
-        .order("created_at", { ascending: false }) // Newest first
-        .limit(5);
+        .order("created_at", { ascending: false })
+        .limit(6);
 
       if (error || !data || data.length === 0) {
-        return res.status(404).json({
-          message: "No pending research found.",
-          history: [],
-        });
+        return res.status(404).json({ message: "No pending research found.", history: [] });
       }
 
-      await redisClient.set(cacheKey, JSON.stringify(data), { EX: 3600 }); // 1 hour expiry
-
-      return res.status(200).json({
-        message: "Research found",
-        history: data,
-      });
+      await setCompressedCache(cacheKey, data, 3600);
+      return res.status(200).json({ message: "Research found", history: data });
     }
 
-    // Pagination fetch - get older records
-    const cachedResearchHistory = await redisClient.get(cacheKey);
-    let existingHistory = cachedResearchHistory
-      ? JSON.parse(cachedResearchHistory)
-      : [];
+    // Pagination
+    let existing = await getCompressedCache(cacheKey) || [];
 
     const { data, error } = await supabase
       .from("research_data")
@@ -63,43 +161,24 @@ export const GetPendingResearch = async (req, res) => {
       .eq("user_id", user.user_id)
       .eq("isSynthesized", false)
       .order("created_at", { ascending: false })
-      .lt("created_at", timestamp) // Older than timestamp
-      .limit(5);
+      .lt("created_at", timestamp)
+      .limit(6);
 
     if (error) {
-      return res.status(404).json({
-        message: "Unable to fetch more research.",
-        history: existingHistory,
-      });
+      return res.status(404).json({ message: "Unable to fetch more research.", history: existing });
     }
 
     if (!data || data.length === 0) {
-      return res.status(200).json({
-        message: "No more research to load",
-        history: existingHistory,
-        hasMore: false,
-      });
+      return res.status(200).json({ message: "No more research to load", history: existing, hasMore: false });
     }
 
-    // Merge: existing (newer) + new (older)
-    const updatedHistory = [...existingHistory, ...data];
-
-    await redisClient.set(cacheKey, JSON.stringify(updatedHistory), {
-      EX: 3600,
-    });
-
-    return res.status(200).json({
-      message: "Research found",
-      history: updatedHistory,
-      hasMore: data.length === 5, // If we got 5, there might be more
-    });
+    const updated = [...existing, ...data];
+    await setCompressedCache(cacheKey, updated, 3600);
+    return res.status(200).json({ message: "Research found", history: updated, hasMore: data.length === 5 });
   } catch (error) {
     notifyMe(`Error in GetPendingResearch handler for analyst mode`, error);
     console.error(error);
-    return res.status(500).json({
-      message: "Server error. Please try again.",
-      history: [],
-    });
+    return res.status(500).json({ message: "Server error. Please try again.", history: [] });
   }
 };
 
@@ -228,7 +307,7 @@ export async function RefreshArchive(req, res) {
       .eq("user_id", user.user_id)
       .eq("isSynthesized", false)
       .order("created_at", { ascending: false }) // Newest first
-      .limit(5);
+      .limit(6);
 
     if (error || !data || data.length === 0) {
       return res.status(404).json({
@@ -331,12 +410,12 @@ export async function Visualize(req, res) {
     }
 
     // free & sprint pass not allowed
-    if (plan_type === "free" || plan_type === "sprint pass") {
-      return res.status(400).json({
-        message:
-          "Visualization is only available for premium plans, upgrade to start visualizing",
-      });
-    }
+    // if (plan_type === "free" || plan_type === "sprint pass") {
+    //   return res.status(400).json({
+    //     message:
+    //       "Visualization is only available for premium plans, upgrade to start visualizing",
+    //   });
+    // }
     const { MessageId } = req.body;
 
     if (!MessageId || typeof MessageId !== "string") {
@@ -444,25 +523,74 @@ export async function Visualize(req, res) {
 }
 
 // fetch artifacts
+// export async function GetArtifacts(req, res) {
+//   // complee this function by fetching the data from artifacts table supabase with a limit and pagination using created_at
+//   const user = req.user;
+//   if (!user)
+//     return res.status(401).json({ message: "Please login to continue" });
+
+//   const { timestamp, request_type } = req.query;
+//   const cacheKey = `user=${user.user_id}:artifacts`;
+
+//   if (request_type === "refresh") {
+//     const data = await redisClient.get(cacheKey);
+//     if (data) {
+//       return res.status(200).json({
+//         message: "Artifacts found",
+//         artifacts: JSON.parse(data),
+//         hasMore: JSON.parse(data).length === 5,
+//       });
+//     }
+//   }
+//   let query;
+//   if (timestamp) {
+//     query = supabase
+//       .from("artifacts")
+//       .select("*")
+//       .eq("user_id", user.user_id)
+//       .order("created_at", { ascending: false })
+//       .lt("created_at", timestamp) // Older than timestamp
+//       .limit(5);
+
+//     const old_data = await redisClient.get(cacheKey);
+//     const parsed = JSON.parse(old_data) || [];
+//     const merged = [...parsed, ...(query.data || [])];
+//     await redisClient.set(cacheKey, JSON.stringify(merged), { EX: 3600 });
+//   }
+//   query = supabase
+//     .from("artifacts")
+//     .select("*")
+//     .eq("user_id", user.user_id)
+//     .order("created_at", { ascending: false })
+//     .limit(5);
+
+//   const { data, error } = await query;
+//   if (!data || data.length === 0 || error) {
+//     console.error("Error fetching artifacts:", error);
+//     return res.status(404).json({ message: "Unable to find any artifacts " });
+//   }
+
+//   await redisClient.set(cacheKey, JSON.stringify(data), { EX: 3600 }); // cache for 1 hour
+//   return res.status(200).json({
+//     message: "Artifacts found",
+//     artifacts: data,
+//     hasMore: data.length === 5,
+//   });
+// }
 export async function GetArtifacts(req, res) {
-  // complee this function by fetching the data from artifacts table supabase with a limit and pagination using created_at
   const user = req.user;
-  if (!user)
-    return res.status(401).json({ message: "Please login to continue" });
+  if (!user) return res.status(401).json({ message: "Please login to continue" });
 
   const { timestamp, request_type } = req.query;
   const cacheKey = `user=${user.user_id}:artifacts`;
 
   if (request_type === "refresh") {
-    const data = await redisClient.get(cacheKey);
+    const data = await getCompressedCache(cacheKey);
     if (data) {
-      return res.status(200).json({
-        message: "Artifacts found",
-        artifacts: JSON.parse(data),
-        hasMore: JSON.parse(data).length === 5,
-      });
+      return res.status(200).json({ artifacts: data, hasMore: data.length === 5 });
     }
   }
+
   let query;
   if (timestamp) {
     query = supabase
@@ -470,31 +598,27 @@ export async function GetArtifacts(req, res) {
       .select("*")
       .eq("user_id", user.user_id)
       .order("created_at", { ascending: false })
-      .lt("created_at", timestamp) // Older than timestamp
+      .lt("created_at", timestamp)
       .limit(5);
 
-    const old_data = await redisClient.get(cacheKey);
-    const parsed = JSON.parse(old_data) || [];
-    const merged = [...parsed, ...(query.data || [])];
-    await redisClient.set(cacheKey, JSON.stringify(merged), { EX: 3600 });
+    const old = await getCompressedCache(cacheKey) || [];
+    const merged = [...old, ...(query.data || [])];
+    await setCompressedCache(cacheKey, merged, 3600);
+  } else {
+    query = supabase
+      .from("artifacts")
+      .select("*")
+      .eq("user_id", user.user_id)
+      .order("created_at", { ascending: false })
+      .limit(5);
   }
-  query = supabase
-    .from("artifacts")
-    .select("*")
-    .eq("user_id", user.user_id)
-    .order("created_at", { ascending: false })
-    .limit(5);
 
   const { data, error } = await query;
   if (!data || data.length === 0 || error) {
     console.error("Error fetching artifacts:", error);
-    return res.status(404).json({ message: "Unable to find any artifacts " });
+    return res.status(404).json({ message: "Unable to find any artifacts" });
   }
 
-  await redisClient.set(cacheKey, JSON.stringify(data), { EX: 3600 }); // cache for 1 hour
-  return res.status(200).json({
-    message: "Artifacts found",
-    artifacts: data,
-    hasMore: data.length === 5,
-  });
+  await setCompressedCache(cacheKey, data, 3600);
+  return res.status(200).json({ message: "Artifacts found", artifacts: data, hasMore: data.length === 5 });
 }

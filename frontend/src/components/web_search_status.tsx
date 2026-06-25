@@ -1,35 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Loader2,
-  BrainCircuit,
-  Code2,
-  Workflow,
-  Globe,
-  FileText,
-  Search,
-  Database,
-  Files,
-  ScanSearch,
-  ChevronDown,
-  ChevronUp,
-  Activity,
-  CheckCircle2,
-  // ArrowRight,
-  Monitor,
-  Calculator,
-  AlertCircle,
-  Cpu,
-  Zap,
-  BookOpen,
-  // MemoryStick,
-  RefreshCw,
-  // ClipboardCheck,
-  CreditCard,
+  Loader2, BrainCircuit, Code2, Workflow, Globe, FileText, Search,
+  Database, Files, ScanSearch, ChevronDown, ChevronUp, Activity,
+  CheckCircle2, Monitor, Calculator, AlertCircle, Cpu, Zap, BookOpen,
+  MemoryStick, RefreshCw, FileArchive, CreditCard, LucideGitGraph, Unlink2Icon,
+  BookCheck,
+  ChartColumnStacked,
+  LucideMonitor
 } from "lucide-react";
 import { useAppSelector } from "../store/hooks";
+import { RiNodeTree } from "react-icons/ri";
+import { MdCached, MdScoreboard } from "react-icons/md";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
 type WebSearchStatusProps = {
   chat: any;
   lastMessageId?: string | number;
@@ -38,15 +21,13 @@ type WebSearchStatusProps = {
 type StepConfig = {
   icon: React.ElementType;
   label: string;
-  accent: string; // single tailwind color token e.g. "sky"
+  accent: string;
 };
 
-// ─── LinkChip ─────────────────────────────────────────────────────────────────
-
+// ─── LinkChip (Enhanced with hover-lift) ──────────────────────────────────────
 const LinkChip = ({ url }: { url: string }) => {
   let domain = "";
   try {
-    // Handle both "https://domain.com" and "URL: https://domain.com" formats
     const cleaned = url?.includes("://") ? url.trim() : url?.split(":").slice(1).join(":").trim();
     domain = new URL(cleaned).hostname;
   } catch {
@@ -60,15 +41,16 @@ const LinkChip = ({ url }: { url: string }) => {
       href={`https://${domain}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 transition-colors group max-w-xs"
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 
+                 hover:border-emerald-400 dark:hover:border-emerald-600 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
     >
       <img
-        className="w-3.5 h-3.5 rounded-xs flex-shrink-0"
+        className="w-3.5 h-3.5 rounded-sm flex-shrink-0"
         src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
         alt=""
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
-      <span className="text-[11px] space-grotesk text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 truncate">
+      <span className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
         {domain}
       </span>
     </a>
@@ -76,11 +58,8 @@ const LinkChip = ({ url }: { url: string }) => {
 };
 
 // ─── Step config map ──────────────────────────────────────────────────────────
-// Each entry defines the icon, human label, and one accent color.
-// Rendering logic is separate and unified — no per-handler wildly different markup.
-
 const STEP_CONFIG: Record<string, StepConfig> = {
-  "reading_links": { icon: BookOpen, label: "Reading Source", accent: "purple" },
+  "reading_source": { icon: BookOpen, label: "Reading Source", accent: "purple" },
   "Understanding_Intent": { icon: BrainCircuit, label: "Understanding Intent", accent: "fuchsia" },
   "Crawling_deep_web": { icon: Globe, label: "Deep Web Crawl", accent: "indigo" },
   "processing_links": { icon: Search, label: "Source Verification", accent: "emerald" },
@@ -95,24 +74,36 @@ const STEP_CONFIG: Record<string, StepConfig> = {
   "Reading public knowledgebase": { icon: Database, label: "Knowledge Base Query", accent: "blue" },
   "Gathered DocumentInformation": { icon: CheckCircle2, label: "Context Ready", accent: "green" },
   "Metadata_analysis": { icon: Activity, label: "Metadata Analysis", accent: "pink" },
-  "Cleaning_Context": { icon: RefreshCw, label: "Cleaning Context", accent: "blue" },
-  "Done_Scraping": { icon: CheckCircle2, label: "Source Read", accent: "sky" },
+  "Cleaning_Context": { icon: RefreshCw, label: "Creating Context", accent: "blue" },
+  "Done_Scraping": { icon: CheckCircle2, label: "Done reading", accent: "sky" },
   "Unable_to_read_link": { icon: AlertCircle, label: "Could Not Read Source", accent: "red" },
   "new_thread": { icon: Cpu, label: "Thread Initialized", accent: "cyan" },
   "Found_Chunk_Count": { icon: Calculator, label: "Vectors Quantified", accent: "cyan" },
   "Searching_Records": { icon: BrainCircuit, label: "Index Lookup", accent: "violet" },
   "Checking_Quota": { icon: Monitor, label: "Checking Usage", accent: "amber" },
   "Checking_Plan": { icon: CreditCard, label: "Verifying Plan", accent: "teal" },
+  "understanding_query": { icon: LucideGitGraph, label: "Generating embeddings", accent: "green" },
+  "Reading_dynamically": { icon: MemoryStick, label: "Reading dynamically", accent: "teal" },
+  "Reading_document": { icon: FileArchive, label: "Reading Document", accent: "sky" },
+  "Unknown_Event": { icon: Unlink2Icon, label: "Unable to create event", accent: "red" },
+  "source_processed": { icon: RefreshCw, label: "Creating Context", accent: "blue" },
+  "research_complete": { icon: CheckCircle2, label: "Done Reading", accent: "sky" },
+  "source_unavailable": { icon: AlertCircle, label: "Could Not Read Source", accent: "red" },
+  "analyzing_images": { icon: ScanSearch, label: "Analysing Images", accent: "violet" },
+  "diving_deeper": { icon: Workflow, label: "Going Deeper", accent: "indigo" },
+  "Agent Thought": { icon: BrainCircuit, label: "Agent Thought", accent: "fuchsia" }, // Added for your new backend logic
+  'started_reading': { icon: BookCheck, label: "Started reading sources", accent: "sky" },
+  "extracting_content": { icon: RiNodeTree, label: "Extracting more data", accent: "purple" },
+  "chunks_processed": { icon: ChartColumnStacked, label: "Extracting more data", accent: "purple" },
+  "checking_compatibility": { icon: MdScoreboard, label: "Scoring chunks", accent: "green" },
+  "research_stored": { icon: MdCached, label: "Context secured", accent: "green" },
+  "max_nodes": { icon: LucideMonitor, label: "Reached maximum context limit", accent: "amber" }
+
 };
 
-const FALLBACK_CONFIG: StepConfig = {
-  icon: Zap,
-  label: "",
-  accent: "neutral",
-};
+const FALLBACK_CONFIG: StepConfig = { icon: Zap, label: "Processing", accent: "neutral" };
 
 // ─── Accent helpers ───────────────────────────────────────────────────────────
-
 const accentIcon: Record<string, string> = {
   purple: "text-purple-500", fuchsia: "text-fuchsia-500", indigo: "text-indigo-500",
   emerald: "text-emerald-500", blue: "text-blue-500", rose: "text-rose-500",
@@ -147,14 +138,12 @@ const accentDot: Record<string, string> = {
   violet: "bg-violet-500", red: "bg-red-500", neutral: "bg-neutral-400",
 };
 
-// ─── Unified step data renderer ───────────────────────────────────────────────
-
+// ─── Unified step data renderer (NO TRUNCATION) ───────────────────────────────
 const StepData = ({ message, data, accent }: { message: string; data: any; accent: string }) => {
   const bg = accentBg[accent] || accentBg.neutral;
   const dot = accentDot[accent] || accentDot.neutral;
   const iconText = accentIcon[accent] || accentIcon.neutral;
 
-  // Normalise data to a display string
   const toString = (d: any): string => {
     if (!d && d !== 0) return "";
     if (typeof d === "string") return d;
@@ -163,37 +152,28 @@ const StepData = ({ message, data, accent }: { message: string; data: any; accen
   };
 
   // ── URL-type handlers (show LinkChips) ──
-  if (["reading_links", "Crawling_deep_web"].includes(message)) {
+  if (["reading_links", "Crawling_deep_web", "processing_links", "fetching_url"].includes(message)) {
     const urls = Array.isArray(data) ? data : [data];
-    return (
-      <div className="flex flex-wrap gap-1.5 mt-1.5">
-        {urls.map((u: string, i: number) => <LinkChip key={i} url={u} />)}
-      </div>
-    );
-  }
 
-  if (message === "processing_links" || message === "fetching_url") {
-    const urls = Array.isArray(data) ? data : [data];
+    // Flatten in case of comma-separated strings
+    const flatUrls = urls.flatMap((u: any) => typeof u === 'string' ? u.split(',') : [u]).map((u: string) => u.trim()).filter(Boolean);
+
     return (
-      <div className="mt-1.5 space-y-1">
+      <div className="mt-2 space-y-2">
         {message === "fetching_url" && (
-          <div className="flex items-center gap-1.5 mb-1">
+          <div className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${dot} animate-pulse`} />
-            <span className={`text-[10px] uppercase tracking-widest font-semibold ${iconText} space-grotesk`}>
+            <span className={`text-[10px] uppercase tracking-widest font-semibold ${iconText} font-mono`}>
               Active Stream
             </span>
           </div>
         )}
         <div className="flex flex-wrap gap-1.5">
-          {urls.map((u: string, i: number) => {
-            // fetching_url sometimes sends comma-separated strings
-            const parts = typeof u === "string" ? u.split(",") : [u];
-            return parts.map((p: string, j: number) => <LinkChip key={`${i}-${j}`} url={p.trim()} />);
-          })}
+          {flatUrls.map((u: string, i: number) => <LinkChip key={i} url={u} />)}
         </div>
         {message === "processing_links" && (
-          <p className={`text-[10px] ${iconText} space-grotesk mt-1`}>
-            {urls.length} source{urls.length !== 1 ? "s" : ""} verified
+          <p className={`text-[10px] ${iconText} font-mono mt-1`}>
+            {flatUrls.length} source{flatUrls.length !== 1 ? "s" : ""} verified
           </p>
         )}
       </div>
@@ -205,105 +185,55 @@ const StepData = ({ message, data, accent }: { message: string; data: any; accen
     const raw = toString(data);
     const query = raw.replace(/Searched web for|"/g, "").trim();
     return (
-      <div className={`mt-1.5 flex items-start gap-2 px-3 py-2 rounded-lg border ${bg}`}>
+      <div className={`mt-2 flex items-start gap-2 px-3 py-2 rounded-lg border ${bg}`}>
         <Search className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${iconText}`} />
-        <span className="text-sm text-neutral-800 dark:text-neutral-200 bai-jamjuree-regular leading-snug">
+        <span className="text-xs text-neutral-800 dark:text-neutral-200 font-mono leading-snug italic">
           "{query}"
         </span>
       </div>
     );
   }
 
-  // ── Tool / function count ──
-  if (message === "Creating functions") {
-    let funcCount = 1;
-    try {
-      const parsed = JSON.parse(Array.isArray(data) ? data[0] : data);
-      funcCount = Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length;
-    } catch { /* keep 1 */ }
+  // ── Smart Rendering for Arrays of Strings (e.g., Agent Thoughts) ──
+  if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'string') {
     return (
-      <div className="flex items-center gap-2 mt-1.5">
-        <span className={`px-2 py-0.5 rounded-md text-xs font-bold space-grotesk ${iconText} ${bg} border`}>
-          {funcCount} tools
-        </span>
-        <span className="text-[11px] text-neutral-400 space-grotesk">mapped to agent</span>
+      <div className="mt-2 space-y-1.5 border-l-2 border-neutral-200 dark:border-neutral-800 pl-3">
+        {data.map((item, i) => (
+          <p key={i} className="text-xs text-neutral-600 dark:text-neutral-400 font-mono leading-relaxed italic">
+            "{item}"
+          </p>
+        ))}
       </div>
     );
   }
 
-  // ── Vector count ──
-  if (message === "Found_Chunk_Count") {
+  // ── Smart Rendering for Objects/JSON ──
+  if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
     return (
-      <div className="flex items-center gap-2 mt-1.5">
-        <span className={`px-2 py-0.5 rounded-md text-xs font-bold font-mono ${iconText} ${bg} border`}>
-          {toString(data)}
-        </span>
-        <span className="text-[11px] text-neutral-400 space-grotesk">vectors identified</span>
-      </div>
+      <pre className="mt-2 p-2 rounded-md bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono text-neutral-600 dark:text-neutral-400 overflow-x-auto">
+        {JSON.stringify(data, null, 2)}
+      </pre>
     );
   }
 
-  // ── Thread ID ──
-  if (message === "new_thread") {
-    return (
-      <div className="flex items-center gap-2 mt-1.5">
-        <span className="text-[10px] text-neutral-400 space-grotesk uppercase tracking-wider">ID</span>
-        <code className="text-[11px] font-mono text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
-          {toString(data)}
-        </code>
-      </div>
-    );
-  }
-
-  // ── Plan check ──
-  if (message === "Checking_Plan") {
-    return (
-      <div className="flex items-center gap-2 mt-1.5">
-        <span className="text-[11px] text-neutral-500 dark:text-neutral-400">Status</span>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${iconText} ${bg} border`}>
-          {toString(data)}
-        </span>
-      </div>
-    );
-  }
-
-  // ── Success / complete — no data body needed ──
-  if (message === "Gathered DocumentInformation") {
-    return (
-      <div className="flex items-center gap-1.5 mt-1">
-        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-        <span className="text-xs text-green-600 dark:text-green-400 space-grotesk">Ready to generate response</span>
-      </div>
-    );
-  }
-
-  // ── Error state ──
-  if (message === "Unable_to_read_link") {
-    const text = toString(data);
-    return (
-      <div className={`mt-1.5 flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${bg}`}>
-        <AlertCircle className={`w-3.5 h-3.5 flex-shrink-0 ${iconText}`} />
-        <span className="text-xs text-neutral-600 dark:text-neutral-400 space-grotesk truncate">{text}</span>
-      </div>
-    );
-  }
-
-  // ── Generic text fallback ──
+  // ── Generic text fallback (NO TRUNCATION) ──
   const text = toString(data);
   if (!text) return null;
 
   return (
-    <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 bai-jamjuree-regular leading-relaxed">
-      {text.length > 180 ? text.slice(0, 180) + "…" : text}
-    </p>
+    <div className="mt-1.5 p-2 rounded-md bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800/50">
+      <p className="text-xs text-neutral-600 dark:text-neutral-400 font-mono leading-relaxed whitespace-pre-wrap break-words">
+        {text}
+      </p>
+    </div>
   );
 };
 
 // ─── Main component ────────────────────────────────────────────────────────────
-
 const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }) => {
   const { web_search_status, showProcess } = useAppSelector((s) => s.socket || {});
   const [isOpen, setIsOpen] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const isActive = !lastMessageId || (chat?.id || chat?.message_id) === lastMessageId;
   if (!isActive) return null;
@@ -320,7 +250,13 @@ const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }
   const steps = currentMessageStatus.status || [];
   const lastStep = steps[steps.length - 1];
 
-  // Normalise key (handles "Searching web for X" → "Searching web")
+  // Auto-scroll to bottom when new steps arrive
+  useEffect(() => {
+    if (scrollRef.current && isOpen) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [steps.length, isOpen]);
+
   const normaliseKey = (msg: string) => {
     if (!msg) return msg;
     if (msg.startsWith("Searching web")) return "Searching web";
@@ -336,42 +272,53 @@ const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }
   const lastConfig = getConfig(lastStep?.message || "");
 
   return (
-    <div className={`my-4 w-full rounded-xl border overflow-hidden transition-opacity duration-300 ${isDone
-      ? "border-neutral-200 dark:border-neutral-800 opacity-60"
-      : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950"
+    <div className={`my-4 w-full rounded-xl border overflow-hidden transition-all duration-500 ${isDone
+      ? "border-neutral-200 dark:border-neutral-800 opacity-70"
+      : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-lg shadow-neutral-200/50 dark:shadow-none"
       }`}>
 
       {/* ── Header ── */}
       <button
         onClick={() => setIsOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors border-b border-neutral-200 dark:border-neutral-800"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-neutral-50 to-white dark:from-neutral-900 dark:to-neutral-950 hover:from-neutral-100 dark:hover:from-neutral-800 transition-all border-b border-neutral-200 dark:border-neutral-800"
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {/* live/done dot */}
-          <span className="relative flex h-2 w-2 flex-shrink-0">
+          <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
             {!isDone && (
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             )}
-            <span className={`relative inline-flex rounded-full h-2 w-2 ${!isDone ? "bg-emerald-500" : "bg-neutral-400"}`} />
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${!isDone ? "bg-emerald-500" : "bg-neutral-400"}`} />
           </span>
 
-          <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-200 space-grotesk truncate max-w-[220px]">
-            {lastConfig.resolvedLabel || "Process Logs"}
-          </span>
+          <div className="flex flex-col items-start">
+            <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100 space-grotesk tracking-tight">
+              {lastConfig.resolvedLabel || "Process Logs"}
+            </span>
+            {!isDone && (
+              <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-mono">
+                Live
+              </span>
+            )}
+          </div>
 
-          <span className="text-[10px] text-neutral-400 dark:text-neutral-600 space-grotesk">
+          <span className="text-[10px] text-neutral-400 dark:text-neutral-600 font-mono ml-2">
             {steps.length} step{steps.length !== 1 ? "s" : ""}
           </span>
         </div>
 
-        <span className="text-neutral-400 dark:text-neutral-500 flex-shrink-0">
-          {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        <span className="text-neutral-400 dark:text-neutral-500 flex-shrink-0 transition-transform duration-200">
+          {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </span>
       </button>
 
-      {/* ── Log feed ── */}
+      {/* ── Log feed (Terminal Style Scroll) ── */}
       {isOpen && (
-        <div className="px-4 py-3 space-y-0 bg-white dark:bg-neutral-950">
+        <div
+          ref={scrollRef}
+          className="px-4 py-4 space-y-0 bg-white dark:bg-neutral-950 max-h-[500px] overflow-y-auto scroll-smooth"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#525252 transparent' }}
+        >
           {steps.map((status: any, index: number) => {
             const isLast = index === steps.length - 1;
             const cfg = getConfig(status?.message || "");
@@ -379,28 +326,37 @@ const WebSearchStatus: React.FC<WebSearchStatusProps> = ({ chat, lastMessageId }
             const iconColor = accentIcon[cfg.accent] || accentIcon.neutral;
 
             return (
-              <div key={index} className="flex gap-3 relative pb-5 last:pb-0">
+              <div key={index} className="flex gap-3 relative pb-6 last:pb-0 group">
                 {/* connector line */}
                 {!isLast && (
-                  <div className="absolute left-[13px] top-7 bottom-0 w-px bg-neutral-100 dark:bg-neutral-800" />
+                  <div className="absolute left-[13px] top-8 bottom-0 w-px bg-gradient-to-b from-neutral-300 to-transparent dark:from-neutral-700 dark:to-transparent" />
                 )}
 
                 {/* icon node */}
-                <div className={`relative flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${isLast
-                  ? "bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 shadow-sm"
-                  : "bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 opacity-50"
+                <div className={`relative flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all duration-500 ${isLast
+                  ? "bg-white dark:bg-neutral-900 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)] dark:shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                  : "bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 opacity-60 group-hover:opacity-100"
                   }`}>
                   <Icon
-                    size={13}
-                    className={`${iconColor} ${isLast && cfg.icon === Loader2 ? "animate-spin" : ""}`}
+                    size={14}
+                    className={`${iconColor} ${isLast && cfg.icon === Loader2 ? "animate-spin" : ""} transition-transform duration-300`}
                   />
                 </div>
 
                 {/* content */}
-                <div className={`flex-1 min-w-0 pt-0.5 transition-opacity ${!isLast ? "opacity-50" : "opacity-100"}`}>
-                  <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 space-grotesk leading-none">
-                    {cfg.resolvedLabel || status?.message}
-                  </span>
+                <div className={`flex-1 min-w-0 pt-0.5 transition-all duration-300 ${isLast ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold space-grotesk leading-none ${isLast ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                      {cfg.resolvedLabel || status?.message}
+                    </span>
+                    {isLast && !isDone && (
+                      <span className="flex h-1.5 w-1.5">
+                        <span className={`animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full ${accentDot[cfg.accent]} opacity-75`}></span>
+                        <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${accentDot[cfg.accent]}`}></span>
+                      </span>
+                    )}
+                  </div>
+
                   <StepData
                     message={normaliseKey(status?.message || "")}
                     data={status?.data}

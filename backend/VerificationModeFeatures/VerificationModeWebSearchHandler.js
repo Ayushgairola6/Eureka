@@ -19,19 +19,22 @@ import { supabase } from "../controllers/supabaseHandler.js";
 import { ProcessUserQuery } from "../controllers/UserCreditLimitController.js";
 import { notifyMe } from "../ErrorNotificationHandler/telegramHandler.js";
 import { CheckUserPlanStatus } from "../Middlewares/AuthMiddleware.js";
+import { GetDataFromSerpApi } from "../OnlineSearchHandler/serpapi_handler.js";
 import {
   DeepScraper,
   FilterUrlForExtraction,
   FormattForLLM,
   ProcessForLLM,
+  SerpWeb,
 } from "../OnlineSearchHandler/WebCrawler.js";
 import { ANALYST_PROMPT, VerificationModePrompt } from "../Prompts/Prompts.js";
 import { EmitEvent } from "../websocketsHandler.js/socketIoInitiater.js";
+import { CheckAndExpireThreadId, FilterHighValueSources } from "./helpers.js";
 import {
   CheckInstructionsStatus,
   UpdateReportStatus,
 } from "./VerificationModeFeatures.js";
-
+import { v4 as uuid } from 'uuid'
 // helper function to extract necessary fields from the model response
 
 function ExtractFields(response, data) {
@@ -49,20 +52,21 @@ function ExtractFields(response, data) {
     EmitEvent(user.user_id, "query_status", {
       MessageId,
       status: {
-        message: "new_thread",
+        message: "Agent Thought",
         data: [thought],
       },
     });
   }
 
   const queries = response?.queries;
-
+  const dorking_queries = response?.dorking_queries;
   const confidence_score = response?.confidence_score;
 
   const direct_answer = response?.direct_answer;
   return {
     error: null,
     queries: queries || [],
+    dorking: dorking_queries || [],
     score: confidence_score || 0,
     direct_answer,
   };
@@ -121,7 +125,7 @@ async function WebSearchOrchestrator(
       plan_type,
       web_search_depth,
       MessageId,
-      room_id,
+      room_id, thread_id
     } = data;
 
     const iterationLimit = web_search_depth === "deep_web" ? 8 : 4;
@@ -132,9 +136,19 @@ async function WebSearchOrchestrator(
       if (iterationContext.raw_content && iterationContext.raw_content.length > 0) {
         mergeResults = mergeRawResults(iterationContext.raw_content);
       }
+
+      if (user?.user_id) {
+        EmitEvent(user?.user_id, "Research_Done", {
+          message: 'Research partially done due to some server side issue',
+          MessageId: MessageId,
+          research_data: mergeResults,
+          status: "partial",
+          direct_answer: null,
+        })
+      }
       return {
-        error: mergeResults ? null : "Iteration limit reached without gathering any important data",
-        data: mergeResults,
+        error: mergeResults ? null : "Iteration limit reached without gathering data",
+        data: mergeResults ? { data: mergeResults } : null,
         MessageId,
         iteration,
         queries: iterationContext?.queries,
@@ -144,34 +158,35 @@ async function WebSearchOrchestrator(
 
     // Build a lean prompt — only pass previous queries+urls, not raw content
     const contextString = FormatContextForLLM(iterationContext);
-    const llmPrompt = `**user_request**:${user_prompt} **context**:${contextString}&iteration_count=${iteration}_max_iteration_limits=${4}`;
+    const llmPrompt = `**user_request**:${user_prompt} **context**:${contextString}&iteration_count=${iteration}_max_iteration_limits=${iterationLimit}`;
 
-    const IdentifiedRequests = await StructuredOutPutInferenceHandler(
+
+    const { result, error } = await StructuredOutPutInferenceHandler(
       llmPrompt,
       VerificationModePrompt
     );
-
+    // if failed retry
     if (
-      !IdentifiedRequests ||
-      IdentifiedRequests?.error ||
-      !IdentifiedRequests.result
+      !result || error
     ) {
       return {
         error: "Failed to generate a response",
         data: null,
         MessageId,
         iteration,
-        queries: iterationContext.queries,
+        queries: iterationContext.queries || [],
         direct_answer: null,
       };
+
     }
 
-    const extractedInformation = ExtractFields(IdentifiedRequests.result, {
+    const extractedInformation = ExtractFields(result, {
       user,
       MessageId,
     });
 
-    if (extractedInformation.error) {
+
+    if (extractedInformation.error || !extractedInformation.queries) {
       notifyMe("Orchestrator crashed\n", extractedInformation?.error);
       return {
         error: extractedInformation.error,
@@ -180,46 +195,45 @@ async function WebSearchOrchestrator(
         iteration,
         direct_answer: null,
       };
+
+
     }
 
-    // if the answer was simple
-    if (extractedInformation?.direct_answer) return {
-      error: null,
-      data: null,
-      MessageId,
-      iteration,
-      direct_answer: extractedInformation.direct_answer,
-    };
-    // console.log(extractedInformation)
-    // High confidence — fetch results and return immediately if they exist
-    if (extractedInformation?.score >= 0.5 || extractedInformation.queries?.length > 0) {
-      const results = await SurfaceWebSearchRequst(extractedInformation.queries, {
+
+    if (extractedInformation.queries?.length > 0 || extractedInformation.dorking.length > 0) {
+      const results = await SurfaceWebSearchRequst({ queries: extractedInformation.queries, dorking: extractedInformation.dorking }, {
         user,
         plan_type,
         MessageId,
         user_prompt,
-        room_id,
+        room_id, thread_id
       });
+      // console.log("Search results", results);
 
-      if (results && !results.error && results.data) {
-        return {
-          error: null,
-          data: results,
-          MessageId,
-          iteration,
-          queries: extractedInformation.queries,
-          direct_answer: null,
-        };
+
+      if (results.error) {
+        const updatedContext = BuildIterationContext(
+          iterationContext,
+          extractedInformation.queries,
+          results.summaries || [],//the search summary
+          results.data,
+
+        );
+
+        return WebSearchOrchestrator(iteration + 1, data, updatedContext);
       }
-      // Results came back empty — track what we tried and retry
-      const updatedContext = BuildIterationContext(
-        iterationContext,
-        extractedInformation.queries,
-        results.summaries || [],//the search summary
-        results.data
-      );
 
-      return WebSearchOrchestrator(iteration + 1, data, updatedContext);
+      return {
+        error: null,
+        data: results,
+        MessageId,
+        iteration,
+        queries: extractedInformation.queries,
+        direct_answer: null,
+      };
+
+      // Results came back empty — track what we tried and retry
+
     }
 
     // Low confidence — track queries tried, ask LLM to be more specific next round
@@ -314,79 +328,95 @@ export async function DeepSearchRequest(FormattedQueries, data) {
 }
 
 // helper function for surface web verifiaction mode request
-async function SurfaceWebSearchRequst(FormattedQueries, data) {
+async function SurfaceWebSearchRequst(searchQuery, data) {
   try {
-    const { user, plan_type, MessageId, user_prompt: question, room_id } = data;
+    const { user, plan_type, MessageId, user_prompt: question, room_id, thread_id } = data;
+    const { queries, dorking } = searchQuery;
 
+    // 1. Merge queries without mutating the original arrays
+    const finalQueries = [...queries, ...dorking];
 
-    const { response, links: LinksToFetch } = await fetchSearchResults(
-      plan_type,
-      FormattedQueries?.join(","),
-      user,
-      MessageId
-    );
-
-    // console.log(LinksToFetch, LinksToFetch.slice(0, 4))
-    // `user_id` is not defined; use the object passed in
-    EmitEvent(user.user_id, "query_status", {
-      MessageId,
-      status: {
-        message: `Searching for`,
-        data: [
-          `Searching the web for following queries ,${JSON.stringify(
-            FormattedQueries?.flat()
-          )}`,
-        ],
-      },
-    });
-    EmitEvent(user?.user_id, "processing_links", {
-      MessageId,
-      status: { message: "I am gonna read these sources", data: LinksToFetch },
-    });
-    if (!response || LinksToFetch?.length === 0) {
-      return {
-        error: "There were so results found on the web for your request",
-        data: null,
-      };
+    if (finalQueries.length === 0) {
+      return { error: "No search queries were generated.", data: null };
     }
 
+    EmitEvent(user?.user_id, "query_status", {
+      MessageId,
+      status: { message: "Searching the web", data: finalQueries },
+    });
+
+
+    const searchPromises = finalQueries.slice(0, 3).map(async (singleQuery) => {
+      try {
+        // 1. Try Primary API
+        const primaryRes = await SerpWeb(singleQuery);
+
+        // Safely extract links (handles different return shapes safely)
+        let primaryLinks = primaryRes?.results?.links || primaryRes?.results || [];
+        if (!Array.isArray(primaryLinks)) primaryLinks = [];
+
+        // If primary succeeded and has links, return it immediately!
+        if (primaryLinks.length > 0) {
+          return { links: primaryLinks };
+        }
+
+
+        const secondaryRes = await GetDataFromSerpApi(singleQuery);
+
+        let secondaryLinks = secondaryRes?.response?.links || secondaryRes?.response || [];
+        if (!Array.isArray(secondaryLinks)) secondaryLinks = [];
+
+        return { links: secondaryLinks };
+
+      } catch (networkError) {
+        // CRITICAL: Catch errors per-query. If one query crashes, we return empty links 
+        // instead of letting Promise.all reject and crash the ENTIRE research task.
+        notifyMe(`Both SERP APIs failed for query: ${singleQuery}`, networkError);
+        return { links: [] };
+      }
+    });
+
+    // Wait for ALL searches to finish
+    const searchResponses = await Promise.all(searchPromises);
+
+
+    // ==========================================
+    // STEP 2: AGGREGATE THE LINKS
+    // ==========================================
+    // flatMap extracts the 'links' array from each response and flattens them
+    const allDiscoveredLinks = searchResponses.flatMap((res) => res.links || []);
+
+    if (allDiscoveredLinks.length === 0) {
+      return { error: "There were no results found on the web for your request", data: null };
+    }
+
+
+
+    EmitEvent(user.user_id, "fetching_url", {
+      MessageId,
+      status: { message: "Targeted sources selected", data: allDiscoveredLinks },
+    });
+
+    // ==========================================
+    // STEP 4: SCRAPE ONLY THE WINNERS
+    // ==========================================
     const CleanedWebData = await ProcessForLLM(
-      LinksToFetch.slice(0, 5),
+      allDiscoveredLinks, // <-- ONLY the filtered links go here
       user,
       question,
       MessageId,
       room_id,
-      plan_type
+      plan_type,
+      thread_id
     );
-    console.log(CleanedWebData, 'cleaned-web-data')
-    if (CleanedWebData.length === 0) {
-      return { error: "The processedInformation was not enough", data: null };
-    }
 
+    return { error: null, data: CleanedWebData?.data || CleanedWebData };
 
-
-    const FormattedResearchData = FormattForLLM(CleanedWebData);
-    console.log(FormattedResearchData, 'formattedReseachdata')
-    if (FormattedResearchData.error) {
-      return { error: "The processedInformation was not enough", data: null };
-    }
-
-    const summaries = [];
-    for (const item of FormattedResearchData.FinalContent) {
-      if (item.content) {
-        const current_summary = await Summarize(item?.markdown);
-        summaries.push({
-          source: item.url, content_summary: current_summary
-        })
-      }
-    }
-    console.log(summaries, 'summaries');
-    return { error: null, data: FormattedResearchData, summaries: summaries };
   } catch (error) {
-    return { error, data: null };
+    console.error("Surface Web Search Error:", error);
+    return { error: error.message || "Search request failed", data: null };
   }
 }
-
 // the center of the mode that passes and receives data
 export const VerificationModeSearchWeb = async (req, res) => {
   try {
@@ -444,28 +474,50 @@ export const VerificationModeSearchWeb = async (req, res) => {
     //   });
     // }
     // orchestrate results
-    const result = await HandleOrchestratedResultsHandling({
+
+    const research_threadID = uuid() //assign a research_threadID
+    const key = `user:${user?.user_id}_created_at:${Date.now()}`
+    const hasKey = await redisClient.get(key);
+
+    if (hasKey) {
+      return res.status(400).json({ message: "A research thread of yours is already running in the background please wait for it to finish" })
+    }
+    // push it in the queue with retry mechanism
+    try {
+      await redisClient.multi().set(key, research_threadID).expire(key, 60000).exec() // 10 min expiry
+    } catch (err) {
+      await redisClient.multi().set(key, research_threadID).expire(key, 60000).exec().catch((err) => {
+        notifyMe("Error while creating a new record for resesearch_threadId even after retry", err);
+      })
+    }
+
+
+    // trigger the research orchestration
+    await HandleOrchestratedResultsHandling({
       user: req.user,
       question: question,
       plan_type: plan_type,
       web_search_depth: web_search_depth,
       MessageId: MessageId,
       room_id: null,
+      thread_id: research_threadID
     });
 
-    if (!result.success) {
-      return res
-        .status(400)
-        .json({ message: "An error occured while continuing the research!" });
-    }
+    return res.json({ message: "Research has started", MessageId })
 
-    return res.status(result.status === "partial" ? 206 : 200).json({
-      message: "Research done",
-      MessageId: result.MessageId,
-      research_data: result.research_data,
-      status: result.status,
-      direct_answer: result?.direct_answer,
-    });
+    // if (!result.success) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "An error occured while continuing the research!" });
+    // }
+
+    // return res.status(result.status === "partial" ? 206 : 200).json({
+    //   message: "Research done",
+    //   MessageId: result.MessageId,
+    //   research_data: result.research_data,
+    //   status: result.status,
+    //   direct_answer: result?.direct_answer,
+    // });
   } catch (error) {
     console.error("Verification search error\n", error);
     return res
@@ -474,29 +526,30 @@ export const VerificationModeSearchWeb = async (req, res) => {
   }
 };
 
-// cache and store the research_data for final
-async function StoreResearchData(research_data, data) {
+const deflate = promisify(zlib.deflate);//compressiing
+
+export async function StoreResearchData(research_data, data) {
   try {
     const { MessageId, web_search_depth, user, question } = data;
 
-    if (!research_data || !MessageId)
-      return { error: "Invalid or missing parmaters." };
-    const key = `message:${MessageId}:research_report`;
-
-    try {
-      const cacheExpiryTime = 60 * 60 * 1; //store for 3 hours
-      await redisClient
-        .multi()
-        .rPush(key, JSON.stringify(research_data))
-        .expire(key, cacheExpiryTime, "NX")
-        .exec();
-    } catch (redisCacheError) {
-      notifyMe(
-        "An erro occured while caching results of a research report\n",
-        redisCacheError
-      );
+    if (!research_data || !MessageId) {
+      return { error: "Invalid or missing parameters." };
     }
 
+    const cacheKey = `message:${MessageId}:research_report`;
+
+    // ── 1. Redis: compress then store (use SET for a single value) ──
+    const fullJson = JSON.stringify(research_data);
+    const compressed = await deflate(fullJson);
+
+    const cacheExpiryTime = 60 * 60 * 3; // 3 hours
+    await redisClient
+      .multi()
+      .set(cacheKey, compressed)          // buffer stored as binary-safe string
+      .expire(cacheKey, cacheExpiryTime)
+      .exec();
+
+    // ── 2. Supabase: store full JSONB as before ──
     const { error: dbInsertionError } = await supabase
       .from("research_data")
       .insert({
@@ -506,7 +559,7 @@ async function StoreResearchData(research_data, data) {
         information: {
           sources: research_data.sources,
           favicons: research_data.favicons,
-          details: research_data.details,
+          details: research_data.details,          // full heavy array
           queries: research_data.queries,
         },
         sources_count: research_data.sources.length,
@@ -515,20 +568,19 @@ async function StoreResearchData(research_data, data) {
       });
 
     if (dbInsertionError) {
-      notifyMe(
-        "There was an error while inserting the research data in the database\n",
-        dbInsertionError
-      );
+      notifyMe("Error inserting research data into DB", dbInsertionError);
     }
+
     return { error: null };
   } catch (storageError) {
+    console.error("StoreResearchData error:", storageError);
     return { error: storageError };
   }
 }
 
 // resurable function to handle orchestrated results
 async function HandleOrchestratedResultsHandling(data) {
-  const { user, question, plan_type, web_search_depth, MessageId, room_id } =
+  const { user, question, plan_type, web_search_depth, MessageId, room_id, thread_id } =
     data;
 
   const OrchesTratedResults = await WebSearchOrchestrator(0, {
@@ -538,7 +590,7 @@ async function HandleOrchestratedResultsHandling(data) {
     plan_type,
     web_search_depth,
     MessageId,
-    room_id: null,
+    room_id: room_id, thread_id
   });
 
   // if there is a direct_answer
@@ -642,369 +694,370 @@ async function HandleOrchestratedResultsHandling(data) {
 export const FinalAnalyzer = async (req, res) => {
   try {
     const user = req?.user;
-
     if (!user)
-      return res
-        .status(401)
-        .send({ message: "Please login to contiue the session" });
+      return res.status(401).send({ message: "Please login to continue the session" });
 
     const {
       instructions,
-      MessageId, //the uniuqe LLM response Id
-      userMessageId, // the user_mesage-id
+      MessageId,
+      userMessageId,
       web_search_depth,
       action_type,
     } = req.body;
+
     if (
-      !MessageId ||
-      typeof MessageId !== "string" ||
-      !userMessageId ||
-      typeof userMessageId !== "string"
+      !MessageId || typeof MessageId !== "string" ||
+      !userMessageId || typeof userMessageId !== "string"
     )
       return res.status(400).json({
         message:
           "Please choose either you want to proceed further with this researched data, reject it or finalize this for a detailed report.",
       });
 
-    // if there are further instructions for the user
-    const { status, error, plan_type, plan_status } = await CheckUserPlanStatus(
-      user.user_id
-    );
-
-    //if the user is not paid or the paid staus is not even available
+    // ── Payment & quota checks ──
+    const { status, error, plan_type } = await CheckUserPlanStatus(user.user_id);
     if (status === false || error || !plan_type) {
-      notifyMe(
-        `There was an error while checking the payment status and information of user=${req.user.username} in the analyst mode report finalize report handler`,
-        null
-      );
+      notifyMe(`Payment check error for user=${req.user.username} in FinalAnalyzer`, null);
       return res.status(400).send({
-        message:
-          "An error occured while checking your payment status please contact our support at support@antinodeai.space to report this issue",
+        message: "An error occurred while checking your payment status. Please contact support.",
       });
     }
 
-    // free & sprint pass not allowed
-    // if (plan_type === "free" || plan_type === "sprint pass") {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "These features are only limited to pro plans" });
-    // }
-
-    // validate quota
     const rateLimitStatus = await ProcessUserQuery(user, "Analyst");
     if (rateLimitStatus?.status === false) {
       return res.status(400).send({
-        message:
-          "You have exhausted your monthly quota, please wait till next month or get our premium pass and experience all features without any limits",
-        Answer:
-          "You have exhausted your monthly quota, please wait till next month or get our premium pass and experience all features without any limits",
+        message: "You have exhausted your monthly quota. Upgrade to continue.",
+        Answer: "You have exhausted your monthly quota. Upgrade to continue.",
       });
     }
 
-    // check if this has been already synthesized
+    // ── Prevent re‑synthesis ──
     const { data: lookupdata, error: lookupError } = await supabase
       .from("research_data")
       .select("isSynthesized")
       .eq("message_id", MessageId)
       .single();
     if (lookupError) {
-      notifyMe(
-        "An error occured while looking up for a report for analyst mode isSYnthesized status in finalanalyzer (line:667)",
-        lookupError
-      );
+      notifyMe("Lookup error in FinalAnalyzer isSynthesized check", lookupError);
     }
-
     if (lookupdata?.isSynthesized === true) {
       return res.status(400).json({
-        message:
-          "This research thread has been already synthesized based on your previous instructions.",
+        message: "This research thread has already been synthesized.",
       });
     }
-    // if the user explicitly asked to finalize the report
-    console.log("action-type", action_type)
-    if (action_type && action_type === "finalize") {
+
+    // ── Validate action_type if provided ──
+    if (action_type && !["finalize", "continue"].includes(action_type)) {
+      return res.status(400).json({ message: "Invalid action_type provided." });
+    }
+
+    // ── Helper: finalize a report (returns HTTP response directly) ──
+    async function handleFinalize(finalInstructions) {
+      const safeInstructions = finalInstructions || "Finalize the report";
+
+      // Cache user message
       const message = {
-        id: userMessageId, //users message Id
-        sent_by: "You", //sent by the user
-        message: { isComplete: true, content: instructions },
+        id: userMessageId,
+        sent_by: "You",
+        message: { isComplete: true, content: safeInstructions },
         sent_at: currentTime,
       };
       await CacheCurrentChat(message, req.user);
+
       const Information = await GetResearchData(MessageId);
-      // create a report
       if (!Information || Information.error) {
         return res.status(400).json({
-          message:
-            "Seems like our AI models are overloaded right now please stand by while we try to fix this problem, you can continue this research from your archive.",
+          message: "AI models overloaded. Please try again later.",
         });
       }
+
       const finalReportSynthesizer = await GenerateResponse(
-        `Create a detailed report of this information fetched by you in the previous step of the research \n,the source information also contains the previous original query of the user so also keep that into consideration\n,
-        these are new and additional instructions from the ##user=${instructions}\n,
-        this is the information from ## sources=${JSON.stringify(
-          Information.data
-        )}`,
+        `Create a detailed report of this information fetched by you in the previous step of the research.
+        The source information also contains the previous original query of the user.
+        New/additional instructions from the user: ${safeInstructions}
+        Information from sources: ${JSON.stringify(Information.data)}`,
         ANALYST_PROMPT
       );
 
       if (finalReportSynthesizer?.error || !finalReportSynthesizer?.result) {
         return res.status(400).json({
-          message:
-            "Our AI models are very overloaded right now please wait a bit before trying again later.",
+          message: "AI models overloaded. Please wait a bit before trying again.",
         });
       }
+
+      // Mark as synthesized
       const { error: updationError } = await supabase
         .from("research_data")
         .update({ isSynthesized: true })
-        .eq("message_id", MessageId); //update the synthesis value
-
+        .eq("message_id", MessageId);
       if (updationError) {
-        notifyMe(
-          "There was an error while trying to update the isSynthesized value for analyst mode",
-          JSON.stringify(updationError)
-        );
+        notifyMe("Failed to update isSynthesized in FinalAnalyzer", updationError);
       }
 
+      // Cache AI response
       const AiMessage = {
         id: MessageId,
-        sent_by: "AntiNode", //sent by the user
-        message: {
-          isComplete: true,
-          content: finalReportSynthesizer.result,
-        },
+        sent_by: "AntiNode",
+        message: { isComplete: true, content: finalReportSynthesizer.result },
         sent_at: currentTime,
       };
-      // update the cache
       await CacheCurrentChat(AiMessage, req.user);
-      await StoreQueryAndResponse(
-        user.user_id,
-        instructions,
-        finalReportSynthesizer.result,
-        null
-      );
-
+      await StoreQueryAndResponse(user.user_id, Information?.data?.query || safeInstructions, finalReportSynthesizer.result, null);
       UpdateReportStatus(MessageId);
+
       return res.status(200).send({
         message: "Report ready",
+        MessageId,
         direct_answer: finalReportSynthesizer.result,
         isSynthesized: true,
       });
-    } else if (action_type === "continue") {
-      const newResearchResults = await HandleNewInstructions(
-        instructions ||
-        "No instructions were provided but the user has asked to continue the research",
+    }
+
+    // ── Explicit action_type (now AFTER all validation) ──
+    if (action_type === "finalize") {
+      return handleFinalize(instructions);
+    }
+
+    if (action_type === "continue") {
+      // Acknowledge immediately – result will come later via webhook/socket
+      res.json({ message: "New thread has been created.", MessageId });
+      // Start new research (do not send another HTTP response)
+      HandleNewInstructions(
+        instructions || "Continue the research",
         {
           user: req.user,
-          user_prompt:
-            "No instructions were provided but the user has asked to continue the research",
+          user_prompt: instructions || "Continue the research",
           plan_type,
           web_search_depth,
           MessageId,
           room_id: null,
         }
-      );
-
-      return res
-        .status(newResearchResults.data.status === "partial" ? 206 : 200)
-        .json({
-          message: "Research done",
-          MessageId: newResearchResults.data.MessageId,
-          research_data: newResearchResults.data.research_data,
-          status: newResearchResults.data.status,
-        });
+      ).catch(err => {
+        notifyMe("Continue research error in FinalAnalyzer", err);
+      });
+      return; // stop execution; client already got the ack
     }
-    // validate the type of instruction
+
+    // ── No explicit action_type → check instruction status & intent ──
     const { isHardcoded, isUnique } = CheckInstructionsStatus(instructions);
 
-    console.log(isHardcoded, isUnique, 'intent recogniztion')
-    // if the instructions are unique
-    if (isUnique === true) {
-      const identified_intent = await FindIntent(instructions); //identify the user intent
-      if (
-        !identified_intent ||
-        identified_intent.status === false ||
-        !identified_intent?.result?.intent
-      ) {
+    if (isUnique) {
+      const identified_intent = await FindIntent(instructions);
+      if (!identified_intent || identified_intent.status === false || !identified_intent?.result?.intent) {
         return res.status(400).json({
-          message:
-            "Our AI models are overloaded right now so it was not able to deduce your intent, please try again later.",
+          message: "Our AI models are overloaded. Could not deduce your intent. Please try again later.",
         });
       }
-      const intent = identified_intent?.result?.intent || "finalize_report";
 
-      if (intent === "not_sure")
+      const intent = identified_intent.result.intent;
+
+      if (intent === "not_sure") {
         return res.status(400).json({
-          message:
-            "Could be more specific about what do you want do proceed with next",
+          message: "Could you be more specific about what you want to do next?",
         });
+      }
+
+      if (intent === "finalize_report") {
+        return handleFinalize(instructions);
+      }
 
       if (intent === "dig_deeper") {
-        const newResearchResults = await HandleNewInstructions(instructions, {
+        // Acknowledge and start new research
+        res.json({ message: "New thread has been created.", MessageId });
+        HandleNewInstructions(instructions, {
           user: req.user,
           user_prompt: instructions,
           plan_type,
           web_search_depth,
           MessageId,
           room_id: null,
+        }).catch(err => {
+          notifyMe("Dig deeper research error in FinalAnalyzer", err);
         });
-
-        return res
-          .status(newResearchResults.data.status === "partial" ? 206 : 200)
-          .json({
-            message: "Research done",
-            MessageId: newResearchResults.data.MessageId,
-            research_data: newResearchResults.data.research_data,
-            status: newResearchResults.data.status,
-          });
-      } else if (intent === "finalize_report") {
-        const message = {
-          id: userMessageId, //users message Id
-          sent_by: "You", //sent by the user
-          message: { isComplete: true, content: instructions },
-          sent_at: currentTime,
-        };
-        await CacheCurrentChat(message, req.user);
-        const Information = await GetResearchData(MessageId);
-        // create a report
-        if (!Information || Information.error) {
-          return res.status(400).json({
-            message:
-              "Seems like our AI models are overloaded right now please stand by while we try to fix this problem, you can continue this research from your archive.",
-          });
-        }
-        const finalReportSynthesizer = await GenerateResponse(
-          `Create a detailed report of this information fetched by you in the previous step of the research \n,the source information also contains the previous original query of the user so also keep that into consideration\n,
-        these are new and additional instructions from the user=${instructions}\n,this is the information from sources=${JSON.stringify(
-            Information.data
-          )}`,
-          ANALYST_PROMPT
-        );
-
-        if (finalReportSynthesizer?.error || !finalReportSynthesizer?.result) {
-          return res.status(400).json({
-            message:
-              "Our AI models are very overloaded right now please wait a bit before trying again later.",
-          });
-        }
-        const { error: updationError } = await supabase
-          .from("research_data")
-          .update({ isSynthesized: true })
-          .eq("message_id", MessageId); //update the synthesis value
-
-        if (updationError) {
-          notifyMe(
-            "There was an error while trying to update the isSynthesized value for analyst mode",
-            JSON.stringify(updationError)
-          );
-        }
-
-        const AiMessage = {
-          id: MessageId,
-          sent_by: "AntiNode", //sent by the user
-          message: {
-            isComplete: true,
-            content: finalReportSynthesizer.result,
-          },
-          sent_at: currentTime,
-        };
-        // update the cache
-        await CacheCurrentChat(AiMessage, req.user);
-        await StoreQueryAndResponse(
-          user.user_id,
-          instructions,
-          finalReportSynthesizer.result,
-          null
-        );
-        UpdateReportStatus(MessageId); //update the report status
-
-        return res.status(200).send({
-          message: "Report ready",
-          direct_answer: finalReportSynthesizer.result,
-          isSynthesized: true,
-        });
+        return;
       }
-    } else if (isHardcoded === true) {
-      const newResearchResults = await HandleNewInstructions(instructions, {
+    }
+
+    if (isHardcoded) {
+      // Hardcoded instructions always trigger new research
+      res.json({ message: "New thread has been created.", MessageId });
+      HandleNewInstructions(instructions, {
         user: req.user,
         user_prompt: instructions,
         plan_type,
         web_search_depth,
         MessageId,
         room_id: null,
+      }).catch(err => {
+        notifyMe("Hardcoded instruction research error in FinalAnalyzer", err);
       });
-
-      return res
-        .status(newResearchResults.data.status === "partial" ? 206 : 200)
-        .json({
-          message: "Research done",
-          MessageId: newResearchResults.data.MessageId,
-          research_data: newResearchResults.data.research_data,
-          status: newResearchResults.data.status,
-        });
+      return;
     }
 
-    return res
-      .status(400)
-      .json({ message: "Something went wrong while processing your request" });
-    // cache the user message
+    return res.status(400).json({ message: "Something went wrong while processing your request." });
   } catch (error) {
-    console.error("Error in the final analyzer handler \n", error);
-    notifyMe("Analyst mode final analyzer error\n", error);
-    return res
-      .status(500)
-      .json({ message: "Something went wrong while processing your request!" });
+    console.error("Error in FinalAnalyzer:", error);
+    notifyMe("Analyst mode final analyzer error", error);
+    return res.status(500).json({ message: "Something went wrong while processing your request!" });
   }
 };
 
 // get researchInformation based on specific messageId
+import { promisify } from 'util';
+import zlib from 'zlib';
+
+const inflate = promisify(zlib.inflate);
+
 export async function GetResearchData(MessageId) {
-  const key = `message:${MessageId}:research_report`; // Using colons is standard Redis convention
+  const key = `message:${MessageId}:research_report`;
 
   try {
-    const cachedResults = await redisClient.lRange(key, 0, -1);
-
-    if (cachedResults && cachedResults.length > 0) {
-      const parsedData = cachedResults.map((content) => JSON.parse(content));
-      return { error: null, data: parsedData };
+    // 1. Try compressed cache
+    const compressed = await redisClient?.withCommandOptions({ returnBuffers: true }).get(key)
+    if (compressed) {
+      const json = (await inflate(compressed)).toString();
+      const researchData = JSON.parse(json);
+      // researchData is the full object: { sources, favicons, details, queries, query?, ... }
+      return { error: null, data: [researchData] };  // wrap in array for consistency
     }
 
-    // no cache get from db
-    const { data, error } = await supabase
+    // 2. Fallback to database
+    const { data: rows, error } = await supabase
       .from("research_data")
-      .select("information,query,isSynthesized,created_at")
+      .select("information, query, isSynthesized, created_at")
       .eq("message_id", MessageId)
       .order("created_at", { ascending: true });
 
-    if (error) {
-      return { error: "No data found in the db", data: [] };
+    if (error || !rows || rows.length === 0) {
+      return { error: error?.message || "No data found", data: [] };
     }
 
-    // If data exists in DB but wasn't in Redis, push it to Redis for next time
-    if (data && data.length > 0) {
-      const stringifiedData = data.map((item) => JSON.stringify(item));
-      await redisClient
-        .multi()
-        .rPush(key, stringifiedData)
-        .expire(key, 60 * 60 * 3) ///for three hours for fresh researches
-        .exec();
-    }
+    // Normalise each row: flatten information to top level, keep query
+    const normalized = rows.map(row => ({
+      query: row.query,
+      sources: row.information?.sources || [],
+      favicons: row.information?.favicons || [],
+      details: row.information?.details || [],        // the huge array from FormattForLLM
+      queries: row.information?.queries || [],
+      isSynthesized: row.isSynthesized,
+      created_at: row.created_at,
+    }));
 
-    return { error: null, data: data };
+    // Cache the first normalised object (there is one per message)
+    // Compress and store with TTL
+    const toCache = normalized[0];      // single object
+    const json = JSON.stringify(toCache);
+    const compressedBuf = await deflate(json);
+    await redisClient.set(key, compressedBuf, 'EX', 60 * 60 * 3); // 3 hours
+
+    return { error: null, data: normalized };
   } catch (err) {
     console.error(`Research Fetch Error: ${err.message}`);
-    return {
-      error: "Unable to retrieve research data.",
-      data: [],
-    };
+    return { error: "Unable to retrieve research data.", data: [] };
   }
 }
 
 // if we are processed new insructions we do it again but with richer context
+// export async function HandleNewInstructions(instructions, data) {
+//   if (!instructions || typeof instructions !== "string")
+//     return { error: "Invalid instructions for the llm", data: null };
+//   const { user, user_prompt, plan_type, web_search_depth, MessageId, room_id } =
+//     data;
+//   const previous_research_data = await GetResearchData(MessageId);
+//   if (!previous_research_data || previous_research_data.error) {
+//     return { error: "Could not retrieve previous research", data: null };
+//   }
+
+//   const sorted_context = {
+//     sorted_queries: [],
+//     previous_sources: new Set(),
+//     search_queries: new Set(),
+//   };
+
+//   previous_research_data.data.forEach((elem, index) => {
+//     // 1. Capture the User Query
+//     if (elem?.query) {
+//       // IMPORTANT: Clean the query so we don't pass old "new_instructions" metadata back in
+//       const cleanQuery = elem.query
+//         .split("&all_previous_user_requests=")[0]
+//         .replace("new_instructions", "");
+//       sorted_context.sorted_queries.push({
+//         order: index,
+//         query: cleanQuery.trim(),
+//       });
+//     }
+
+//     // 2. Extract from Nested Arrays (details/information)
+//     const infoArray = elem?.information || elem?.details;
+//     if (Array.isArray(infoArray)) {
+//       infoArray.forEach((info) => {
+//         (info?.sources || []).forEach((src) =>
+//           sorted_context.previous_sources.add(src)
+//         );
+//         (info?.queries || []).forEach((q) =>
+//           sorted_context.search_queries.add(q)
+//         );
+//       });
+//     }
+
+//     // 3. Extract from Top-Level (This matches your sample data)
+//     (elem?.sources || []).forEach((src) =>
+//       sorted_context.previous_sources.add(src)
+//     );
+//     (elem?.queries || []).forEach((q) => sorted_context.search_queries.add(q));
+//   });
+
+//   // converting to array
+//   const sourcesArray = Array.from(sorted_context.previous_sources);
+//   const queriesArray = Array.from(sorted_context.search_queries);
+//   const lastQueryObj =
+//     sorted_context.sorted_queries[sorted_context.sorted_queries.length - 1] ||
+//     null;
+
+//   const result = HandleOrchestratedResultsHandling({
+//     user,
+//     question: `## New_Instructions: ${instructions}_${user_prompt}
+
+//   CONTEXT_RESUMPTION:
+//   - Previous Requests: ${JSON.stringify(sorted_context.sorted_queries)}
+//   - Last Query: ${lastQueryObj?.query || "None"}
+//   - Previous Search Queries: ${JSON.stringify(queriesArray)}
+//   - Sources Already Explored: ${JSON.stringify(sourcesArray)}`,
+//     plan_type,
+//     web_search_depth,
+//     MessageId,
+//     room_id,
+//   });
+
+//   if (!result.success) {
+//     return {
+//       error: "Something went wrong while retrieving the research_archive",
+//       data: null,
+//     };
+//   }
+
+//   // res.json({ message: "New thread has been created." });
+//   return {
+//     error: null,
+//     data: {
+//       MessageId: result?.MessageId,
+//       status: result.status,
+//       stored: result.stored,
+//       research_data: result.research_data,
+//       success: result.success,
+//       direct_answer: result.direct_answer,
+//     },
+//   };
+// }
+
+
 export async function HandleNewInstructions(instructions, data) {
   if (!instructions || typeof instructions !== "string")
     return { error: "Invalid instructions for the llm", data: null };
+
   const { user, user_prompt, plan_type, web_search_depth, MessageId, room_id } =
     data;
+
   const previous_research_data = await GetResearchData(MessageId);
   if (!previous_research_data || previous_research_data.error) {
     return { error: "Could not retrieve previous research", data: null };
@@ -1017,9 +1070,8 @@ export async function HandleNewInstructions(instructions, data) {
   };
 
   previous_research_data.data.forEach((elem, index) => {
-    // 1. Capture the User Query
+    // 1. Capture the original user query (cleaned)
     if (elem?.query) {
-      // IMPORTANT: Clean the query so we don't pass old "new_instructions" metadata back in
       const cleanQuery = elem.query
         .split("&all_previous_user_requests=")[0]
         .replace("new_instructions", "");
@@ -1029,36 +1081,23 @@ export async function HandleNewInstructions(instructions, data) {
       });
     }
 
-    // 2. Extract from Nested Arrays (details/information)
-    const infoArray = elem?.information || elem?.details;
-    if (Array.isArray(infoArray)) {
-      infoArray.forEach((info) => {
-        (info?.sources || []).forEach((src) =>
-          sorted_context.previous_sources.add(src)
-        );
-        (info?.queries || []).forEach((q) =>
-          sorted_context.search_queries.add(q)
-        );
-      });
-    }
-
-    // 3. Extract from Top-Level (This matches your sample data)
+    // 2. Collect top-level sources and search queries
     (elem?.sources || []).forEach((src) =>
       sorted_context.previous_sources.add(src)
     );
-    (elem?.queries || []).forEach((q) => sorted_context.search_queries.add(q));
+    (elem?.queries || []).forEach((q) =>
+      sorted_context.search_queries.add(q)
+    );
   });
 
-  // converting to array
   const sourcesArray = Array.from(sorted_context.previous_sources);
   const queriesArray = Array.from(sorted_context.search_queries);
   const lastQueryObj =
-    sorted_context.sorted_queries[sorted_context.sorted_queries.length - 1] ||
-    null;
+    sorted_context.sorted_queries[sorted_context.sorted_queries.length - 1] || null;
 
-  const result = await HandleOrchestratedResultsHandling({
+  const result = HandleOrchestratedResultsHandling({
     user,
-    question: `new_instructions: ${instructions}${user_prompt}
+    question: `## New_Instructions: ${instructions}_${user_prompt}
   
   CONTEXT_RESUMPTION:
   - Previous Requests: ${JSON.stringify(sorted_context.sorted_queries)}

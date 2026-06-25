@@ -23,7 +23,7 @@ const REJECT_LABELS = [
 ];
 
 export const FinalizePopup = ({ message }: any) => {
-    const { search_depth, loading, creatingReport } = useAppSelector(s => s.interface)
+    const { search_depth, loading, creatingReport, ResearchData } = useAppSelector(s => s.interface)
     const dispatch = useAppDispatch()
     const instructionsRef = React.useRef<HTMLInputElement>(null)
 
@@ -137,6 +137,8 @@ export const FinalizePopup = ({ message }: any) => {
 
 
     return (<div
+        onClick={() => console.log(ResearchData)}
+
         aria-disabled={creatingReport}
         className={`relative flex flex-col gap-0 w-full rounded-xl border transition-all duration-300 overflow-visible
         ${creatingReport ? "opacity-50 pointer-events-none" : ""}

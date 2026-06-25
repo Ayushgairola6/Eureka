@@ -1030,21 +1030,32 @@ export const fetchSearchResults = async (
   user,
   MessageId
 ) => {
-
-  const { err, results } = await SerpWeb(question);
-
-  if (!err && results?.length > 0) {
-    return { response: results, links: results }
+  if (user?.user_id) {
+    EmitEvent(user?.user_id, "query_status", {
+      MessageId,
+      status: {
+        message: "Searching web",
+        data: [`Searching for ${question}`],
+      },
+    });
   }
-  const response = await GetDataFromSerpApi(
-    question,
-    user,
-    null,
-    MessageId,
-    plan_type
-  );
+  const { err, results } = await SerpWeb(question);
+  if (err || results?.length === 0) {
+    const { err, response } = await GetDataFromSerpApi(
+      question,
+      user,
+      null,
+      MessageId,
+      plan_type
+    );
 
-  return { response, links: FormalSerpAPIresults(response) };
+    if (err) {
+      return { response: null, links: [] }
+    }
+    return { response, links: FormalSerpAPIresults(response) || [] };
+  }
+  return { response: results, links: results }
+
 };
 
 // handle intentIdentification and formatting
@@ -1144,52 +1155,54 @@ export const PostTypeWebSearch = async (req, res) => {
 
     let webResults;
     // if the searc depth is deep user our pipeline else use tavily
+    // if (web_search_depth === 'deep_web') {
+    //   const { links: LinksToFetch } = await fetchSearchResults(
+    //     plan_type,
+    //     queries.join(","),
+    //     req.user,
+    //     MessageId
+    //   );
+    //   if (LinksToFetch.length === 0) {
+    //     return res.status(400).send({ message: "Web search failed, try again." });
+    //   }
+
+    //   // 4. Scrape & process – the depth logic in one clear line
+    //   const linksToProcess = LinksToFetch.slice(0, 6);
+
+    //   EmitEvent(user_id, "processing_links", {
+    //     MessageId,
+    //     status: { message: "I am gonna read these sources", data: linksToProcess },
+    //   });
+
+    //   const cleanedData = await ProcessForLLM(
+    //     linksToProcess,
+    //     req.user,
+    //     question,
+    //     MessageId,
+    //     null,
+    //     plan_type
+    //   );
+    //   if (cleanedData.length === 0) {
+    //     // return res.status(400).send({ message: "AI models overloaded, try again." });
+    //     notifyMe("The web search pipeline returned nothing during deep-research", JSON.stringify(cleanedData))
+    //     webResults = "The web-search tool returned no results maybe the tool failed due to some issue"
+    //   } else {
+    //     webResults = FormattForLLM(cleanedData);
+
+    //   }
+
+    //   // console.log(webResults)
+
+
+    // }
     if (web_search_depth === 'deep_web') {
-      const { links: LinksToFetch } = await fetchSearchResults(
-        plan_type,
-        queries.join(","),
-        req.user,
-        MessageId
-      );
-      if (LinksToFetch.length === 0) {
-        return res.status(400).send({ message: "Web search failed, try again." });
-      }
-
-      // 4. Scrape & process – the depth logic in one clear line
-      const linksToProcess = LinksToFetch.slice(0, 6);
-
-      EmitEvent(user_id, "processing_links", {
-        MessageId,
-        status: { message: "I am gonna read these sources", data: linksToProcess },
-      });
-
-      const cleanedData = await ProcessForLLM(
-        linksToProcess,
-        req.user,
-        question,
-        MessageId,
-        null,
-        plan_type
-      );
-      if (cleanedData.length === 0) {
-        // return res.status(400).send({ message: "AI models overloaded, try again." });
-        notifyMe("The web search pipeline returned nothing during deep-research", JSON.stringify(cleanedData))
-        webResults = "The web-search tool returned no results maybe the tool failed due to some issue"
-      } else {
-        webResults = FormattForLLM(cleanedData);
-
-      }
-
-      // console.log(webResults)
-
-
+      return res.status(400).json({ message: "This feature is currently under maintenance, you'll be notified when the errors are fixed." })
     }
     else {
       webResults = await SearchQueryResults(question, plan_type);
     }
 
 
-    console.log(webResults)
     // 5. Build final answer with conversation context
     const history = await GetChatsForContext(req.user);
     const past = history?.length ? history : ["Failed to get session history"];

@@ -155,7 +155,9 @@ export function UnfinishedResearchPage() {
         })
     }
     return (<>
-        <section className='p-4 relative flex items-center justify-between'>
+        <section
+            onClick={() => console.log(research_history)}
+            className='p-4 relative flex items-center justify-between'>
             <div>
                 <h1 className="flex items-center justify-start gap-2 bai-jamjuree-bold text-2xl">
                     <Archive /> Research Archive

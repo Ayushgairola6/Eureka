@@ -21,6 +21,7 @@ import {
   // MimicSSE,
   ResponseLikeStatus,
   setUploadStatus,
+  UpdateResearchData,
 } from "./InterfaceSlice.ts";
 const ServerUrl = import.meta.env.VITE_BACKEND_API_URL;
 
@@ -44,7 +45,6 @@ const setupSocketListeners = (dispatch: any) => {
 
   //the web search event
   socket.on("query_status", (data) => {
-    console.log("web-search-status", data);
     dispatch(setWebStatus(data));
   });
 
@@ -71,6 +71,9 @@ const setupSocketListeners = (dispatch: any) => {
     }
   });
 
+  socket.on("Research_Done", (data) => {
+    dispatch(UpdateResearchData(data));
+  });
   // socket.on("token_incoming", (data) => {
   //   dispatch(MimicSSE(data));
   // });

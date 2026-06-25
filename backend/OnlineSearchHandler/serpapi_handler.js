@@ -7,44 +7,25 @@ dotenv.config();
 // currrently being used for free users
 export const GetDataFromSerpApi = async (
   query,
-  user,
-  room_id,
-  MessageId,
-  plan_type
 ) => {
   try {
-    if (room_id) {
-      EmitEvent(room_id, "query_status", {
-        MessageId,
-        status: {
-          message: "fetching_url",
-          data: [`Searching for ${query}`],
-        },
-      });
-    } else {
-      // else send it the solo user
-      EmitEvent(user.user_id, "query_status", {
-        MessageId,
-        status: {
-          message: "fetching_url",
-          data: [`Searching for ${query}`],
-        },
-      });
-    }
+
+    console.log("Request reached the serpaapi function")
     const SERPAPI_KEY = process.env.SERP_API;
     const response = await getJson({
-      engine: "google_light",
+      engine: "google",
       api_key: SERPAPI_KEY,
       q: query,
       google_domain: "google.com",
       hl: "en",
-      num: 4,
+      num: 7,
     });
 
-    return response;
+    return { err: null, response: response };
   } catch (error) {
+    console.error(error, 'serp api error')
     notifyMe("An error has been sent by serperAPI", error);
-    return { error: error }; // Return empty array so your scraper doesn't crash
+    return { err: error, response: null }; // Return empty array so your scraper doesn't crash
   }
 };
 
