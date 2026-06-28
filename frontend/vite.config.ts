@@ -8,6 +8,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png"],
@@ -48,5 +49,12 @@ export default defineConfig({
       // This ensures that "@/" resolves to "src/"
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  server: {
+    allowedHosts: [
+      "15a4-47-15-116-73.ngrok-free.app",
+      "http://localhost:5173",
+      "https://antinodeai.space",
+    ],
   },
 });

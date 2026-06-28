@@ -20,6 +20,7 @@ import {
     TbBooksOff,
     TbChevronRight,
 } from "react-icons/tb";
+import { TTSRequest } from "../popups/text_toSpeech";
 
 // ─── Slide-over panel ────────────────────────────────────────────────────────
 
@@ -178,11 +179,13 @@ function ReaderPanel({
                     <span className="text-[10px] text-neutral-400 space-grotesk uppercase tracking-widest font-bold">
                         AntiNode / Source Reader
                     </span>
-                    <a
-                        href={source.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="
+                    <div className="flex items-center justify-center gap-2">
+                        <TTSRequest text={source?.content} />
+                        <a
+                            href={source.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="
               flex items-center gap-1.5
               text-[11px] space-grotesk font-semibold
               text-neutral-900 dark:text-neutral-100
@@ -192,10 +195,12 @@ function ReaderPanel({
               px-3 py-1.5 rounded-md
               transition-colors
             "
-                    >
-                        Open original source
-                        <TbExternalLink size={12} />
-                    </a>
+                        >
+                            Open original source
+                            <TbExternalLink size={12} />
+                        </a>
+                    </div>
+
                 </footer>
             </aside>
         </>,

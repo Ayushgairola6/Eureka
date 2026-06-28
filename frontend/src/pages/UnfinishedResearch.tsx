@@ -11,6 +11,7 @@ import { IoAnalytics, IoReload } from "react-icons/io5";
 import { MdDoneAll, MdMore } from "react-icons/md";
 import axios from 'axios'
 import ExpandedReader from "@/components/ResearchArchive/ExpandedReader";
+import { AudioPlayer } from "@/components/audio/AudioPlayer";
 const BaseApiUrl = import.meta.env.VITE_BACKEND_URL
 // import { Sort } from "@/components/ResearchArchive/sorting";
 const QUICK_TAGS = [
@@ -158,6 +159,7 @@ export function UnfinishedResearchPage() {
         <section
             onClick={() => console.log(research_history)}
             className='p-4 relative flex items-center justify-between'>
+            <AudioPlayer />
             <div>
                 <h1 className="flex items-center justify-start gap-2 bai-jamjuree-bold text-2xl">
                     <Archive /> Research Archive

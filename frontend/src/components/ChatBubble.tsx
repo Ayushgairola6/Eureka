@@ -12,6 +12,7 @@ import { ChevronDown } from "lucide-react";
 import { FinalizePopup } from "./Reject_Popup.tsx";
 import { ResearchDataCenter } from "./ResearchDataRenders.tsx";
 import { IoEyeSharp } from "react-icons/io5";
+import { TTSRequest } from "./popups/text_toSpeech.tsx";
 const STEPS = [
   "Orchestrated",
   "Transparent",
@@ -197,11 +198,12 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
 
                 {chat.sent_by !== "You" &&
                   !ResponseStatus.some((i) => i.id === chat.id) && (
-                    <div className="mt-2">
+                    <div className="mt-2 flex items-center justify-end gap-3">
                       <ResponseFeedback
                         ReceivedResponseId={ReceivedResponseId}
                         chat={chat}
                       />
+                      <TTSRequest text={chat.message.content} />
                     </div>
                   )}
                 {Chats.length > 0 && (

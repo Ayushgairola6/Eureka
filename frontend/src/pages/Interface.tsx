@@ -38,6 +38,7 @@ import { InterfaceFeatureSelector } from "@/components/Interface_FeatureSelector
 import { useSearchParams } from "react-router";
 import ResearchVisualizer from "./Visualizer/Research_Visualizer.tsx";
 import LiveTailIndicator from "@/components/popups/live_tail_indicator.tsx";
+import { AudioPlayer } from "@/components/audio/AudioPlayer.tsx";
 function Interface() {
 
   const dispatch = useAppDispatch();
@@ -303,6 +304,7 @@ function Interface() {
 
         className={`w-full  flex items-center justify-between flex-col min-h-[90vh]  dark:bg-black  relative z-[1]  px-4 py-3 `}
       >
+        <AudioPlayer />
         <ResearchVisualizer />
 
         <InterfaceFeatureSelector showFeatures={showFeatures} setShowFeatures={setShowFeatures} />

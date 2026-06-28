@@ -77,11 +77,10 @@ const ResponseFeedback: React.FC<FeedbackProps> = ({ chat }) => {
             {/* Upvote */}
             <button
               onClick={() => dispatch(setLikeness("upvote"))}
-              className={`p-1.5 rounded-full transition-all duration-200 ${
-                likeness === "upvote"
+              className={`p-1.5 rounded-full transition-all duration-200 ${likeness === "upvote"
                   ? "bg-green-50 text-green-600 ring-1 ring-inset ring-green-200 dark:bg-green-900/20 dark:text-green-400 dark:ring-green-800"
                   : "text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-green-600 dark:hover:text-green-400"
-              }`}
+                }`}
               title="Helpful"
             >
               <FaThumbsUp size={12} />
@@ -90,11 +89,10 @@ const ResponseFeedback: React.FC<FeedbackProps> = ({ chat }) => {
             {/* Partial */}
             <button
               onClick={() => dispatch(setLikeness("partial_upvote"))}
-              className={`p-1.5 rounded-full transition-all duration-200 ${
-                likeness === "partial_upvote"
+              className={`p-1.5 rounded-full transition-all duration-200 ${likeness === "partial_upvote"
                   ? "bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:ring-blue-800"
                   : "text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-600 dark:hover:text-blue-400"
-              }`}
+                }`}
               title="Partially helpful"
             >
               <IoHeartHalfOutline size={13} />
@@ -103,16 +101,16 @@ const ResponseFeedback: React.FC<FeedbackProps> = ({ chat }) => {
             {/* Downvote */}
             <button
               onClick={() => dispatch(setLikeness("downvote"))}
-              className={`p-1.5 rounded-full transition-all duration-200 ${
-                likeness === "downvote"
+              className={`p-1.5 rounded-full transition-all duration-200 ${likeness === "downvote"
                   ? "bg-red-50 text-red-600 ring-1 ring-inset ring-red-200 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-800"
                   : "text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-red-600 dark:hover:text-red-400"
-              }`}
+                }`}
               title="Incorrect"
             >
               <FaThumbsDown size={12} />
             </button>
           </div>
+
 
           {/* Submit Button - Animated Popup */}
           <AnimatePresence>
@@ -129,11 +127,10 @@ const ResponseFeedback: React.FC<FeedbackProps> = ({ chat }) => {
                   whileTap={{ scale: 0.95 }}
                   disabled={sendingFeedback}
                   onClick={ResponseAuthenticity_Handler}
-                  className={`px-3 py-1 mr-1 rounded-full text-[10px] font-bold tracking-wide transition-colors whitespace-nowrap ${
-                    sendingFeedback
+                  className={`px-3 py-1 mr-1 rounded-full text-[10px] font-bold tracking-wide transition-colors whitespace-nowrap ${sendingFeedback
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
-                  }`}
+                    }`}
                 >
                   {sendingFeedback ? "..." : "SEND"}
                 </motion.button>

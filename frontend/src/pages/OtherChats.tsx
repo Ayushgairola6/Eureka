@@ -21,6 +21,8 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { Streamdown } from "streamdown";
+import { AudioPlayer } from "../components/audio/AudioPlayer";
+import { TTSRequest } from "../components/popups/text_toSpeech";
 
 const OtherChats = () => {
   const dispatch = useAppDispatch();
@@ -102,6 +104,8 @@ const OtherChats = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 transition-colors duration-200">
+      <AudioPlayer />
+
       {/* <Filters
         showFilters={showFilters}
         SetShowFilters={SetShowFilters}
@@ -240,6 +244,7 @@ const OtherChats = () => {
                                   <ChevronUp className="w-3 h-3" />
                                   Collapse
                                 </button>
+                                <TTSRequest text={message.AI_response} />
                               </div>
                             </div>
                           </motion.div>

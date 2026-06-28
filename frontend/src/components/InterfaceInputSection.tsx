@@ -1,4 +1,4 @@
-import React from "react";
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { useAppSelector, useAppDispatch } from "../store/hooks.tsx";
 // import WebSearch from "./webSearch.tsx";
@@ -38,6 +38,8 @@ import { setCurrentStatus } from "../store/websockteSlice.ts";
 import { currentTime } from "../../utlis/Date.ts";
 import { Cloud } from "lucide-react";
 import { PiOptionBold } from "react-icons/pi";
+import { FcCancel } from "react-icons/fc";
+import { setRecording, GenerateFromAudio } from "../store/visualierSlice.ts";
 type InputProps = {
   textareaRef: React.Ref<HTMLInputElement>;
   isActive: boolean;
@@ -67,7 +69,7 @@ const InputSection: React.FC<InputProps> = ({
   } = useAppSelector((state) => state.interface);
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAppSelector((state) => state.auth);
-
+  const { isRecording, isGenerating } = useAppSelector((s) => s.visualizer)
   const [Showfeatures, SetShowFeatures] = useState(false);
 
   // const Quota = user?.IsPremiumUser === false ? 5 : Infinity
@@ -314,15 +316,7 @@ const InputSection: React.FC<InputProps> = ({
         return;
       }
 
-      // // 4. Fallback to category-based query
-      // if (!question.trim() || !category || category === "") {
-      //   toast.message(
-      //     !question
-      //       ? "❌ Please enter a question."
-      //       : "❌ Please choose a category!"
-      //   );
-      //   return;
-      // }
+
 
       const { AiId, user_id } = handleUUidCreationAndMessageInsert()
       const data = {
@@ -359,6 +353,68 @@ const InputSection: React.FC<InputProps> = ({
     } catch (_err) {
     }
   };
+
+  const mediaRecorderRef = useRef<any>(null);
+
+  function handleAudioRecording() {
+    if (isRecording) return;
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        const audioTrack = stream.getAudioTracks()[0];
+
+
+        if (audioTrack.muted || !audioTrack.enabled) {
+          toast.error("Microphone is muted. Check browser permissions.");
+          return;
+        }
+
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+
+        const recordedChunks: any = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+
+          const audioBlob = new Blob(recordedChunks, { type: recordedChunks?.[0]?.type || 'audio/webm' });
+
+          if (audioBlob.size < 5000) {
+            toast.error("No audio detected. Check your microphone is not muted.");
+            dispatch(setRecording(false));
+            return;
+          }
+
+          const form = new FormData();
+          form.append('audio', audioBlob, `recording-${Date.now()}.webm`);
+
+          dispatch(GenerateFromAudio(form))
+            .unwrap()
+            .then(res => {
+              if (res?.transcript) dispatch(setQuestion(res.transcript));
+            })
+            .catch(err => toast.error(err))
+            .finally(() => dispatch(setRecording(false)));
+        };
+
+        // Use timeslice to collect chunks every 1 second (proves mic is working)
+        mediaRecorder.start(1000);
+        dispatch(setRecording(true));
+      })
+      .catch(err => {
+        console.error("Mic error:", err);
+        toast.error("Cannot access microphone");
+      });
+  }
+
+  function handleStopRecording() {
+    mediaRecorderRef.current?.stop();
+    // DON'T dispatch setRecording(false) here — let onstop handle it
+  }
 
   return (
     <>
@@ -409,42 +465,27 @@ const InputSection: React.FC<InputProps> = ({
               <BiHourglass className="animate-spin" size={18} />
             )}
           </button>
-          {question.trim() === '' && loading === false && <button
+          {isRecording === false ? <button
+            onClick={handleAudioRecording}
+            disabled={isGenerating === true}
             className={`shrink-0 p-2 rounded-lg transition-colors duration-150
-              ${loading ? "bg-sky-600 " : "bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-gray-200"}
+              ${isRecording ? "bg-green-600 " : "bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-gray-200"}
               text-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed`}>
-            <BsMic size={18} />
-          </button>}
+            {isGenerating === false ? <BsMic size={18} /> : (<ul className='h-2 w-2 rounded-full border-t-2 border-green-600 animate-spin' />)}
+
+          </button> :
+            <button
+              disabled={isGenerating === true}
+              onClick={handleStopRecording}
+              className={`shrink-0 p-2 rounded-lg transition-colors duration-150
+              ${loading ? "bg-red-600 " : "bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-gray-200"}
+              text-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed`}>
+              <FcCancel size={18} />
+
+            </button>
+          }
         </div>
-        {/* <section className="pt-3  flex items-center justify-center gap-2">
-          <ul className='bai-jamjuree-semibold text-xs'>Analyst Mode</ul>
 
-          <button
-            onClick={() => dispatch(setIsVerificationMode())}
-            role="switch"
-            aria-checked={isVerificatioMode}
-            className={`
-    relative inline-flex h-6 w-12 shrink-0 cursor-pointer items-center rounded-full 
-    border-2 border-transparent transition-colors duration-300 ease-in-out 
-    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-    ${isVerificatioMode ? 'bg-blue-600' : 'bg-gray-300 dark:bg-neutral-700'}
-  `}
-          >
-            <span className="sr-only">Toggle Verification Mode</span>
-            <span
-              className={` flex items-center justify-center
-      pointer-events-none  h-5 w-5 transform rounded-full 
-      bg-white shadow-md ring-0 transition duration-300 ease-in-out
-      ${isVerificatioMode ? 'translate-x-6' : 'translate-x-0'}
-    `}
-            >
-              <ul className='m-auto'>
-                {isVerificatioMode === true ? "y" : "n"}
-              </ul>
-            </span>
-          </button>
-
-        </section> */}
         {/* Options section */}
         {isActive && (
           < div className="flex  items-start sm:items-center justify-between gap-3 pt-3 mt-3 border-t border-gray-200 dark:border-neutral-800">
